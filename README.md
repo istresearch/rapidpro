@@ -151,6 +151,10 @@ To get RapidPro working on your own system, execute the following steps.
         
 ### Starting the RapidPro Server
 
+PostgreSQL and Redis must be running before RapidPro is started.
+
+If you cloned the IST RapidPro fork in a development environment, rather than under `/opt/`, then change the path shown in the third command to match the location where you have cloned the repository.
+
 ```
 > sudo service postgresql start
 > /opt/redis-3.2.6/src/redis-server &
