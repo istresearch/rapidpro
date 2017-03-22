@@ -27,7 +27,7 @@ cd rapidpro
 git remote add -m rapidpro-master rapidpro git://github.com/rapidpro/rapidpro
 ```
 
-### Ubuntu Setup Instructions
+### RapidPro Setup Instructions (Ubuntu)
 
 To get RapidPro working on your own system, execute the following steps.
 
@@ -145,11 +145,9 @@ To get RapidPro working on your own system, execute the following steps.
         
         ```
         ALLOWED_HOSTS = [ '*' ]
-        MAGE_AUTH_TOKEN = 'foo'
-        MAGE_API_URL = 'http://localhost:8026/api/v1'
         ```
         
-### Starting the RapidPro Server
+### Starting the RapidPro Server (Ubuntu)
 
 PostgreSQL and Redis must be running before RapidPro is started.
 
@@ -164,4 +162,78 @@ env> python manage.py runserver 0.0.0.0:8000
 ```
 
 This will start the RapidPro server on the local box, accessible in a browser as http://localhost:8000.
+
+### Setup Instructions for Integration with RapidPro Mage (Ubuntu)
+
+RapidPro Mage is an additional component required for Twitter channels.
+
+1. Create a Twitter account, then create a Twitter app as a point of contact for RapidPro. Note the various API keys and secrets from the Twitter app configuration; these will be needed in the configurations for RapidPro and mage.
+
+2. Install the Oracle Java SDK.
+
+    ```
+    > sudo apt-get remove openjdk-\*
+    > sudo apt-get purge openjdk-\*
+    > sudo add-apt-repository ppa:webupd8team/java
+    > sudo apt-get update
+    > sudo apt-get install oracle-java8-installer
+    > sudo apt-get install oracle-java8-set-default
+    ```
+
+3. Install Maven, which is required to build and install the Mage component.
+    
+    ```
+    > sudo apt-get update
+    > sudo apt-get install maven
+    ```
+
+4. Install RapidPro Mage. Since it is unlikely that we will need to modify this component, just install it under `/opt/`.
+    
+    ```
+    > cd /opt
+    > mkdir rapidpro
+    > cd rapidpro
+    > git clone git://github.com/rapidpro/mage ./mage
+    > cd mage
+    > mvn clean package -DskipTests=true
+    ```
+    
+5. Configure Mage for integration with RapidPro. Create the following as `/opt/rapidpro/mage/mage-startup.sh`:
+    
+    ```
+    #!/bin/bash
+    export PRODUCTION=0
+    export DATABASE_URL=postgres://temba:temba@localhost/temba
+    export REDIS_HOST=localhost
+    export REDIS_DATABASE=8
+    export TEMBA_HOST=localhost:8000
+    export TEMBA_AUTH_TOKEN=foo
+    export TWITTER_API_KEY=
+    export TWITTER_API_SECRET=
+    export SEGMENTIO_WRITE_KEY=
+    export SENTRY_DSN=
+    export LIBRATO_EMAIL=
+    export LIBRATO_API_TOKEN=
+    export MAGE_REPO_PATH=/opt/rapidpro/mage/
+    java -jar `ls ${MAGE_REPO_PATH}target/mage-*.jar` server config.yml
+    ```
+    
+6. Make the configuration file executable.
+
+    ```chmod 755 /opt/rapidpro/mage/mage-startup.sh```
+    
+7. Configure RapidPro for integration with Mage. Edit your `settings.py.local` file with the additional settings for Mage integration:
+    
+    ```
+    MAGE_AUTH_TOKEN = 'foo'
+    MAGE_API_URL = 'http://localhost:8026/api/v1'
+    TWITTER_API_KEY=
+    TWITTER_API_SECRET=
+    TWITTER_OAUTH_KEY=
+    TWITTER_OAUTH_SECRET=
+    ```
+    
+### Starting RapidPro Mage
+
+Use the `mage-startup.sh` script to start Mage before starting RapidPro, if your instance needs Twitter integration.
 
