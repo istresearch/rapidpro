@@ -118,3 +118,7 @@ ansible/site.retry
 
 # sublime projects
 *.sublime*
+
+# Runtime environments
+env/
+rapidpro-env/
