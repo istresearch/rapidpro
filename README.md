@@ -73,7 +73,7 @@ To get RapidPro working on your own system, execute the following steps.
     > make
     ```
     
-5. Set up the `temba` user in PostgreSQL.
+5. Set up the `temba` user in PostgreSQL. Note that the default configurations expect the password to be `temba` also, and that value has been used for illustrative purposes throughout. Use a different password in practice.
 
     ```
     > sudo -u postgres createuser temba --pwprompt -d
