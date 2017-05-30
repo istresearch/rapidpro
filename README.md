@@ -237,3 +237,8 @@ RapidPro Mage is an additional component required for Twitter channels.
 
 Use the `mage-startup.sh` script to start Mage before starting RapidPro, if your instance needs Twitter integration.
 
+
+
+=======
+The software is provided under AGPL-3.0. Contributions to this project are accepted under the same license.
+
