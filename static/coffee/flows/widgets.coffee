@@ -84,7 +84,7 @@ app.directive "ussd", [ "$rootScope", "$log", "Flow", ($rootScope, $log, Flow) -
       $rootScope.characters = if scope.USSD_MENU then MESSAGE_LENGTH - textMenuLength else MESSAGE_LENGTH - textLength
 
   return {
-    templateUrl: "/partials/ussd_directive"
+    templateUrl: (if typeof window.subdir == "string" && window.subdir.length > 0 then '/' +  window.subdir else '') + "/partials/ussd_directive"
     restrict: "A"
     link: link
     scope: true
@@ -137,7 +137,7 @@ app.directive "msg", [ "$log", "Flow", ($log, Flow) ->
         scope.message = ""
 
   return {
-    templateUrl: "/partials/msg_directive"
+    templateUrl: (if typeof window.subdir == "string" && window.subdir.length > 0 then '/' +  window.subdir else '') +  "/partials/msg_directive"
     restrict: "A"
     link: link
     scope: {
@@ -191,15 +191,18 @@ app.directive "selectServer", ["$timeout", "$http", ($timeout, $http) ->
     if attrs.search
       minimumResultsForSearch = 0
 
-    excludeFlowParam = '';
+    url = attrs.selectServer
+
     if attrs.excludeCurrentFlow
-        excludeFlowParam = '&exclude_flow_uuid='+ window.flowUUID;
+        url += '&exclude_flow_uuid='+ window.flowUUID;
+    if attrs.sameFlowType
+        url += '&flow_type='+ window.flow_type;
 
     element.select2
       placeholder: attrs.placeholder
       minimumResultsForSearch: minimumResultsForSearch
       ajax:
-        url: attrs.selectServer + excludeFlowParam
+        url: url
         dataType: "json"
         data: (term, page) ->
           search: term
@@ -529,7 +532,7 @@ app.directive "omnibox", [ "$timeout", "$log", "Flow", ($timeout, $log, Flow) ->
       multiple: multiple
       createSearchChoice: options.createSearchChoice
       ajax:
-        url: "/contact/omnibox/?types=" + types
+        url: (if typeof window.subdir == "string" && window.subdir.length > 0 then '/' +  window.subdir else '') + "/contact/omnibox/?types=" + types
         dataType: "json"
         data: (term, page, context) ->
           q = term
