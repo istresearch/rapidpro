@@ -361,6 +361,7 @@ PERMISSIONS = {
         "edit",
         "edit_sub_org",
         "export",
+        "assign_user",
         "grant",
         "home",
         "import",
