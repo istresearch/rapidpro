@@ -1,8 +1,7 @@
 import os
 import socket
 import sys
-from getenv import env
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 import iptools
 
@@ -10,7 +9,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from celery.schedules import crontab
 
-HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
 # -----------------------------------------------------------------------------------
 # Default to debugging
 # -----------------------------------------------------------------------------------
@@ -252,6 +250,7 @@ INSTALLED_APPS = (
     "temba.locations",
     "temba.values",
     "temba.airtime",
+    "temba.sql",
 )
 
 # the last installed app that uses smartmin permissions
@@ -277,33 +276,32 @@ LOGGING = {
 # Branding Configuration
 # -----------------------------------------------------------------------------------
 BRANDING = {
-    'engage': {
-        'slug': env('BRANDING_SLUG', 'pulse'),
-        'name': env('BRANDING_NAME', 'Pulse'),
-        'org': env('BRANDING_ORG', 'IST'),
-        'colors': dict([rule.split('=') for rule in env('BRANDING_COLORS', 'primary=#0c6596').split(';')]),
-        'styles': ['brands/rapidpro/font/style.css', 'brands/engage/less/style.less', ],
-        'welcome_topup': 1000,
-        'email': env('BRANDING_EMAIL', 'pulse@istresearch.com'),
-        'support_email': env('BRANDING_SUPPORT_EMAIL', 'pulse@istresearch.com'),
-        'link': env('BRANDING_LINK', 'https://istresearch.com'),
-        'api_link': env('BRANDING_API_LINK', 'https://api.rapidpro.io'),
-        'docs_link': env('BRANDING_DOCS_LINK', 'http://docs.rapidpro.io'),
-        'domain': HOSTNAME,
-        'favico': env('BRANDING_FAVICO', 'brands/engage/favicon.ico'),
-        'splash': env('BRANDING_SPLASH', '/brands/engage/splash.png'),
-        'logo': env('BRANDING_LOGO', '/brands/engage/logo.png'),
-        'allow_signups': env('BRANDING_ALLOW_SIGNUPS', True),
-        'tiers': dict(import_flows=0, multi_user=0, multi_org=0),
-        'bundles': [],
-        'welcome_packs': [dict(size=5000, name="Demo Account"), dict(size=100000, name="UNICEF Account")],
-        'description': _("Addressing the most urgent human security issues faced by the world’s vulnerable populations."),
-        'credits': _("Copyright &copy; 2012-%s IST Research Corp, and others. All Rights Reserved." % (
-            datetime.now().strftime('%Y')
-        ))
+    "rapidpro.io": {
+        "slug": "rapidpro",
+        "name": "RapidPro",
+        "org": "UNICEF",
+        "colors": dict(primary="#0c6596"),
+        "styles": ["brands/rapidpro/font/style.css"],
+        "welcome_topup": 1000,
+        "email": "join@rapidpro.io",
+        "support_email": "support@rapidpro.io",
+        "link": "https://app.rapidpro.io",
+        "api_link": "https://api.rapidpro.io",
+        "docs_link": "http://docs.rapidpro.io",
+        "domain": "app.rapidpro.io",
+        "favico": "brands/rapidpro/rapidpro.ico",
+        "splash": "brands/rapidpro/splash.jpg",
+        "logo": "brands/rapidpro/logo.png",
+        "allow_signups": True,
+        "flow_types": ["M", "V", "S"],  # see Flow.TYPE_MESSAGE, Flow.TYPE_VOICE, Flow.TYPE_SURVEY
+        "tiers": dict(import_flows=0, multi_user=0, multi_org=0),
+        "bundles": [],
+        "welcome_packs": [dict(size=5000, name="Demo Account"), dict(size=100000, name="UNICEF Account")],
+        "description": _("Visually build nationally scalable mobile applications from anywhere in the world."),
+        "credits": _("Copyright &copy; 2012-2017 UNICEF, Nyaruka. All Rights Reserved."),
     }
 }
-DEFAULT_BRAND = "engage"
+DEFAULT_BRAND = "rapidpro.io"
 
 # -----------------------------------------------------------------------------------
 # Permission Management
@@ -314,7 +312,6 @@ PERMISSIONS = {
     "*": (
         "create",  # can create an object
         "read",  # can read an object, viewing it's details
-        "read_list",  # can read an object, viewing it's details
         "update",  # can update an object
         "delete",  # can delete an object,
         "list",  # can view a list of the objects
