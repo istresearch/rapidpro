@@ -312,10 +312,10 @@ PERMISSIONS = {
     "*": (
         "create",  # can create an object
         "read",  # can read an object, viewing it's details
+        "read_list",  # can read an object, viewing it's details
         "update",  # can update an object
         "delete",  # can delete an object,
         "list",  # can view a list of the objects
-        "read_list",  # can read an object, viewing it's details
     ),
     "api.apitoken": ("refresh",),
     "api.resthook": ("api", "list"),
