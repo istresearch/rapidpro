@@ -2068,6 +2068,12 @@ class OrgCRUDL(SmartCRUDL):
 
             return obj
 
+        def derive_success_message(self):
+            """
+            Returns a message to display when this form is successfully saved
+            """
+            return self.success_message + " - ORG_ID=" + str(self.object.id)
+
     class Signup(Grant):
         title = _("Sign Up")
         form_class = OrgSignupForm
