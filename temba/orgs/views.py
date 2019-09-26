@@ -79,7 +79,7 @@ from .models import (
     TopUp,
     UserSettings,
     get_stripe_credentials,
-)
+    BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_ACCOUNT_SECRET, BW_PHONE_NUMBER)
 from .tasks import apply_topups_task
 
 
@@ -561,6 +561,8 @@ class OrgCRUDL(SmartCRUDL):
         "clear_cache",
         "twilio_connect",
         "twilio_account",
+        "bandwidth_connect",
+        "bandwidth_account",
         "nexmo_configuration",
         "nexmo_account",
         "nexmo_connect",
@@ -763,6 +765,69 @@ class OrgCRUDL(SmartCRUDL):
 
             org = self.get_object()
             org.connect_twilio(account_sid, account_token, self.request.user)
+            org.save()
+
+            return HttpResponseRedirect(self.get_success_url())
+
+    class BandwidthConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
+        class BandwidthConnectForm(forms.Form):
+            bw_account_sid = forms.CharField(label="Account SID", help_text=_("Your Bandwidth Account ID"))
+            bw_account_token = forms.CharField(label="Account Token", help_text=_("Your Bandwidth API Token"))
+            bw_account_secret = forms.CharField(label="Account Secret", help_text=_("Your Bandwidth API Secret"))
+            bw_phone_number = forms.CharField(label="Phone Number", help_text=_("Your Bandwidth Account Phone Number"))
+            bw_application_sid = forms.CharField(label="Application SID", help_text=_("Your Bandwidth Account Application ID"))
+
+            def clean(self):
+                from temba.utils.bandwidth import BandwidthRestClient
+
+                bw_account_sid = self.cleaned_data.get("bw_account_sid", None)
+                bw_account_token = self.cleaned_data.get("bw_account_token", None)
+                bw_account_secret = self.cleaned_data.get("bw_account_secret", None)
+                bw_phone_number = self.cleaned_data.get("bw_phone_number", None)
+                bw_application_sid = self.cleaned_data.get("bw_application_sid", None)
+
+                if not bw_account_sid:  # pragma: needs cover
+                    raise ValidationError(_("You must enter your Bandwidth Account ID"))
+
+                if not bw_account_token:
+                    raise ValidationError(_("You must enter your Bandwidth Account Token"))
+                if not bw_account_secret:
+                    raise ValidationError(_("You must enter your Bandwidth Account Secret"))
+                if not bw_phone_number:
+                    raise ValidationError(_("You must enter your Bandwidth Account's Phone Number"))
+                if not bw_application_sid:
+                    raise ValidationError(_("You must enter your Bandwidth Account's Application ID"))
+
+                bw_phone_number = forms.CharField(help_text=_("Your Bandwidth Account Phone Number"))
+                bw_application_sid = forms.CharField(help_text=_("Your Bandwidth Account Application ID"))
+
+                try:
+                    client = BandwidthRestClient('{}'.format(bw_account_sid), '{}'.format(bw_account_token),
+                                                 '{}'.format(bw_account_secret), bw_phone_number, bw_application_sid, client_name='account', api_version='')
+                    media = client.get_media()
+                except Exception:
+                    raise ValidationError(
+                        _("The Bandwidth account credentials seem invalid. Please check them again and retry.")
+                    )
+
+                return self.cleaned_data
+
+        form_class = BandwidthConnectForm
+        submit_button_name = "Save"
+        success_url = "@channels.types.bandwidth.claim"
+        field_config = dict(bw_account_sid=dict(label=""), bw_account_token=dict(label=""))
+        success_message = "Bandwidth Account successfully connected."
+
+        def form_valid(self, form):
+            bw_account_sid = form.cleaned_data["bw_account_sid"]
+            bw_account_token = form.cleaned_data["bw_account_token"]
+            bw_account_secret = form.cleaned_data["bw_account_secret"]
+            bw_phone_number = form.cleaned_data["bw_phone_number"]
+            bw_application_sid = form.cleaned_data["bw_application_sid"]
+
+            org = self.get_object()
+            org.connect_bandwidth(bw_account_sid, bw_account_token, bw_account_secret, bw_phone_number,
+                                  bw_application_sid, self.request.user)
             org.save()
 
             return HttpResponseRedirect(self.get_success_url())
@@ -2316,6 +2381,10 @@ class OrgCRUDL(SmartCRUDL):
                 if twilio_client:
                     formax.add_section("twilio", reverse("orgs.org_twilio_account"), icon="icon-channel-twilio")
 
+                bandwidth_client = org.get_bandwidth_messaging_client()
+                if bandwidth_client:
+                    formax.add_section("bwd", reverse("orgs.org_bandwidth_account"), icon="icon-channel-bandwidth")
+
                 nexmo_client = org.get_nexmo_client()
                 if nexmo_client:  # pragma: needs cover
                     formax.add_section("nexmo", reverse("orgs.org_nexmo_account"), icon="icon-channel-nexmo")
@@ -2535,6 +2604,84 @@ class OrgCRUDL(SmartCRUDL):
             else:
                 account_sid = form.cleaned_data["account_sid"]
                 account_token = form.cleaned_data["account_token"]
+
+                org.connect_twilio(account_sid, account_token, user)
+                return super().form_valid(form)
+
+    class BandwidthAccount(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+
+        success_message = ""
+        success_url = "@orgs.org_home"
+
+        class BandwidthKeys(forms.ModelForm):
+            bw_account_sid = forms.CharField(max_length=128, label=_("Account ID"), required=False)
+            bw_account_token = forms.CharField(max_length=128, label=_("Account Token"), required=False)
+            bw_account_secret = forms.CharField(max_length=128, label=_("Account Secret"), required=False)
+            disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
+
+            def clean(self):
+                super().clean()
+                if self.cleaned_data.get("disconnect", "false") == "false":
+                    bw_account_sid = self.cleaned_data.get("bw_account_sid", None)
+                    bw_account_token = self.cleaned_data.get("bw_account_token", None)
+
+                    if not bw_account_sid:
+                        raise ValidationError(_("You must enter your Bandwidth Account SID"))
+
+                    if not bw_account_token:  # pragma: needs cover
+                        raise ValidationError(_("You must enter your Bandwidth Account Token"))
+
+                    try:
+                        client = Client(bw_account_sid, bw_account_token)
+
+                        # get the actual primary auth tokens from Bandwidth and use them
+                        account = client.api.account.fetch()
+                        self.cleaned_data["bw_account_sid"] = account.sid
+                        self.cleaned_data["bw_account_token"] = account.auth_token
+                        self.cleaned_data["bw_account_secret"] = account.auth_secret
+                    except Exception:  # pragma: needs cover
+                        raise ValidationError(
+                            _("The Bandwidth account ID and Token seem invalid. Please check them again and retry.")
+                        )
+
+                return self.cleaned_data
+
+            class Meta:
+                model = Org
+                fields = ("bw_account_sid", "bw_account_token", "bw_account_secret", "disconnect")
+
+        form_class = BandwidthKeys
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            client = self.object.get_twilio_client()
+            if client:
+                account_sid = client.auth[0]
+                sid_length = len(account_sid)
+                context["bw_account_sid"] = "%s%s" % ("\u066D" * (sid_length - 16), account_sid[-16:])
+            return context
+
+        def derive_initial(self):
+            initial = super().derive_initial()
+            config = self.object.config
+            initial["bw_account_sid"] = config[BW_ACCOUNT_SID]
+            initial["bw_account_token"] = config[BW_ACCOUNT_TOKEN]
+            initial["bw_account_secret"] = config[BW_ACCOUNT_SECRET]
+            initial["bw_phone_number"] = config[BW_PHONE_NUMBER]
+            initial["disconnect"] = "false"
+            return initial
+
+        def form_valid(self, form):
+            disconnect = form.cleaned_data.get("disconnect", "false") == "true"
+            user = self.request.user
+            org = user.get_org()
+
+            if disconnect:
+                org.remove_bandwidth_account(user)
+                return HttpResponseRedirect(reverse("orgs.org_home"))
+            else:
+                account_sid = form.cleaned_data["bw_account_sid"]
+                account_token = form.cleaned_data["bw_account_token"]
 
                 org.connect_twilio(account_sid, account_token, user)
                 return super().form_valid(form)
