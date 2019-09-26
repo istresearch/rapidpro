@@ -204,6 +204,83 @@ class TwilioClient(TembaTwilioRestClient):
         return twilio_call
 
 
+class BandwidthClient(TembaTwilioRestClient):
+    def __init__(self, account_sid, token, org, base=None, **kwargs):
+        self.org = org
+        super().__init__(account_sid, token, **kwargs)
+        if base:
+            custom_api = Api(self)
+            custom_api.base_url = base
+            self._api = custom_api
+
+    def start_call(self, call, to, from_, status_callback):
+        if not settings.SEND_CALLS:
+            raise ValueError("SEND_CALLS set to False, skipping call start")
+
+        params = dict(to=to, from_=call.channel.address, url=status_callback, status_callback=status_callback)
+
+        try:
+            twilio_call = self.api.calls.create(**params)
+            call.external_id = str(twilio_call.sid)
+
+            # the call was successfully sent to the IVR provider
+            call.status = IVRCall.WIRED
+            call.save()
+
+            for event in self.events:
+                ChannelLog.log_ivr_interaction(call, "Started call", event)
+
+        except TwilioRestException as twilio_error:  # pragma: no cover
+            message = "Twilio Error: %s" % twilio_error.msg
+            if twilio_error.code == 20003:
+                message = _("Could not authenticate with your Twilio account. Check your token and try again.")
+
+            event = HttpEvent("POST", "https://api.nexmo.com/v1/calls", json.dumps(params), response_body=str(message))
+            ChannelLog.log_ivr_interaction(call, "Call start failed", event, is_error=True)
+
+            call.status = IVRCall.FAILED
+            call.save()
+
+            raise IVRException(message)
+
+    def validate(self, request):  # pragma: needs cover
+        validator = RequestValidator(self.auth[1])
+        signature = request.META.get("HTTP_X_TWILIO_SIGNATURE", "")
+
+        url = "https://%s%s" % (request.get_host(), request.get_full_path())
+        return validator.validate(url, request.POST, signature)
+
+    def download_media(self, media_url):
+        """
+        Fetches the recording and stores it with the provided recording_id
+        :param media_url: the url where the media lives
+        :return: the url for our downloaded media with full content type prefix
+        """
+        response = None
+        attempts = 0
+        while attempts < 120:
+            response = requests.get(media_url, stream=True, auth=self.auth)
+
+            # in some cases Twilio isn't ready for us to fetch the recording URL yet, if we get a 404
+            # sleep for a bit then try again for up to a minute
+            if response.status_code == 200:
+                break
+            else:
+                attempts += 1
+                time.sleep(0.5)
+
+        content_type, downloaded = self.org.save_response_media(response)
+        if content_type:
+            return "%s:%s" % (content_type, downloaded)
+
+        return None  # pragma: needs cover
+
+    def hangup(self, call):
+        twilio_call = self.api.calls.get(call.external_id).update(status="completed")
+        for event in self.events:
+            ChannelLog.log_ivr_interaction(call, "Hung up call", event)
+        return twilio_call
+
 class VerboiceClient:  # pragma: needs cover
     def __init__(self, channel):
         self.endpoint = "https://verboice.instedd.org/api/call"
