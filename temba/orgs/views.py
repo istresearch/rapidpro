@@ -2654,7 +2654,7 @@ class OrgCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            client = self.object.get_twilio_client()
+            client = self.object.get_bandwidth_messaging_client()
             if client:
                 account_sid = client.auth[0]
                 sid_length = len(account_sid)
@@ -2680,10 +2680,10 @@ class OrgCRUDL(SmartCRUDL):
                 org.remove_bandwidth_account(user)
                 return HttpResponseRedirect(reverse("orgs.org_home"))
             else:
-                account_sid = form.cleaned_data["bw_account_sid"]
-                account_token = form.cleaned_data["bw_account_token"]
+                bw_account_sid = form.cleaned_data["bw_account_sid"]
+                bw_account_token = form.cleaned_data["bw_account_token"]
 
-                org.connect_twilio(account_sid, account_token, user)
+                org.connect_bandwidth(bw_account_sid, bw_account_token, user)
                 return super().form_valid(form)
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
