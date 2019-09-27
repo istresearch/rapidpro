@@ -19,7 +19,6 @@ from ...models import Channel
 from ...views import (
     ALL_COUNTRIES,
     TWILIO_SEARCH_COUNTRIES,
-    TWILIO_SUPPORTED_COUNTRIES,
     BaseClaimNumberMixin,
     ClaimViewMixin,
 )
@@ -78,10 +77,16 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         self.client = None
 
     def get_search_countries_tuple(self):
-        return TWILIO_SEARCH_COUNTRIES
+        if self.channel_type.code == "BWD":
+            return ["US"]
+        else:
+            return TWILIO_SEARCH_COUNTRIES
 
     def get_supported_countries_tuple(self):
-        return ALL_COUNTRIES
+        if self.channel_type.code == "BWD":
+            return ["US"]
+        else:
+            return ALL_COUNTRIES
 
     def get_search_url(self):
         return reverse("channels.channel_search_numbers")
