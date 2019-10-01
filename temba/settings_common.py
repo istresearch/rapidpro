@@ -1114,3 +1114,9 @@ ELASTICSEARCH_URL = os.environ.get("ELASTICSEARCH_URL", "http://localhost:9200")
 
 # Maximum active ContactFields users can have in an Org
 MAX_ACTIVE_CONTACTFIELDS_PER_ORG = 255
+
+# -----------------------------------------------------------------------------------
+# Other defaults
+# -----------------------------------------------------------------------------------
+# How many sequential contacts on import triggers suspension
+SEQUENTIAL_CONTACTS_THRESHOLD = 5000
