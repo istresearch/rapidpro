@@ -45,7 +45,8 @@ START_TEST_CONTACT_PATH = 12_065_550_100
 END_TEST_CONTACT_PATH = 12_065_550_199
 
 # how many sequential contacts on import triggers suspension
-SEQUENTIAL_CONTACTS_THRESHOLD = 250
+# Moved to settings_common.py
+#SEQUENTIAL_CONTACTS_THRESHOLD = 250
 
 DELETED_SCHEME = "deleted"
 EMAIL_SCHEME = "mailto"
@@ -1798,7 +1799,7 @@ class Contact(RequireUpdateFieldsMixin, TembaModel):
                             sequential += 1
                     last_path = path
 
-                    if sequential > SEQUENTIAL_CONTACTS_THRESHOLD:
+                    if sequential > settings.SEQUENTIAL_CONTACTS_THRESHOLD:
                         group_org.set_suspended()
                         break
 
