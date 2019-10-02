@@ -1043,6 +1043,15 @@ table.list-table {
         }
       }
 
+      &.icon-nav-android {
+        &.active:before {
+          content: "\e089";
+        }
+        &:hover:before {
+          content: "\e089";
+        }
+      }
+
       &.icon-nav-triggers {
         &.active:before {
           content: "\e0a5";
@@ -1609,7 +1618,7 @@ tr.checked {
 }
 
 .select2-container-multi .select2-choices .select2-search-field input.select2-active {
-  background: #fff url('../images/loader-bars.gif?asdfasdf') no-repeat 100% !important;
+  background: #fff url('../images/loader-bars.gif') no-repeat 100% !important;
 }
 
 .select2tag {

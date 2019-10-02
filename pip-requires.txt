@@ -10,7 +10,12 @@ django-timezone-field
 djangorestframework
 dj-database-url
 smartmin
-
+django-getenv
+django-cache-url
+uwsgi
+whitenoise
+flower
+tornado<6.0
 ########################## services ##########################
 analytics-python
 boto3
@@ -50,12 +55,13 @@ python-dateutil==2.2
 pytz
 psycopg2-binary
 rapidpro-expressions
-redis
+redis #<3.0  # see https://github.com/celery/celery/issues/4495
 requests
 simplejson
 python-intercom
 pysocks
 pip-tools
+packaging
 
 ########################## testing ##########################
 black

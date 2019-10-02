@@ -1,7 +1,7 @@
-FROM rapidpro/rapidpro:v3.0.334
+#This image gets pushed into dockerhub as istresearch/p4-engage:code-4.0.0-a3-dev
+FROM rapidpro/rapidpro-base:v4
 
 WORKDIR /rapidpro
 
-COPY . /rapidpro/
-
-CMD ["/startup.sh"]
+ADD . /rapidpro
+ 

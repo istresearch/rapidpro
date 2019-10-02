@@ -1,0 +1,36 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: docker:18.03.0
+    steps:
+      - checkout
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - run:
+          name: Build 
+          command: |
+            apk add --update python openssh git curl
+            BRANCH=${CIRCLE_BRANCH#*/}
+            VERSION=`cat VERSION`
+            FROM_RP_TAG=v5.0.0
+            if [[ ! -z $CIRCLE_TAG ]]; then
+              VERSION_TAG="${VERSION}"
+            elif [[ $BRANCH == develop ]]; then
+              VERSION_TAG="${VERSION}-dev"
+            else
+              VERSION_TAG="ci-${VERSION}-${BRANCH}"
+            fi
+            docker build -t istresearch/p4-engage:code-${VERSION_TAG} .
+            docker login -u $DOCKER_USER -p $DOCKER_PASS
+            docker push istresearch/p4-engage:code-${VERSION_TAG}
+        
+workflows:
+  version: 2
+  pipeline:
+    jobs:
+      - build:
+          context: globalconfig
+          filters:
+            tags:
+              ignore: /^test-.*/
