@@ -1,19 +1,15 @@
 from uuid import uuid4
 
-import phonenumbers
 from django.core.exceptions import ValidationError
-from phonenumbers.phonenumberutil import region_code_for_number
 from smartmin.views import SmartFormView
-from twilio.base.exceptions import TwilioRestException
 
 from django import forms
-from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from temba.utils import analytics
 from django.utils.translation import ugettext_lazy as _
 
 from temba.orgs.models import BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_APPLICATION_SID
-from temba.utils.timezones import timezone_to_country_code
 
 from ...models import Channel
 from ...views import (
@@ -128,12 +124,10 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
     def claim_number(self, user, phone_number, country, role):
         org = user.get_org()
         self.uuid = uuid4()
-        client = org.get_bandwidth_messaging_client()
         callback_domain = org.get_brand_domain()
         org_config = org.config
         config = {
             Channel.CONFIG_APPLICATION_SID: org_config[BW_APPLICATION_SID],
-            # Channel.CONFIG_NUMBER_SID: number_sid,
             Channel.CONFIG_ACCOUNT_SID: org_config[BW_ACCOUNT_SID],
             Channel.CONFIG_AUTH_TOKEN: org_config[BW_ACCOUNT_TOKEN],
             Channel.CONFIG_CALLBACK_DOMAIN: callback_domain,
@@ -143,6 +137,6 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             org, user, country, "BWD", name=org_config[BW_ACCOUNT_SID], address=phone_number, role=role, config=config, uuid=self.uuid
         )
 
-        # analytics.track(user.username, "temba.channel_claim_twilio", properties=dict(number=phone_number))
+        analytics.track(user.username, "temba.channel_claim_bandwidth", properties=dict(number=phone_number))
 
         return channel
