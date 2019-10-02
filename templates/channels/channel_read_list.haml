@@ -45,6 +45,8 @@
             (v{{channel.os}}){% endif %}
           {% if channel.channel_type == 'T' %}
             Twilio Address{% endif %}
+          {% if channel.channel_type == 'BWD' %}
+            Bandwidth Address{% endif %}
 
           {{ channel.get_address_display }}
           -with channel.get_sender as sender and channel.get_caller as caller
