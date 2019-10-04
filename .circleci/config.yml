@@ -52,4 +52,4 @@ workflows:
           context: globalconfig
           filters:
             branches:
-              only: dev
+              only: develop
