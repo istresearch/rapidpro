@@ -30,7 +30,7 @@ class BandwidthType(ChannelType):
 
     def deactivate(self, channel):
         config = channel.config
-        client = channel.org.get_twilio_client()
+        client = channel.org.get_bandwidth_messaging_client()
         number_update_args = dict()
 
         if not channel.is_delegate_sender():
@@ -57,6 +57,6 @@ class BandwidthType(ChannelType):
                     pass
 
         except TwilioRestException as e:
-            # we swallow 20003 which means our twilio key is no longer valid
+            # we swallow 20003 which means our bandwidth key is no longer valid
             if e.code != 20003:
                 raise e
