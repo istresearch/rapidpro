@@ -16,7 +16,7 @@ class BandwidthType(ChannelType):
     code = "BWD"
     category = ChannelType.Category.PHONE
 
-    courier_url = r"^t/(?P<uuid>[a-z0-9\-]+)/(?P<action>receive|status)$"
+    courier_url = r"^bwd/(?P<uuid>[a-z0-9\-]+)/(?P<action>receive|status)$"
 
     name = "Bandwidth"
     icon = "icon-channel-bandwidth"
