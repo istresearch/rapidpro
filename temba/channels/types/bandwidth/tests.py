@@ -38,8 +38,7 @@ class BandwidthTypeTest(TembaTest):
         self.assertContains(response, claim_bandwidth)
 
         response = self.client.get(claim_bandwidth)
-        self.assertIn("account_trial", response.context)
-        self.assertFalse(response.context["account_trial"])
+        self.assertEqual(200, response.status_code)
 
         with patch("temba.orgs.models.Org.get_bandwidth_messaging_client") as mock_get_bandwidth_client:
             mock_get_bandwidth_client.return_value = None
