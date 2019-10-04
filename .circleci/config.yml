@@ -24,13 +24,32 @@ jobs:
             docker build -t istresearch/p4-engage:code-${VERSION_TAG} .
             docker login -u $DOCKER_USER -p $DOCKER_PASS
             docker push istresearch/p4-engage:code-${VERSION_TAG}
-        
+  package:
+    docker:
+      - image: spotify/alpine
+    steps:
+      - run:
+          name: Trigger the docker build job
+          command: |
+            printf "Triggering a $TRIGGER_PROJECT build on the $TRIGGER_PROJECT_BRANCH branch\n\n"
+
+            curl -XPOST --header "Content-Type: application/json" -d '{"'"branch"'":"'"$TRIGGER_PROJECT_BRANCH"'"}' https://circleci.com/api/v1.1/project/github/$ORGANIZATION/$TRIGGER_PROJECT/build?circle-token=$CIRCLE_TOKEN
+
+            printf "\n\nBuild triggered\n\n"
+            printf "Follow the progress of the build on \nhttps://circleci.com/gh/$ORGANIZATION/$TRIGGER_PROJECT/tree/$TRIGGER_PROJECT_BRANCH"
 workflows:
   version: 2
-  pipeline:
+  engage:
     jobs:
       - build:
           context: globalconfig
           filters:
             tags:
               ignore: /^test-.*/
+      - docker-package:
+          requires:
+            - build
+          context: globalconfig
+          filters:
+            branches:
+              only: develop
