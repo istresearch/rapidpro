@@ -2385,6 +2385,10 @@ class OrgCRUDL(SmartCRUDL):
                 if bandwidth_client:
                     formax.add_section("bwd", reverse("orgs.org_bandwidth_account"), icon="icon-channel-bandwidth")
 
+                bandwidth_client = org.get_bandwidth_messaging_client()
+                if bandwidth_client:
+                    formax.add_section("bwi", reverse("orgs.org_bandwidth_account"), icon="icon-channel-bandwidth")
+
                 nexmo_client = org.get_nexmo_client()
                 if nexmo_client:  # pragma: needs cover
                     formax.add_section("nexmo", reverse("orgs.org_nexmo_account"), icon="icon-channel-nexmo")
