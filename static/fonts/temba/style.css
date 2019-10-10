@@ -519,10 +519,12 @@
   -webkit-filter: invert(50%); /* safari 6.0 - 9.0 */
   filter: invert(50%);
 }
-
 .icon-channel-bandwidth.medium-help{
   -webkit-filter: invert(50%); /* safari 6.0 - 9.0 */
   filter: invert(50%);
+  background-size: 64px 64px;
+  height: 64px;
+  width: 64px;
 }
 .icon-arrow-left-8:before {
   content: "\e09c";
