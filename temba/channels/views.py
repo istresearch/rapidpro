@@ -802,6 +802,13 @@ def sync(request, channel_id):
                                 name = cmd.get('name')
                                 msg = Msg.create_relayer_incoming(channel.org, channel, urn, cmd["msg"], date, name=name)
                                 extra = dict(msg_id=msg.id)
+
+                                # update contact name if changed
+                                if msg.contact.name != name:
+                                    print("updating name:{} (old:{})".format(name, msg.contact.name))
+                                    msg.contact.name = name
+                                    msg.contact.save(update_fields=("name",), handle_update=False)
+
                         except ValueError:
                             pass
 
