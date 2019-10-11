@@ -1,0 +1,12 @@
+# This is used to patch the istresearch/p4-engage container for quicker development testing
+# Example usage:
+# $ docker build --build-arg TAG=local-dev -t istresearch/p4-engage:local-dev -f Dockerfile.patch .
+
+ARG TAG
+FROM istresearch/p4-engage:${TAG}
+
+WORKDIR /rapidpro
+
+COPY temba/channels /rapidpro/temba/channels/
+COPY temba/contacts /rapidpro/temba/contacts/
+COPY temba/msgs /rapidpro/temba/msgs/

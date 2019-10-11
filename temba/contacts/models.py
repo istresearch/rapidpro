@@ -1163,6 +1163,8 @@ class Contact(RequireUpdateFieldsMixin, TembaModel):
         Gets or creates a contact with the given URN
         """
 
+        print("get_or_create: name:{0}, urn:{}".format(name, urn))
+
         # if we don't have an org blow up, this is required
         if not org:
             raise ValueError("Attempt to create contact without org")

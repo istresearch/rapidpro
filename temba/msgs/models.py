@@ -1060,9 +1060,9 @@ class Msg(models.Model):
             return self.text
 
     @classmethod
-    def create_relayer_incoming(cls, org, channel, urn, text, received_on, attachments=None):
+    def create_relayer_incoming(cls, org, channel, urn, text, received_on, attachments=None, name=None):
         # get / create our contact and URN
-        contact, contact_urn = Contact.get_or_create(org, urn, channel, init_new=False)
+        contact, contact_urn = Contact.get_or_create(org, urn, channel, name, init_new=False)
 
         # we limit our text message length and remove any invalid chars
         if text:

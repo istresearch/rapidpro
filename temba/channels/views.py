@@ -716,7 +716,7 @@ def sync(request, channel_id):
     start = time.time()
 
     if request.method != "POST":
-        return HttpResponse(status=500, content="POST Required")
+        return HttpResponse(status=400, content="ERROR: POST Required")
 
     commands = []
     channel = Channel.objects.filter(pk=channel_id, is_active=True)
@@ -798,7 +798,7 @@ def sync(request, channel_id):
                             urn = URN.normalize(URN.from_tel(tel), channel.country.code)
 
                             if "msg" in cmd:
-                                msg = Msg.create_relayer_incoming(channel.org, channel, urn, cmd["msg"], date)
+                                msg = Msg.create_relayer_incoming(channel.org, channel, urn, cmd["msg"], date, cmd["name"])
                                 extra = dict(msg_id=msg.id)
                         except ValueError:
                             pass
@@ -888,7 +888,7 @@ def register(request):
     Endpoint for Android devices registering with this server
     """
     if request.method != "POST":
-        return HttpResponse(status=500, content=_("POST Required"))
+        return HttpResponse(status=400, content=_("ERROR: POST Required"))
 
     client_payload = json.loads(force_text(request.body))
     cmds = client_payload["cmds"]
