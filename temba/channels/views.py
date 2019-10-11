@@ -798,7 +798,9 @@ def sync(request, channel_id):
                             urn = URN.normalize(URN.from_tel(tel), channel.country.code)
 
                             if "msg" in cmd:
-                                msg = Msg.create_relayer_incoming(channel.org, channel, urn, cmd["msg"], date, cmd["name"])
+                                # optional contact name
+                                name = cmd.get('name')
+                                msg = Msg.create_relayer_incoming(channel.org, channel, urn, cmd["msg"], date, name=name)
                                 extra = dict(msg_id=msg.id)
                         except ValueError:
                             pass

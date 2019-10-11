@@ -1163,7 +1163,7 @@ class Contact(RequireUpdateFieldsMixin, TembaModel):
         Gets or creates a contact with the given URN
         """
 
-        print("get_or_create: name:{0}, urn:{}".format(name, urn))
+        print("get_or_create: name:{}, urn:{}".format(name, urn))
 
         # if we don't have an org blow up, this is required
         if not org:
@@ -1184,6 +1184,8 @@ class Contact(RequireUpdateFieldsMixin, TembaModel):
 
         if existing_urn and existing_urn.contact:
             contact = existing_urn.contact
+            # TODO: do we want to update name if it changes?
+            # contact.name = name
             ContactURN.update_auth(existing_urn, auth)
             return contact, existing_urn
         else:
