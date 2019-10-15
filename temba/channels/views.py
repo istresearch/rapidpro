@@ -853,7 +853,7 @@ def sync(request, channel_id):
 
                         # tell the channel to update its org if this channel got moved
                         if channel.org and "org_id" in cmd and channel.org.pk != cmd["org_id"]:
-                            commands.append(dict(cmd="claim", org_id=channel.org.pk))
+                            commands.append(dict(cmd="claim", org_id=channel.org.pk, org_name=channel.org.name))
 
                         # we don't ack status messages since they are always included
                         handled = False
