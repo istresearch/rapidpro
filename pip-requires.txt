@@ -62,7 +62,7 @@ python-intercom
 pysocks
 pip-tools
 packaging
-bandwidth-sdk
+bandwidth-sdk==3.1.0
 -e git+https://github.com/bandwidthcom/python-bandwidth-iris#egg=iris_sdk
 
 ########################## testing ##########################
