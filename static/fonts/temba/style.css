@@ -510,7 +510,7 @@
 .icon-channel-bandwidth:before {
   display: inline-block;
   content: ' ';
-  background-image: url('bandwidth.svg');
+  background-image: url('fonts/bandwidth/bandwidth.svg');
   background-size: 28px 28px;
   height: 28px;
   width: 28px;
