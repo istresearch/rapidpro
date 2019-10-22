@@ -1013,11 +1013,14 @@ class Channel(TembaModel):
         if not self.country:  # pragma: needs cover
             self.country = ContactURN.derive_country_from_tel(phone)
 
-        self.alert_email = user.email
+        # NOTE: leaving alert_email field empty
+        #self.alert_email = user.email
         self.org = org
         self.is_active = True
         self.claim_code = None
         self.address = phone
+        # default channel name to phone number
+        self.name = phone
         self.save()
 
         org.normalize_contact_tels()
