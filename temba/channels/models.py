@@ -1018,6 +1018,8 @@ class Channel(TembaModel):
         self.is_active = True
         self.claim_code = None
         self.address = phone
+        # default channel name to phone number
+        self.name = phone
         self.save()
 
         org.normalize_contact_tels()
