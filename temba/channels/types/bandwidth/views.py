@@ -9,7 +9,7 @@ from django.urls import reverse
 from temba.utils import analytics
 from django.utils.translation import ugettext_lazy as _
 
-from temba.orgs.models import BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_APPLICATION_SID
+from temba.orgs.models import BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_APPLICATION_SID, BW_ACCOUNT_SECRET
 
 from ...models import Channel
 from ...views import (
@@ -130,6 +130,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             Channel.CONFIG_APPLICATION_SID: org_config[BW_APPLICATION_SID],
             Channel.CONFIG_ACCOUNT_SID: org_config[BW_ACCOUNT_SID],
             Channel.CONFIG_AUTH_TOKEN: org_config[BW_ACCOUNT_TOKEN],
+            Channel.CONFIG_SECRET: org_config[BW_ACCOUNT_SECRET],
             Channel.CONFIG_CALLBACK_DOMAIN: callback_domain,
         }
 
