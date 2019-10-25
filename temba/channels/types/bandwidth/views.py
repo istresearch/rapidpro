@@ -1,3 +1,4 @@
+import os
 from uuid import uuid4
 
 from django.core.exceptions import ValidationError
@@ -18,6 +19,9 @@ from ...views import (
     BaseClaimNumberMixin,
     ClaimViewMixin,
 )
+
+from django.conf import settings
+from xml.dom import minidom
 
 
 class ClaimView(BaseClaimNumberMixin, SmartFormView):
@@ -105,6 +109,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
     success_message = "Bandwidth Account successfully connected."
 
     def form_valid(self, form):
+        from iris_sdk.client import Client
         bw_account_sid = form.cleaned_data["bw_account_sid"]
         bw_account_token = form.cleaned_data["bw_account_token"]
         bw_account_secret = form.cleaned_data["bw_account_secret"]
@@ -119,6 +124,21 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         channel = self.claim_number(self.request.user, bw_phone_number, "US", Channel.ROLE_SEND + Channel.ROLE_CALL)
 
         self.uuid = channel.uuid
+        bw_user = os.environ.get("BANDWIDTH_USER")
+        bw_pass = os.environ.get("BANDWIDTH_PASS")
+        if bw_user and bw_pass:
+            client = Client(url="https://dashboard.bandwidth.com", account_id=bw_account_sid, username=bw_user, password=bw_pass)
+            app_info = client.get("/api/accounts/{}/applications/{}".format(bw_account_sid, bw_application_sid))
+            if app_info and app_info.content:
+                node = minidom.parseString(app_info.content)
+                if node and len(node.getElementsByTagName("AppName")) > 0 \
+                        and len(node.getElementsByTagName("ApplicationId")) > 0:
+                    app_name = node.getElementsByTagName("AppName")[0].firstChild.wholeText
+                    app_id = node.getElementsByTagName("ApplicationId")[0].firstChild.wholeText
+                    msg_url = "https://{}/c/bwd/{}/receive".format(settings.HOSTNAME, self.uuid)
+                    data = "<Application><AppName>{}</AppName><CallbackUrl>{}</CallbackUrl></Application>"\
+                        .format(app_name, msg_url)
+                    client.put("/api/accounts/{}/applications/{}".format(bw_account_sid, app_id), data=data)
         return HttpResponseRedirect(self.get_success_url())
 
     def claim_number(self, user, phone_number, country, role):
