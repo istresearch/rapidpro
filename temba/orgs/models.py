@@ -81,6 +81,13 @@ DATE_PARSING = ((DAYFIRST, "DD-MM-YYYY"), (MONTHFIRST, "MM-DD-YYYY"))
 APPLICATION_SID = "APPLICATION_SID"
 ACCOUNT_SID = "ACCOUNT_SID"
 ACCOUNT_TOKEN = "ACCOUNT_TOKEN"
+ACCOUNT_SECRET = "ACCOUNT_SECRET"
+
+BW_APPLICATION_SID = "BW_APPLICATION_SID"
+BW_ACCOUNT_SID = "BW_ACCOUNT_SID"
+BW_ACCOUNT_TOKEN = "BW_ACCOUNT_TOKEN"
+BW_ACCOUNT_SECRET = "BW_ACCOUNT_SECRET"
+BW_PHONE_NUMBER = "BW_PHONE_NUMBER"
 
 NEXMO_KEY = "NEXMO_KEY"
 NEXMO_SECRET = "NEXMO_SECRET"
@@ -124,7 +131,7 @@ ORG_LOW_CREDIT_THRESHOLD_CACHE_KEY = "org:%d:cache:low_credits_threshold"
 
 ORG_LOCK_TTL = 60  # 1 minute
 ORG_CREDITS_CACHE_TTL = 7 * 24 * 60 * 60  # 1 week
-
+PHONE_NUMBER = "PHONE_NUMBER"
 
 class OrgLock(Enum):
     """
@@ -924,6 +931,16 @@ class Org(SmartModel):
         self.modified_by = user
         self.save()
 
+    def connect_bandwidth(self, account_sid, account_token, account_secret, phone_number, application_sid, user):
+        bwd_config = {BW_ACCOUNT_SID: account_sid, BW_ACCOUNT_TOKEN: account_token, BW_ACCOUNT_SECRET: account_secret,
+                      BW_PHONE_NUMBER: phone_number, BW_APPLICATION_SID: application_sid}
+
+        config = self.config
+        config.update(bwd_config)
+        self.config = config
+        self.modified_by = user
+        self.save()
+
     def is_connected_to_nexmo(self):
         if self.config:
             nexmo_key = self.config.get(NEXMO_KEY, None)
@@ -939,6 +956,14 @@ class Org(SmartModel):
             account_sid = self.config.get(ACCOUNT_SID, None)
             account_token = self.config.get(ACCOUNT_TOKEN, None)
             if account_sid and account_token:
+                return True
+        return False
+
+    def is_connected_to_bandwidth(self):
+        if self.config:
+            bw_account_sid = self.config.get(BW_ACCOUNT_SID, None)
+            bw_account_token = self.config.get(BW_ACCOUNT_TOKEN, None)
+            if bw_account_sid and bw_account_token:
                 return True
         return False
 
@@ -962,6 +987,17 @@ class Org(SmartModel):
             self.config[ACCOUNT_SID] = ""
             self.config[ACCOUNT_TOKEN] = ""
             self.config[APPLICATION_SID] = ""
+            self.modified_by = user
+            self.save()
+
+    def remove_bandwidth_account(self, user):
+        if self.config:
+            for channel in self.channels.filter(is_active=True, channel_type__in=["BWD"]):
+                channel.release()
+
+            self.config[BW_ACCOUNT_SID] = ""
+            self.config[BW_ACCOUNT_TOKEN] = ""
+            self.config[BW_APPLICATION_SID] = ""
             self.modified_by = user
             self.save()
 
@@ -1014,6 +1050,18 @@ class Org(SmartModel):
             auth_token = self.config.get(ACCOUNT_TOKEN, None)
             if account_sid and auth_token:
                 return TwilioClient(account_sid, auth_token, org=self)
+        return None
+
+    def get_bandwidth_messaging_client(self):
+        import bandwidth
+
+        if self.config:
+            bw_account_sid = self.config.get(BW_ACCOUNT_SID, None)
+            bw_account_token = self.config.get(BW_ACCOUNT_TOKEN, None)
+            bw_account_secret = self.config.get(BW_ACCOUNT_SECRET, None)
+
+            if bw_account_sid and bw_account_token and bw_account_secret:
+                return bandwidth.client('messaging', bw_account_sid, bw_account_token, bw_account_secret)
         return None
 
     def get_nexmo_client(self):
