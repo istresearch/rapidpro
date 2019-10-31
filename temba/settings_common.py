@@ -257,18 +257,28 @@ INSTALLED_APPS = (
 PERMISSIONS_APP = "temba.airtime"
 
 LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": True,
-    "root": {"level": "WARNING", "handlers": ["console"]},
-    "formatters": {"verbose": {"format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s"}},
-    "handlers": {
-        "console": {"level": "DEBUG", "class": "logging.StreamHandler", "formatter": "verbose"},
-        "null": {"class": "logging.NullHandler"},
+    'version': 1,
+    'disable_existing_loggers': False,
+    "root": {"level": "WARNING", "handlers": ["default"]},
+    'formatters': {
+        'json': {
+            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+            'format': '%(created)f %(asctime)s %(levelname)s %(name)s %(message)s',
+        },
+    },
+    'handlers': {
+        'default': {
+            'level':'DEBUG',
+            'class':'logging.StreamHandler',
+            'formatter': 'json'
+        },
     },
     "loggers": {
-        "pycountry": {"level": "ERROR", "handlers": ["console"], "propagate": False},
-        "django.security.DisallowedHost": {"handlers": ["null"], "propagate": False},
-        "django.db.backends": {"level": "ERROR", "handlers": ["console"], "propagate": False},
+        'django': {'handlers': ['default'],'level': 'INFO'},
+        '': {'handlers': ['default'], 'level': 'INFO'},
+        "pycountry": {"level": "ERROR", "handlers": ["default"], "propagate": False},
+        "django.security.DisallowedHost": {"handlers": ["default"], "propagate": False},
+        "django.db.backends": {"level": "ERROR", "handlers": ["default"], "propagate": False},
     },
 }
 
