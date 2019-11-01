@@ -1,5 +1,6 @@
 import itertools
 import logging
+import os
 from collections import OrderedDict
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -51,6 +52,7 @@ from temba.channels.models import Channel
 from temba.flows.models import Flow
 from temba.formax import FormaxMixin
 from temba.utils import analytics, get_anonymous_user, json, languages
+from temba.utils.bandwidth import AESCipher
 from temba.utils.email import is_valid_address
 from temba.utils.http import http_headers
 from temba.utils.text import random_string
@@ -79,7 +81,8 @@ from .models import (
     TopUp,
     UserSettings,
     get_stripe_credentials,
-    BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_ACCOUNT_SECRET, BW_PHONE_NUMBER)
+    BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_ACCOUNT_SECRET, BW_PHONE_NUMBER, BWI_ACCOUNT_SID, BWI_USER_NAME, BWI_PASSWORD,
+    BWI_APPLICATION_SID)
 from .tasks import apply_topups_task
 
 
@@ -563,6 +566,7 @@ class OrgCRUDL(SmartCRUDL):
         "twilio_account",
         "bandwidth_connect",
         "bandwidth_account",
+        "bandwidth_international_account",
         "nexmo_configuration",
         "nexmo_account",
         "nexmo_connect",
@@ -2385,9 +2389,9 @@ class OrgCRUDL(SmartCRUDL):
                 if bandwidth_client:
                     formax.add_section("bwd", reverse("orgs.org_bandwidth_account"), icon="icon-channel-bandwidth")
 
-                bandwidth_client = org.get_bandwidth_messaging_client()
-                if bandwidth_client:
-                    formax.add_section("bwi", reverse("orgs.org_bandwidth_account"), icon="icon-channel-bandwidth")
+                bandwidth_international_client = org.get_bandwidth_international_messaging_client()
+                if bandwidth_international_client:
+                    formax.add_section("bwi", reverse("orgs.org_bandwidth_international_account"), icon="icon-channel-bandwidth")
 
                 nexmo_client = org.get_nexmo_client()
                 if nexmo_client:  # pragma: needs cover
@@ -2659,8 +2663,8 @@ class OrgCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             client = self.object.get_bandwidth_messaging_client()
-            if client:
-                account_sid = client.auth[0]
+            if client and 'user_id' in dir(client):
+                account_sid = client.user_id
                 sid_length = len(account_sid)
                 context["bw_account_sid"] = "%s%s" % ("\u066D" * (sid_length - 16), account_sid[-16:])
             return context
@@ -2688,6 +2692,94 @@ class OrgCRUDL(SmartCRUDL):
                 bw_account_token = form.cleaned_data["bw_account_token"]
 
                 org.connect_bandwidth(bw_account_sid, bw_account_token, user)
+                return super().form_valid(form)
+
+    class BandwidthInternationalAccount(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+
+        success_message = ""
+        success_url = "@orgs.org_home"
+
+        class BandwidthKeys(forms.ModelForm):
+            bwi_account_sid = forms.CharField(max_length=128, label=_("Account ID"), required=True)
+            bwi_username = forms.CharField(max_length=128, label=_("Username"), required=True)
+            bwi_password = forms.CharField(max_length=128, label=_("Password"), required=True)
+            bwi_application_sid = forms.CharField(max_length=128, label=_("Application SID"), required=True)
+            disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
+
+            def clean(self):
+                super().clean()
+                if self.cleaned_data.get("disconnect", "false") == "false":
+                    bwi_account_sid = self.cleaned_data.get("bwi_account_sid", None)
+                    bwi_username = self.cleaned_data.get("bwi_username", None)
+                    bwi_password = self.cleaned_data.get("bwi_password", None)
+                    bwi_application_sid = self.cleaned_data.get["bwi_application_sid"]
+
+                    if not bwi_account_sid:
+                        raise ValidationError(_("You must enter your Bandwidth Account SID"))
+
+                    if not bwi_username:  # pragma: needs cover
+                        raise ValidationError(_("You must enter your Bandwidth Usenrame"))
+
+                    try:
+                        client = Client(username=bwi_username, password=bwi_password)
+
+                        # get the actual primary auth tokens from Bandwidth and use them
+                        account = client.api.account.fetch()
+                        self.cleaned_data["bwi_account_sid"] = account.sid
+                        self.cleaned_data["bwi_username"] = account.username
+                        self.cleaned_data["bwi_password"] = account.bwi_password
+                    except Exception:  # pragma: needs cover
+                        raise ValidationError(
+                            _("The Bandwidth account ID and Token seem invalid. Please check them again and retry.")
+                        )
+
+                return self.cleaned_data
+
+            class Meta:
+                model = Org
+                fields = ("bwi_account_sid", "bwi_username", "bwi_password", "disconnect")
+
+        form_class = BandwidthKeys
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            client = self.object.get_bandwidth_international_messaging_client()
+            if client and 'config' in dir(client):
+                if 'account_id' in dir(client.config):
+                    account_sid = client.config.account_id
+                sid_length = len(account_sid)
+                context["bwi_account_sid"] = "%s%s" % ("\u066D" * (sid_length - 16), account_sid[-16:])
+            return context
+
+        def derive_initial(self):
+            initial = super().derive_initial()
+            config = self.object.config
+            bwi_key = os.environ.get("BWI_KEY")
+            username = ''
+            initial["bwi_account_sid"] = config[BWI_ACCOUNT_SID]
+            if bwi_key and len(bwi_key) > 0:
+                username = AESCipher(config[BWI_USER_NAME], bwi_key).decrypt()
+            initial["bwi_username"] = username
+            initial["bwi_password"] = ''
+            initial["bwi_application_sid"] = config[BWI_APPLICATION_SID]
+            initial["disconnect"] = "false"
+            return initial
+
+        def form_valid(self, form):
+            disconnect = form.cleaned_data.get("disconnect", "false") == "true"
+            user = self.request.user
+            org = user.get_org()
+
+            if disconnect:
+                org.remove_bandwidth_account(user, international=True)
+                return HttpResponseRedirect(reverse("orgs.org_home"))
+            else:
+                bwi_account_sid = form.cleaned_data["bwi_account_sid"]
+                bwi_username = form.cleaned_data["bwi_username"]
+                bwi_password = form.cleaned_data["bwi_password"]
+                bwi_application_sid = form.cleaned_data["bwi_application_sid"]
+                org.connect_bandwidth_international(bwi_account_sid, bwi_username, bwi_password, bwi_application_sid,
+                                                    self.request.user)
                 return super().form_valid(form)
 
     class Edit(InferOrgMixin, OrgPermsMixin, SmartUpdateView):

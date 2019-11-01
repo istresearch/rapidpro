@@ -48,7 +48,7 @@
           {% if channel.channel_type == 'BWD' %}
             Bandwidth Domestic Address{% endif %}
           {% if channel.channel_type == 'BWI' %}
-            Bandwidth International Address{% endif %}
+            Bandwidth International (Address Unavailable) {% endif %}
 
           {{ channel.get_address_display }}
           -with channel.get_sender as sender and channel.get_caller as caller

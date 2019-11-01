@@ -2,7 +2,7 @@ from twilio.base.exceptions import TwilioRestException
 
 from django.utils.translation import ugettext_lazy as _
 
-from temba.channels.types.bandwidth.views import ClaimView
+from temba.channels.types.bandwidth_international.views import ClaimView
 from temba.contacts.models import TEL_SCHEME
 
 from ...models import ChannelType
@@ -30,7 +30,7 @@ class BandwidthInternationalType(ChannelType):
 
     def deactivate(self, channel):
         config = channel.config
-        client = channel.org.get_bandwidth_messaging_client()
+        client = channel.org.get_bandwidth_international_messaging_client()
         number_update_args = dict()
 
         if not channel.is_delegate_sender():

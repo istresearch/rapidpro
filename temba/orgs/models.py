@@ -17,6 +17,7 @@ import stripe
 import stripe.error
 from dateutil.relativedelta import relativedelta
 from django_redis import get_redis_connection
+from iris_sdk import Client
 from packaging.version import Version
 from requests import Session
 from smartmin.models import SmartModel
@@ -90,11 +91,10 @@ BW_ACCOUNT_SECRET = "BW_ACCOUNT_SECRET"
 BW_PHONE_NUMBER = "BW_PHONE_NUMBER"
 BW_API_TYPE = "BW_API_TYPE"
 
-BWI_APPLICATION_SID = "BW_APPLICATION_SID"
-BWI_ACCOUNT_SID = "BW_ACCOUNT_SID"
-BWI_ACCOUNT_TOKEN = "BW_ACCOUNT_TOKEN"
-BWI_ACCOUNT_SECRET = "BW_ACCOUNT_SECRET"
-BWI_PHONE_NUMBER = "BW_PHONE_NUMBER"
+BWI_APPLICATION_SID = "BWI_APPLICATION_SID"
+BWI_ACCOUNT_SID = "BWI_ACCOUNT_SID"
+BWI_USER_NAME = "BWI_USER_NAME"
+BWI_PASSWORD = "BWI_PASSWORD"
 
 NEXMO_KEY = "NEXMO_KEY"
 NEXMO_SECRET = "NEXMO_SECRET"
@@ -948,6 +948,19 @@ class Org(SmartModel):
         self.modified_by = user
         self.save()
 
+    def connect_bandwidth_international(self, account_sid, username, password, application_sid, user):
+        from temba.utils.bandwidth import AESCipher
+        bwi_key = os.environ.get("BWI_KEY")
+        bwi_config = {BWI_ACCOUNT_SID: account_sid, BWI_USER_NAME: AESCipher(username, bwi_key).encrypt(),
+                      BWI_PASSWORD: AESCipher(password, bwi_key).encrypt(),
+                      BWI_APPLICATION_SID: application_sid}
+
+        config = self.config
+        config.update(bwi_config)
+        self.config = config
+        self.modified_by = user
+        self.save()
+
     def is_connected_to_nexmo(self):
         if self.config:
             nexmo_key = self.config.get(NEXMO_KEY, None)
@@ -974,6 +987,13 @@ class Org(SmartModel):
                 return True
         return False
 
+    def is_connected_to_bandwidth_international(self):
+        bwi_username = self.config.get(BWI_USER_NAME, None)
+        bwi_password = self.config.get(BWI_PASSWORD, None)
+        if bwi_username and bwi_password:
+            return True
+        return False
+
     def remove_nexmo_account(self, user):
         if self.config:
             # release any nexmo channels
@@ -997,14 +1017,26 @@ class Org(SmartModel):
             self.modified_by = user
             self.save()
 
-    def remove_bandwidth_account(self, user):
+    def remove_bandwidth_account(self, user, international=False):
         if self.config:
-            for channel in self.channels.filter(is_active=True, channel_type__in=["BWD"]):
+            channel_type = "BWD"
+            if international:
+                channel_type = "BWI"
+
+            for channel in self.channels.filter(is_active=True, channel_type__in=[channel_type]):
                 channel.release()
 
-            self.config[BW_ACCOUNT_SID] = ""
-            self.config[BW_ACCOUNT_TOKEN] = ""
-            self.config[BW_APPLICATION_SID] = ""
+            if channel_type == "BWI":
+                self.config[BWI_ACCOUNT_SID] = ""
+                self.config[BWI_APPLICATION_SID] = ""
+                self.config[BWI_USER_NAME] = ""
+                self.config[BWI_PASSWORD] = ""
+            elif channel_type == "BWD":
+                self.config[BW_ACCOUNT_SID] = ""
+                self.config[BW_APPLICATION_SID] = ""
+                self.config[BW_ACCOUNT_TOKEN] = ""
+                self.config[BW_ACCOUNT_SECRET] = ""
+
             self.modified_by = user
             self.save()
 
@@ -1069,6 +1101,21 @@ class Org(SmartModel):
 
             if bw_account_sid and bw_account_token and bw_account_secret:
                 return bandwidth.client('messaging', bw_account_sid, bw_account_token, bw_account_secret)
+        return None
+
+    def get_bandwidth_international_messaging_client(self):
+
+        if self.config:
+            bwi_account_sid = self.config.get(BWI_ACCOUNT_SID, None)
+            bwi_username = self.config.get(BWI_USER_NAME, None)
+            bwi_password = self.config.get(BWI_PASSWORD, None)
+
+            if bwi_account_sid and bwi_username and bwi_password:
+                from temba.utils.bandwidth import AESCipher
+                bwi_key = os.environ.get("BWI_KEY")
+                return Client(url="https://dashboard.bandwidth.com/api",
+                              username=AESCipher(bwi_username, bwi_key).decrypt(),
+                              password=AESCipher(bwi_password, bwi_key).decrypt(), account_id=bwi_account_sid)
         return None
 
     def get_nexmo_client(self):
