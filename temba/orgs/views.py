@@ -2700,10 +2700,10 @@ class OrgCRUDL(SmartCRUDL):
         success_url = "@orgs.org_home"
 
         class BandwidthKeys(forms.ModelForm):
-            bwi_account_sid = forms.CharField(max_length=128, label=_("Account ID"), required=True)
-            bwi_username = forms.CharField(max_length=128, label=_("Username"), required=True)
-            bwi_password = forms.CharField(max_length=128, label=_("Password"), required=True)
-            bwi_application_sid = forms.CharField(max_length=128, label=_("Application SID"), required=True)
+            bwi_account_sid = forms.CharField(max_length=128, label=_("Account ID"), required=False)
+            bwi_username = forms.CharField(max_length=128, label=_("Username"), required=False)
+            bwi_password = forms.CharField(max_length=128, label=_("Password"), required=False)
+            bwi_application_sid = forms.CharField(max_length=128, label=_("Application SID"), required=False)
             disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
 
             def clean(self):
