@@ -117,14 +117,11 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         bwi_key = os.environ.get("BWI_KEY")
         org_config = org.config
 
-        username = AESCipher(org_config[BWI_USER_NAME], bwi_key).encrypt()
-        password = AESCipher(org_config[BWI_PASSWORD], bwi_key).encrypt()
-
         config = {
             Channel.CONFIG_APPLICATION_SID: org_config[BWI_APPLICATION_SID],
             Channel.CONFIG_ACCOUNT_SID: org_config[BWI_ACCOUNT_SID],
-            Channel.CONFIG_USERNAME: username,
-            Channel.CONFIG_PASSWORD: password,
+            Channel.CONFIG_USERNAME: AESCipher(org_config[BWI_USER_NAME], bwi_key).encrypt(),
+            Channel.CONFIG_PASSWORD: AESCipher(org_config[BWI_PASSWORD], bwi_key).encrypt(),
             Channel.CONFIG_CALLBACK_DOMAIN: callback_domain,
         }
 
