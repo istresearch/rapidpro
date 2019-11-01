@@ -2755,11 +2755,10 @@ class OrgCRUDL(SmartCRUDL):
             initial = super().derive_initial()
             config = self.object.config
             bwi_key = os.environ.get("BWI_KEY")
-            username = ''
             initial["bwi_account_sid"] = config[BWI_ACCOUNT_SID]
+            initial["bwi_username"] = ''
             if bwi_key and len(bwi_key) > 0:
-                username = AESCipher(config[BWI_USER_NAME], bwi_key).decrypt()
-            initial["bwi_username"] = username
+                initial["bwi_username"] = AESCipher(config[BWI_USER_NAME], bwi_key).decrypt()
             initial["bwi_password"] = ''
             initial["bwi_application_sid"] = config[BWI_APPLICATION_SID]
             initial["disconnect"] = "false"
