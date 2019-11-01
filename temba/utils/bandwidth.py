@@ -31,7 +31,7 @@ class AESCipher:
   def encrypt(self):
     plain_text = self.pad(self.data)
     iv = Random().read(AES.block_size)
-    cipher = AES.new(self.key,AES.MODE,iv)
+    cipher = AES.new(self.key,AES.MODE_OFB,iv)
     return b64encode(iv + cipher.encrypt(plain_text.encode())).decode()
 
   def decrypt(self):
