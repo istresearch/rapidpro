@@ -12,9 +12,9 @@
       -if object.get_country_display
         ({{ object.get_country_display }})
     .number
-      -if object.channel_type == 'BWD'
+      -if object.channel_type == 'BWD' or object.channel_type == 'BWI'
        %h4
-         Callback URL: https://{{channel.callback_domain}}/c/bwd/{{channel.uuid}}/receive
+         Callback URL: https://{{channel.callback_domain}}{% if subdir %}/{{subdir}}{%else%}{%endif%}/c/bwd/{{channel.uuid}}/receive
 
       -if object.channel_type == 'A'
         \- {{ channel.device }}
