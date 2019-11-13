@@ -125,8 +125,8 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         config = {
             Channel.CONFIG_APPLICATION_SID: org_config[BWI_APPLICATION_SID],
             Channel.CONFIG_ACCOUNT_SID: org_config[BWI_ACCOUNT_SID],
-            Channel.CONFIG_USERNAME: AESCipher(org_config[BWI_USER_NAME], bwi_key).encrypt(),
-            Channel.CONFIG_PASSWORD: AESCipher(org_config[BWI_PASSWORD], bwi_key).encrypt(),
+            Channel.CONFIG_USERNAME: org_config[BWI_USER_NAME],
+            Channel.CONFIG_PASSWORD: org_config[BWI_PASSWORD],
             Channel.CONFIG_ENCODING: org_config[BWI_ENCODING],
             Channel.CONFIG_CALLBACK_DOMAIN: callback_domain,
         }
