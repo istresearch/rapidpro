@@ -95,6 +95,7 @@ BWI_APPLICATION_SID = "BWI_APPLICATION_SID"
 BWI_ACCOUNT_SID = "BWI_ACCOUNT_SID"
 BWI_USER_NAME = "BWI_USER_NAME"
 BWI_PASSWORD = "BWI_PASSWORD"
+BWI_ENCODING = "BWI_ENCODING"
 
 NEXMO_KEY = "NEXMO_KEY"
 NEXMO_SECRET = "NEXMO_SECRET"
@@ -948,12 +949,13 @@ class Org(SmartModel):
         self.modified_by = user
         self.save()
 
-    def connect_bandwidth_international(self, account_sid, username, password, application_sid, user):
+    def connect_bandwidth_international(self, account_sid, username, password, application_sid, bwi_encoding, user):
         from temba.utils.bandwidth import AESCipher
         bwi_key = os.environ.get("BWI_KEY")
         bwi_config = {BWI_ACCOUNT_SID: account_sid, BWI_USER_NAME: AESCipher(username, bwi_key).encrypt(),
                       BWI_PASSWORD: AESCipher(password, bwi_key).encrypt(),
-                      BWI_APPLICATION_SID: application_sid}
+                      BWI_APPLICATION_SID: application_sid,
+                      BWI_ENCODING: bwi_encoding}
 
         config = self.config
         config.update(bwi_config)
