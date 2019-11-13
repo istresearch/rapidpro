@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.html import escape
 from smartmin.views import SmartFormView
 
-from temba.orgs.models import BWI_ACCOUNT_SID, BWI_APPLICATION_SID, BWI_USER_NAME, BWI_PASSWORD
+from temba.orgs.models import BWI_ACCOUNT_SID, BWI_APPLICATION_SID, BWI_USER_NAME, BWI_PASSWORD, BWI_ENCODING
 from temba.utils import analytics
 from temba.utils.bandwidth import AESCipher
 from ...models import Channel
@@ -30,7 +30,8 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         bwi_username = forms.CharField(label="Username", help_text=_("Bandwidth Username"))
         bwi_password = forms.CharField(widget=forms.PasswordInput, label="Password", help_text=_("Bandwidth Password"))
         bwi_application_sid = forms.CharField(label="Application SID", help_text=_("Bandwidth Account Application ID"))
-        # bw_phone_number = forms.CharField(label="Phone Number", help_text=_("Your Bandwidth Account Phone Number"))
+        bwi_encoding = forms.ChoiceField(choices=[('gsm', "GSM"), ("ucs", "UCS"), ("auto", "Auto Detect")],
+                                         label="Messaging Encoding")
 
         def clean(self):
 
@@ -38,6 +39,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             bwi_username = self.cleaned_data.get("bwi_username", None)
             bwi_password = self.cleaned_data.get("bwi_password", None)
             bwi_application_sid = self.cleaned_data.get("bwi_application_sid", None)
+            bwi_encoding = self.cleaned_data.get("bwi_encoding", None)
 
             BWI_KEY = os.environ.get("BWI_KEY")
 
@@ -52,6 +54,8 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
                 raise ValidationError(_("You must enter your Bandwidth Account's Application ID"))
             if not BWI_KEY or len(BWI_KEY) == 0:
                 raise ValidationError(_("The environment variable BWI_KEY  must be a valid encryption key"))
+            if not bwi_encoding or len(bwi_encoding) == 0:
+                raise ValidationError(_("A message encoding must be selected"))
 
             try:
                 account = Account(client=Client(url="https://dashboard.bandwidth.com/api", username=bwi_username,
@@ -98,11 +102,12 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         bwi_username = form.cleaned_data["bwi_username"]
         bwi_password = form.cleaned_data["bwi_password"]
         bwi_application_sid = form.cleaned_data["bwi_application_sid"]
+        bwi_encoding = form.cleaned_data["bwi_encoding"]
 
         org = self.org
 
         org.connect_bandwidth_international(bwi_account_sid, bwi_username, bwi_password,
-                                            bwi_application_sid, self.request.user)
+                                            bwi_application_sid, bwi_encoding, self.request.user)
         org.save()
 
         channel = self.claim_number(self.request.user, Channel.ROLE_SEND + Channel.ROLE_CALL)
@@ -122,6 +127,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             Channel.CONFIG_ACCOUNT_SID: org_config[BWI_ACCOUNT_SID],
             Channel.CONFIG_USERNAME: AESCipher(org_config[BWI_USER_NAME], bwi_key).encrypt(),
             Channel.CONFIG_PASSWORD: AESCipher(org_config[BWI_PASSWORD], bwi_key).encrypt(),
+            Channel.CONFIG_ENCODING: org_config[BWI_ENCODING],
             Channel.CONFIG_CALLBACK_DOMAIN: callback_domain,
         }
 
