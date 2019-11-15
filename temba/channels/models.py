@@ -302,6 +302,7 @@ class Channel(TembaModel):
     CONFIG_ACCOUNT_SID = "account_sid"
     CONFIG_APPLICATION_SID = "application_sid"
     CONFIG_NUMBER_SID = "number_sid"
+    CONFIG_SENDER = "sender"
     CONFIG_MESSAGING_SERVICE_SID = "messaging_service_sid"
     CONFIG_MAX_CONCURRENT_EVENTS = "max_concurrent_events"
 
