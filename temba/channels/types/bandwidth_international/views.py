@@ -10,7 +10,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.html import escape
 from smartmin.views import SmartFormView
 
-from temba.orgs.models import BWI_ACCOUNT_SID, BWI_APPLICATION_SID, BWI_USER_NAME, BWI_PASSWORD, BWI_ENCODING
+from temba.orgs.models import BWI_ACCOUNT_SID, BWI_APPLICATION_SID, BWI_USER_NAME, BWI_PASSWORD, BWI_ENCODING, \
+    BWI_SENDER
 from temba.utils import analytics
 from temba.utils.bandwidth import AESCipher
 from ...models import Channel
@@ -30,6 +31,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         bwi_username = forms.CharField(label="Username", help_text=_("Bandwidth Username"))
         bwi_password = forms.CharField(widget=forms.PasswordInput, label="Password", help_text=_("Bandwidth Password"))
         bwi_application_sid = forms.CharField(label="Application SID", help_text=_("Bandwidth Account Application ID"))
+        bwi_sender = forms.CharField(max_length=128, label=_("Sender"), required=True)
         bwi_encoding = forms.ChoiceField(choices=[('gsm', "GSM"), ("ucs", "UCS"), ("auto", "Auto Detect")],
                                          label="Messaging Encoding")
 
@@ -39,6 +41,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             bwi_username = self.cleaned_data.get("bwi_username", None)
             bwi_password = self.cleaned_data.get("bwi_password", None)
             bwi_application_sid = self.cleaned_data.get("bwi_application_sid", None)
+            bwi_sender = self.cleaned_data.get("bwi_sender", None)
             bwi_encoding = self.cleaned_data.get("bwi_encoding", None)
 
             BWI_KEY = os.environ.get("BWI_KEY")
@@ -56,6 +59,8 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
                 raise ValidationError(_("The environment variable BWI_KEY  must be a valid encryption key"))
             if not bwi_encoding or len(bwi_encoding) == 0:
                 raise ValidationError(_("A message encoding must be selected"))
+            if not bwi_sender or len(bwi_sender) == 0:
+                raise ValidationError(_("A sender must be provided"))
 
             try:
                 account = Account(client=Client(url="https://dashboard.bandwidth.com/api", username=bwi_username,
@@ -103,39 +108,40 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         bwi_password = form.cleaned_data["bwi_password"]
         bwi_application_sid = form.cleaned_data["bwi_application_sid"]
         bwi_encoding = form.cleaned_data["bwi_encoding"]
+        bwi_sender = form.cleaned_data["bwi_sender"]
 
-        org = self.org
-
-        org.connect_bandwidth_international(bwi_account_sid, bwi_username, bwi_password,
-                                            bwi_application_sid, bwi_encoding, self.request.user)
-        org.save()
-
-        channel = self.claim_number(self.request.user, Channel.ROLE_SEND + Channel.ROLE_CALL)
+        channel = self.create_channel(self.request.user, Channel.ROLE_SEND + Channel.ROLE_CALL, bwi_account_sid,
+                                    bwi_username, bwi_password, bwi_application_sid, bwi_encoding, bwi_sender)
 
         self.uuid = channel.uuid
         return HttpResponseRedirect(self.get_success_url())
 
-    def claim_number(self, user, role):
+    def claim_number(self, user, phone_number, country, role):
+        analytics.track(user.username, "temba.channel_claim_bandwidth_international",
+                        properties=dict(account_sid=BWI_ACCOUNT_SID))
+        return None
+
+    def create_channel(self, user, role, account_sid, username, password, application_sid, encoding, bwi_sender):
         org = user.get_org()
         self.uuid = uuid4()
         callback_domain = org.get_brand_domain()
         bwi_key = os.environ.get("BWI_KEY")
-        org_config = org.config
 
         config = {
-            Channel.CONFIG_APPLICATION_SID: org_config[BWI_APPLICATION_SID],
-            Channel.CONFIG_ACCOUNT_SID: org_config[BWI_ACCOUNT_SID],
-            Channel.CONFIG_USERNAME: org_config[BWI_USER_NAME],
-            Channel.CONFIG_PASSWORD: org_config[BWI_PASSWORD],
-            Channel.CONFIG_ENCODING: org_config[BWI_ENCODING],
-            Channel.CONFIG_CALLBACK_DOMAIN: callback_domain,
+            Channel.CONFIG_APPLICATION_SID: application_sid,
+            Channel.CONFIG_ACCOUNT_SID: account_sid,
+            Channel.CONFIG_USERNAME: AESCipher(username, bwi_key).encrypt(),
+            Channel.CONFIG_PASSWORD: AESCipher(password, bwi_key).encrypt(),
+            Channel.CONFIG_ENCODING: encoding,
+            Channel.CONFIG_SENDER: bwi_sender,
+            Channel.CONFIG_CALLBACK_DOMAIN: callback_domain
         }
 
         channel = Channel.create(
-            org=org, user=user, channel_type="BWI", name=org_config[BWI_ACCOUNT_SID],
+            org=org, user=user, channel_type="BWI", name=account_sid,
             role=role, config=config, uuid=self.uuid, country=""
         )
 
-        analytics.track(user.username, "temba.channel_claim_bandwidth_international",
-                        properties=dict(account_sid=BWI_ACCOUNT_SID))
+        channel.config[Channel.CONFIG_KEY] = channel.pk
+        channel.save()
         return channel
