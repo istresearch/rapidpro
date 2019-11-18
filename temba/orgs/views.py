@@ -2709,7 +2709,8 @@ class OrgCRUDL(SmartCRUDL):
             bwi_application_sid = forms.CharField(max_length=128, label=_("Application SID"), required=False)
             bwi_encoding = forms.ChoiceField(choices=[('gsm', "GSM"), ("ucs", "UCS"), ("auto", "Auto Detect")],
                                              label="Messaging Encoding", required=False)
-            bwi_sender = forms.CharField(max_length=128, label=_("Sender"), required=False)
+            bwi_sender = forms.CharField(max_length=128, label=_("Sender"),
+                                         help_text=_("Sender (Name or Phone Number)"), required=False)
             disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
             channel_id = forms.CharField(widget=forms.HiddenInput, max_length=6, required=False)
             key = forms.IntegerField(widget=forms.HiddenInput, required=False)
