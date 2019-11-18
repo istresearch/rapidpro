@@ -31,7 +31,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         bwi_username = forms.CharField(label="Username", help_text=_("Bandwidth Username"))
         bwi_password = forms.CharField(widget=forms.PasswordInput, label="Password", help_text=_("Bandwidth Password"))
         bwi_application_sid = forms.CharField(label="Application SID", help_text=_("Bandwidth Account Application ID"))
-        bwi_sender = forms.CharField(max_length=128, label=_("Sender"), required=True)
+        bwi_sender = forms.CharField(max_length=128, label=_("Sender"), help_text=_("Sender (Name or Phone Number)"), required=True)
         bwi_encoding = forms.ChoiceField(choices=[('gsm', "GSM"), ("ucs", "UCS"), ("auto", "Auto Detect")],
                                          label="Messaging Encoding")
 
