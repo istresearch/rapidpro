@@ -14,9 +14,9 @@
 
 -block summary
   -if request.META.channel and request.META.channel.channel_type == 'BWI'
-    Connected to Bandwidth International Account ({{channel.name}}) UUID: {{channel.uuid}}
+    Connected to Bandwidth International Account ({{channel.address}}) UUID: {{channel.uuid}}
   -else
-    Disconnected from Bandwidth International Account ({{channel.name}}) UUID: {{channel.uuid}}
+    Disconnected from Bandwidth International Account ({{channel.address}}) UUID: {{channel.uuid}}
 
 -block post-form
   -if request.META.channel and request.META.channel.channel_type == 'BWI' and request.META.HTTP_X_FORMAX
