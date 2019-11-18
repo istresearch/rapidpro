@@ -62,18 +62,6 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             if not bwi_sender or len(bwi_sender) == 0:
                 raise ValidationError(_("A sender must be provided"))
 
-            try:
-                account = Account(client=Client(url="https://dashboard.bandwidth.com/api", username=bwi_username,
-                                      password=bwi_password, account_id=bwi_account_sid)).get(bwi_account_sid)
-            except RestError as error:
-                raise ValidationError(
-                    _(escape(error))
-                )
-            except Exception as error:
-                raise ValidationError(
-                    _(escape(error))
-                )
-
             return self.cleaned_data
 
     def __init__(self, channel_type):

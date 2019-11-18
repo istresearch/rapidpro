@@ -2769,15 +2769,16 @@ class OrgCRUDL(SmartCRUDL):
             bwi_key = os.environ.get("BWI_KEY")
             if 'channel' in self.request.META is not None and self.request.META['channel'].config is not None:
                 config = self.request.META['channel'].config
-                initial["bwi_account_sid"] = config["account_sid"]
+                initial["bwi_account_sid"] = config.get("account_sid", None)
                 initial["bwi_username"] = ''
-                if bwi_key and len(bwi_key) > 0:
-                    initial["bwi_username"] = AESCipher(config["username"], bwi_key).decrypt()
+                username = config.get("username", None)
+                if bwi_key and len(bwi_key) > 0 and username is not None and len(username) > 0:
+                    initial["bwi_username"] = AESCipher(config.get("username"), bwi_key).decrypt()
                 initial["bwi_password"] = ''
-                initial["bwi_application_sid"] = config["application_sid"]
-                initial["bwi_encoding"] = config["encoding"]
+                initial["bwi_application_sid"] = config.get("application_sid", None)
+                initial["bwi_encoding"] = config.get("encoding", None)
                 initial["channel_id"] = self.request.META['channel'].id
-                initial["bwi_sender"] = config['sender']
+                initial["bwi_sender"] = config.get("sender", None)
                 initial["disconnect"] = "false"
             return initial
 

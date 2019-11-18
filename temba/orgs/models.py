@@ -1102,7 +1102,7 @@ class Org(SmartModel):
             if bwi_account_sid and bwi_username and bwi_password:
                 from temba.utils.bandwidth import AESCipher
                 bwi_key = os.environ.get("BWI_KEY")
-                return Client(url="https://dashboard.bandwidth.com/api",
+                return Client(url="https://bulksms.ia2p.bandwidth.com:12021/bulk/sendsms",
                               username=AESCipher(bwi_username, bwi_key).decrypt(),
                               password=AESCipher(bwi_password, bwi_key).decrypt(), account_id=bwi_account_sid)
         return None
