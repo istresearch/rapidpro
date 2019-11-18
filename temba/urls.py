@@ -17,7 +17,7 @@ from temba.utils.analytics import init_analytics
 js_info_dict = {"packages": ()}  # this is empty due to the fact that all translation are in one folder
 
 VHOST_NAME = ""
-if hasattr(settings, 'SUB_DIR'):
+if hasattr(settings, 'SUB_DIR') and len(settings.SUB_DIR) > 0:
     if settings.SUB_DIR[-1:] == "/":
         VHOST_NAME = settings.SUB_DIR
     else:
