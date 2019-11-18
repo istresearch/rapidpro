@@ -2731,22 +2731,11 @@ class OrgCRUDL(SmartCRUDL):
                     if not bwi_username:  # pragma: needs cover
                         raise ValidationError(_("You must enter your Bandwidth Username"))
 
-                    try:
-                        # get the actual primary auth tokens from Bandwidth and use them
-                        from iris_sdk import Client as irisClient
-                        account = Account(
-                            client=irisClient(url="https://dashboard.bandwidth.com/api", username=bwi_username,
-                                              password=bwi_password, account_id=bwi_account_sid)).get(bwi_account_sid)
-                        self.cleaned_data["bwi_account_sid"] = bwi_account_sid
-                        self.cleaned_data["bwi_username"] = bwi_username
-                        self.cleaned_data["bwi_password"] = bwi_password
-                        self.cleaned_data["bwi_encoding"] = bwi_encoding
-                        self.cleaned_data["bwi_sender"] = bwi_sender
-                    except Exception:  # pragma: needs cover
-                        raise ValidationError(
-                            _("The Bandwidth account ID and Token seem invalid. Please check them again and retry.")
-                        )
-
+                    self.cleaned_data["bwi_account_sid"] = bwi_account_sid
+                    self.cleaned_data["bwi_username"] = bwi_username
+                    self.cleaned_data["bwi_password"] = bwi_password
+                    self.cleaned_data["bwi_encoding"] = bwi_encoding
+                    self.cleaned_data["bwi_sender"] = bwi_sender
                 return self.cleaned_data
 
             class Meta:
@@ -2757,11 +2746,14 @@ class OrgCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
+            channel = None
             if 'channel' in self.request.META is not None and self.request.META['channel'].config is not None:
                 channel = self.request.META['channel']
-            elif context['form'].Meta.channel is not None:
+            elif 'meta' in context['form'] and context['form'].Meta.channel is not None:
                 channel = context['form'].Meta.channel
-            context["channel"] = channel
+
+            if channel is not None:
+                context["channel"] = channel
             return context
 
         def derive_initial(self):
@@ -2814,6 +2806,7 @@ class OrgCRUDL(SmartCRUDL):
                         config[Channel.CONFIG_PASSWORD] = AESCipher(bwi_password, bwi_key).encrypt()
                         config[Channel.CONFIG_ENCODING] = bwi_encoding
                         config[Channel.CONFIG_SENDER] = bwi_sender
+                        channel.address = bwi_sender
                         channel.save()
             response = self.render_to_response(self.get_context_data(form=form))
             response['REDIRECT'] = self.get_success_url()
