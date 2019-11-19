@@ -9,6 +9,7 @@ from functools import cmp_to_key
 from urllib.parse import parse_qs, unquote, urlparse
 
 import nexmo
+import phonenumbers
 import pytz
 import requests
 from iris_sdk import Account
@@ -53,7 +54,7 @@ from temba.channels.models import Channel
 from temba.flows.models import Flow
 from temba.formax import FormaxMixin
 from temba.utils import analytics, get_anonymous_user, json, languages
-from temba.utils.bandwidth import AESCipher
+from temba.utils.bandwidth import AESCipher, BandwidthRestClient
 from temba.utils.email import is_valid_address
 from temba.utils.http import http_headers
 from temba.utils.text import random_string
@@ -83,7 +84,7 @@ from .models import (
     UserSettings,
     get_stripe_credentials,
     BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_ACCOUNT_SECRET, BW_PHONE_NUMBER, BWI_ACCOUNT_SID, BWI_USER_NAME, BWI_PASSWORD,
-    BWI_APPLICATION_SID, BWI_ENCODING)
+    BWI_APPLICATION_SID, BWI_ENCODING, BW_APPLICATION_SID)
 from .tasks import apply_topups_task
 
 
@@ -2629,6 +2630,10 @@ class OrgCRUDL(SmartCRUDL):
             bw_account_sid = forms.CharField(max_length=128, label=_("Account ID"), required=False)
             bw_account_token = forms.CharField(max_length=128, label=_("Account Token"), required=False)
             bw_account_secret = forms.CharField(max_length=128, label=_("Account Secret"), required=False)
+            bw_phone_number = forms.CharField(max_length=128, label=_("Phone Number"), required=False)
+            bw_application_sid = forms.CharField(label="Application SID",
+                                                 help_text=_("Your Bandwidth Account Application ID"))
+            channel_id = forms.CharField(widget=forms.HiddenInput, max_length=6, required=False)
             disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
 
             def clean(self):
@@ -2636,6 +2641,12 @@ class OrgCRUDL(SmartCRUDL):
                 if self.cleaned_data.get("disconnect", "false") == "false":
                     bw_account_sid = self.cleaned_data.get("bw_account_sid", None)
                     bw_account_token = self.cleaned_data.get("bw_account_token", None)
+                    bw_phone_number = self.cleaned_data.get("bw_phone_number", None)
+                    bw_application_sid = self.cleaned_data.get("bw_application_sid", None)
+                    bw_account_secret = self.cleaned_data.get("bw_account_secret", None)
+
+                    if not bw_account_secret:
+                        raise ValidationError(_("You must enter your Bandwidth Account Secret"))
 
                     if not bw_account_sid:
                         raise ValidationError(_("You must enter your Bandwidth Account SID"))
@@ -2643,24 +2654,29 @@ class OrgCRUDL(SmartCRUDL):
                     if not bw_account_token:  # pragma: needs cover
                         raise ValidationError(_("You must enter your Bandwidth Account Token"))
 
-                    try:
-                        client = Client(bw_account_sid, bw_account_token)
+                    if not bw_phone_number or not str(bw_phone_number).startswith("+"):
+                        raise ValidationError(_("Please provide a valid E.164 formatted phone number (Ex. +14155552671)"))
 
-                        # get the actual primary auth tokens from Bandwidth and use them
-                        account = client.api.account.fetch()
-                        self.cleaned_data["bw_account_sid"] = account.sid
-                        self.cleaned_data["bw_account_token"] = account.auth_token
-                        self.cleaned_data["bw_account_secret"] = account.auth_secret
-                    except Exception:  # pragma: needs cover
+                    if not bw_application_sid:
+                        raise ValidationError(_("You must enter your Bandwidth Account's Application ID"))
+
+                    try:
+                        client = BandwidthRestClient('{}'.format(bw_account_sid), '{}'.format(bw_account_token),
+                                                     '{}'.format(bw_account_secret), bw_phone_number,
+                                                     bw_application_sid,
+                                                     client_name='account', api_version='')
+                        media = client.get_media()
+                    except Exception:
                         raise ValidationError(
-                            _("The Bandwidth account ID and Token seem invalid. Please check them again and retry.")
+                            _("The Bandwidth account credentials seem invalid. Please check them again and retry.")
                         )
 
                 return self.cleaned_data
 
             class Meta:
                 model = Org
-                fields = ("bw_account_sid", "bw_account_token", "bw_account_secret", "disconnect")
+                fields = ("bw_account_sid", "bw_account_token", "bw_account_secret", "bw_phone_number",
+                          "bw_application_sid", "channel_id", "disconnect")
 
         form_class = BandwidthKeys
 
@@ -2675,27 +2691,49 @@ class OrgCRUDL(SmartCRUDL):
 
         def derive_initial(self):
             initial = super().derive_initial()
-            config = self.object.config
-            initial["bw_account_sid"] = config[BW_ACCOUNT_SID]
-            initial["bw_account_token"] = config[BW_ACCOUNT_TOKEN]
-            initial["bw_account_secret"] = config[BW_ACCOUNT_SECRET]
-            initial["bw_phone_number"] = config[BW_PHONE_NUMBER]
-            initial["disconnect"] = "false"
+            if 'channel' in self.request.META is not None and self.request.META['channel'].config is not None:
+                channel = self.request.META['channel']
+                config = channel.config
+                initial["channel_id"] = self.request.META['channel'].id
+                initial["bw_account_sid"] = config.get("account_sid", None)
+                initial["bw_account_token"] = config.get("auth_token", None)
+                initial["bw_account_secret"] = config.get("secret", None)
+                initial["bw_application_sid"] = config.get("application_sid", None)
+                initial["bw_phone_number"] = channel.address
+                initial["disconnect"] = "false"
             return initial
 
         def form_valid(self, form):
             disconnect = form.cleaned_data.get("disconnect", "false") == "true"
+            channel_id = form.cleaned_data.get('channel_id', None)
             user = self.request.user
             org = user.get_org()
+            if channel_id is not None:
+                for ch in org.cached_channels:
+                    if ch.pk == int(channel_id):
+                        channel = form.Meta.channel = ch
+                        break
 
-            if disconnect:
-                org.remove_bandwidth_account(user)
-                return HttpResponseRedirect(reverse("orgs.org_home"))
-            else:
-                bw_account_sid = form.cleaned_data["bw_account_sid"]
-                bw_account_token = form.cleaned_data["bw_account_token"]
+                if channel is not None:
+                    if disconnect:
+                        org.remove_bandwidth_account(user)
+                        return HttpResponseRedirect(reverse("orgs.org_home"))
+                    else:
+                        bw_account_sid = form.cleaned_data["bw_account_sid"]
+                        bw_account_token = form.cleaned_data["bw_account_token"]
+                        bw_account_secret = form.cleaned_data["bw_account_secret"]
+                        bw_application_sid = form.cleaned_data["bw_application_sid"]
+                        bw_phone_number = form.cleaned_data["bw_phone_number"]
 
-                org.connect_bandwidth(bw_account_sid, bw_account_token, user)
+                        config = channel.config
+
+                        config[Channel.CONFIG_APPLICATION_SID] = bw_application_sid
+                        config[Channel.CONFIG_ACCOUNT_SID] = bw_account_sid
+                        config[Channel.CONFIG_AUTH_TOKEN] = bw_account_token
+                        config[Channel.CONFIG_SECRET] = bw_account_secret
+                        channel.address = bw_phone_number
+                        channel.save()
+
                 return super().form_valid(form)
 
     class BandwidthInternationalAccount(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
@@ -2741,7 +2779,8 @@ class OrgCRUDL(SmartCRUDL):
 
             class Meta:
                 model = Org
-                fields = ("bwi_account_sid", "bwi_username", "bwi_password", "bwi_encoding", "disconnect", "bwi_sender", "channel_id", "key")
+                fields = ("bwi_account_sid", "bwi_username", "bwi_password", "bwi_encoding", "disconnect",
+                          "bwi_sender", "channel_id", "key")
 
         form_class = BandwidthKeys
 

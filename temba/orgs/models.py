@@ -940,16 +940,6 @@ class Org(SmartModel):
         self.modified_by = user
         self.save()
 
-    def connect_bandwidth(self, account_sid, account_token, account_secret, phone_number, application_sid, user):
-        bwd_config = {BW_ACCOUNT_SID: account_sid, BW_ACCOUNT_TOKEN: account_token, BW_ACCOUNT_SECRET: account_secret,
-                      BW_PHONE_NUMBER: phone_number, BW_APPLICATION_SID: application_sid}
-
-        config = self.config
-        config.update(bwd_config)
-        self.config = config
-        self.modified_by = user
-        self.save()
-
     def is_connected_to_nexmo(self):
         if self.config:
             nexmo_key = self.config.get(NEXMO_KEY, None)
