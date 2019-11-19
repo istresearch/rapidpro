@@ -2389,12 +2389,13 @@ class OrgCRUDL(SmartCRUDL):
                 for channel in channels:
                     if channel.is_active:
                         type = channel.channel_type or ''
-                        if channel.channel_type == "BWI":
-                            path = "orgs.org_bandwidth_international_account"
-                        elif channel.channel_type == "BWD":
-                            path = "orgs.org_bandwidth_account"
-                        self.request.META['channel'] = channel
-                        formax.add_section(type.lower(), reverse(path), icon="icon-channel-bandwidth")
+                        if channel.channel_type == "BWI" or channel.channel_type == "BWD":
+                            if channel.channel_type == "BWI":
+                                path = "orgs.org_bandwidth_international_account"
+                            elif channel.channel_type == "BWD":
+                                path = "orgs.org_bandwidth_account"
+                            self.request.META['channel'] = channel
+                            formax.add_section(type.lower(), reverse(path), icon="icon-channel-bandwidth")
 
                 nexmo_client = org.get_nexmo_client()
                 if nexmo_client:  # pragma: needs cover
