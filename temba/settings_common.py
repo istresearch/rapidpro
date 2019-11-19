@@ -385,6 +385,7 @@ PERMISSIONS = {
         "twilio_account",
         "twilio_connect",
         "bandwidth_account",
+        "bandwidth_international_account",
         "bandwidth_connect",
         "token",
     ),
@@ -582,6 +583,7 @@ GROUP_PERMISSIONS = {
         "orgs.org_twilio_account",
         "orgs.org_twilio_connect",
         "orgs.org_bandwidth_account",
+        "orgs.org_bandwidth_international_account",
         "orgs.org_bandwidth_connect",
         "orgs.org_token",
         "orgs.topup_list",
@@ -988,6 +990,7 @@ SEND_CHATBASE = False
 SEND_CALLS = False
 
 CHANNEL_TYPES = [
+    "temba.channels.types.bandwidth_international.BandwidthInternationalType",
     "temba.channels.types.bandwidth.BandwidthType",
     "temba.channels.types.arabiacell.ArabiaCellType",
     "temba.channels.types.whatsapp.WhatsAppType",
