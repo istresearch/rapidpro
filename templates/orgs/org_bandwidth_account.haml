@@ -13,13 +13,13 @@
     %h1 Disconnect Bandwidth
 
 -block summary
-  -if object.is_connected_to_bandwidth
-    Connected to Bandwidth Account {{bw_account_sid}}
+  -if request.META.channel and request.META.channel.channel_type == 'BWD'
+    Connected to Bandwidth Account {{channel.name}}
   -else
     Disconnected from Bandwidth
 
 -block post-form
-  -if object.is_connected_to_bandwidth and request.META.HTTP_X_FORMAX
+  -if request.META.channel and request.META.channel.channel_type == 'BWD' and request.META.HTTP_X_FORMAX
     If you no longer want it connected, you can
     %a{href:'javascript:confirmBandwidthDisconnect();'}
       disconnect your Bandwidth Account
@@ -31,7 +31,7 @@
       .body
         -blocktrans
           Disconnecting your Bandwidth account will also remove any Bandwidth channels connected to it. Are you sure you want to proceed?
-    %a#disconnect-bandwidth-form.posterize{href:'{% url "orgs.org_bandwidth_account" %}?disconnect=true'}
+    %a#disconnect-bandwidth-form.posterize{href:'{% url "orgs.org_bandwidth_account" %}?disconnect=true&channel_id={{channel.id}}'}
 
 -block form-buttons
   .form-actions
