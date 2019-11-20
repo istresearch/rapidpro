@@ -2632,7 +2632,7 @@ class OrgCRUDL(SmartCRUDL):
             bw_account_secret = forms.CharField(max_length=128, label=_("Account Secret"), required=False)
             bw_phone_number = forms.CharField(max_length=128, label=_("Phone Number"), required=False)
             bw_application_sid = forms.CharField(label="Application SID",
-                                                 help_text=_("Your Bandwidth Account Application ID"))
+                                                 help_text=_("Your Bandwidth Account Application ID"), required=False)
             channel_id = forms.CharField(widget=forms.HiddenInput, max_length=6, required=False)
             disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
 
@@ -2644,6 +2644,7 @@ class OrgCRUDL(SmartCRUDL):
                     bw_phone_number = self.cleaned_data.get("bw_phone_number", None)
                     bw_application_sid = self.cleaned_data.get("bw_application_sid", None)
                     bw_account_secret = self.cleaned_data.get("bw_account_secret", None)
+                    channel_id = forms.CharField(widget=forms.HiddenInput, max_length=6, required=False)
 
                     if not bw_account_secret:
                         raise ValidationError(_("You must enter your Bandwidth Account Secret"))
@@ -2682,15 +2683,18 @@ class OrgCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            client = self.object.get_bandwidth_messaging_client()
-            if client and 'user_id' in dir(client):
-                account_sid = client.user_id
-                sid_length = len(account_sid)
-                context["bw_account_sid"] = "%s%s" % ("\u066D" * (sid_length - 16), account_sid[-16:])
+            channel = None
+            if 'channel' in self.request.META is not None and self.request.META['channel'].config is not None:
+                channel = self.request.META['channel']
+            elif 'meta' in context['form'] and context['form'].Meta.channel is not None:
+                channel = context['form'].Meta.channel
+
+            if channel is not None:
+                context["channel"] = channel
             return context
 
         def derive_initial(self):
-            initial = super().derive_initial()
+            initial = {}
             if 'channel' in self.request.META is not None and self.request.META['channel'].config is not None:
                 channel = self.request.META['channel']
                 config = channel.config
