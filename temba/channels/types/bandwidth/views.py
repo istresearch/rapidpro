@@ -31,7 +31,8 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         bw_account_sid = forms.CharField(label="Account SID", help_text=_("Your Bandwidth Account ID"))
         bw_account_token = forms.CharField(label="Account Token", help_text=_("Your Bandwidth API Token"))
         bw_account_secret = forms.CharField(label="Account Secret", help_text=_("Your Bandwidth API Secret"))
-        bw_phone_number = forms.CharField(label="Phone Number", help_text=_("Your Bandwidth Account Phone Number"))
+        bw_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)",
+                                          help_text=_("Your Bandwidth Account Phone Number"))
         bw_application_sid = forms.CharField(label="Application SID",
                                              help_text=_("Your Bandwidth Account Application ID"))
 
@@ -55,8 +56,11 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
                 raise ValidationError(_("You must enter your Bandwidth Account's Phone Number"))
             if not bw_application_sid:
                 raise ValidationError(_("You must enter your Bandwidth Account's Application ID"))
+            if not bw_phone_number or not str(bw_phone_number).startswith("+"):
+                raise ValidationError(_("Please provide a valid E.164 formatted phone number (Ex. +14155552671)"))
 
-            bw_phone_number = forms.CharField(help_text=_("Your Bandwidth Account Phone Number"))
+            bw_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)",
+                                              help_text=_("Your Bandwidth Account Phone Number"))
             bw_application_sid = forms.CharField(help_text=_("Your Bandwidth Account Application ID"))
 
             try:
@@ -116,12 +120,8 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         bw_phone_number = form.cleaned_data["bw_phone_number"]
         bw_application_sid = form.cleaned_data["bw_application_sid"]
 
-        org = self.org
-        org.connect_bandwidth(bw_account_sid, bw_account_token, bw_account_secret, bw_phone_number,
-                              bw_application_sid, self.request.user)
-        org.save()
-
-        channel = self.claim_number(self.request.user, bw_phone_number, "US", Channel.ROLE_SEND + Channel.ROLE_CALL)
+        channel = self.create_channel(self.request.user, Channel.ROLE_SEND + Channel.ROLE_CALL, bw_account_sid,
+                                      bw_application_sid, bw_account_token, bw_account_secret, bw_phone_number, "US")
 
         self.uuid = channel.uuid
         bw_user = os.environ.get("BANDWIDTH_USER")
@@ -142,20 +142,26 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         return HttpResponseRedirect(self.get_success_url())
 
     def claim_number(self, user, phone_number, country, role):
+        analytics.track(user.username, "temba.channel_claim_bandwidth_international",
+                        properties=dict(address=phone_number))
+        return None
+
+    def create_channel(self, user, role, account_sid, application_sid, account_token, account_secret,
+                       phone_number, country):
         org = user.get_org()
         self.uuid = uuid4()
         callback_domain = org.get_brand_domain()
-        org_config = org.config
         config = {
-            Channel.CONFIG_APPLICATION_SID: org_config[BW_APPLICATION_SID],
-            Channel.CONFIG_ACCOUNT_SID: org_config[BW_ACCOUNT_SID],
-            Channel.CONFIG_AUTH_TOKEN: org_config[BW_ACCOUNT_TOKEN],
-            Channel.CONFIG_SECRET: org_config[BW_ACCOUNT_SECRET],
+            Channel.CONFIG_APPLICATION_SID: application_sid,
+            Channel.CONFIG_ACCOUNT_SID: account_sid,
+            Channel.CONFIG_AUTH_TOKEN: account_token,
+            Channel.CONFIG_SECRET: account_secret,
             Channel.CONFIG_CALLBACK_DOMAIN: callback_domain,
         }
 
         channel = Channel.create(
-            org, user, country, "BWD", name=org_config[BW_ACCOUNT_SID], address=phone_number, role=role, config=config, uuid=self.uuid
+            org, user, country, "BWD", name=account_sid, address=phone_number, role=role, config=config,
+            uuid=self.uuid
         )
 
         analytics.track(user.username, "temba.channel_claim_bandwidth", properties=dict(number=phone_number))
