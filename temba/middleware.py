@@ -6,7 +6,7 @@ from io import StringIO
 
 from django.conf import settings
 from django.http import HttpResponseRedirect
-from django.urls import reverse, resolve
+from django.urls import reverse
 from django.utils import timezone, translation
 
 from temba.orgs.models import Org
@@ -217,7 +217,6 @@ class SubdirMiddleware:
     """
     Add subdir info to response header
     """
-    subdir = None
     SUB_DIR = getattr(settings, 'SUB_DIR', None)
     if SUB_DIR is not None and len(SUB_DIR) > 0:
         SUB_DIR = SUB_DIR.replace("/", "").replace("\\", "")
