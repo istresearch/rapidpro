@@ -31,7 +31,8 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         bw_account_sid = forms.CharField(label="Account SID", help_text=_("Your Bandwidth Account ID"))
         bw_account_token = forms.CharField(label="Account Token", help_text=_("Your Bandwidth API Token"))
         bw_account_secret = forms.CharField(label="Account Secret", help_text=_("Your Bandwidth API Secret"))
-        bw_phone_number = forms.CharField(label="Phone Number", help_text=_("Your Bandwidth Account Phone Number"))
+        bw_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)",
+                                          help_text=_("Your Bandwidth Account Phone Number"))
         bw_application_sid = forms.CharField(label="Application SID",
                                              help_text=_("Your Bandwidth Account Application ID"))
 
@@ -58,7 +59,8 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             if not bw_phone_number or not str(bw_phone_number).startswith("+"):
                 raise ValidationError(_("Please provide a valid E.164 formatted phone number (Ex. +14155552671)"))
 
-            bw_phone_number = forms.CharField(help_text=_("Your Bandwidth Account Phone Number"))
+            bw_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)",
+                                              help_text=_("Your Bandwidth Account Phone Number"))
             bw_application_sid = forms.CharField(help_text=_("Your Bandwidth Account Application ID"))
 
             try:
@@ -118,13 +120,8 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         bw_phone_number = form.cleaned_data["bw_phone_number"]
         bw_application_sid = form.cleaned_data["bw_application_sid"]
 
-        org = self.org
-        self.create_channel(bw_account_sid, bw_account_token, bw_account_secret, bw_phone_number,
-                            bw_application_sid, self.request.user)
-        org.save()
-
         channel = self.create_channel(self.request.user, Channel.ROLE_SEND + Channel.ROLE_CALL, bw_account_sid,
-                                      bw_application_sid,  bw_account_token, bw_account_secret, bw_phone_number, "US")
+                                      bw_application_sid, bw_account_token, bw_account_secret, bw_phone_number, "US")
 
         self.uuid = channel.uuid
         bw_user = os.environ.get("BANDWIDTH_USER")
