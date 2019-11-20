@@ -780,7 +780,7 @@ class OrgCRUDL(SmartCRUDL):
             bw_account_sid = forms.CharField(label="Account SID", help_text=_("Your Bandwidth Account ID"))
             bw_account_token = forms.CharField(label="Account Token", help_text=_("Your Bandwidth API Token"))
             bw_account_secret = forms.CharField(label="Account Secret", help_text=_("Your Bandwidth API Secret"))
-            bw_phone_number = forms.CharField(label="Phone Number", help_text=_("Your Bandwidth Account Phone Number"))
+            bw_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)", help_text=_("Your Bandwidth Account Phone Number"))
             bw_application_sid = forms.CharField(label="Application SID", help_text=_("Your Bandwidth Account Application ID"))
 
             def clean(self):
@@ -804,7 +804,8 @@ class OrgCRUDL(SmartCRUDL):
                 if not bw_application_sid:
                     raise ValidationError(_("You must enter your Bandwidth Account's Application ID"))
 
-                bw_phone_number = forms.CharField(help_text=_("Your Bandwidth Account Phone Number"))
+                bw_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)",
+                                                  help_text=_("Your Bandwidth Account Phone Number"))
                 bw_application_sid = forms.CharField(help_text=_("Your Bandwidth Account Application ID"))
 
                 try:
