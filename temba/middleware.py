@@ -217,16 +217,16 @@ class SubdirMiddleware:
     """
     Add subdir info to response header
     """
-    SUB_DIR = getattr(settings, 'SUB_DIR', None)
-    if SUB_DIR is not None and len(SUB_DIR) > 0:
-        SUB_DIR = SUB_DIR.replace("/", "").replace("\\", "")
+    subdir = None
 
     def __init__(self, get_response=None):
         self.get_response = get_response
+        if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR:
+            self.subdir = settings.SUB_DIR.replace("/", "").replace("\\", "")
 
     def __call__(self, request):
-        if self.SUB_DIR is not None and len(self.SUB_DIR) > 0:
-            request.subdir = self.SUB_DIR
+        if self.subdir:
+            request.subdir = self.subdir
             if not request.path.startswith('/{}'.format(request.subdir)):
                 return HttpResponseRedirect("/{}{}".format(request.subdir, request.path))
         response = self.get_response(request)
