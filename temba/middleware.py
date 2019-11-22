@@ -6,7 +6,7 @@ from io import StringIO
 
 from django.conf import settings
 from django.http import HttpResponseRedirect
-from django.urls import reverse, resolve
+from django.urls import reverse
 from django.utils import timezone, translation
 
 from temba.orgs.models import Org
@@ -221,12 +221,12 @@ class SubdirMiddleware:
 
     def __init__(self, get_response=None):
         self.get_response = get_response
-        if hasattr(settings, 'SUB_DIR'):
+        if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR:
             self.subdir = settings.SUB_DIR.replace("/", "").replace("\\", "")
 
     def __call__(self, request):
-        if hasattr(settings, 'SUB_DIR'):
-            request.subdir = settings.SUB_DIR.replace("/", "").replace("\\", "")
+        if self.subdir:
+            request.subdir = self.subdir
             if not request.path.startswith('/{}'.format(request.subdir)):
                 return HttpResponseRedirect("/{}{}".format(request.subdir, request.path))
         response = self.get_response(request)
