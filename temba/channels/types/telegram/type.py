@@ -6,8 +6,18 @@ from django.utils.translation import ugettext_lazy as _
 from temba.contacts.models import TELEGRAM_SCHEME
 
 from ...models import ChannelType
+from ...views import UpdateChannelForm
 from .views import ClaimView
 
+class UpdateTelegramForm(UpdateChannelForm):
+
+    def add_config_fields(self):
+        self.fields["forward_id"] = forms.CharField(max_length=255, help_text=_("Telegram ID to forward unhandleable messages to"), initial=self.instance.config.get("forward_id",""))
+
+    class Meta(UpdateChannelForm.Meta):
+        fields = "name", "address", "country", "alert_email"
+        config_fields = ["forward_id",]
+        readonly = ("address","country")
 
 class TelegramType(ChannelType):
     """
@@ -16,6 +26,8 @@ class TelegramType(ChannelType):
 
     code = "TG"
     category = ChannelType.Category.SOCIAL_MEDIA
+
+    update_form = UpdateTelegramForm
 
     courier_url = r"^tg/(?P<uuid>[a-z0-9\-]+)/receive$"
 
