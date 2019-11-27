@@ -13,7 +13,7 @@ from .views import ClaimView
 class UpdateTelegramForm(UpdateChannelForm):
 
     def add_config_fields(self):
-        self.fields["forward_id"] = forms.CharField(max_length=255, help_text=_("Telegram ID to forward unhandleable messages to"), initial=self.instance.config.get("forward_id",""))
+        self.fields["forward_id"] = forms.CharField(max_length=255, required=False, help_text=_("Telegram ID to forward unhandleable messages to"), initial=self.instance.config.get("forward_id",""))
 
     class Meta(UpdateChannelForm.Meta):
         fields = "name", "address", "country", "alert_email"
