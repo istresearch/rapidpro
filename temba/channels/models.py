@@ -302,6 +302,7 @@ class Channel(TembaModel):
     CONFIG_ACCOUNT_SID = "account_sid"
     CONFIG_APPLICATION_SID = "application_sid"
     CONFIG_NUMBER_SID = "number_sid"
+    CONFIG_SENDER = "sender"
     CONFIG_MESSAGING_SERVICE_SID = "messaging_service_sid"
     CONFIG_MAX_CONCURRENT_EVENTS = "max_concurrent_events"
 
@@ -1013,11 +1014,14 @@ class Channel(TembaModel):
         if not self.country:  # pragma: needs cover
             self.country = ContactURN.derive_country_from_tel(phone)
 
-        self.alert_email = user.email
+        # NOTE: leaving alert_email field empty
+        #self.alert_email = user.email
         self.org = org
         self.is_active = True
         self.claim_code = None
         self.address = phone
+        # default channel name to phone number
+        self.name = phone
         self.save()
 
         org.normalize_contact_tels()

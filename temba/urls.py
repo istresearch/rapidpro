@@ -4,9 +4,7 @@ from django.conf import settings
 from django.conf.urls import include, url
 from django.conf.urls.static import static
 from django.contrib.auth.models import AnonymousUser, User
-from django.views.generic import RedirectView
 from django.views.i18n import JavaScriptCatalog
-from temba.triggers import views
 
 from celery.signals import worker_process_init
 
@@ -17,11 +15,12 @@ from temba.utils.analytics import init_analytics
 js_info_dict = {"packages": ()}  # this is empty due to the fact that all translation are in one folder
 
 VHOST_NAME = ""
-if hasattr(settings, 'SUB_DIR'):
+SUB_DIR = getattr(settings, 'SUB_DIR', None)
+if SUB_DIR is not None and len(SUB_DIR) > 0:
     if settings.SUB_DIR[-1:] == "/":
-        VHOST_NAME = settings.SUB_DIR
+        VHOST_NAME = SUB_DIR
     else:
-        VHOST_NAME = settings.SUB_DIR + "/"
+        VHOST_NAME = SUB_DIR + "/"
 
 urlpatterns = [
     url(r"^{}".format(VHOST_NAME), include("temba.public.urls")),

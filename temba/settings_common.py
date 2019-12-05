@@ -186,6 +186,7 @@ MIDDLEWARE = (
     "temba.middleware.ConsentMiddleware",
     "temba.middleware.BrandingMiddleware",
     "temba.middleware.OrgTimezoneMiddleware",
+    "temba.middleware.SubdirMiddleware",
     "temba.middleware.ActivateLanguageMiddleware",
     "temba.middleware.OrgHeaderMiddleware",
 )
@@ -383,6 +384,9 @@ PERMISSIONS = {
         "trial",
         "twilio_account",
         "twilio_connect",
+        "bandwidth_account",
+        "bandwidth_international_account",
+        "bandwidth_connect",
         "token",
     ),
     "orgs.usersettings": ("phone",),
@@ -578,6 +582,9 @@ GROUP_PERMISSIONS = {
         "orgs.org_transfer_to_account",
         "orgs.org_twilio_account",
         "orgs.org_twilio_connect",
+        "orgs.org_bandwidth_account",
+        "orgs.org_bandwidth_international_account",
+        "orgs.org_bandwidth_connect",
         "orgs.org_token",
         "orgs.topup_list",
         "orgs.topup_read",
@@ -983,6 +990,8 @@ SEND_CHATBASE = False
 SEND_CALLS = False
 
 CHANNEL_TYPES = [
+    "temba.channels.types.bandwidth_international.BandwidthInternationalType",
+    "temba.channels.types.bandwidth.BandwidthType",
     "temba.channels.types.arabiacell.ArabiaCellType",
     "temba.channels.types.whatsapp.WhatsAppType",
     "temba.channels.types.twilio.TwilioType",

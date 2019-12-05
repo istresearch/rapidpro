@@ -111,3 +111,5 @@ vine==1.1.3               # via amqp
 xlrd==1.0.0               # via pyexcel-xls, smartmin
 xlsxlite==0.2.0
 xlwt==1.2.0               # via pyexcel-xls, smartmin
+bandwidth-sdk==3.1.0
+-e git+https://github.com/bandwidthcom/python-bandwidth-iris#egg=iris_sdk

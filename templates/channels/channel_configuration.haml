@@ -3,6 +3,7 @@
 
 -block title
   .medium-help.float-left{class:'{{object|channel_icon}}'}
+
   %h2.font_normalize.header-margin.title
     {{ object.get_channel_type_display }} Configuration
 
@@ -10,11 +11,16 @@
       {{ object.get_address_display }}
       -if object.get_country_display
         ({{ object.get_country_display }})
+    .number
+      -if object.channel_type == 'BWD' or object.channel_type == 'BWI'
+       %h4
+         Callback URL: https://{{channel.callback_domain}}{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/c/bwd/{{channel.uuid}}/receive
 
       -if object.channel_type == 'A'
         \- {{ channel.device }}
         -if channel.os
           (v{{channel.os}})
+
 
 -block content
   -if configuration_template

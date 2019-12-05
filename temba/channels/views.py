@@ -853,7 +853,7 @@ def sync(request, channel_id):
 
                         # tell the channel to update its org if this channel got moved
                         if channel.org and "org_id" in cmd and channel.org.pk != cmd["org_id"]:
-                            commands.append(dict(cmd="claim", org_id=channel.org.pk))
+                            commands.append(dict(cmd="claim", org_id=channel.org.pk, org_name=channel.org.name))
 
                         # we don't ack status messages since they are always included
                         handled = False
@@ -1917,6 +1917,8 @@ class ChannelCRUDL(SmartCRUDL):
             context["configuration_urls"] = channel_type.get_configuration_urls(self.object)
             context["show_public_addresses"] = channel_type.show_public_addresses
 
+            if hasattr(settings, 'SUB_DIR'):
+                context['subdir'] = settings.SUB_DIR.replace("/", "").replace("\\", "")
             return context
 
     class ClaimAndroid(OrgPermsMixin, SmartFormView):
@@ -2014,6 +2016,9 @@ class ChannelCRUDL(SmartCRUDL):
 
         def get_address(self, obj):
             return obj.address if obj.address else _("Unknown")
+
+        def lookup_field_link(self, context, field, obj):
+            return reverse('channels.channel_read', args=[obj.uuid])
 
     class SearchNumbers(OrgPermsMixin, SmartFormView):
         class SearchNumbersForm(forms.Form):
