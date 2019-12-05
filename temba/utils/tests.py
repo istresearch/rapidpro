@@ -14,7 +14,6 @@ import pytz
 from django_redis import get_redis_connection
 from openpyxl import load_workbook
 from smartmin.tests import SmartminTestMixin
-from temba_expressions.evaluator import DateStyle, EvaluationContext
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -29,9 +28,11 @@ from celery.app.task import Task
 
 import temba.utils.analytics
 from temba.contacts.models import Contact, ContactField, ContactGroup, ContactGroupCount, ExportContactsTask
+from temba.flows.models import FlowRun
 from temba.orgs.models import Org, UserSettings
 from temba.tests import ESMockWithScroll, TembaTest, matchers
 from temba.utils import json
+from temba.utils.json import TembaJsonAdapter
 
 from . import (
     chunk_list,
@@ -39,40 +40,32 @@ from . import (
     format_number,
     get_country_code_by_name,
     percentage,
+    redact,
     sizeof_fmt,
     str_to_bool,
-    voicexml,
 )
-from .cache import QueueRecord, get_cacheable_attr, get_cacheable_result, incrby_existing
+from .cache import get_cacheable_attr, get_cacheable_result, incrby_existing
+from .celery import nonoverlapping_task
 from .currencies import currency_for_country
 from .dates import (
-    date_to_utc_range,
+    date_to_day_range_utc,
     datetime_to_epoch,
     datetime_to_ms,
     datetime_to_str,
     ms_to_datetime,
+    str_to_date,
     str_to_datetime,
     str_to_time,
 )
 from .email import is_valid_address, send_simple_email
 from .export import TableExporter
-from .expressions import (
-    _build_function_signature,
-    evaluate_template,
-    evaluate_template_compat,
-    get_function_listing,
-    migrate_template,
-)
 from .gsm7 import calculate_num_segments, is_gsm7, replace_non_gsm7_accents
 from .http import http_headers
 from .locks import LockNotAcquiredException, NonBlockingLock
-from .models import JSONAsTextField
-from .nexmo import NCCOException, NCCOResponse
-from .queues import HIGH_PRIORITY, LOW_PRIORITY, complete_task, nonoverlapping_task, push_task, start_task
+from .models import JSONAsTextField, patch_queryset_count
 from .templatetags.temba import short_datetime
 from .text import clean_string, decode_base64, random_string, slugify_with, truncate
 from .timezones import TimeZoneFormField, timezone_to_country_code
-from .voicexml import VoiceXMLException
 
 
 class InitTest(TembaTest):
@@ -168,6 +161,10 @@ class InitTest(TembaTest):
         self.assertEqual("-12300", format_number(Decimal("-123E+2")))
         self.assertEqual("-12350", format_number(Decimal("-123.5E+2")))
         self.assertEqual("-1.235", format_number(Decimal("-123.5E-2")))
+        self.assertEqual(
+            "-1000000000000001467812345696542157800075344236445874615",
+            format_number(Decimal("-1000000000000001467812345696542157800075344236445874615")),
+        )
         self.assertEqual("", format_number(Decimal("NaN")))
 
     def test_slugify_with(self):
@@ -218,24 +215,57 @@ class InitTest(TembaTest):
 class DatesTest(TembaTest):
     def test_datetime_to_ms(self):
         d1 = datetime.datetime(2014, 1, 2, 3, 4, 5, tzinfo=pytz.utc)
-        self.assertEqual(datetime_to_ms(d1), 1388631845000)  # from http://unixtimestamp.50x.eu
-        self.assertEqual(ms_to_datetime(1388631845000), d1)
+        self.assertEqual(datetime_to_ms(d1), 1_388_631_845_000)  # from http://unixtimestamp.50x.eu
+        self.assertEqual(ms_to_datetime(1_388_631_845_000), d1)
 
         tz = pytz.timezone("Africa/Kigali")
         d2 = tz.localize(datetime.datetime(2014, 1, 2, 3, 4, 5))
-        self.assertEqual(datetime_to_ms(d2), 1388624645000)
-        self.assertEqual(ms_to_datetime(1388624645000), d2.astimezone(pytz.utc))
+        self.assertEqual(datetime_to_ms(d2), 1_388_624_645_000)
+        self.assertEqual(ms_to_datetime(1_388_624_645_000), d2.astimezone(pytz.utc))
 
     def test_datetime_to_str(self):
         tz = pytz.timezone("Africa/Kigali")
         d2 = tz.localize(datetime.datetime(2014, 1, 2, 3, 4, 5, 6))
 
+        self.assertIsNone(datetime_to_str(None, "%Y-%m-%d %H:%M", tz=tz))
         self.assertEqual(datetime_to_str(d2, "%Y-%m-%d %H:%M", tz=tz), "2014-01-02 03:04")
         self.assertEqual(datetime_to_str(d2, "%Y/%m/%d %H:%M", tz=pytz.UTC), "2014/01/02 01:04")
 
     def test_datetime_to_epoch(self):
         dt = iso8601.parse_date("2014-01-02T01:04:05.000Z")
-        self.assertEqual(1388624645, datetime_to_epoch(dt))
+        self.assertEqual(1_388_624_645, datetime_to_epoch(dt))
+
+    def test_str_to_date(self):
+        self.assertIsNone(str_to_date(""))
+        self.assertIsNone(str_to_date(None))
+        self.assertIsNone(str_to_date("not a date"))
+        self.assertIsNone(str_to_date("2017 10 23"))
+
+        # full iso8601 timestamp
+        self.assertEqual(str_to_date("2013-02-01T04:38:09.100000+02:00"), datetime.date(2013, 2, 1))
+        self.assertEqual(str_to_date("2013-02-01 04:38:09.100000+02:00"), datetime.date(2013, 2, 1))
+
+        # iso date
+        self.assertEqual(str_to_date("2012-02-21", dayfirst=True), datetime.date(2012, 2, 21))
+        self.assertEqual(str_to_date("2012-21-02", dayfirst=True), None)
+
+        # similar to iso date
+        self.assertEqual(str_to_date("2012-2-21", dayfirst=True), datetime.date(2012, 2, 21))
+        self.assertEqual(str_to_date("2012.2.21", dayfirst=True), datetime.date(2012, 2, 21))
+        self.assertEqual(str_to_date("2012\\2\\21", dayfirst=True), datetime.date(2012, 2, 21))
+        self.assertEqual(str_to_date("2012/2/21", dayfirst=True), datetime.date(2012, 2, 21))
+        self.assertEqual(str_to_date("2012_2_21", dayfirst=True), datetime.date(2012, 2, 21))
+
+        # mixed delimiters
+        self.assertEqual(str_to_date("2012-2/21", dayfirst=True), datetime.date(2012, 2, 21))
+
+        # day and month are switched, depends on org conf
+        self.assertEqual(str_to_date("12/11/16", dayfirst=True), datetime.date(2016, 11, 12))
+        self.assertEqual(str_to_date("12/11/16", dayfirst=False), datetime.date(2016, 12, 11))
+
+        # there is no 21st month
+        self.assertEqual(str_to_date("11/21/17 at 12:00PM", dayfirst=True), None)
+        self.assertEqual(str_to_date("11/21/17 at 12:00PM", dayfirst=False), datetime.date(2017, 11, 21))
 
     def test_str_to_datetime(self):
         tz = pytz.timezone("Asia/Kabul")
@@ -274,11 +304,10 @@ class DatesTest(TembaTest):
             # no two digit iso date
             self.assertEqual(None, str_to_datetime("99-02-01", tz, dayfirst=False))
 
-            # no single digit months in iso date
-            self.assertEqual(None, str_to_datetime("1999-2-1", tz, dayfirst=False))
-
-            # iso date must stand alone
-            self.assertEqual(None, str_to_datetime("not 1999-02-01", tz, dayfirst=False))
+            # single digit months in iso-like date
+            self.assertEqual(
+                tz.localize(datetime.datetime(1999, 1, 2, 3, 4, 5, 6)), str_to_datetime("1999-2-1", tz, dayfirst=False)
+            )
 
             self.assertEqual(
                 tz.localize(datetime.datetime(2013, 2, 1, 7, 8, 0, 0)),
@@ -309,24 +338,24 @@ class DatesTest(TembaTest):
             )
 
             self.assertEqual(
-                tz.localize(datetime.datetime(2013, 2, 1, 7, 8, 9, 100000)),
+                tz.localize(datetime.datetime(2013, 2, 1, 7, 8, 9, 100_000)),
                 str_to_datetime("01-02-2013 07:08:09.100000", tz, dayfirst=True),
             )  # complete time provided
 
             self.assertEqual(
-                datetime.datetime(2013, 2, 1, 7, 8, 9, 100000, tzinfo=pytz.UTC),
+                datetime.datetime(2013, 2, 1, 7, 8, 9, 100_000, tzinfo=pytz.UTC),
                 str_to_datetime("2013-02-01T07:08:09.100000Z", tz, dayfirst=True),
             )  # Z marker
             self.assertEqual(
-                tz.localize(datetime.datetime(2013, 2, 1, 7, 8, 9, 100000)),
+                tz.localize(datetime.datetime(2013, 2, 1, 7, 8, 9, 100_000)),
                 str_to_datetime("2013-02-01T07:08:09.100000+04:30", tz, dayfirst=True),
             )  # ISO in local tz
             self.assertEqual(
-                tz.localize(datetime.datetime(2013, 2, 1, 7, 8, 9, 100000)),
+                tz.localize(datetime.datetime(2013, 2, 1, 7, 8, 9, 100_000)),
                 str_to_datetime("2013-02-01T04:38:09.100000+02:00", tz, dayfirst=True),
             )  # ISO in other tz
             self.assertEqual(
-                tz.localize(datetime.datetime(2013, 2, 1, 7, 8, 9, 100000)),
+                tz.localize(datetime.datetime(2013, 2, 1, 7, 8, 9, 100_000)),
                 str_to_datetime("2013-02-01T00:38:09.100000-02:00", tz, dayfirst=True),
             )  # ISO in other tz
             self.assertEqual(
@@ -334,19 +363,19 @@ class DatesTest(TembaTest):
                 str_to_datetime("2013-02-01T07:08:09Z", tz, dayfirst=True),
             )  # with no second fraction
             self.assertEqual(
-                datetime.datetime(2013, 2, 1, 7, 8, 9, 198000, tzinfo=pytz.UTC),
+                datetime.datetime(2013, 2, 1, 7, 8, 9, 198_000, tzinfo=pytz.UTC),
                 str_to_datetime("2013-02-01T07:08:09.198Z", tz, dayfirst=True),
             )  # with milliseconds
             self.assertEqual(
-                datetime.datetime(2013, 2, 1, 7, 8, 9, 198537, tzinfo=pytz.UTC),
+                datetime.datetime(2013, 2, 1, 7, 8, 9, 198_537, tzinfo=pytz.UTC),
                 str_to_datetime("2013-02-01T07:08:09.198537686Z", tz, dayfirst=True),
             )  # with nanoseconds
             self.assertEqual(
-                datetime.datetime(2013, 2, 1, 7, 8, 9, 198500, tzinfo=pytz.UTC),
+                datetime.datetime(2013, 2, 1, 7, 8, 9, 198_500, tzinfo=pytz.UTC),
                 str_to_datetime("2013-02-01T07:08:09.1985Z", tz, dayfirst=True),
             )  # with 4 second fraction digits
             self.assertEqual(
-                tz.localize(datetime.datetime(2013, 2, 1, 7, 8, 9, 100000)),
+                tz.localize(datetime.datetime(2013, 2, 1, 7, 8, 9, 100_000)),
                 str_to_datetime("2013-02-01T07:08:09.100000+04:30.", tz, dayfirst=True),
             )  # trailing period
             self.assertEqual(
@@ -370,8 +399,13 @@ class DatesTest(TembaTest):
 
         # deal with datetimes that have timezone info
         self.assertEqual(
-            pytz.utc.localize(datetime.datetime(2016, 11, 21, 20, 36, 51, 215681)).astimezone(tz),
+            pytz.utc.localize(datetime.datetime(2016, 11, 21, 20, 36, 51, 215_681)).astimezone(tz),
             str_to_datetime("2016-11-21T20:36:51.215681Z", tz),
+        )
+
+        self.assertEqual(
+            pytz.utc.localize(datetime.datetime(2017, 8, 9, 18, 38, 24, 469_581)).astimezone(tz),
+            str_to_datetime("2017-08-09 18:38:24.469581+00:00", tz),
         )
 
     def test_str_to_time(self):
@@ -388,24 +422,20 @@ class DatesTest(TembaTest):
             self.assertEqual(str_to_time("01-02-2013 03:04"), datetime.time(3, 4))  # with date
             self.assertEqual(str_to_time("3:04 PM"), datetime.time(15, 4))  # as PM
             self.assertEqual(str_to_time("03:04:30"), datetime.time(3, 4, 30))  # with seconds
-            self.assertEqual(str_to_time("03:04:30.123"), datetime.time(3, 4, 30, 123000))  # with milliseconds
-            self.assertEqual(str_to_time("03:04:30.123000"), datetime.time(3, 4, 30, 123000))  # with microseconds
+            self.assertEqual(str_to_time("03:04:30.123"), datetime.time(3, 4, 30, 123_000))  # with milliseconds
+            self.assertEqual(str_to_time("03:04:30.123000"), datetime.time(3, 4, 30, 123_000))  # with microseconds
 
-    def test_date_to_utc_range(self):
-        self.assertEqual(
-            date_to_utc_range(datetime.date(2017, 2, 20), self.org),
-            (
-                datetime.datetime(2017, 2, 19, 22, 0, 0, 0, tzinfo=pytz.UTC),
-                datetime.datetime(2017, 2, 20, 22, 0, 0, 0, tzinfo=pytz.UTC),
-            ),
-        )
+    def test_date_to_day_range_utc(self):
+        result = date_to_day_range_utc(datetime.date(2017, 2, 20), self.org)
+        self.assertEqual(result[0].isoformat(), "2017-02-19T22:00:00+00:00")
+        self.assertEqual(result[1].isoformat(), "2017-02-20T22:00:00+00:00")
 
 
 class TimezonesTest(TembaTest):
     def test_field(self):
         field = TimeZoneFormField(help_text="Test field")
 
-        self.assertEqual(field.choices[0], ("Pacific/Midway", u"(GMT-1100) Pacific/Midway"))
+        self.assertEqual(field.choices[0], ("Pacific/Midway", "(GMT-1100) Pacific/Midway"))
         self.assertEqual(field.coerce("Africa/Kigali"), pytz.timezone("Africa/Kigali"))
 
     def test_timezone_country_code(self):
@@ -648,27 +678,6 @@ class CacheTest(TembaTest):
         incrby_existing("xxx", -2, r)  # non-existent key
         self.assertIsNone(r.get("xxx"))
 
-    def test_queue_record(self):
-        items1 = [dict(id=1), dict(id=2), dict(id=3)]
-        lock = QueueRecord("test_items", lambda i: i["id"])
-        self.assertEqual(lock.filter_unqueued(items1), [dict(id=1), dict(id=2), dict(id=3)])
-
-        lock.set_queued(items1)  # mark those items as queued now
-
-        self.assertTrue(lock.is_queued(dict(id=3)))
-        self.assertFalse(lock.is_queued(dict(id=4)))
-
-        # try getting access to queued item #3 and a new item #4
-        items2 = [dict(id=3), dict(id=4)]
-        self.assertEqual(lock.filter_unqueued(items2), [dict(id=4)])
-
-        # check locked items are still locked tomorrow
-        with patch("temba.utils.cache.timezone") as mock_timezone:
-            mock_timezone.now.return_value = timezone.now() + datetime.timedelta(days=1)
-
-            lock = QueueRecord("test_items", lambda i: i["id"])
-            self.assertEqual(lock.filter_unqueued([dict(id=3)]), [])
-
 
 class EmailTest(TembaTest):
     @override_settings(SEND_EMAILS=True)
@@ -808,122 +817,7 @@ class JsonTest(TembaTest):
             json.dumps(dict(foo=Exception("invalid")))
 
 
-class QueueTest(TembaTest):
-    def test_queueing(self):
-        r = get_redis_connection()
-
-        args1 = dict(task=1)
-
-        # basic push and pop
-        push_task(self.org, None, "test", args1)
-        org_id, task = start_task("test")
-        self.assertEqual(args1, task)
-        self.assertEqual(org_id, self.org.id)
-
-        # should show as having one worker on that worker
-        self.assertEqual(r.zscore("test:active", self.org.id), 1)
-
-        # there aren't any more tasks so this will actually clear our active worker count
-        self.assertFalse(start_task("test")[1])
-        self.assertIsNone(r.zscore("test:active", self.org.id))
-
-        # marking the task as complete should also be a no-op
-        complete_task("test", self.org.id)
-        self.assertIsNone(r.zscore("test:active", self.org.id))
-
-        # pop on another task and start it and complete it
-        push_task(self.org, None, "test", args1)
-        self.assertEqual(args1, start_task("test")[1])
-        complete_task("test", self.org.id)
-
-        # should have no active workers
-        self.assertEqual(r.zscore("test:active", self.org.id), 0)
-
-        # ok, try pushing and popping multiple on now
-        args2 = dict(task=2)
-
-        push_task(self.org, None, "test", args1)
-        push_task(self.org, None, "test", args2)
-
-        # should come back in order of insertion
-        self.assertEqual(args1, start_task("test")[1])
-        self.assertEqual(args2, start_task("test")[1])
-
-        # two active workers
-        self.assertEqual(r.zscore("test:active", self.org.id), 2)
-
-        # mark one as complete
-        complete_task("test", self.org.id)
-        self.assertEqual(r.zscore("test:active", self.org.id), 1)
-
-        # start another, this will clear our counts
-        self.assertFalse(start_task("test")[1])
-        self.assertIsNone(r.zscore("test:active", self.org.id))
-
-        complete_task("test", self.org.id)
-        self.assertIsNone(r.zscore("test:active", self.org.id))
-
-        # ok, same set up
-        push_task(self.org, None, "test", args1)
-        push_task(self.org, None, "test", args2)
-
-        # but add a high priority item this time
-        args3 = dict(task=3)
-        push_task(self.org, None, "test", args3, HIGH_PRIORITY)
-
-        # and a low priority task
-        args4 = dict(task=4)
-        push_task(self.org, None, "test", args4, LOW_PRIORITY)
-
-        # high priority should be first out, then defaults, then low
-        self.assertEqual(args3, start_task("test")[1])
-        self.assertEqual(args1, start_task("test")[1])
-        self.assertEqual(args2, start_task("test")[1])
-        self.assertEqual(args4, start_task("test")[1])
-
-        self.assertEqual(r.zscore("test:active", self.org.id), 4)
-
-        self.assertFalse(start_task("test")[1])
-        self.assertIsNone(r.zscore("test:active", self.org.id))
-
-    def test_org_queuing(self):
-        r = get_redis_connection()
-
-        self.create_secondary_org()
-
-        org1_tasks = [dict(task=0), dict(task=2), dict(task=4)]
-        org2_tasks = [dict(task=1), dict(task=3), dict(task=5)]
-
-        push_task(self.org, None, "test", org1_tasks[2], LOW_PRIORITY)
-        push_task(self.org, None, "test", org1_tasks[1])
-        push_task(self.org, None, "test", org1_tasks[0], HIGH_PRIORITY)
-
-        push_task(self.org2, None, "test", org2_tasks[1])
-        push_task(self.org2, None, "test", org2_tasks[0], HIGH_PRIORITY)
-        push_task(self.org2, None, "test", org2_tasks[2], LOW_PRIORITY)
-
-        started_tasks = [start_task("test")[1]["task"] for _ in org1_tasks + org2_tasks]
-
-        # creates groups of started tasks, each group has tasks started on different orgs
-        actual_start_order = list(set(task_group) for task_group in zip(*[iter(started_tasks)] * 2))
-
-        # order should alternate between the two orgs (based on # of active workers)
-        expected_start_order = [{0, 1}, {2, 3}, {4, 5}]
-
-        # check if actual start order pairs, are the same as expected start order pairs
-        for idx, pair in enumerate(actual_start_order):
-            self.assertSetEqual(pair, expected_start_order[idx])
-
-        # each org should show 3 active works
-        self.assertEqual(r.zscore("test:active", self.org.id), 3)
-        self.assertEqual(r.zscore("test:active", self.org2.id), 3)
-
-        self.assertFalse(start_task("test")[1])
-
-        # no more tasks to do, both should now be empty
-        self.assertIsNone(r.zscore("test:active", self.org.id))
-        self.assertIsNone(r.zscore("test:active", self.org2.id))
-
+class CeleryTest(TembaTest):
     @patch("redis.client.StrictRedis.lock")
     @patch("redis.client.StrictRedis.get")
     def test_nonoverlapping_task(self, mock_redis_get, mock_redis_lock):
@@ -975,292 +869,6 @@ class QueueTest(TembaTest):
         mock_redis_get.assert_called_once_with("celery-task-lock:test_task1")
         self.assertEqual(mock_redis_lock.call_count, 0)
         self.assertEqual(task_calls, ["1-11-12", "2-21-22", "3-31-32"])
-
-
-class ExpressionsTest(TembaTest):
-    def setUp(self):
-        super().setUp()
-
-        contact = self.create_contact("Joe Blow", "123", language="eng")
-
-        variables = dict()
-        variables["contact"] = contact.build_expressions_context()
-        variables["flow"] = dict(
-            water_source="Well",  # key with underscore
-            blank="",  # blank string
-            arabic="اثنين ثلاثة",  # RTL chars
-            english="two three",  # LTR chars
-            urlstuff=" =&\u0628",  # stuff that needs URL encoding
-            users=5,  # numeric as int
-            count="5",  # numeric as string
-            average=2.5,  # numeric as float
-            joined=datetime.datetime(2014, 12, 1, 9, 0, 0, 0, timezone.utc),  # date as datetime
-            started="1/12/14 9:00",
-        )  # date as string
-
-        self.context = EvaluationContext(variables, timezone.utc, DateStyle.DAY_FIRST)
-
-    def test_evaluate_template(self):
-        self.assertEqual(("Hello World", []), evaluate_template("Hello World", self.context))  # no expressions
-        self.assertEqual(
-            ("Hello = Well 5", []), evaluate_template("Hello = @(flow.water_source) @flow.users", self.context)
-        )
-        self.assertEqual(
-            ("xxJoexx", []), evaluate_template("xx@(contact.first_name)xx", self.context)
-        )  # no whitespace
-        self.assertEqual(
-            ('Hello "World"', []), evaluate_template('@( "Hello ""World""" )', self.context)
-        )  # string with escaping
-        self.assertEqual(
-            ("Hello World", []), evaluate_template('@( "Hello" & " " & "World" )', self.context)
-        )  # string concatenation
-        self.assertEqual(
-            ('("', []), evaluate_template('@("(" & """")', self.context)
-        )  # string literals containing delimiters
-        self.assertEqual(
-            ("Joe Blow and Joe Blow", []), evaluate_template("@contact and @(contact)", self.context)
-        )  # old and new style
-        self.assertEqual(
-            ("Joe Blow language is set to 'eng'", []),
-            evaluate_template("@contact language is set to '@contact.language'", self.context),
-        )  # language
-
-        # test LTR and RTL mixing
-        self.assertEqual(
-            ("one two three four", []), evaluate_template("one @flow.english four", self.context)
-        )  # LTR var, LTR value, LTR text
-        self.assertEqual(
-            ("one اثنين ثلاثة four", []), evaluate_template("one @flow.arabic four", self.context)
-        )  # LTR var, RTL value, LTR text
-        self.assertEqual(
-            ("واحد اثنين ثلاثة أربعة", []), evaluate_template("واحد @flow.arabic أربعة", self.context)
-        )  # LTR var, RTL value, RTL text
-        self.assertEqual(
-            ("واحد two three أربعة", []), evaluate_template("واحد @flow.english أربعة", self.context)
-        )  # LTR var, LTR value, RTL text
-
-        # test decimal arithmetic
-        self.assertEqual(("Result: 7", []), evaluate_template("Result: @(flow.users + 2)", self.context))  # var is int
-        self.assertEqual(
-            ("Result: 0", []), evaluate_template("Result: @(flow.count - 5)", self.context)
-        )  # var is string
-        self.assertEqual(
-            ("Result: 0.5", []), evaluate_template("Result: @(5 / (flow.users * 2))", self.context)
-        )  # result is decimal
-        self.assertEqual(
-            ("Result: -10", []), evaluate_template("Result: @(-5 - flow.users)", self.context)
-        )  # negatives
-
-        # test date arithmetic
-        self.assertEqual(
-            ("Date: 2014-12-02T09:00:00+00:00", []), evaluate_template("Date: @(flow.joined + 1)", self.context)
-        )  # var is datetime
-        self.assertEqual(
-            ("Date: 2014-11-28T09:00:00+00:00", []), evaluate_template("Date: @(flow.started - 3)", self.context)
-        )  # var is string
-        self.assertEqual(
-            ("Date: 04-07-2014", []), evaluate_template("Date: @(DATE(2014, 7, 1) + 3)", self.context)
-        )  # date constructor
-        self.assertEqual(
-            ("Date: 2014-12-01T11:30:00+00:00", []),
-            evaluate_template("Date: @(flow.joined + TIME(2, 30, 0))", self.context),
-        )  # time addition to datetime var
-        self.assertEqual(
-            ("Date: 2014-12-01T06:30:00+00:00", []),
-            evaluate_template("Date: @(flow.joined - TIME(2, 30, 0))", self.context),
-        )  # time subtraction from string var
-
-        # test function calls
-        self.assertEqual(
-            ("Hello joe", []), evaluate_template("Hello @(lower(contact.first_name))", self.context)
-        )  # use lowercase for function name
-        self.assertEqual(
-            ("Hello JOE", []), evaluate_template("Hello @(UPPER(contact.first_name))", self.context)
-        )  # use uppercase for function name
-        self.assertEqual(
-            ("Bonjour world", []), evaluate_template('@(SUBSTITUTE("Hello world", "Hello", "Bonjour"))', self.context)
-        )  # string arguments
-        self.assertRegex(
-            evaluate_template("Today is @(TODAY())", self.context)[0], r"Today is \d\d-\d\d-\d\d\d\d"
-        )  # function with no args
-        self.assertEqual(
-            ("3", []), evaluate_template("@(LEN( 1.2 ))", self.context)
-        )  # auto decimal -> string conversion
-        self.assertEqual(
-            ("25", []), evaluate_template("@(LEN(flow.joined))", self.context)
-        )  # auto datetime -> string conversion
-        self.assertEqual(
-            ("2", []), evaluate_template('@(WORD_COUNT("abc-def", FALSE))', self.context)
-        )  # built-in variable
-        self.assertEqual(
-            ("TRUE", []), evaluate_template("@(OR(AND(True, flow.count = flow.users, 1), 0))", self.context)
-        )  # booleans / varargs
-        self.assertEqual(
-            ("yes", []), evaluate_template('@(IF(IF(flow.count > 4, "x", "y") = "x", "yes", "no"))', self.context)
-        )  # nested conditional
-
-        # evaluation errors
-        self.assertEqual(
-            ("Error: @()", ["Expression error at: )"]), evaluate_template("Error: @()", self.context)
-        )  # syntax error due to empty expression
-        self.assertEqual(
-            ("Error: @('2')", ["Expression error at: '"]), evaluate_template("Error: @('2')", self.context)
-        )  # don't support single quote string literals
-        self.assertEqual(
-            ("Error: @(2 / 0)", ["Division by zero"]), evaluate_template("Error: @(2 / 0)", self.context)
-        )  # division by zero
-        self.assertEqual(
-            ("Error: @(1 + flow.blank)", ["Expression could not be evaluated as decimal or date arithmetic"]),
-            evaluate_template("Error: @(1 + flow.blank)", self.context),
-        )  # string that isn't numeric
-        self.assertEqual(
-            ("Well @flow.boil", ["Undefined variable: flow.boil"]),
-            evaluate_template("@flow.water_source @flow.boil", self.context),
-        )  # undefined variables
-        self.assertEqual(
-            ("Hello @(XXX(1, 2))", ["Undefined function: XXX"]), evaluate_template("Hello @(XXX(1, 2))", self.context)
-        )  # undefined function
-        self.assertEqual(
-            ('Hello @(ABS(1, "x", TRUE))', ["Too many arguments provided for function ABS"]),
-            evaluate_template('Hello @(ABS(1, "x", TRUE))', self.context),
-        )  # wrong number of args
-        self.assertEqual(
-            ("Hello @(REPT(flow.blank, -2))", ['Error calling function REPT with arguments "", -2']),
-            evaluate_template("Hello @(REPT(flow.blank, -2))", self.context),
-        )  # internal function error
-
-    def test_evaluate_template_compat(self):
-        # test old style expressions, i.e. @ and with filters
-        self.assertEqual(
-            ("Hello World Joe Joe", []),
-            evaluate_template_compat("Hello World @contact.first_name @contact.first_name", self.context),
-        )
-        self.assertEqual(("Hello World Joe Blow", []), evaluate_template_compat("Hello World @contact", self.context))
-        self.assertEqual(
-            ("Hello World: Well", []), evaluate_template_compat("Hello World: @flow.water_source", self.context)
-        )
-        self.assertEqual(("Hello World: ", []), evaluate_template_compat("Hello World: @flow.blank", self.context))
-        self.assertEqual(
-            ("Hello اثنين ثلاثة thanks", []), evaluate_template_compat("Hello @flow.arabic thanks", self.context)
-        )
-        self.assertEqual(
-            (" %20%3D%26%D8%A8 ", []), evaluate_template_compat(" @flow.urlstuff ", self.context, True)
-        )  # url encoding enabled
-        self.assertEqual(
-            ("Hello Joe", []), evaluate_template_compat("Hello @contact.first_name|notthere", self.context)
-        )
-        self.assertEqual(
-            ("Hello joe", []), evaluate_template_compat("Hello @contact.first_name|lower_case", self.context)
-        )
-        self.assertEqual(
-            ("Hello Joe", []),
-            evaluate_template_compat("Hello @contact.first_name|lower_case|capitalize", self.context),
-        )
-        self.assertEqual(("Hello Joe", []), evaluate_template_compat("Hello @contact|first_word", self.context))
-        self.assertEqual(
-            ("Hello Blow", []), evaluate_template_compat("Hello @contact|remove_first_word|title_case", self.context)
-        )
-        self.assertEqual(("Hello Joe Blow", []), evaluate_template_compat("Hello @contact|title_case", self.context))
-        self.assertEqual(
-            ("Hello JOE", []), evaluate_template_compat("Hello @contact.first_name|upper_case", self.context)
-        )
-        self.assertEqual(
-            ("Hello Joe from info@example.com", []),
-            evaluate_template_compat("Hello @contact.first_name from info@example.com", self.context),
-        )
-        self.assertEqual(("Joe", []), evaluate_template_compat("@contact.first_name", self.context))
-        self.assertEqual(("foo@nicpottier.com", []), evaluate_template_compat("foo@nicpottier.com", self.context))
-        self.assertEqual(
-            ("@nicpottier is on twitter", []), evaluate_template_compat("@nicpottier is on twitter", self.context)
-        )
-
-    def test_migrate_template(self):
-        self.assertEqual(
-            migrate_template("Hi @contact.name|upper_case|capitalize from @flow.chw|lower_case"),
-            "Hi @(PROPER(UPPER(contact.name))) from @(LOWER(flow.chw))",
-        )
-        self.assertEqual(migrate_template('Hi @date.now|time_delta:"1"'), "Hi @(date.now + 1)")
-        self.assertEqual(migrate_template('Hi @date.now|time_delta:"-3"'), "Hi @(date.now - 3)")
-
-        self.assertEqual(migrate_template("Hi =contact.name"), "Hi @contact.name")
-        self.assertEqual(migrate_template("Hi =(contact.name)"), "Hi @(contact.name)")
-        self.assertEqual(migrate_template("Hi =NOW() =(TODAY())"), "Hi @(NOW()) @(TODAY())")
-        self.assertEqual(migrate_template('Hi =LEN("@=")'), 'Hi @(LEN("@="))')
-
-        # handle @ expressions embedded inside = expressions, with optional surrounding quotes
-        self.assertEqual(
-            migrate_template('=AND("Malkapur"= "@flow.stuff.category", 13 = @extra.Depar_city|upper_case)'),
-            '@(AND("Malkapur"= flow.stuff.category, 13 = UPPER(extra.Depar_city)))',
-        )
-
-        # don't convert unnecessarily
-        self.assertEqual(migrate_template("Hi @contact.name from @flow.chw"), "Hi @contact.name from @flow.chw")
-
-        # don't convert things that aren't expressions
-        self.assertEqual(migrate_template("Reply 1=Yes, 2=No"), "Reply 1=Yes, 2=No")
-
-    def test_get_function_listing(self):
-        listing = get_function_listing()
-        self.assertEqual(
-            listing[0],
-            {"signature": "ABS(number)", "name": "ABS", "display": "Returns the absolute value of a number"},
-        )
-
-    def test_build_function_signature(self):
-        self.assertEqual("ABS()", _build_function_signature(dict(name="ABS", params=[])))
-
-        self.assertEqual(
-            "ABS(number)",
-            _build_function_signature(dict(name="ABS", params=[dict(optional=False, name="number", vararg=False)])),
-        )
-
-        self.assertEqual(
-            "ABS(number, ...)",
-            _build_function_signature(dict(name="ABS", params=[dict(optional=False, name="number", vararg=True)])),
-        )
-
-        self.assertEqual(
-            "ABS([number])",
-            _build_function_signature(dict(name="ABS", params=[dict(optional=True, name="number", vararg=False)])),
-        )
-
-        self.assertEqual(
-            "ABS([number], ...)",
-            _build_function_signature(dict(name="ABS", params=[dict(optional=True, name="number", vararg=True)])),
-        )
-
-        self.assertEqual(
-            "MOD(number, divisor)",
-            _build_function_signature(
-                dict(
-                    name="MOD",
-                    params=[
-                        dict(optional=False, name="number", vararg=False),
-                        dict(optional=False, name="divisor", vararg=False),
-                    ],
-                )
-            ),
-        )
-
-        self.assertEqual(
-            "MOD(number, ..., divisor)",
-            _build_function_signature(
-                dict(
-                    name="MOD",
-                    params=[
-                        dict(optional=False, name="number", vararg=True),
-                        dict(optional=False, name="divisor", vararg=False),
-                    ],
-                )
-            ),
-        )
-
-    def test_percentage(self):
-        self.assertEqual(0, percentage(0, 100))
-        self.assertEqual(0, percentage(0, 0))
-        self.assertEqual(0, percentage(100, 0))
-        self.assertEqual(75, percentage(75, 100))
-        self.assertEqual(76, percentage(759, 1000))
 
 
 class GSM7Test(TembaTest):
@@ -1316,7 +924,7 @@ class ModelsTest(TembaTest):
     def test_require_update_fields(self):
         contact = self.create_contact("Bob", twitter="bobby")
         flow = self.get_flow("color")
-        run, = flow.start([], [contact])
+        run = FlowRun.objects.create(org=self.org, flow=flow, contact=contact)
 
         # we can save if we specify update_fields
         run.modified_on = timezone.now()
@@ -1343,6 +951,16 @@ class ModelsTest(TembaTest):
 
         self.assertEqual(curr, 100)
 
+    def test_patch_queryset_count(self):
+        self.create_contact("Ann", twitter="ann")
+        self.create_contact("Bob", twitter="bob")
+
+        with self.assertNumQueries(0):
+            qs = Contact.objects.all()
+            patch_queryset_count(qs, lambda: 33)
+
+            self.assertEqual(qs.count(), 33)
+
 
 class ExportTest(TembaTest):
     def setUp(self):
@@ -1360,7 +978,7 @@ class ExportTest(TembaTest):
         self.assertEqual(self.task.prepare_value(True), True)
         self.assertEqual(self.task.prepare_value(False), False)
 
-        dt = pytz.timezone("Africa/Nairobi").localize(datetime.datetime(2017, 2, 7, 15, 41, 23, 123456))
+        dt = pytz.timezone("Africa/Nairobi").localize(datetime.datetime(2017, 2, 7, 15, 41, 23, 123_456))
         self.assertEqual(self.task.prepare_value(dt), datetime.datetime(2017, 2, 7, 14, 41, 23, 0))
 
     def test_task_status(self):
@@ -1448,417 +1066,13 @@ class CurrencyTest(TembaTest):
         self.assertEqual(currency_for_country("AF").alpha_3, "AFN")
 
         for country in list(pycountry.countries):
-            try:
-                currency_for_country(country.alpha_2)
-            except KeyError:
-                self.fail("Country missing currency: %s" % country)
 
+            currency = currency_for_country(country.alpha_2)
+            if currency is None:
+                self.fail(f"Country missing currency: {country}")
 
-class VoiceXMLTest(TembaTest):
-    def test_context_managers(self):
-        response = voicexml.VXMLResponse()
-        self.assertEqual(response, response.__enter__())
-        self.assertFalse(response.__exit__(None, None, None))
-
-    def test_response(self):
-        response = voicexml.VXMLResponse()
-        self.assertEqual(response.document, '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>')
-        self.assertEqual(
-            str(response), '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form></form></vxml>'
-        )
-
-        response.document += "</form></vxml>"
-        self.assertEqual(
-            str(response), '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form></form></vxml>'
-        )
-
-    def test_join(self):
-        response1 = voicexml.VXMLResponse()
-        response2 = voicexml.VXMLResponse()
-
-        response1.document += "Allo "
-        response2.document += "Hey "
-
-        # the content of response2 should be prepended before the content of response1
-        self.assertEqual(
-            str(response1.join(response2)),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>Hey Allo </form></vxml>',
-        )
-
-    def test_say(self):
-        response = voicexml.VXMLResponse()
-        response.say("Hello")
-
-        self.assertEqual(
-            str(response),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>'
-            "<block><prompt>Hello</prompt></block></form></vxml>",
-        )
-
-    def test_play(self):
-        response = voicexml.VXMLResponse()
-
-        with self.assertRaises(VoiceXMLException):
-            response.play()
-
-        response.play(digits="123")
-        self.assertEqual(
-            str(response),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>'
-            "<block><prompt>123</prompt></block></form></vxml>",
-        )
-
-        response = voicexml.VXMLResponse()
-        response.play(url="http://example.com/audio.wav")
-
-        self.assertEqual(
-            str(response),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>'
-            '<block><prompt><audio src="http://example.com/audio.wav" /></prompt></block></form></vxml>',
-        )
-
-    def test_pause(self):
-        response = voicexml.VXMLResponse()
-
-        response.pause()
-        self.assertEqual(
-            str(response),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>'
-            "<block><prompt><break /></prompt></block></form></vxml>",
-        )
-
-        response = voicexml.VXMLResponse()
-
-        response.pause(length=40)
-        self.assertEqual(
-            str(response),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>'
-            '<block><prompt><break time="40s"/></prompt></block></form></vxml>',
-        )
-
-    def test_redirect(self):
-        response = voicexml.VXMLResponse()
-        response.redirect("http://example.com/")
-
-        self.assertEqual(
-            str(response),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>'
-            '<subdialog src="http://example.com/" ></subdialog></form></vxml>',
-        )
-
-    def test_hangup(self):
-        response = voicexml.VXMLResponse()
-        response.hangup()
-
-        self.assertEqual(
-            str(response), '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form><exit /></form></vxml>'
-        )
-
-    def test_reject(self):
-        response = voicexml.VXMLResponse()
-        response.reject(reason="some")
-
-        self.assertEqual(
-            str(response), '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form><exit /></form></vxml>'
-        )
-
-    def test_gather(self):
-        response = voicexml.VXMLResponse()
-        response.gather()
-
-        self.assertEqual(
-            str(response),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>'
-            '<field name="Digits"><grammar termchar="#" src="builtin:dtmf/digits" />'
-            "</field></form></vxml>",
-        )
-
-        response = voicexml.VXMLResponse()
-        response.gather(action="http://example.com")
-
-        self.assertEqual(
-            str(response),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>'
-            '<field name="Digits"><grammar termchar="#" src="builtin:dtmf/digits" />'
-            '<nomatch><submit next="http://example.com?empty=1" method="post" /></nomatch></field>'
-            '<filled><submit next="http://example.com" method="post" /></filled></form></vxml>',
-        )
-
-        response = voicexml.VXMLResponse()
-        response.gather(action="http://example.com", num_digits=1, timeout=45, finish_on_key="*")
-
-        self.assertEqual(
-            str(response),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>'
-            '<field name="Digits"><grammar termtimeout="45s" timeout="45s" termchar="*" '
-            'src="builtin:dtmf/digits?minlength=1;maxlength=1" />'
-            '<nomatch><submit next="http://example.com?empty=1" method="post" /></nomatch></field>'
-            '<filled><submit next="http://example.com" method="post" /></filled></form></vxml>',
-        )
-
-    def test_record(self):
-        response = voicexml.VXMLResponse()
-        response.record()
-
-        self.assertEqual(
-            str(response),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>'
-            '<record name="UserRecording" beep="true" finalsilence="4000ms" '
-            'dtmfterm="true" type="audio/x-wav"></record></form></vxml>',
-        )
-
-        response = voicexml.VXMLResponse()
-        response.record(action="http://example.com", method="post", max_length=60)
-
-        self.assertEqual(
-            str(response),
-            '<?xml version="1.0" encoding="UTF-8"?><vxml version = "2.1"><form>'
-            '<record name="UserRecording" beep="true" maxtime="60s" finalsilence="4000ms" '
-            'dtmfterm="true" type="audio/x-wav">'
-            '<filled><submit next="http://example.com" method="post" '
-            'enctype="multipart/form-data" /></filled></record></form></vxml>',
-        )
-
-
-class NCCOTest(TembaTest):
-    def test_context_managers(self):
-        response = NCCOResponse()
-        self.assertEqual(response, response.__enter__())
-        self.assertFalse(response.__exit__(None, None, None))
-
-    def test_response(self):
-        response = NCCOResponse()
-        self.assertEqual(response.document, [])
-        self.assertEqual(json.loads(str(response)), [])
-
-    def test_join(self):
-        response1 = NCCOResponse()
-        response2 = NCCOResponse()
-
-        response1.document.append(dict(action="foo"))
-        response2.document.append(dict(action="bar"))
-
-        # the content of response2 should be prepended before the content of response1
-        self.assertEqual(json.loads(str(response1.join(response2))), [dict(action="bar"), dict(action="foo")])
-
-    def test_say(self):
-        response = NCCOResponse()
-        response.say("Hello")
-
-        self.assertEqual(json.loads(str(response)), [dict(action="talk", text="Hello", bargeIn=False)])
-
-    def test_play(self):
-        response = NCCOResponse()
-
-        with self.assertRaises(NCCOException):
-            response.play()
-
-        response.play(digits="123")
-        self.assertEqual(json.loads(str(response)), [dict(action="talk", text="123", bargeIn=False)])
-
-        response = NCCOResponse()
-        response.play(url="http://example.com/audio.wav")
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [dict(action="stream", bargeIn=False, streamUrl=["http://example.com/audio.wav"])],
-        )
-
-        response = NCCOResponse()
-        response.play(url="http://example.com/audio.wav", digits="123")
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [dict(action="stream", bargeIn=False, streamUrl=["http://example.com/audio.wav"])],
-        )
-
-    def test_bargeIn(self):
-        response = NCCOResponse()
-        response.say("Hello")
-        response.redirect("http://example.com/")
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [
-                dict(action="talk", text="Hello", bargeIn=True),
-                dict(action="input", maxDigits=1, timeOut=1, eventUrl=["%s?input_redirect=1" % "http://example.com/"]),
-            ],
-        )
-
-        response = NCCOResponse()
-        response.say("Hello")
-        response.redirect("http://example.com/")
-        response.say("Goodbye")
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [
-                dict(action="talk", text="Hello", bargeIn=True),
-                dict(action="input", maxDigits=1, timeOut=1, eventUrl=["%s?input_redirect=1" % "http://example.com/"]),
-                dict(action="talk", text="Goodbye", bargeIn=False),
-            ],
-        )
-
-        response = NCCOResponse()
-        response.say("Hello")
-        response.redirect("http://example.com/")
-        response.say("Please make a recording")
-        response.record(action="http://example.com", method="post", max_length=60)
-        response.say("Thanks")
-        response.say("Allo")
-        response.say("Cool")
-        response.redirect("http://example.com/")
-        response.say("Bye")
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [
-                dict(action="talk", text="Hello", bargeIn=True),
-                dict(action="input", maxDigits=1, timeOut=1, eventUrl=["%s?input_redirect=1" % "http://example.com/"]),
-                dict(action="talk", text="Please make a recording", bargeIn=False),
-                dict(
-                    format="wav",
-                    eventMethod="post",
-                    eventUrl=["http://example.com"],
-                    endOnSilence=4,
-                    timeOut=60,
-                    endOnKey="#",
-                    action="record",
-                    beepStart=True,
-                ),
-                dict(action="input", maxDigits=1, timeOut=1, eventUrl=["%s?save_media=1" % "http://example.com"]),
-                dict(action="talk", text="Thanks", bargeIn=False),
-                dict(action="talk", text="Allo", bargeIn=False),
-                dict(action="talk", text="Cool", bargeIn=True),
-                dict(action="input", maxDigits=1, timeOut=1, eventUrl=["%s?input_redirect=1" % "http://example.com/"]),
-                dict(action="talk", text="Bye", bargeIn=False),
-            ],
-        )
-
-        response = NCCOResponse()
-        response.play(url="http://example.com/audio.wav")
-        response.redirect("http://example.com/")
-        response.say("Goodbye")
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [
-                dict(action="stream", bargeIn=True, streamUrl=["http://example.com/audio.wav"]),
-                dict(action="input", maxDigits=1, timeOut=1, eventUrl=["%s?input_redirect=1" % "http://example.com/"]),
-                dict(action="talk", text="Goodbye", bargeIn=False),
-            ],
-        )
-
-    def test_pause(self):
-        response = NCCOResponse()
-        response.pause()
-
-    def test_redirect(self):
-        response = NCCOResponse()
-        response.redirect("http://example.com/")
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [dict(action="input", maxDigits=1, timeOut=1, eventUrl=["%s?input_redirect=1" % "http://example.com/"])],
-        )
-
-        response = NCCOResponse()
-        response.redirect("http://example.com/?param=12")
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [dict(action="input", maxDigits=1, timeOut=1, eventUrl=["http://example.com/?param=12&input_redirect=1"])],
-        )
-
-    def test_hangup(self):
-        response = NCCOResponse()
-        response.hangup()
-
-    def test_reject(self):
-        response = NCCOResponse()
-        response.reject()
-
-    def test_gather(self):
-        response = NCCOResponse()
-        response.gather()
-
-        self.assertEqual(json.loads(str(response)), [dict(action="input", submitOnHash=True)])
-
-        response = NCCOResponse()
-        response.gather(action="http://example.com")
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [dict(eventMethod="post", action="input", submitOnHash=True, eventUrl=["http://example.com"])],
-        )
-
-        response = NCCOResponse()
-        response.gather(action="http://example.com", num_digits=1, timeout=45, finish_on_key="*")
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [
-                dict(
-                    maxDigits=1,
-                    eventMethod="post",
-                    action="input",
-                    submitOnHash=False,
-                    eventUrl=["http://example.com"],
-                    timeOut=45,
-                )
-            ],
-        )
-
-    def test_record(self):
-        response = NCCOResponse()
-        response.record()
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [
-                dict(format="wav", endOnSilence=4, beepStart=True, action="record", endOnKey="#"),
-                dict(action="input", maxDigits=1, timeOut=1, eventUrl=["None?save_media=1"]),
-            ],
-        )
-
-        response = NCCOResponse()
-        response.record(action="http://example.com", method="post", max_length=60)
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [
-                dict(
-                    format="wav",
-                    eventMethod="post",
-                    eventUrl=["http://example.com"],
-                    endOnSilence=4,
-                    timeOut=60,
-                    endOnKey="#",
-                    action="record",
-                    beepStart=True,
-                ),
-                dict(action="input", maxDigits=1, timeOut=1, eventUrl=["%s?save_media=1" % "http://example.com"]),
-            ],
-        )
-        response = NCCOResponse()
-        response.record(action="http://example.com?param=12", method="post", max_length=60)
-
-        self.assertEqual(
-            json.loads(str(response)),
-            [
-                dict(
-                    format="wav",
-                    eventMethod="post",
-                    eventUrl=["http://example.com?param=12"],
-                    endOnSilence=4,
-                    timeOut=60,
-                    endOnKey="#",
-                    action="record",
-                    beepStart=True,
-                ),
-                dict(action="input", maxDigits=1, timeOut=1, eventUrl=["http://example.com?param=12&save_media=1"]),
-            ],
-        )
+        # a country that does not exist
+        self.assertIsNone(currency_for_country("XX"))
 
 
 class MiddlewareTest(TembaTest):
@@ -1889,13 +1103,6 @@ class MiddlewareTest(TembaTest):
         with self.settings(BRANDING=branding):
             self.assertRedirect(self.client.get(reverse("public.public_index")), "/redirect")
 
-    def test_flow_simulation(self):
-        Contact.set_simulation(True)
-
-        self.client.get(reverse("public.public_index"))
-
-        self.assertFalse(Contact.get_simulation())
-
     def test_activate_language(self):
         self.assertContains(self.client.get(reverse("public.public_index")), "Create Account")
 
@@ -1914,7 +1121,7 @@ class MakeTestDBTest(SmartminTestMixin, TransactionTestCase):
         self.create_anonymous_user()
 
         with ESMockWithScroll():
-            call_command("test_db", "generate", num_orgs=3, num_contacts=30, seed=1234)
+            call_command("test_db", num_orgs=3, num_contacts=30, seed=1234)
 
         org1, org2, org3 = tuple(Org.objects.order_by("id"))
 
@@ -1926,28 +1133,24 @@ class MakeTestDBTest(SmartminTestMixin, TransactionTestCase):
         )
         assertOrgCounts(ContactField.user_fields.all(), [6, 6, 6])
         assertOrgCounts(ContactGroup.user_groups.all(), [10, 10, 10])
-        assertOrgCounts(Contact.objects.filter(is_test=True), [4, 4, 4])  # 1 for each user
-        assertOrgCounts(Contact.objects.filter(is_test=False), [18, 8, 4])
+        assertOrgCounts(Contact.objects.all(), [18, 5, 7])
 
         org_1_all_contacts = ContactGroup.system_groups.get(org=org1, name="All Contacts")
 
-        self.assertEqual(org_1_all_contacts.contacts.count(), 17)
+        self.assertEqual(org_1_all_contacts.contacts.count(), 18)
         self.assertEqual(
-            list(ContactGroupCount.objects.filter(group=org_1_all_contacts).values_list("count")), [(17,)]
+            list(ContactGroupCount.objects.filter(group=org_1_all_contacts).values_list("count")), [(18,)]
         )
 
         # same seed should generate objects with same UUIDs
         self.assertEqual(ContactGroup.user_groups.order_by("id").first().uuid, "12b01ad0-db44-462d-81e6-dc0995c13a79")
 
         # check if contact fields are serialized
-        self.assertIsNotNone(Contact.objects.filter(is_test=False).first().fields)
+        self.assertIsNotNone(Contact.objects.first().fields)
 
         # check generate can't be run again on a now non-empty database
         with self.assertRaises(CommandError):
-            call_command("test_db", "generate", num_orgs=3, num_contacts=30, seed=1234)
-
-        # but simulate can
-        call_command("test_db", "simulate", num_runs=2)
+            call_command("test_db", num_orgs=3, num_contacts=30, seed=1234)
 
 
 class JsonModelTestDefaultNull(models.Model):
@@ -2066,8 +1269,28 @@ class TestJSONAsTextField(TestCase):
 class TestJSONField(TembaTest):
     def test_jsonfield_decimal_encoding(self):
         contact = self.create_contact("Xavier", number="+5939790990001")
-        contact.fields = {"1eaf5c91-8d56-4ca0-8e00-9b1c0b12e722": {"number": Decimal("123.45")}}
-        contact.save(update_fields=("fields",), handle_update=False)
+
+        with connection.cursor() as cur:
+            cur.execute(
+                "UPDATE contacts_contact SET fields = %s where id = %s",
+                (
+                    TembaJsonAdapter({"1eaf5c91-8d56-4ca0-8e00-9b1c0b12e722": {"number": Decimal("123.45")}}),
+                    contact.id,
+                ),
+            )
+
+            cur.execute("SELECT cast(fields as text) from contacts_contact where id = %s", (contact.id,))
+
+            raw_fields = cur.fetchone()[0]
+
+            self.assertEqual(raw_fields, '{"1eaf5c91-8d56-4ca0-8e00-9b1c0b12e722": {"number": 123.45}}')
+
+            cur.execute("SELECT fields from contacts_contact where id = %s", (contact.id,))
+
+            dict_fields = cur.fetchone()[0]
+            number_field = dict_fields.get("1eaf5c91-8d56-4ca0-8e00-9b1c0b12e722", {}).get("number")
+
+            self.assertEqual(number_field, Decimal("123.45"))
 
 
 class MatchersTest(TembaTest):
@@ -2130,7 +1353,7 @@ class NonBlockingLockTest(TestCase):
 class JSONTest(TestCase):
     def test_json(self):
         self.assertEqual(OrderedDict({"one": 1, "two": Decimal("0.2")}), json.loads('{"one": 1, "two": 0.2}'))
-        self.assertEqual('{"dt": "2018-08-27T20:41:28.123Z"}', json.dumps(dict(dt=ms_to_datetime(1535402488123))))
+        self.assertEqual('{"dt": "2018-08-27T20:41:28.123Z"}', json.dumps(dict(dt=ms_to_datetime(1_535_402_488_123))))
 
 
 class AnalyticsTest(TestCase):
@@ -2410,4 +1633,135 @@ class AnalyticsTest(TestCase):
             website="https://example.com",
             industry="Mining",
             monthly_spend="a lot",
+        )
+
+
+class RedactTest(TestCase):
+    def test_variations(self):
+        # phone number variations
+        self.assertEqual(
+            redact._variations("+593979099111"),
+            [
+                "%2B593979099111",
+                "0593979099111",
+                "+593979099111",
+                "593979099111",
+                "93979099111",
+                "3979099111",
+                "979099111",
+                "79099111",
+                "9099111",
+            ],
+        )
+
+        # reserved XML/HTML characters escaped and unescaped
+        self.assertEqual(
+            redact._variations("<?&>"),
+            [
+                "0&lt;?&amp;&gt;",
+                "+&lt;?&amp;&gt;",
+                "%2B%3C%3F%26%3E",
+                "&lt;?&amp;&gt;",
+                "0%3C%3F%26%3E",
+                "%3C%3F%26%3E",
+                "0<?&>",
+                "+<?&>",
+                "<?&>",
+            ],
+        )
+
+        # reserved JSON characters escaped and unescaped
+        self.assertEqual(
+            redact._variations("\n\r\t😄"),
+            [
+                "%2B%0A%0D%09%F0%9F%98%84",
+                "0%0A%0D%09%F0%9F%98%84",
+                "%0A%0D%09%F0%9F%98%84",
+                "0\\n\\r\\t\\ud83d\\ude04",
+                "+\\n\\r\\t\\ud83d\\ude04",
+                "\\n\\r\\t\\ud83d\\ude04",
+                "0\n\r\t😄",
+                "+\n\r\t😄",
+                "\n\r\t😄",
+            ],
+        )
+
+    def test_text(self):
+        # no match returns original and false
+        self.assertEqual(redact.text("this is <+private>", "<public>", "********"), "this is <+private>")
+        self.assertEqual(redact.text("this is 0123456789", "9876543210", "********"), "this is 0123456789")
+
+        # text contains un-encoded raw value to be redacted
+        self.assertEqual(redact.text("this is <+private>", "<+private>", "********"), "this is ********")
+
+        # text contains URL encoded version of the value to be redacted
+        self.assertEqual(redact.text("this is %2Bprivate", "+private", "********"), "this is ********")
+
+        # text contains JSON encoded version of the value to be redacted
+        self.assertEqual(redact.text('this is "+private"', "+private", "********"), 'this is "********"')
+
+        # text contains XML encoded version of the value to be redacted
+        self.assertEqual(redact.text("this is &lt;+private&gt;", "<+private>", "********"), "this is ********")
+
+        # test matching the value partially
+        self.assertEqual(redact.text("this is 123456789", "+123456789", "********"), "this is ********")
+
+        self.assertEqual(redact.text("this is +123456789", "123456789", "********"), "this is ********")
+        self.assertEqual(redact.text("this is 123456789", "0123456789", "********"), "this is ********")
+
+        # '3456789' matches the input string
+        self.assertEqual(redact.text("this is 03456789", "+123456789", "********"), "this is 0********")
+
+        # only rightmost 7 chars of the test matches
+        self.assertEqual(redact.text("this is 0123456789", "xxx3456789", "********"), "this is 012********")
+
+        # all matches replaced
+        self.assertEqual(
+            redact.text('{"number_full": "+593979099111", "number_short": "0979099111"}', "+593979099111", "********"),
+            '{"number_full": "********", "number_short": "0********"}',
+        )
+
+        # custom mask
+        self.assertEqual(redact.text("this is private", "private", "🌼🌼🌼🌼"), "this is 🌼🌼🌼🌼")
+
+    def test_http_trace(self):
+        # not an HTTP trace
+        self.assertEqual(redact.http_trace("hello", "12345", "********", ("name",)), "********")
+
+        # a JSON body
+        self.assertEqual(
+            redact.http_trace(
+                'POST /c/t/23524/receive HTTP/1.1\r\nHost: yy12345\r\n\r\n{"name": "Bob Smith", "number": "xx12345"}',
+                "12345",
+                "********",
+                ("name",),
+            ),
+            'POST /c/t/23524/receive HTTP/1.1\r\nHost: yy********\r\n\r\n{"name": "********", "number": "xx********"}',
+        )
+
+        # a URL-encoded body
+        self.assertEqual(
+            redact.http_trace(
+                "POST /c/t/23524/receive HTTP/1.1\r\nHost: yy12345\r\n\r\nnumber=xx12345&name=Bob+Smith",
+                "12345",
+                "********",
+                ("name",),
+            ),
+            "POST /c/t/23524/receive HTTP/1.1\r\nHost: yy********\r\n\r\nnumber=xx********&name=********",
+        )
+
+        # a body with neither encoding redacted as text if body keys not provided
+        self.assertEqual(
+            redact.http_trace(
+                "POST /c/t/23524/receive HTTP/1.1\r\nHost: yy12345\r\n\r\n//xx12345//", "12345", "********"
+            ),
+            "POST /c/t/23524/receive HTTP/1.1\r\nHost: yy********\r\n\r\n//xx********//",
+        )
+
+        # a body with neither encoding returned as is if body keys provided but we couldn't parse the body
+        self.assertEqual(
+            redact.http_trace(
+                "POST /c/t/23524/receive HTTP/1.1\r\nHost: yy12345\r\n\r\n//xx12345//", "12345", "********", ("name",)
+            ),
+            "POST /c/t/23524/receive HTTP/1.1\r\nHost: yy********\r\n\r\n********",
         )

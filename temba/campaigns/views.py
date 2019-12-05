@@ -12,6 +12,7 @@ from temba.contacts.models import ContactField, ContactGroup
 from temba.flows.models import Flow
 from temba.msgs.models import Msg
 from temba.orgs.views import ModalMixin, OrgObjPermsMixin, OrgPermsMixin
+from temba.utils.fields import CompletionTextarea
 from temba.utils.views import BaseActionForm
 from temba.values.constants import Value
 
@@ -61,7 +62,7 @@ class UpdateCampaignForm(forms.ModelForm):
 
     class Meta:
         model = Campaign
-        fields = "__all__"
+        fields = ("name", "group")
 
 
 class CampaignCRUDL(SmartCRUDL):
@@ -117,7 +118,7 @@ class CampaignCRUDL(SmartCRUDL):
             response["Temba-Success"] = self.get_success_url()
             return response
 
-    class Read(OrgMixin, SmartReadView):
+    class Read(OrgObjPermsMixin, SmartReadView):
         def get_gear_links(self):
             links = []
 
@@ -130,9 +131,23 @@ class CampaignCRUDL(SmartCRUDL):
                             href=reverse("campaigns.campaign_activate", args=[self.object.id]),
                         )
                     )
+
+                if self.has_org_perm("orgs.org_export"):
+                    links.append(
+                        dict(
+                            title=_("Export"),
+                            href=f"{reverse('orgs.org_export')}?campaign={self.object.id}&archived=1",
+                        )
+                    )
+
             else:
                 if self.has_org_perm("campaigns.campaignevent_create"):
                     links.append(dict(title="Add Event", style="btn-primary", js_class="add-event", href="#"))
+
+                if self.has_org_perm("orgs.org_export"):
+                    links.append(
+                        dict(title=_("Export"), href=f"{reverse('orgs.org_export')}?campaign={self.object.id}")
+                    )
 
                 if self.has_org_perm("campaigns.campaign_update"):
                     links.append(dict(title="Edit", js_class="update-campaign", href="#"))
@@ -146,6 +161,16 @@ class CampaignCRUDL(SmartCRUDL):
                         )
                     )
 
+            user = self.get_user()
+            if user.is_superuser or user.is_staff:
+                links.append(
+                    dict(
+                        title=_("Service"),
+                        posterize=True,
+                        href=f'{reverse("orgs.org_service")}?organization={self.object.org_id}&redirect_url={reverse("campaigns.campaign_read", args=[self.object.id])}',
+                    )
+                )
+
             return links
 
     class Create(OrgPermsMixin, ModalMixin, SmartCreateView):
@@ -157,7 +182,7 @@ class CampaignCRUDL(SmartCRUDL):
 
             class Meta:
                 model = Campaign
-                fields = "__all__"
+                fields = ("name", "group")
 
         fields = ("name", "group")
         form_class = CampaignForm
@@ -288,7 +313,8 @@ class CampaignEventForm(forms.ModelForm):
                 iso_code = lang["iso_code"]
                 if iso_code in self.data and len(self.data[iso_code].strip()) > Msg.MAX_TEXT_LEN:
                     raise ValidationError(
-                        _("Translation for '%s' exceeds the %d character limit.") % (lang["name"], Msg.MAX_TEXT_LEN)
+                        _("Translation for '%(language)s' exceeds the %(limit)d character limit.")
+                        % dict(language=lang["name"], limit=Msg.MAX_TEXT_LEN)
                     )
 
         return data
@@ -320,13 +346,14 @@ class CampaignEventForm(forms.ModelForm):
             translations = {}
             for language in self.languages:
                 iso_code = language.language["iso_code"]
-                translations[iso_code] = self.cleaned_data.get(iso_code, "")
+                if iso_code in self.cleaned_data and self.cleaned_data.get(iso_code, "").strip():
+                    translations[iso_code] = self.cleaned_data.get(iso_code, "").strip()
 
             if not obj.flow_id or not obj.flow.is_active or not obj.flow.is_system:
                 obj.flow = Flow.create_single_message(org, request.user, translations, base_language=base_language)
             else:
                 # set our single message on our flow
-                obj.flow.update_single_message_flow(translations, base_language)
+                obj.flow.update_single_message_flow(self.user, translations, base_language)
 
             obj.message = translations
             obj.full_clean()
@@ -370,19 +397,31 @@ class CampaignEventForm(forms.ModelForm):
             # if it's our primary language, allow use to steal the 'base' message
             if org.primary_language and org.primary_language.iso_code == language.iso_code:
 
-                initial = message.get(language.iso_code)
+                initial = message.get(language.iso_code, "")
 
                 if not initial:
-                    initial = message.get("base")
+                    initial = message.get("base", "")
 
                 # also, let's show it first
                 insert = 0
             else:
 
                 # otherwise, its just a normal language
-                initial = message.get(language.iso_code)
+                initial = message.get(language.iso_code, "")
 
-            field = forms.CharField(widget=forms.Textarea, required=False, label=language.name, initial=initial)
+            field = forms.CharField(
+                widget=CompletionTextarea(
+                    attrs={
+                        "placeholder": _(
+                            "Hi @contact.name! This is just a friendly reminder to apply your fertilizer."
+                        )
+                    }
+                ),
+                required=False,
+                label=language.name,
+                initial=initial,
+            )
+
             self.fields[language.iso_code] = field
             field.language = dict(name=language.name, iso_code=language.iso_code)
 
@@ -432,7 +471,7 @@ class CampaignEventCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            event_fires = self.get_object().event_fires.all()
+            event_fires = self.get_object().fires.all()
 
             fired_event_fires = event_fires.exclude(fired=None).order_by("-fired", "pk")
             scheduled_event_fires = event_fires.filter(fired=None).order_by("scheduled", "pk")

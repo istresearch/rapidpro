@@ -11,6 +11,7 @@ from .views import (
     CampaignsEndpoint,
     ChannelEventsEndpoint,
     ChannelsEndpoint,
+    ClassifiersEndpoint,
     ContactActionsEndpoint,
     ContactsEndpoint,
     DefinitionsEndpoint,
@@ -29,6 +30,7 @@ from .views import (
     ResthookSubscribersEndpoint,
     RootView,
     RunsEndpoint,
+    TemplatesEndpoint,
 )
 
 urlpatterns = [
@@ -43,6 +45,7 @@ urlpatterns = [
     url(r"^campaign_events$", CampaignEventsEndpoint.as_view(), name="api.v2.campaign_events"),
     url(r"^channels$", ChannelsEndpoint.as_view(), name="api.v2.channels"),
     url(r"^channel_events$", ChannelEventsEndpoint.as_view(), name="api.v2.channel_events"),
+    url(r"^classifiers$", ClassifiersEndpoint.as_view(), name="api.v2.classifiers"),
     url(r"^contacts$", ContactsEndpoint.as_view(), name="api.v2.contacts"),
     url(r"^contact_actions$", ContactActionsEndpoint.as_view(), name="api.v2.contact_actions"),
     url(r"^definitions$", DefinitionsEndpoint.as_view(), name="api.v2.definitions"),
@@ -59,6 +62,7 @@ urlpatterns = [
     url(r"^resthook_events$", ResthookEventsEndpoint.as_view(), name="api.v2.resthook_events"),
     url(r"^resthook_subscribers$", ResthookSubscribersEndpoint.as_view(), name="api.v2.resthook_subscribers"),
     url(r"^runs$", RunsEndpoint.as_view(), name="api.v2.runs"),
+    url(r"^templates$", TemplatesEndpoint.as_view(), name="api.v2.templates"),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns, allowed=["json", "api"])

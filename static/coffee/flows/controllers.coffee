@@ -131,7 +131,7 @@ app.controller 'FlowController', [ '$scope', '$rootScope', '$timeout', '$log', '
 
   # fetch our flow to get started
   $scope.init = ->
-    Flow.fetch window.flowId, ->
+    Flow.fetch window.flowUUID, ->
       $scope.updateActivity()
       $scope.flow = Flow.flow
 
@@ -145,10 +145,10 @@ app.controller 'FlowController', [ '$scope', '$rootScope', '$timeout', '$log', '
     $scope.dialog = utils.openModal("/partials/modal", SimpleMessageController, resolveObj)
     return $scope.dialog
 
-  showConnectTransferTo = ->
-    modal = new ConfirmationModal(gettext("TransferTo Disconnected"), gettext("No TransferTo account connected. Please first connect your TransferTo account."))
+  showConnectDTOne = ->
+    modal = new ConfirmationModal(gettext("DTOne Disconnected"), gettext("No DTOne account connected. Please first connect your DTOne account."))
     modal.addClass('airtime-warning')
-    modal.setPrimaryButton(gettext("Connect TransferTo Account"))
+    modal.setPrimaryButton(gettext("Connect DTOne Account"))
     modal.setListeners
       onPrimary: ->
         document.location.href = window.connectAirtimeServiceURL
@@ -316,11 +316,10 @@ app.controller 'FlowController', [ '$scope', '$rootScope', '$timeout', '$log', '
         $rootScope.is_starting = data.is_starting
 
         # to be successful we should be a 200 with activity data
-        if xhr.status == 200 and data.activity
+        if xhr.status == 200 and data.nodes
           $rootScope.activity =
-            active: data.activity
-            visited: data.visited
-
+            active: data.nodes
+            visited: data.segments
           if not window.simulation
             $rootScope.visibleActivity = $rootScope.activity
 
@@ -528,7 +527,7 @@ app.controller 'FlowController', [ '$scope', '$rootScope', '$timeout', '$log', '
 
     # show message asking to connect TransferTo account for existing airtime node
     if ruleset.ruleset_type == 'airtime' and not $rootScope.hasAirtimeService
-      showConnectTransferTo()
+      showConnectDTOne()
       return
 
     if Flow.language and Flow.flow.base_language != Flow.language.iso_code and not dragSource
@@ -1229,18 +1228,14 @@ NodeEditorController = ($rootScope, $scope, $modalInstance, $timeout, $log, Flow
   $scope.isRuleVisible = (rule) ->
     return flow.flow_type in rule._config.filter
 
-  $scope.getFlowsUrl = (exclude_current_flow) ->
+  $scope.getFlowsUrl = (exclude_current_flow, same_type) ->
     url = "/flow/?_format=select2"
 
     if exclude_current_flow
         url += '&exclude_flow_uuid='+ Flow.flow.metadata.uuid;
+    if same_type
+      url += "&flow_type=" + Flow.flow.flow_type
 
-    if Flow.flow.flow_type == 'S'
-      return url + "&flow_type=S"
-    if Flow.flow.flow_type == 'M'
-      return url + "&flow_type=M&flow_type=V"
-    if Flow.flow.flow_type == 'V'
-      return url + "&flow_type=V"
     return url
 
   $scope.isPausingRuleset = ->

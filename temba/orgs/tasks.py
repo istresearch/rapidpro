@@ -1,6 +1,6 @@
 from celery.task import task
 
-from temba.utils.queues import nonoverlapping_task
+from temba.utils.celery import nonoverlapping_task
 
 from .models import CreditAlert, Invitation, Org, TopUpCredits
 
@@ -20,6 +20,11 @@ def send_alert_email_task(alert_id):
 @task(track_started=True, name="check_credits_task")
 def check_credits_task():  # pragma: needs cover
     CreditAlert.check_org_credits()
+
+
+@task(track_started=True, name="check_topup_expiration_task")
+def check_topup_expiration_task():
+    CreditAlert.check_topup_expiration()
 
 
 @task(track_started=True, name="apply_topups_task")

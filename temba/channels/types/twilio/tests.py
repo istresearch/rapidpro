@@ -5,13 +5,13 @@ from twilio.base.exceptions import TwilioRestException
 from django.urls import reverse
 
 from temba.channels.models import Channel
-from temba.orgs.models import ACCOUNT_SID, ACCOUNT_TOKEN
+from temba.orgs.models import Org
 from temba.tests import TembaTest
 from temba.tests.twilio import MockRequestValidator, MockTwilioClient
 
 
 class TwilioTypeTest(TembaTest):
-    @patch("temba.ivr.clients.TwilioClient", MockTwilioClient)
+    @patch("temba.orgs.models.TwilioClient", MockTwilioClient)
     @patch("twilio.request_validator.RequestValidator", MockRequestValidator)
     def test_claim(self):
         self.login(self.admin)
@@ -31,7 +31,7 @@ class TwilioTypeTest(TembaTest):
         self.assertEqual(response.request["PATH_INFO"], reverse("orgs.org_twilio_connect"))
 
         # attach a Twilio accont to the org
-        self.org.config = {ACCOUNT_SID: "account-sid", ACCOUNT_TOKEN: "account-token"}
+        self.org.config = {Org.CONFIG_TWILIO_SID: "account-sid", Org.CONFIG_TWILIO_TOKEN: "account-token"}
         self.org.save()
 
         # hit the claim page, should now have a claim twilio link
@@ -217,7 +217,7 @@ class TwilioTypeTest(TembaTest):
                     mock_numbers.call_args_list[-1][1], dict(voice_application_sid="", sms_application_sid="")
                 )
 
-    @patch("temba.ivr.clients.TwilioClient", MockTwilioClient)
+    @patch("temba.orgs.models.TwilioClient", MockTwilioClient)
     @patch("twilio.request_validator.RequestValidator", MockRequestValidator)
     def test_deactivate(self):
 

@@ -25,11 +25,13 @@ from django.views.decorators.csrf import csrf_exempt
 from temba.archives.models import Archive
 from temba.channels.models import Channel
 from temba.contacts.fields import OmniboxField
-from temba.contacts.models import TEL_SCHEME, URN, ContactGroup, ContactURN
+from temba.contacts.models import TEL_SCHEME, ContactGroup, ContactURN
+from temba.flows.legacy.expressions import get_function_listing
 from temba.formax import FormaxMixin
 from temba.orgs.views import ModalMixin, OrgObjPermsMixin, OrgPermsMixin
 from temba.utils import analytics, json, on_transaction_commit
-from temba.utils.expressions import get_function_listing
+from temba.utils.fields import CompletionTextarea
+from temba.utils.models import patch_queryset_count
 from temba.utils.views import BaseActionForm
 
 from .models import INITIALIZING, QUEUED, Broadcast, ExportMessagesTask, Label, Msg, Schedule, SystemLabel
@@ -76,7 +78,7 @@ def send_message_auto_complete_processor(request):
 
 
 class SendMessageForm(Form):
-    omnibox = OmniboxField()
+    omnibox = OmniboxField(required=False)
     text = forms.CharField(widget=forms.Textarea, max_length=640)
     schedule = forms.BooleanField(widget=forms.HiddenInput, required=False)
     step_node = forms.CharField(widget=forms.HiddenInput, max_length=36, required=False)
@@ -153,9 +155,9 @@ class InboxView(OrgPermsMixin, SmartListView):
         # if there isn't a search filtering the queryset, we can replace the count function with a pre-calculated value
         if "search" not in self.request.GET:
             if isinstance(label, Label) and not label.is_folder():
-                self.object_list.count = lambda: label.get_visible_count()
+                patch_queryset_count(self.object_list, label.get_visible_count)
             elif isinstance(label, str):
-                self.object_list.count = lambda: counts[label]
+                patch_queryset_count(self.object_list, lambda: counts[label])
 
         context = super().get_context_data(**kwargs)
 
@@ -200,7 +202,12 @@ class InboxView(OrgPermsMixin, SmartListView):
 
 
 class BroadcastForm(forms.ModelForm):
-    message = forms.CharField(required=True, widget=forms.Textarea, max_length=160)
+    message = forms.CharField(
+        required=True,
+        widget=CompletionTextarea(attrs={"placeholder": _("Hi @contact.name!")}),
+        max_length=Broadcast.MAX_TEXT_LEN,
+    )
+
     omnibox = OmniboxField()
 
     def __init__(self, user, *args, **kwargs):
@@ -243,14 +250,11 @@ class BroadcastCRUDL(SmartCRUDL):
                 )
 
             if self.has_org_perm("schedules.schedule_update"):
-                action = "formax"
-                if len(self.get_object().children.all()) == 0:
-                    action = "fixed"
                 formax.add_section(
                     "schedule",
                     reverse("schedules.schedule_update", args=[self.object.schedule.pk]),
                     icon="icon-calendar",
-                    action=action,
+                    action="formax",
                 )
 
     class Update(OrgObjPermsMixin, SmartUpdateView):
@@ -313,10 +317,6 @@ class BroadcastCRUDL(SmartCRUDL):
         def pre_process(self, *args, **kwargs):
             response = super().pre_process(*args, **kwargs)
             org = self.request.user.get_org()
-            simulation = self.request.GET.get("simulation", "false") == "true"
-
-            if simulation:
-                return response
 
             # can this org send to any URN schemes?
             if not org.get_schemes(Channel.ROLE_SEND):
@@ -349,7 +349,6 @@ class BroadcastCRUDL(SmartCRUDL):
             self.form = form
             user = self.request.user
             org = user.get_org()
-            simulation = self.request.GET.get("simulation", "false") == "true"
 
             omnibox = self.form.cleaned_data["omnibox"]
             has_schedule = self.form.cleaned_data["schedule"]
@@ -371,18 +370,17 @@ class BroadcastCRUDL(SmartCRUDL):
                 else:
                     return HttpResponseRedirect(self.get_success_url())
 
-            # if simulating only use the test contact
-            if simulation:
-                groups = []
-                urns = []
-                for contact in contacts:
-                    if contact.is_test:
-                        contacts = [contact]
-                        break
-
-            schedule = Schedule.objects.create(created_by=user, modified_by=user) if has_schedule else None
+            schedule = Schedule.create_blank_schedule(org, user) if has_schedule else None
             broadcast = Broadcast.create(
-                org, user, text, groups=groups, contacts=contacts, urns=urns, schedule=schedule, status=QUEUED
+                org,
+                user,
+                text,
+                groups=groups,
+                contacts=contacts,
+                urns=urns,
+                schedule=schedule,
+                status=QUEUED,
+                template_state=Broadcast.TEMPLATE_STATE_UNEVALUATED,
             )
 
             if not has_schedule:
@@ -404,10 +402,7 @@ class BroadcastCRUDL(SmartCRUDL):
                 return HttpResponseRedirect(self.get_success_url())
 
         def post_save(self, obj):
-            # fire our send in celery
-            from temba.msgs.tasks import send_broadcast_task
-
-            on_transaction_commit(lambda: send_broadcast_task.delay(obj.pk))
+            on_transaction_commit(lambda: obj.send())
             return obj
 
         def get_form_kwargs(self):
@@ -515,7 +510,7 @@ class ExportForm(Form):
 
 class MsgCRUDL(SmartCRUDL):
     model = Msg
-    actions = ("inbox", "flow", "archived", "outbox", "sent", "failed", "filter", "test", "export")
+    actions = ("inbox", "flow", "archived", "outbox", "sent", "failed", "filter", "export")
 
     class Export(ModalMixin, OrgPermsMixin, SmartFormView):
 
@@ -613,37 +608,6 @@ class MsgCRUDL(SmartCRUDL):
             kwargs = super().get_form_kwargs()
             kwargs["user"] = self.request.user
             kwargs["label"] = self.derive_label()[1]
-            return kwargs
-
-    class Test(SmartFormView):
-        form_class = TestMessageForm
-        fields = ("channel", "urn", "text")
-        title = "Test Message Delivery"
-        permissions = "msgs.msg_test"
-
-        def form_valid(self, *args, **kwargs):  # pragma: no cover
-            data = self.form.cleaned_data
-            handled = Msg.create_incoming(
-                data["channel"], URN.from_tel(data["urn"]), data["text"], user=self.request.user
-            )
-
-            kwargs = self.get_form_kwargs()
-            kwargs["initial"] = data
-            next_form = TestMessageForm(**kwargs)
-
-            context = self.get_context_data()
-            context["handled"] = handled
-            context["form"] = next_form
-            context["responses"] = handled.responses.all()
-
-            # passing a minimal base template and a simple Context (instead of RequestContext) helps us
-            # minimize number of other queries, allowing us to more easily measure queries per request
-            context["base_template"] = "msgs/msg_test_frame.html"
-            return self.render_to_response(context)
-
-        def get_form_kwargs(self, *args, **kwargs):  # pragma: needs cover
-            kwargs = super().get_form_kwargs(*args, **kwargs)
-            kwargs["org"] = self.request.user.get_org()
             return kwargs
 
     class Inbox(MsgActionMixin, InboxView):
@@ -755,10 +719,10 @@ class MsgCRUDL(SmartCRUDL):
 
         @classmethod
         def derive_url_pattern(cls, path, action):
-            return r"^%s/%s/(?P<label_id>\d+)/$" % (path, action)
+            return r"^%s/%s/(?P<label>[^/]+)/$" % (path, action)
 
         def derive_label(self):
-            return Label.all_objects.get(org=self.request.user.get_org(), id=self.kwargs["label_id"])
+            return self.request.user.get_org().msgs_labels.get(uuid=self.kwargs["label"])
 
         def get_queryset(self, **kwargs):
             qs = super().get_queryset(**kwargs)
@@ -782,9 +746,9 @@ class BaseLabelForm(forms.ModelForm):
         if labels_count >= Label.MAX_ORG_LABELS:
             raise forms.ValidationError(
                 _(
-                    "This org has %s labels and the limit is %s. "
+                    "This org has %(count)d labels and the limit is %(limit)d. "
                     "You must delete existing ones before you can "
-                    "create new ones." % (labels_count, Label.MAX_ORG_LABELS)
+                    "create new ones." % dict(count=labels_count, limit=Label.MAX_ORG_LABELS)
                 )
             )
 
@@ -877,7 +841,7 @@ class LabelCRUDL(SmartCRUDL):
             self.object = Label.get_or_create_folder(user.get_org(), user, obj.name)
 
     class Update(ModalMixin, OrgObjPermsMixin, SmartUpdateView):
-        success_url = "id@msgs.msg_filter"
+        success_url = "uuid@msgs.msg_filter"
         success_message = ""
 
         def get_form_kwargs(self):
@@ -902,6 +866,6 @@ class LabelCRUDL(SmartCRUDL):
 
         def post(self, request, *args, **kwargs):
             label = self.get_object()
-            label.release()
+            label.release(self.request.user)
 
             return HttpResponseRedirect(self.get_redirect_url())

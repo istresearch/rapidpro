@@ -1,3 +1,4 @@
+import json
 import operator
 from functools import reduce
 
@@ -30,7 +31,7 @@ def omnibox_query(org, **kwargs):
 
     # these lookups return a Contact queryset
     if contact_uuids or message_ids or label_id:
-        qs = Contact.objects.filter(org=org, is_blocked=False, is_stopped=False, is_active=True, is_test=False)
+        qs = Contact.objects.filter(org=org, is_blocked=False, is_stopped=False, is_active=True)
 
         if contact_uuids:
             qs = qs.filter(uuid__in=contact_uuids.split(","))
@@ -78,7 +79,7 @@ def omnibox_mixed_search(org, search, types):
     results = []
 
     if SEARCH_ALL_GROUPS in search_types or SEARCH_STATIC_GROUPS in search_types:
-        groups = ContactGroup.get_user_groups(org)
+        groups = ContactGroup.get_user_groups(org, ready_only=True)
 
         # exclude dynamic groups if not searching all groups
         if SEARCH_ALL_GROUPS not in search_types:
@@ -100,12 +101,7 @@ def omnibox_mixed_search(org, search, types):
         if org.is_anon and search_id is not None:
             search_text = f"id = {search_id}"
         elif search:
-            # we use trigrams on Elasticsearch, minimum required length for a term is 3
-            filtered_search_terms = (
-                search_term for search_term in search_terms if search_term != "" and len(search_term) >= 3
-            )
-
-            search_text = " AND ".join(f"name ~ {search_term}" for search_term in filtered_search_terms)
+            search_text = " AND ".join(f"name ~ {search_term}" for search_term in search_terms)
 
         else:
             search_text = None
@@ -138,7 +134,7 @@ def omnibox_mixed_search(org, search, types):
         if search:
             # we use trigrams on Elasticsearch, minimum required length for a term is 3
             filtered_search_terms = (
-                search_term for search_term in search_terms if search_term != "" and len(search_term) >= 3
+                search_term for search_term in search_terms if search_term != ""  # and len(search_term) >= 3
             )
 
             must_condition = [{"match_phrase": {"urns.path": search_term}} for search_term in filtered_search_terms]
@@ -186,7 +182,28 @@ def omnibox_mixed_search(org, search, types):
     return results  # sorted(results, key=lambda o: o.name if hasattr(o, 'name') else o.path)
 
 
-def omnibox_results_to_dict(org, results):
+def omnibox_serialize(org, groups, contacts, json_encode=False):
+    """
+    Shortcut for proper way to serialize a queryset of groups and contacts for omnibox component
+    """
+    serialized = omnibox_results_to_dict(org, list(groups) + list(contacts), 2)
+
+    if json_encode:
+        return [json.dumps(_) for _ in serialized]
+
+    return serialized
+
+
+def omnibox_deserialize(org, omnibox):
+    group_ids = [item["id"] for item in omnibox if item["type"] == "group"]
+    contact_ids = [item["id"] for item in omnibox if item["type"] == "contact"]
+    return {
+        "groups": ContactGroup.all_groups.filter(uuid__in=group_ids, org=org, is_active=True),
+        "contacts": Contact.objects.filter(uuid__in=contact_ids, org=org, is_active=True),
+    }
+
+
+def omnibox_results_to_dict(org, results, version="1"):
     """
     Converts the result of a omnibox query (queryset of contacts, groups or URNs, or a list) into a dict {id, text}
     """
@@ -197,19 +214,43 @@ def omnibox_results_to_dict(org, results):
 
     for obj in results:
         if isinstance(obj, ContactGroup):
-            result = {"id": "g-%s" % obj.uuid, "text": obj.name, "extra": group_counts[obj]}
-        elif isinstance(obj, Contact):
-            if org.is_anon:
-                result = {"id": "c-%s" % obj.uuid, "text": obj.get_display(org)}
+            if version == "1":
+                result = {"id": "g-%s" % obj.uuid, "text": obj.name, "extra": group_counts[obj]}
             else:
-                result = {"id": "c-%s" % obj.uuid, "text": obj.get_display(org), "extra": obj.get_urn_display()}
+                result = {"id": obj.uuid, "name": obj.name, "type": "group", "count": group_counts[obj]}
+        elif isinstance(obj, Contact):
+            if version == "1":
+                if org.is_anon:
+                    result = {"id": "c-%s" % obj.uuid, "text": obj.get_display(org)}
+                else:
+                    result = {"id": "c-%s" % obj.uuid, "text": obj.get_display(org), "extra": obj.get_urn_display()}
+            else:
+                if org.is_anon:
+                    result = {"id": obj.uuid, "name": obj.get_display(org), "type": "contact"}
+                else:
+                    result = {
+                        "id": obj.uuid,
+                        "name": obj.get_display(org),
+                        "type": "contact",
+                        "urn": obj.get_urn_display(),
+                    }
+
         elif isinstance(obj, ContactURN):
-            result = {
-                "id": "u-%d" % obj.id,
-                "text": obj.get_display(org),
-                "extra": obj.contact.name or None,
-                "scheme": obj.scheme,
-            }
+            if version == "1":
+                result = {
+                    "id": "u-%d" % obj.id,
+                    "text": obj.get_display(org),
+                    "scheme": obj.scheme,
+                    "extra": obj.contact.name or None,
+                }
+            else:
+                result = {
+                    "id": obj.identity,
+                    "name": obj.get_display(org),
+                    "contact": obj.contact.name or None,
+                    "scheme": obj.scheme,
+                    "type": "urn",
+                }
 
         formatted.append(result)
 

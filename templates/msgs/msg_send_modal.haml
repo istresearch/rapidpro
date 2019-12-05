@@ -12,10 +12,15 @@
     -if send_channel
       #send-form
         {% csrf_token %}
-        %label{for:"id_text"}
-          -trans "Message"
-        %textarea#id_text{tabindex:1}
-        #counter
+        %rp-completion#id_text{
+          name:"text", 
+          placeholder: "Hi @contact!"
+          completionsEndpoint:"/mr/docs/completion.json", 
+          functionsEndpoint:"/mr/docs/functions.json", 
+          fieldsEndpoint:"/api/v2/fields.json"
+          textarea:"true",
+          tabindex:1
+        }
 
         #recipients-count
 
@@ -32,12 +37,7 @@
         directly.
 
   .modal-footer
-    -if object.flow_type == 'U' and not is_ussd_channel
-      %a.btn.cancel{tabindex:4}
-        -trans "Cancel"
-      %a.btn.btn-primary{href:"{% url 'channels.channel_list' %}", tabindex:3}
-        -trans "Add USSD Channel"
-    -elif send_channel
+    -if send_channel
       %a.btn.schedule.pull-left
         -trans "Schedule"
       %a.btn.cancel{tabindex:4}
@@ -53,11 +53,6 @@
   -load compress
 
   :javascript
-    $(document).ready(function() {
-      new AutoComplete({{ completions|to_json }}, {{ function_completions|to_json }}).bind($('#id_text'));
-      $("textarea").keyup(messageTextareaLengthCheck);
-
-    });
 
     function formatResult(item) {
         return '<div>' + item.text + '</div>';
@@ -81,7 +76,7 @@
       $("#send-message .error").remove();
 
       // clear the previous text
-      $("#id_text").val("");
+      document.querySelector("#send-message rp-completion").value = "";
 
       // show us as loading or initialize and empty select2
       if (loading) {
@@ -109,9 +104,6 @@
       var modal = $("#send-message").modal({keyboard:false}).show();
 
       initializeOmnibox(null);
-
-      // focus the text field on show
-      $("#send-message #id_text").focus();
 
       // handle the ordering on the select2
       $('.select2-input').attr('tabindex', 2);
@@ -170,12 +162,13 @@
         post = post + "&simulation=true"
       }
 
+      var text = document.querySelector("#send-form rp-completion").value
 
       // our post data
       var data = {
         step_node: nodeUUID,
         schedule: scheduled,
-        text: form.find("#id_text").val(),
+        text: text,
         csrfmiddlewaretoken: form.find("[name='csrfmiddlewaretoken']").val()
       };
 
@@ -217,12 +210,7 @@
         for (var error in response.errors) {
           var msgs = response.errors[error];
           for (var msg in msgs) {
-
             var id = "#id_" + error;
-            if (error == "text") {
-              id = "#counter";
-            }
-
             $(id).after("<div class=error id=" + error + "_error>" + msgs[msg] + "</div>");
           }
         }

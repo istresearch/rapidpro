@@ -6,9 +6,9 @@ from django.urls import reverse
 from temba.channels.types.wechat.tasks import refresh_wechat_access_tokens
 from temba.contacts.models import URN
 from temba.tests import MockResponse, TembaTest
-from temba.utils.wechat import WeChatClient
 
 from ...models import Channel, ChannelLog
+from .client import WeChatClient
 
 
 class WeChatTypeTest(TembaTest):
@@ -117,9 +117,7 @@ class WeChatTypeTest(TembaTest):
             {"secret": "app-secret", "grant_type": "client_credential", "appid": "app-id"},
         )
         self.login(self.admin)
-        response = self.client.get(
-            reverse("channels.channellog_list") + "?channel=%d&others=1" % channel.id, follow=True
-        )
+        response = self.client.get(reverse("channels.channellog_list", args=[channel.uuid]) + "?others=1", follow=True)
         self.assertEqual(len(response.context["object_list"]), 3)
 
         mock_get.reset_mock()

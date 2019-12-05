@@ -1,4 +1,5 @@
 import time
+import types
 from collections import OrderedDict
 from uuid import uuid4
 
@@ -18,11 +19,18 @@ def generate_uuid():
     return str(uuid4())
 
 
+def patch_queryset_count(qs, function):
+    """
+    As of Django 2.2 a patched .count on querysets has to look like a real method
+    """
+    qs.count = types.MethodType(lambda s: function(), qs)
+
+
 class ProxyQuerySet(object):
     """
     Helper class that mimics the behavior of a Django QuerySet
 
-    The result is cached so we can't chain it as a normal QuerySet, but becuse we defined special methods that are
+    The result is cached so we can't chain it as a normal QuerySet, but because we defined special methods that are
     expected by templates and tests we can use it as an evaluated QuerySet
     """
 
@@ -237,10 +245,7 @@ class SquashableModel(models.Model):
         start = time.time()
         num_sets = 0
 
-        # only distinct across 100000 rows at most
-        unsquashed_query = cls.get_unsquashed().filter(id__in=cls.get_unsquashed().values("id")[:100_000])
-
-        for distinct_set in unsquashed_query.order_by(*cls.SQUASH_OVER).distinct(*cls.SQUASH_OVER)[:5000]:
+        for distinct_set in cls.get_unsquashed().order_by(*cls.SQUASH_OVER).distinct(*cls.SQUASH_OVER)[:5000]:
             with connection.cursor() as cursor:
                 sql, params = cls.get_squash_query(distinct_set)
 
