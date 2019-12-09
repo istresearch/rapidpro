@@ -1917,7 +1917,7 @@ class ChannelCRUDL(SmartCRUDL):
             context["configuration_urls"] = channel_type.get_configuration_urls(self.object)
             context["show_public_addresses"] = channel_type.show_public_addresses
 
-            if hasattr(settings, 'SUB_DIR'):
+            if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR is not None:
                 context['subdir'] = settings.SUB_DIR.replace("/", "").replace("\\", "")
             return context
 
