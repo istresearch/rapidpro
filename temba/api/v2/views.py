@@ -1,4 +1,8 @@
+import base64
+import hashlib
+import hmac
 import itertools
+import time
 from enum import Enum
 
 from boto3 import client as botoclient
@@ -8,6 +12,7 @@ from rest_framework import generics, status, views
 from rest_framework.pagination import CursorPagination
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from smartmin.views import SmartFormView, SmartTemplateView
@@ -17,7 +22,9 @@ from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.db.models import Prefetch, Q
 from django.http import HttpResponse, JsonResponse
+from django.utils.encoding import force_bytes
 from django.utils.translation import ugettext_lazy as _
+from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
 
 from temba.api.models import APIToken, Resthook, ResthookSubscriber, WebHookEvent
@@ -395,8 +402,7 @@ class ArchivesEndpoint(ListAPIMixin, BaseAPIView):
             ],
         }
 
-
-class AttachmentsEndpoint(BaseAPIView):
+class AttachmentsEndpoint(View):
     """
     This endpoint allows you to request a signed S3 URL for attachment uploads.
 
@@ -405,23 +411,57 @@ class AttachmentsEndpoint(BaseAPIView):
     Make a `POST` request to the endpoint with a `path` parameter specifying the file path, and an `acl` parameter specifying an S3 canned ACL (optional; default: `public-read`).
     """
 
-    parser_classes = (MultiPartParser, FormParser)
-    permission = "msgs.msg_api"
-
+    @csrf_exempt
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+ 
     def post(self, request, format=None, *args, **kwargs):
+        response = self.handle(request)
+        response.accepted_renderer = JSONRenderer()
+        response.accepted_media_type = "application/json"
+        response.renderer_context = {}
+        return response
 
-        org = self.request.user.get_org()
-        path = request.GET.get("path", None)
-        acl = request.GET.get("acl", "public-read")
+    def handle(self, request):
+        path = request.POST.get("path", None)
+        acl = request.POST.get("acl", "public-read")
+        channel_id = request.GET.get("cid", "")
+        request_time = request.GET.get("ts", "")
+        request_signature = force_bytes(request.POST.get("signature", ""))
+
+        data = {}
+
+        try:
+            channels = Channel.objects.filter(pk=channel_id, is_active=True)
+            if not channels:
+                raise Exception("Invalid channel")
+            channel = channels[0]
+            if not channel.secret or not channel.org:
+                raise Exception("Invalid channel metadata")
+            now = time.time()
+            if abs(now - int(request_time)) > 60 * 15:
+                raise Exception("Invalid timestamp")
+
+            signature = hmac.new(key=force_bytes(str(channel.secret + request_time)), msg=force_bytes(request.body), digestmod=hashlib.sha256).digest()
+            signature = base64.urlsafe_b64encode(signature).strip()
+
+            if request_signature != signature:
+                raise Exception("Invalid signature")
+
+            if not path:
+                raise Exception("Required attribute 'path' not specified")
+
+        except Exception as e:
+            data['error'] = str(e)
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
         bucket = settings.AWS_STORAGE_BUCKET_NAME
         expires = settings.AWS_SIGNED_URL_DURATION
 
-        data = {}
-        if path:
+        if path:	
             try:
                 client = botoclient('s3')
-                data['response'] = client.generate_presigned_post(bucket, path, Conditions=[{"acl": acl}], ExpiresIn=expires)
+                data['response'] = client.generate_presigned_post(bucket, path, Conditions=[{"acl": "public-read"}], ExpiresIn=expires)
                 return Response(data, status=status.HTTP_200_OK)
             except ClientError as e:
                 data['error'] = str(e)
