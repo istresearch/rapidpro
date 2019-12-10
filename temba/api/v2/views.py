@@ -1,6 +1,9 @@
 import itertools
 from enum import Enum
 
+from boto3 import client as botoclient
+from botocore.exceptions import ClientError
+
 from rest_framework import generics, status, views
 from rest_framework.pagination import CursorPagination
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -10,6 +13,7 @@ from rest_framework.reverse import reverse
 from smartmin.views import SmartFormView, SmartTemplateView
 
 from django import forms
+from django.conf import settings
 from django.contrib.auth import authenticate, login
 from django.db.models import Prefetch, Q
 from django.http import HttpResponse, JsonResponse
@@ -390,6 +394,39 @@ class ArchivesEndpoint(ListAPIMixin, BaseAPIView):
                 {"name": "period", "required": False, "help": "A period to filter by: daily, monthly"},
             ],
         }
+
+
+class AttachmentsEndpoint(BaseAPIView):
+    """
+    This endpoint allows you to request a signed S3 URL for attachment uploads.
+
+    ## Requesting a Signed S3 URL
+
+    Make a `POST` request to the endpoint with a `path` parameter specifying the file path, and an `acl` parameter specifying an S3 canned ACL (optional; default: `public-read`).
+    """
+
+    parser_classes = (MultiPartParser, FormParser)
+    permission = "msgs.msg_api"
+
+    def post(self, request, format=None, *args, **kwargs):
+
+        org = self.request.user.get_org()
+        path = request.GET.get("path", None)
+        acl = request.GET.get("acl", "public-read")
+
+        bucket = settings.AWS_STORAGE_BUCKET_NAME
+        expires = settings.AWS_SIGNED_URL_DURATION
+
+        data = {}
+        if path:
+            try:
+                client = botoclient('s3')
+                data['response'] = client.generate_presigned_post(bucket, path, Conditions=[{"acl": acl}], ExpiresIn=expires)
+                return Response(data, status=status.HTTP_200_OK)
+            except ClientError as e:
+                data['error'] = str(e)
+
+        return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
 
 class BoundariesEndpoint(ListAPIMixin, BaseAPIView):

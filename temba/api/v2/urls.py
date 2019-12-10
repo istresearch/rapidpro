@@ -4,6 +4,7 @@ from django.conf.urls import url
 
 from .views import (
     ArchivesEndpoint,
+    AttachmentsEndpoint,
     AuthenticateView,
     BoundariesEndpoint,
     BroadcastsEndpoint,
@@ -38,6 +39,7 @@ urlpatterns = [
     url(r"^authenticate$", AuthenticateView.as_view(), name="api.v2.authenticate"),
     # ========== endpoints A-Z ===========
     url(r"^archives$", ArchivesEndpoint.as_view(), name="api.v2.archives"),
+    url(r"^attachments$", AttachmentsEndpoint.as_view(), name="api.v2.attachments"),
     url(r"^boundaries$", BoundariesEndpoint.as_view(), name="api.v2.boundaries"),
     url(r"^broadcasts$", BroadcastsEndpoint.as_view(), name="api.v2.broadcasts"),
     url(r"^campaigns$", CampaignsEndpoint.as_view(), name="api.v2.campaigns"),
