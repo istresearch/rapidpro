@@ -431,7 +431,8 @@ class AttachmentsEndpoint(View):
         request_time = request.GET.get("ts")
         request_signature = force_bytes(request.GET.get("signature"))
 
-        data = {}
+        bucket = settings.AWS_STORAGE_BUCKET_NAME
+        expires = settings.AWS_SIGNED_URL_DURATION
 
         try:
             if channel_uuid is not None:
@@ -457,19 +458,15 @@ class AttachmentsEndpoint(View):
                 raise Exception("Required attribute 'path' not specified")
 
         except Exception as e:
-            data['error'] = str(e)
+            data = {'error': str(e)}
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
-        bucket = settings.AWS_STORAGE_BUCKET_NAME
-        expires = settings.AWS_SIGNED_URL_DURATION
-
-        if path:	
-            try:
-                client = botoclient('s3')
-                data['response'] = client.generate_presigned_post(bucket, path, Conditions=[{"acl": "public-read"}], ExpiresIn=expires)
-                return Response(data, status=status.HTTP_200_OK)
-            except ClientError as e:
-                data['error'] = str(e)
+        try:
+            client = botoclient('s3')
+            data = client.generate_presigned_post(bucket, path, Conditions=[{"acl": "public-read"}], ExpiresIn=expires)
+            return Response(data, status=status.HTTP_200_OK)
+        except ClientError as e:
+            data = {'error': str(e)}
 
         return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
