@@ -423,16 +423,21 @@ class AttachmentsEndpoint(View):
         return response
 
     def handle(self, request):
-        path = request.POST.get("path", None)
+        req_body = force_bytes(request.body)
+        path = request.POST.get("path")
         acl = request.POST.get("acl", "public-read")
-        channel_id = request.GET.get("cid", "")
-        request_time = request.GET.get("ts", "")
-        request_signature = force_bytes(request.POST.get("signature", ""))
+        channel_id = request.GET.get("cid")
+        channel_uuid = request.GET.get("uuid")
+        request_time = request.GET.get("ts")
+        request_signature = force_bytes(request.GET.get("signature"))
 
         data = {}
 
         try:
-            channels = Channel.objects.filter(pk=channel_id, is_active=True)
+            if channel_uuid is not None:
+                channels = Channel.objects.filter(uuid=channel_uuid, is_active=True)
+            elif channel_id is not None:
+                channels = Channel.objects.filter(pk=channel_id, is_active=True)
             if not channels:
                 raise Exception("Invalid channel")
             channel = channels[0]
@@ -442,7 +447,7 @@ class AttachmentsEndpoint(View):
             if abs(now - int(request_time)) > 60 * 15:
                 raise Exception("Invalid timestamp")
 
-            signature = hmac.new(key=force_bytes(str(channel.secret + request_time)), msg=force_bytes(request.body), digestmod=hashlib.sha256).digest()
+            signature = hmac.new(key=force_bytes(str(channel.secret + request_time)), msg=req_body, digestmod=hashlib.sha256).digest()
             signature = base64.urlsafe_b64encode(signature).strip()
 
             if request_signature != signature:
