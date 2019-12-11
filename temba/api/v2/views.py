@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import itertools
+import json
 import time
 from enum import Enum
 
@@ -423,18 +424,21 @@ class AttachmentsEndpoint(View):
         return response
 
     def handle(self, request):
-        req_body = force_bytes(request.body)
-        path = request.POST.get("path")
-        acl = request.POST.get("acl", "public-read")
-        channel_id = request.GET.get("cid")
-        channel_uuid = request.GET.get("uuid")
-        request_time = request.GET.get("ts")
-        request_signature = force_bytes(request.GET.get("signature"))
-
-        bucket = settings.AWS_STORAGE_BUCKET_NAME
-        expires = settings.AWS_SIGNED_URL_DURATION
-
         try:
+            req_body = force_bytes(request.body)
+            req_data = json.loads(req_body)
+
+            path = req_data.get("path")
+            acl = req_data.get("acl", "public-read")
+
+            channel_id = request.GET.get("cid")
+            channel_uuid = request.GET.get("uuid")
+            request_time = request.GET.get("ts")
+            request_signature = force_bytes(request.GET.get("signature"))
+
+            bucket = settings.AWS_STORAGE_BUCKET_NAME
+            expires = settings.AWS_SIGNED_URL_DURATION
+
             if channel_uuid is not None:
                 channels = Channel.objects.filter(uuid=channel_uuid, is_active=True)
             elif channel_id is not None:
