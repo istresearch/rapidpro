@@ -1,0 +1,62 @@
+/* Engage colors */
+/* blue gradient (dark to light) */
+/* grey gradient (dark to light) */
+/* hovering and selection */
+#header,
+#footer {
+  background-color: #234263;
+}
+#lead-form {
+  display: none !important;
+}
+#splash {
+  margin-top: -30px;
+  background: url('/sitestatic/images/splash.jpg?aa328a65877d') 0px 0px !important;
+  background-size: cover !important;
+  width: 100%;
+  height: 0px;
+  padding-bottom: 40%;
+}
+#splash h1.description {
+  color: #f5f7fa;
+  position: absolute;
+  font-weight: 100;
+  width: 350px;
+  font-size: 38px;
+  line-height: 110%;
+  padding-right: 50px;
+  padding-top: 50px;
+  text-shadow: 1px 1px 4px #000;
+  float: right;
+  text-align: right;
+}
+h5.contact-signup {
+  position: absolute;
+  width: 100%;
+  color: #f5f7fa;
+  text-shadow: 1px 1px #000;
+  text-align: right;
+  margin-top: -40px;
+}
+h5.contact-signup a {
+  color: #eee;
+}
+a.logo {
+  color: #fff;
+  font-size: 85px;
+  text-decoration: none;
+}
+#header {
+  height: 65px;
+}
+@media (max-width: 767px) {
+  #header {
+    height: 100px;
+  }
+}
+.btn-primary {
+  border: 1px solid #32638e;
+  background-color: #386995;
+  background-image: -webkit-linear-gradient(top, #4d8ac1, #3f73a2);
+  background: -moz-linear-gradient(top, #4d8ac1, #3f73a2);
+}
