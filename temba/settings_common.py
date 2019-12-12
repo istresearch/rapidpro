@@ -1129,3 +1129,4 @@ MAX_ACTIVE_CONTACTFIELDS_PER_ORG = 255
 # -----------------------------------------------------------------------------------
 # How many sequential contacts on import triggers suspension
 SEQUENTIAL_CONTACTS_THRESHOLD = 5000
+ORG_SEARCH_CONTEXT = ["Nyaruka"]
