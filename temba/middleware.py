@@ -228,6 +228,6 @@ class SubdirMiddleware:
         if self.subdir:
             request.subdir = self.subdir
             if not request.path.startswith('/{}'.format(request.subdir)):
-                return HttpResponseRedirect("/{}{}".format(request.subdir, request.path))
+                return HttpResponseRedirect("/{}{}".format(request.subdir, request.get_full_path()))
         response = self.get_response(request)
         return response
