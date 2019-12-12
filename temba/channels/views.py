@@ -1603,7 +1603,7 @@ class ChannelCRUDL(SmartCRUDL):
             queryset = super().get_queryset(**kwargs)
 
             # org users see channels for their org, superuser sees all
-            if not self.request.user.is_superuser:
+            if not self.request.user.is_superuser or not self.request.GET.get("showall"):
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
 
