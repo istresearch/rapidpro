@@ -251,10 +251,6 @@ class SubdirMiddleware:
                                                                          request.META['QUERY_STRING']), '')
                 else:
                     request.path = request.path.replace('/{}'.format(request.subdir), '')
-            response = self.get_response(request)
-            return response
-
-
-
-
+        response = self.get_response(request)
+        return response
 
