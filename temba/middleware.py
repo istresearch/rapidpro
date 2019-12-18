@@ -1,12 +1,14 @@
 import cProfile
 import logging
 import pstats
+import re
 import traceback
 from io import StringIO
 
 from django.conf import settings
 from django.http import HttpResponseRedirect
-from django.urls import reverse
+from django.urls import resolve
+from django.urls import reverse, Resolver404
 from django.utils import timezone, translation
 
 from temba.orgs.models import Org
@@ -228,11 +230,31 @@ class SubdirMiddleware:
         if self.subdir:
             request.subdir = self.subdir
             if not request.path.startswith('/{}'.format(request.subdir)):
-                r = HttpResponseRedirect("/{}{}".format(request.subdir, request.get_full_path()))
-                if request.method == 'POST':
-                    r.status_code = 307
-                return r
-        response = self.get_response(request)
-        return response
+                p = "/{}{}".format(request.subdir, request.path)
+                if not p.endswith("/"):
+                    p += '/'
+                try:
+                    resolve(p)
+                    p += "?" + request.META['QUERY_STRING']
+                    r = HttpResponseRedirect(p)
+                    if request.method == 'POST':
+                        r.status_code = 307
+                    return r
+                except Resolver404 as e:
+                    pass
+            else:
+                pattern = re.search('([-\w]+\.(?:jpg|gif|png|svg|cur|ico|tif|tiff|m4a|mp4|jpeg))', request.path)
+                if pattern:
+                    img_name = pattern.group()
+                    if img_name and len(img_name) > 0:
+                        return HttpResponseRedirect('{}images/{}'.format(settings.STATIC_URL, img_name + "?" +
+                                                                         request.META['QUERY_STRING']), '')
+                else:
+                    request.path = request.path.replace('/{}'.format(request.subdir), '')
+            response = self.get_response(request)
+            return response
+
+
+
 
 
