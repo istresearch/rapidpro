@@ -252,7 +252,9 @@ class SubdirMiddleware:
         if pattern:
             q = ('' if (request.META['QUERY_STRING'] is None or len(request.META['QUERY_STRING']) == 0)
                  else "?" + request.META['QUERY_STRING'])
-            p = (request.path.replace("/trigger/", '') + q)
+            p = (request.path + q)
+            if p.startswith("/trigger/"):
+                p = p.replace("/trigger/", '')
             if self.subdir:
                 p = p.replace("/{}".format(self.subdir), '')
             if not p.startswith('{}'.format(settings.STATIC_URL)):
