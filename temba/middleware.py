@@ -227,7 +227,10 @@ class SubdirMiddleware:
             self.subdir = settings.SUB_DIR.replace("/", "").replace("\\", "")
 
     def __call__(self, request):
-        if self.subdir:
+        media_pattern = self.is_media(request)
+        if media_pattern:
+            return self.filter_media(request, media_pattern)
+        elif self.subdir:
             request.subdir = self.subdir
             if not request.path.startswith('/{}'.format(request.subdir)):
                 p = "/{}{}".format(request.subdir, request.path)
@@ -242,15 +245,20 @@ class SubdirMiddleware:
                     return r
                 except Resolver404 as e:
                     pass
-            else:
-                pattern = re.search('([-\w]+\.(?:jpg|gif|png|svg|cur|ico|tif|tiff|m4a|mp4|jpeg))', request.path)
-                if pattern:
-                    img_name = pattern.group()
-                    if img_name and len(img_name) > 0:
-                        return HttpResponseRedirect('{}images/{}'.format(settings.STATIC_URL, img_name + "?" +
-                                                                         request.META['QUERY_STRING']), '')
-                else:
-                    request.path = request.path.replace('/{}'.format(request.subdir), '')
         response = self.get_response(request)
         return response
 
+    def filter_media(self, request, pattern):
+        if pattern:
+            q = ('' if (request.META['QUERY_STRING'] is None or len(request.META['QUERY_STRING']) == 0)
+                 else "?" + request.META['QUERY_STRING'])
+            p = (request.path.replace("/trigger/", '') + q)
+            if self.subdir:
+                p = p.replace("/{}".format(self.subdir), '')
+            if not p.startswith('{}'.format(settings.STATIC_URL)):
+                p = '{}{}'.format(settings.STATIC_URL, p)
+            return HttpResponseRedirect(p, '')
+
+    @staticmethod
+    def is_media(request):
+        return re.search('([-\w]+\.(?:jpg|gif|png|svg|cur|ico|tif|tiff|m4a|mp4|jpeg))', request.path)
