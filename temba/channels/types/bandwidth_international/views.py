@@ -125,7 +125,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             Channel.CONFIG_CALLBACK_DOMAIN: callback_domain
         }
 
-        channel = Channel.create(address=bwi_sender, org=org, user=user, channel_type="BWI", name=account_sid,
+        channel = Channel.create(address=bwi_sender, org=org, user=user, channel_type="BWI", name=bwi_sender,
                                  role=role, config=config, uuid=self.uuid, country="")
 
         channel.config[Channel.CONFIG_KEY] = channel.pk
