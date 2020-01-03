@@ -57,4 +57,6 @@ class Formax(object):
             )
 
         if settings.DEBUG:
-            print("%s took: %f" % (url, time.time() - start))
+            ms = time.time() - start
+            if ms > 1.0:
+                print("%s took: %f" % (url, ms))

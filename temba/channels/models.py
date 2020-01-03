@@ -1015,7 +1015,7 @@ class Channel(TembaModel):
             self.country = ContactURN.derive_country_from_tel(phone)
 
         # NOTE: leaving alert_email field empty
-        #self.alert_email = user.email
+        # self.alert_email = user.email
         self.org = org
         self.is_active = True
         self.claim_code = None
