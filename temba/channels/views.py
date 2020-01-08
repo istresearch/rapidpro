@@ -2020,6 +2020,9 @@ class ChannelCRUDL(SmartCRUDL):
         def get_address(self, obj):
             return obj.address if obj.address else _("Unknown")
 
+        def lookup_field_link(self, context, field, obj):
+            return reverse('channels.channel_read', args=[obj.uuid])
+
     class SearchNumbers(OrgPermsMixin, SmartFormView):
         class SearchNumbersForm(forms.Form):
             area_code = forms.CharField(
