@@ -812,18 +812,6 @@ TEST_EXCLUDE = ("smartmin",)
 # -----------------------------------------------------------------------------------
 # Need a PostgreSQL database on localhost with postgis extension installed.
 # -----------------------------------------------------------------------------------
-# _default_database_config = {
-#     "ENGINE": "django.contrib.gis.db.backends.postgis",
-#     "NAME": "rapidpro",
-#     "USER": "postgres",
-#     "PASSWORD": "",
-#     "HOST": "localhost",
-#     "PORT": "5432",
-#     "ATOMIC_REQUESTS": True,
-#     "CONN_MAX_AGE": 60,
-#     "OPTIONS": {},
-# }
-
 _default_database_config = {
     "ENGINE": "django.contrib.gis.db.backends.postgis",
     "NAME": "rapidpro",
