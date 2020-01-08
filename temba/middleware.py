@@ -234,11 +234,12 @@ class SubdirMiddleware:
             request.subdir = self.subdir
             if not request.path.startswith('/{}'.format(request.subdir)):
                 p = "/{}{}".format(request.subdir, request.path)
-                if not p.endswith("/"):
+                if not p.endswith("/") and not request.path.startswith("/api"):
                     p += '/'
                 try:
                     resolve(p)
-                    p += "?" + request.META['QUERY_STRING']
+                    if len(request.META['QUERY_STRING']) > 0:
+                        p += "?" + request.META['QUERY_STRING']
                     r = HttpResponseRedirect(p)
                     if request.method == 'POST':
                         r.status_code = 307
