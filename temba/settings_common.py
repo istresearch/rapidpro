@@ -817,7 +817,7 @@ _default_database_config = {
     "NAME": "rapidpro",
     "USER": "admin",
     "PASSWORD": "crackthis",
-    "HOST": "localhost",
+    "HOST": "192.168.0.189",
     "PORT": "5432",
     "ATOMIC_REQUESTS": True,
     "CONN_MAX_AGE": 60,
@@ -872,7 +872,7 @@ CELERY_TASK_MAP = {"send_msg_task": "temba.channels.tasks.send_msg_task"}
 # -----------------------------------------------------------------------------------
 # Async tasks with celery
 # -----------------------------------------------------------------------------------
-REDIS_HOST = "localhost"
+REDIS_HOST = "192.168.0.189"
 REDIS_PORT = 6379
 
 # we use a redis db of 10 for testing so that we maintain caches for dev
