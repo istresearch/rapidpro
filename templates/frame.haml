@@ -252,7 +252,7 @@
     #header
       &nbsp;
 
-    %a#big-logo.logo.icon-logo{href:"/", title:"{{brand.name}}"}
+    %a#big-logo.logo.icon-logo{href:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/", title:"{{brand.name}}"}
       .name
         {{brand.name}}
 

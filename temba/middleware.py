@@ -7,8 +7,7 @@ from io import StringIO
 
 from django.conf import settings
 from django.http import HttpResponseRedirect
-from django.urls import resolve
-from django.urls import reverse, Resolver404
+from django.urls import reverse
 from django.utils import timezone, translation
 
 from temba.orgs.models import Org
@@ -219,53 +218,16 @@ class SubdirMiddleware:
     """
     Add subdir info to response header
     """
+
     subdir = None
 
     def __init__(self, get_response=None):
         self.get_response = get_response
-        if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR:
+        if hasattr(settings, 'SUB_DIR'):
             self.subdir = settings.SUB_DIR.replace("/", "").replace("\\", "")
 
     def __call__(self, request):
-        media_pattern = self.is_media(request)
-        if media_pattern:
-            return self.filter_media(request, media_pattern)
-        elif self.subdir:
+        if hasattr(settings, 'SUB_DIR'):
             request.subdir = self.subdir
-            if not request.path.startswith('/{}'.format(request.subdir)):
-                p = "/{}{}".format(request.subdir, request.path)
-                if not p.endswith("/") and not request.path.startswith("/api"):
-                    p += '/'
-                try:
-                    resolve(p)
-                    if len(request.META['QUERY_STRING']) > 0:
-                        p += "?" + request.META['QUERY_STRING']
-                    r = HttpResponseRedirect(p)
-                    if request.method == 'POST':
-                        r.status_code = 307
-                    return r
-                except Resolver404 as e:
-                    pass
         response = self.get_response(request)
         return response
-
-    less_paths = ['/trigger/', '/msg/', '/contact/', '/flow/', '/campaign/', '/org/']
-
-    def filter_media(self, request, pattern):
-        if pattern:
-            q = ('' if (request.META['QUERY_STRING'] is None or len(request.META['QUERY_STRING']) == 0)
-                 else "?" + request.META['QUERY_STRING'])
-            p = (request.path + q)
-            for l_p in self.less_paths:
-                if p.startswith(l_p):
-                    p = p.replace(l_p, '')
-                    break
-            if self.subdir:
-                p = p.replace("/{}".format(self.subdir), '')
-            if not p.startswith('{}'.format(settings.STATIC_URL)):
-                p = '{}{}'.format(settings.STATIC_URL, p)
-            return HttpResponseRedirect(p, '')
-
-    @staticmethod
-    def is_media(request):
-        return re.search('([-\w]+\.(?:jpg|gif|png|svg|cur|ico|tif|tiff|m4a|mp4|jpeg))', request.path)

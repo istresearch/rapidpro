@@ -95,7 +95,7 @@
 
   :javascript
     $('.object-row').live('mouseover', function(){
-      url = '/campaign/read/' + $(this).data('object-id') + '/';
+      url = '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/read/' + $(this).data('object-id') + '/';
 
       $(this).find('td').not(':first-child').each(function(){
         $(this).attr('onClick', "document.location.href=url;");
