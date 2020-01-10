@@ -3,6 +3,7 @@ import sys
 from uuid import uuid4
 
 from django import forms
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -44,8 +45,6 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             bwi_sender = self.cleaned_data.get("bwi_sender", None)
             bwi_encoding = self.cleaned_data.get("bwi_encoding", None)
 
-            BWI_KEY = os.environ.get("BWI_KEY")
-
             if not bwi_account_sid:  # pragma: needs cover
                 raise ValidationError(_("You must enter your Bandwidth Account ID"))
 
@@ -55,8 +54,6 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
                 raise ValidationError(_("You must enter your Bandwidth Account Password"))
             if not bwi_application_sid:
                 raise ValidationError(_("You must enter your Bandwidth Account's Application ID"))
-            if not BWI_KEY or len(BWI_KEY) == 0:
-                raise ValidationError(_("The environment variable BWI_KEY  must be a valid encryption key"))
             if not bwi_encoding or len(bwi_encoding) == 0:
                 raise ValidationError(_("A message encoding must be selected"))
             if not bwi_sender or len(bwi_sender) == 0:
@@ -113,13 +110,12 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         org = user.get_org()
         self.uuid = uuid4()
         callback_domain = org.get_brand_domain()
-        bwi_key = os.environ.get("BWI_KEY")
 
         config = {
             Channel.CONFIG_APPLICATION_SID: application_sid,
             Channel.CONFIG_ACCOUNT_SID: account_sid,
-            Channel.CONFIG_USERNAME: AESCipher(username, bwi_key).encrypt(),
-            Channel.CONFIG_PASSWORD: AESCipher(password, bwi_key).encrypt(),
+            Channel.CONFIG_USERNAME: AESCipher(username, settings.SECRET_KEY).encrypt(),
+            Channel.CONFIG_PASSWORD: AESCipher(password, settings.SECRET_KEY).encrypt(),
             Channel.CONFIG_ENCODING: encoding,
             Channel.CONFIG_SENDER: bwi_sender,
             Channel.CONFIG_CALLBACK_DOMAIN: callback_domain

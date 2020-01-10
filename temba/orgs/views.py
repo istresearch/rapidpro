@@ -2829,7 +2829,7 @@ class OrgCRUDL(SmartCRUDL):
 
         def derive_initial(self):
             initial = {}
-            bwi_key = os.environ.get("BWI_KEY")
+            bwi_key = settings.SECRET_KEY
             if 'channel' in self.request.META is not None and self.request.META['channel'].config is not None:
                 config = self.request.META['channel'].config
                 initial["bwi_account_sid"] = config.get("account_sid", None)
@@ -2869,7 +2869,7 @@ class OrgCRUDL(SmartCRUDL):
                         bwi_application_sid = form.cleaned_data["bwi_application_sid"]
                         bwi_encoding = form.cleaned_data["bwi_encoding"]
                         bwi_sender = form.cleaned_data["bwi_sender"]
-                        bwi_key = os.environ.get("BWI_KEY")
+                        bwi_key = settings.SECRET_KEY
                         config = channel.config
                         config[Channel.CONFIG_APPLICATION_SID] = bwi_application_sid
                         config[Channel.CONFIG_ACCOUNT_SID] = bwi_account_sid
