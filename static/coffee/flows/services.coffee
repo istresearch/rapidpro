@@ -394,14 +394,14 @@ app.factory "Revisions", ['$http', '$log', ($http, $log) ->
   new class Revisions
     updateRevisions: (flowUUID) ->
       _this = @
-      $http.get((if typeof window.subdir == "string" && window.subdir.length > 0 then '/' +  window.subdir else '') + '/flow/revisions/' + flowUUID + '/?version=' + window.flowVersion).success (data, status, headers) ->
+      $http.get('/flow/revisions/' + flowUUID + '/?version=' + window.flowVersion).success (data, status, headers) ->
         # only set the revisions if we get back json, if we don't have permission we'll get a login page
         if headers('content-type') == 'application/json'
           _this.revisions = data.results
 
     getRevision: (revision) ->
       _this = @
-      return $http.get((if typeof window.subdir == "string" && window.subdir.length > 0 then '/' +  window.subdir else '') +'/flow/revisions/' + flowUUID + '/' + revision.id + '?version=' + window.flowVersion).success (data, status, headers) ->
+      return $http.get('/flow/revisions/' + flowUUID + '/' + revision.id + '?version=' + window.flowVersion).success (data, status, headers) ->
         # only set the revisions if we get back json, if we don't have permission we'll get a login page
         if headers('content-type') == 'application/json'
           _this.definition = data
@@ -631,7 +631,7 @@ app.factory 'Flow', ['$rootScope', '$window', '$http', '$timeout', '$interval', 
 
           $log.debug("Saving.")
 
-          $http.post((if typeof window.subdir == "string" && window.subdir.length > 0 then '/' +  window.subdir else '') + '/flow/json/' + Flow.flowUUID + '/', utils.toJson(Flow.flow)).error (data, statusCode) ->
+          $http.post('/flow/json/' + Flow.flowUUID + '/', utils.toJson(Flow.flow)).error (data, statusCode) ->
 
             if statusCode == 400
               $rootScope.saving = false
@@ -694,7 +694,7 @@ app.factory 'Flow', ['$rootScope', '$window', '$http', '$timeout', '$interval', 
               Flow.flow.metadata.saved_on = data.saved_on
 
               # update our auto completion options
-              $http.get((if typeof window.subdir == "string" && window.subdir.length > 0 then '/' +  window.subdir else '') + '/flow/completion/?flow=' + Flow.flowUUID).success (data) ->
+              $http.get('/flow/completion/?flow=' + Flow.flowUUID).success (data) ->
                 Flow.completions = data.message_completions
                 Flow.function_completions = data.function_completions
                 Flow.variables_and_functions = [Flow.completions...,Flow.function_completions...]
@@ -1006,7 +1006,7 @@ app.factory 'Flow', ['$rootScope', '$window', '$http', '$timeout', '$interval', 
           return cfg
 
     fetchRecentMessages: (exit_uuids, to_uuid) ->
-      return $http.get((if typeof window.subdir == "string" && window.subdir.length > 0 then '/' +  window.subdir else '') + '/flow/recent_messages/' + Flow.flowUUID + '/?exits=' + exit_uuids.join() + '&to=' + to_uuid).success (data) ->
+      return $http.get('/flow/recent_messages/' + Flow.flowUUID + '/?exits=' + exit_uuids.join() + '&to=' + to_uuid).success (data) ->
 
     fetch: (flowUUID, onComplete = null) ->
 
@@ -1014,7 +1014,7 @@ app.factory 'Flow', ['$rootScope', '$window', '$http', '$timeout', '$interval', 
       Revisions.updateRevisions(flowUUID)
 
       Flow = @
-      $http.get((if typeof window.subdir == "string" && window.subdir.length > 0 then '/' +  window.subdir else '') + '/flow/json/' + flowUUID + '/').success (data) ->
+      $http.get('/flow/json/' + flowUUID + '/').success (data) ->
 
         flow = data.flow
 
@@ -1064,7 +1064,7 @@ app.factory 'Flow', ['$rootScope', '$window', '$http', '$timeout', '$interval', 
           onComplete()
 
         # update our auto completion options
-        $http.get((if typeof window.subdir == "string" && window.subdir.length > 0 then '/' +  window.subdir else '') + '/flow/completion/?flow=' + flowUUID).success (data) ->
+        $http.get('/flow/completion/?flow=' + flowUUID).success (data) ->
           if data.function_completions and data.message_completions
             Flow.completions = data.message_completions
             Flow.function_completions = data.function_completions

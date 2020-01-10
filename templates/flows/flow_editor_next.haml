@@ -92,12 +92,20 @@
     #toolbar {
       visibility: visible;
       position: relative;
-      height: 40px;
-      padding: 20px 30px;
+      padding: 18px 30px;
       background-color: #f9f9f9;
       background-position: 13px 13px;
       background-image: linear-gradient(0deg, transparent 24%, rgba(61,177,255,0.15) 25%, rgba(61,177,255,0.15) 26%, transparent 27%, transparent 74%, rgba(61,177,255,0.15) 75%, rgba(61,177,255,0.15) 76%, transparent 77%, transparent),linear-gradient(90deg, transparent 24%, rgba(61,177,255,0.15) 25%, rgba(61,177,255,0.15) 26%, transparent 27%, transparent 74%, rgba(61,177,255,0.15) 75%, rgba(61,177,255,0.15) 76%, transparent 77%, transparent);
       background-size: 40px 40px;
+    }
+
+    #pending {
+      position: relative;
+      right: 0;
+      width: 40%;
+      height: 36px;
+      margin: 0 auto;
+      text-align: center;
     }
 
     #rp-flow-editor {
@@ -120,6 +128,12 @@
       top: -15px !important;
     }
 
+    rp-loading {
+      margin-left: 30px;
+      padding-top: 5px;
+      display: block;
+    }
+
 -block extra-script
   {{ block.super }}
 
@@ -127,8 +141,8 @@
     %script{type:'text/javascript', src:'{{script}}'}
 
   :javascript
-    const base = '/flow/assets/{{object.org.id}}/' + new Date().getTime() + '/';
-    const api = '/api/v2/';
+    const base = '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/assets/{{object.org.id}}/' + new Date().getTime() + '/';
+    const api = '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/api/v2/';
 
     // line up our flow types with goflow types
     var flowType = '{{object.flow_type}}';
@@ -149,13 +163,19 @@
     }
 
     const config = {
+      
+      // TODO: Remove once legacy editor is gone
+      // this is only to support manual migration
+      forceSaveOnLoad: "{{migrate}}" == "True",
+
       flow: '{{object.uuid}}',
       flowType: flowType,
       localStorage: true,
       showTemplates: "{{has_whatsapp_channel}}" == "True",
-
       onLoad: handleEditorLoaded,
       onActivityClicked: handleActivityClicked,
+      mutable: {{mutable|lower}},
+      filters: {{feature_filters|to_json}},
 
       endpoints: {
 
@@ -163,23 +183,27 @@
         fields: api + 'fields.json',
         labels: api + 'labels.json',
         channels: api + 'channels.json',
+        classifiers: api + 'classifiers.json',
         resthooks: api + 'resthooks.json',
         templates: api + 'templates.json',
         flows: api + 'flows.json?archived=false',
-        editor: '/flow/editor',
+        globals: api + 'globals.json',
+        editor: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/editor',
 
         // TODO: migrate to API?
-        revisions: '/flow/revisions/{{object.uuid}}/',
-        recents: '/flow/recent_messages/{{object.uuid}}/',
-        attachments: '/flow/upload_media_action/{{object.uuid}}/',
+        revisions: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/revisions/{{object.uuid}}/',
+        recents: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/recent_messages/{{object.uuid}}/',
+        attachments: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/upload_media_action/{{object.uuid}}/',
         languages: base + 'language',
         environment: base + 'environment',
-        activity: '/flow/activity/{{object.uuid}}/',
-        recipients: '/contact/omnibox?v=2&types=gcu',
+        activity: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/activity/{{object.uuid}}/',
 
+        recipients: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/contact/omnibox?v=2&types=gc',
+
+        completion: '/mr/docs/completion.json',
         functions: '/mr/docs/functions.json',
-        simulateStart: '/flow/simulate/{{object.id}}/',
-        simulateResume: '/flow/simulate/{{object.id}}/'
+        simulateStart: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/simulate/{{object.id}}/',
+        simulateResume: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/simulate/{{object.id}}/'
       }
     };
 
@@ -260,6 +284,12 @@
         .icon-mobile
       {{ flow.name }}
 
+    -if is_starting
+      #pending
+        %div{class:"alert alert-info"}
+          -blocktrans
+            This flow is in the process of being sent, this message will disappear once all contacts have been added to the flow.
+
   #rp-flow-editor
-    %img{src:"{{STATIC_URL}}/images/loader-circles.gif", style:"position: relative; left: 20px; top: 4px; margin: 0 auto"}
+    <rp-loading units="10" size="8"></rp-loading>
 

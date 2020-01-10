@@ -1,6 +1,7 @@
 import cProfile
 import logging
 import pstats
+import re
 import traceback
 from io import StringIO
 
@@ -217,20 +218,16 @@ class SubdirMiddleware:
     """
     Add subdir info to response header
     """
+
     subdir = None
 
     def __init__(self, get_response=None):
         self.get_response = get_response
-        if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR:
+        if hasattr(settings, 'SUB_DIR'):
             self.subdir = settings.SUB_DIR.replace("/", "").replace("\\", "")
 
     def __call__(self, request):
-        if self.subdir:
+        if hasattr(settings, 'SUB_DIR'):
             request.subdir = self.subdir
-            if not request.path.startswith('/{}'.format(request.subdir)):
-                r = HttpResponseRedirect("/{}{}".format(request.subdir, request.get_full_path()))
-                if request.method == 'POST':
-                    r.status_code = 307
-                return r
         response = self.get_response(request)
         return response

@@ -5,10 +5,13 @@ import time
 import requests
 from django_redis import get_redis_connection
 
+from django.utils import timezone
+
 from celery.task import task
 
 from temba.channels.models import Channel
 from temba.contacts.models import WHATSAPP_SCHEME, ContactURN
+from temba.request_logs.models import HTTPLog
 from temba.templates.models import TemplateTranslation
 from temba.utils import chunk_list
 
@@ -137,42 +140,53 @@ def refresh_whatsapp_templates():
                 # that have been setup earlier for backwards compatibility
                 facebook_template_domain = channel.config.get(CONFIG_FB_TEMPLATE_LIST_DOMAIN, "graph.facebook.com")
                 facebook_business_id = channel.config.get(CONFIG_FB_BUSINESS_ID)
+                url = TEMPLATE_LIST_URL % (facebook_template_domain, facebook_business_id)
+
                 # we should never need to paginate because facebook limits accounts to 255 templates
+                start = timezone.now()
                 response = requests.get(
-                    TEMPLATE_LIST_URL % (facebook_template_domain, facebook_business_id),
-                    params=dict(access_token=channel.config[CONFIG_FB_ACCESS_TOKEN], limit=255),
+                    url, params=dict(access_token=channel.config[CONFIG_FB_ACCESS_TOKEN], limit=255)
                 )
+                elapsed = (timezone.now() - start).total_seconds() * 1000
+
+                log = HTTPLog.from_response(HTTPLog.WHATSAPP_TEMPLATES_SYNCED, url, response, channel=channel)
+                log.request_time = elapsed
+                log.save()
 
                 if response.status_code != 200:  # pragma: no cover
-                    raise Exception(f"received non 200 status: {response.status_code} {response.content}")
+                    continue
 
                 # run through all our templates making sure they are present in our DB
                 seen = []
                 for template in response.json()["data"]:
-                    # its a (non fatal) error if we see a language we don't know
-                    if template["language"] not in LANGUAGE_MAPPING:
-                        logger.error(f"unknown whatsapp language: {template['language']}")
-                        continue
-
-                    # or if this is a status we don't know about
+                    # if this is a status we don't know about
                     if template["status"] not in STATUS_MAPPING:
                         logger.error(f"unknown whatsapp status: {template['status']}")
                         continue
+
+                    status = STATUS_MAPPING[template["status"]]
 
                     # try to get the body out
                     if template["components"][0]["type"] != "BODY":  # pragma: no cover
                         logger.error(f"unknown component type: {template['components'][0]}")
                         continue
 
+                    language = LANGUAGE_MAPPING.get(template["language"])
+
+                    # its a (non fatal) error if we see a language we don't know
+                    if language is None:
+                        status = TemplateTranslation.STATUS_UNSUPPORTED_LANGUAGE
+                        language = template["language"]
+
                     content = template["components"][0]["text"]
 
                     translation = TemplateTranslation.get_or_create(
                         channel=channel,
                         name=template["name"],
-                        language=LANGUAGE_MAPPING[template["language"]],
+                        language=language,
                         content=content,
                         variable_count=_calculate_variable_count(content),
-                        status=STATUS_MAPPING[template["status"]],
+                        status=status,
                         external_id=template["id"],
                     )
 

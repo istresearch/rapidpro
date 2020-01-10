@@ -175,6 +175,8 @@ TEMPLATES = [
 if TESTING:
     TEMPLATES[0]["OPTIONS"]["context_processors"] += ("temba.tests.add_testing_flag_to_context",)
 
+FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
+
 MIDDLEWARE = (
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -213,6 +215,7 @@ INSTALLED_APPS = (
     "django.contrib.gis",
     "django.contrib.sitemaps",
     "django.contrib.postgres",
+    "django.forms",
     # Haml-like templates
     "hamlpy",
     # Redis cache
@@ -234,7 +237,10 @@ INSTALLED_APPS = (
     "temba.assets",
     "temba.auth_tweaks",
     "temba.api",
+    "temba.request_logs",
+    "temba.classifiers",
     "temba.dashboard",
+    "temba.globals",
     "temba.public",
     "temba.policies",
     "temba.schedules",
@@ -324,6 +330,8 @@ PERMISSIONS = {
     "api.resthooksubscriber": ("api",),
     "campaigns.campaign": ("api", "archived", "archive", "activate"),
     "campaigns.campaignevent": ("api",),
+    "classifiers.classifier": ("connect", "api", "sync"),
+    "classifiers.intent": ("api",),
     "contacts.contact": (
         "api",
         "block",
@@ -336,6 +344,7 @@ PERMISSIONS = {
         "history",
         "import",
         "omnibox",
+        "search",
         "unblock",
         "unstop",
         "update_fields",
@@ -345,6 +354,7 @@ PERMISSIONS = {
     "contacts.contactgroup": ("api",),
     "ivr.ivrcall": ("start",),
     "archives.archive": ("api", "run", "message"),
+    "globals.global": ("api", "unused", "detail"),
     "locations.adminboundary": ("alias", "api", "boundaries", "geometry"),
     "orgs.org": (
         "accounts",
@@ -357,6 +367,7 @@ PERMISSIONS = {
         "create_sub_org",
         "dashboard",
         "download",
+        "dtone_account",
         "edit",
         "edit_sub_org",
         "export",
@@ -516,6 +527,9 @@ GROUP_PERMISSIONS = {
         "policies.policy_history",
     ),
     "Administrators": (
+        "apks.apk_create",
+        "apks.apk_list",
+        "apks.apk_update",
         "airtime.airtimetransfer_list",
         "airtime.airtimetransfer_read",
         "api.apitoken_refresh",
@@ -528,6 +542,13 @@ GROUP_PERMISSIONS = {
         "archives.archive.*",
         "campaigns.campaign.*",
         "campaigns.campaignevent.*",
+        "classifiers.classifier_api",
+        "classifiers.classifier_connect",
+        "classifiers.classifier_read",
+        "classifiers.classifier_delete",
+        "classifiers.classifier_list",
+        "classifiers.classifier_sync",
+        "classifiers.intent_api",
         "contacts.contact_api",
         "contacts.contact_block",
         "contacts.contact_blocked",
@@ -541,6 +562,7 @@ GROUP_PERMISSIONS = {
         "contacts.contact_list",
         "contacts.contact_omnibox",
         "contacts.contact_read",
+        "contacts.contact_search",
         "contacts.contact_stopped",
         "contacts.contact_unblock",
         "contacts.contact_unstop",
@@ -550,6 +572,7 @@ GROUP_PERMISSIONS = {
         "contacts.contactfield.*",
         "contacts.contactgroup.*",
         "csv_imports.importtask.*",
+        "globals.global.*",
         "ivr.ivrcall.*",
         "locations.adminboundary_alias",
         "locations.adminboundary_api",
@@ -558,11 +581,12 @@ GROUP_PERMISSIONS = {
         "orgs.org_accounts",
         "orgs.org_smtp_server",
         "orgs.org_api",
-        "orgs.org_dashboard",
         "orgs.org_country",
         "orgs.org_chatbase",
         "orgs.org_create_sub_org",
+        "orgs.org_dashboard",
         "orgs.org_download",
+        "orgs.org_dtone_account",
         "orgs.org_edit",
         "orgs.org_edit_sub_org",
         "orgs.org_export",
@@ -634,6 +658,8 @@ GROUP_PERMISSIONS = {
         "policies.policy_read",
         "policies.policy_list",
         "policies.policy_give_consent",
+        "request_logs.httplog_list",
+        "request_logs.httplog_read",
         "templates.template_api",
         "triggers.trigger.*",
     ),
@@ -650,6 +676,10 @@ GROUP_PERMISSIONS = {
         "airtime.airtimetransfer_read",
         "campaigns.campaign.*",
         "campaigns.campaignevent.*",
+        "classifiers.classifier_api",
+        "classifiers.classifier_read",
+        "classifiers.classifier_list",
+        "classifiers.intent_api",
         "contacts.contact_api",
         "contacts.contact_block",
         "contacts.contact_blocked",
@@ -663,6 +693,7 @@ GROUP_PERMISSIONS = {
         "contacts.contact_list",
         "contacts.contact_omnibox",
         "contacts.contact_read",
+        "contacts.contact_search",
         "contacts.contact_stopped",
         "contacts.contact_unblock",
         "contacts.contact_unstop",
@@ -673,6 +704,7 @@ GROUP_PERMISSIONS = {
         "contacts.contactgroup.*",
         "csv_imports.importtask.*",
         "ivr.ivrcall.*",
+        "globals.global_api",
         "locations.adminboundary_alias",
         "locations.adminboundary_api",
         "locations.adminboundary_boundaries",
@@ -735,6 +767,10 @@ GROUP_PERMISSIONS = {
         "campaigns.campaign_list",
         "campaigns.campaign_read",
         "campaigns.campaignevent_read",
+        "classifiers.classifier_api",
+        "classifiers.classifier_read",
+        "classifiers.classifier_list",
+        "classifiers.intent_api",
         "contacts.contact_blocked",
         "contacts.contact_export",
         "contacts.contact_filter",
@@ -742,6 +778,9 @@ GROUP_PERMISSIONS = {
         "contacts.contact_list",
         "contacts.contact_read",
         "contacts.contact_stopped",
+        "contacts.contactfield_api",
+        "contacts.contactgroup_api",
+        "globals.global_api",
         "locations.adminboundary_boundaries",
         "locations.adminboundary_geometry",
         "locations.adminboundary_alias",
@@ -767,6 +806,7 @@ GROUP_PERMISSIONS = {
         "flows.flow_filter",
         "flows.flow_list",
         "flows.flow_editor",
+        "flows.flow_editor_next",
         "flows.flow_json",
         "flows.flow_recent_messages",
         "flows.flow_results",
@@ -775,6 +815,7 @@ GROUP_PERMISSIONS = {
         "flows.flow_simulate",
         "msgs.broadcast_schedule_list",
         "msgs.broadcast_schedule_read",
+        "msgs.label_api",
         "msgs.msg_archived",
         "msgs.msg_export",
         "msgs.msg_failed",
@@ -804,9 +845,9 @@ AUTHENTICATION_BACKENDS = ("smartmin.backends.CaseInsensitiveBackend",)
 ANONYMOUS_USER_NAME = "AnonymousUser"
 
 # -----------------------------------------------------------------------------------
-# Our test runner includes a mocked HTTP server and the ability to exclude apps
+# Our test runner includes the ability to exclude apps
 # -----------------------------------------------------------------------------------
-TEST_RUNNER = "temba.tests.TembaTestRunner"
+TEST_RUNNER = "temba.tests.runner.TembaTestRunner"
 TEST_EXCLUDE = ("smartmin",)
 
 # -----------------------------------------------------------------------------------
@@ -814,9 +855,9 @@ TEST_EXCLUDE = ("smartmin",)
 # -----------------------------------------------------------------------------------
 _default_database_config = {
     "ENGINE": "django.contrib.gis.db.backends.postgis",
-    "NAME": "rapidpro",
-    "USER": "postgres",
-    "PASSWORD": "",
+    "NAME": "temba",
+    "USER": "temba",
+    "PASSWORD": "temba",
     "HOST": "localhost",
     "PORT": "5432",
     "ATOMIC_REQUESTS": True,
@@ -842,16 +883,18 @@ INTERNAL_IPS = iptools.IpRangeList("127.0.0.1", "192.168.0.10", "192.168.0.0/24"
 CELERYBEAT_SCHEDULE = {
     "check-channels": {"task": "check_channels_task", "schedule": timedelta(seconds=300)},
     "sync-old-seen-channels": {"task": "sync_old_seen_channels_task", "schedule": timedelta(seconds=600)},
-    "schedules": {"task": "check_schedule_task", "schedule": timedelta(seconds=60)},
+    "sync-classifier-intents": {"task": "sync_classifier_intents", "schedule": timedelta(seconds=300)},
     "check-credits": {"task": "check_credits_task", "schedule": timedelta(seconds=900)},
-    "check-calls-task": {"task": "check_calls_task", "schedule": timedelta(seconds=300)},
-    "check_failed_calls_task": {"task": "check_failed_calls_task", "schedule": timedelta(seconds=300)},
-    "task_enqueue_call_events": {"task": "task_enqueue_call_events", "schedule": timedelta(seconds=300)},
+    "check-topup-expiration": {"task": "check_topup_expiration_task", "schedule": crontab(hour=2, minute=0)},
     "check-elasticsearch-lag": {"task": "check_elasticsearch_lag", "schedule": timedelta(seconds=300)},
+    "retry-errored-messages": {"task": "retry_errored_messages", "schedule": timedelta(seconds=60)},
     "fail-old-messages": {"task": "fail_old_messages", "schedule": crontab(hour=0, minute=0)},
+    "trim-sync-events": {"task": "trim_sync_events_task", "schedule": crontab(hour=3, minute=0)},
     "trim-channel-log": {"task": "trim_channel_log_task", "schedule": crontab(hour=3, minute=0)},
+    "trim-http-logs": {"task": "trim_http_logs_task", "schedule": crontab(hour=3, minute=0)},
     "trim-webhook-event": {"task": "trim_webhook_event_task", "schedule": crontab(hour=3, minute=0)},
     "trim-event-fires": {"task": "trim_event_fires_task", "schedule": timedelta(seconds=900)},
+    "trim-flow-revisions": {"task": "trim_flow_revisions", "schedule": crontab(hour=0, minute=0)},
     "trim-flow-sessions": {"task": "trim_flow_sessions", "schedule": crontab(hour=0, minute=0)},
     "squash-flowruncounts": {"task": "squash_flowruncounts", "schedule": timedelta(seconds=60)},
     "squash-flowpathcounts": {"task": "squash_flowpathcounts", "schedule": timedelta(seconds=60)},
@@ -966,28 +1009,14 @@ SEND_MESSAGES = False
 
 ######
 # DANGER: only turn this on if you know what you are doing!
-#         could cause external APIs to be called in test environment
-SEND_WEBHOOKS = False
-
-######
-# DANGER: only turn this on if you know what you are doing!
 #         could cause emails to be sent in test environment
 SEND_EMAILS = False
 
-######
-# DANGER: only turn this on if you know what you are doing!
-#         could cause airtime transfers in test environment
-SEND_AIRTIME = False
-
-######
-# DANGER: only turn this on if you know what you are doing!
-#         could cause data to be sent to Chatbase in test environment
-SEND_CHATBASE = False
-
-######
-# DANGER: only turn this on if you know what you are doing!
-#         could cause calls in test environments
-SEND_CALLS = False
+CLASSIFIER_TYPES = [
+    "temba.classifiers.types.wit.WitType",
+    "temba.classifiers.types.luis.LuisType",
+    "temba.classifiers.types.bothub.BotHubType",
+]
 
 CHANNEL_TYPES = [
     "temba.channels.types.bandwidth_international.BandwidthInternationalType",
@@ -1009,6 +1038,7 @@ CHANNEL_TYPES = [
     "temba.channels.types.external.ExternalType",
     "temba.channels.types.facebook.FacebookType",
     "temba.channels.types.firebase.FirebaseCloudMessagingType",
+    "temba.channels.types.freshchat.FreshChatType",
     "temba.channels.types.globe.GlobeType",
     "temba.channels.types.highconnection.HighConnectionType",
     "temba.channels.types.hormuud.HormuudType",
@@ -1032,9 +1062,10 @@ CHANNEL_TYPES = [
     "temba.channels.types.smscentral.SMSCentralType",
     "temba.channels.types.start.StartType",
     "temba.channels.types.telegram.TelegramType",
+    "temba.channels.types.thinq.ThinQType",
     "temba.channels.types.twiml_api.TwimlAPIType",
     "temba.channels.types.twitter.TwitterType",
-    "temba.channels.types.twitter_activity.TwitterActivityType",
+    "temba.channels.types.twitter_legacy.TwitterLegacyType",
     "temba.channels.types.verboice.VerboiceType",
     "temba.channels.types.viber_public.ViberPublicType",
     "temba.channels.types.wavy.WavyType",
@@ -1078,7 +1109,7 @@ IP_ADDRESSES = ("172.16.10.10", "162.16.10.20")
 # -----------------------------------------------------------------------------------
 MSG_FIELD_SIZE = 640
 VALUE_FIELD_SIZE = 640
-FLOWRUN_FIELDS_SIZE = 256
+FLOW_START_PARAMS_SIZE = 256
 
 # -----------------------------------------------------------------------------------
 # Installs may choose how long to keep the channel logs in hours
@@ -1106,11 +1137,6 @@ FLOW_SESSION_TRIM_DAYS = 7
 MAILROOM_URL = None
 MAILROOM_AUTH_TOKEN = None
 
-# -----------------------------------------------------------------------------------
-# Chatbase integration
-# -----------------------------------------------------------------------------------
-CHATBASE_API_URL = "https://chatbase.com/api/message"
-
 # To allow manage fields to support up to 1000 fields
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 4000
 
@@ -1121,11 +1147,6 @@ MACHINE_HOSTNAME = socket.gethostname().split(".")[0]
 # ElasticSearch configuration (URL RFC-1738)
 ELASTICSEARCH_URL = os.environ.get("ELASTICSEARCH_URL", "http://localhost:9200")
 
-# Maximum active ContactFields users can have in an Org
+# Maximum active objects are org can have
 MAX_ACTIVE_CONTACTFIELDS_PER_ORG = 255
-
-# -----------------------------------------------------------------------------------
-# Other defaults
-# -----------------------------------------------------------------------------------
-# How many sequential contacts on import triggers suspension
-SEQUENTIAL_CONTACTS_THRESHOLD = 5000
+MAX_ACTIVE_GLOBALS_PER_ORG = 255
