@@ -223,11 +223,11 @@ class SubdirMiddleware:
 
     def __init__(self, get_response=None):
         self.get_response = get_response
-        if hasattr(settings, 'SUB_DIR'):
+        if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR:
             self.subdir = settings.SUB_DIR.replace("/", "").replace("\\", "")
 
     def __call__(self, request):
-        if hasattr(settings, 'SUB_DIR'):
+        if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR:
             request.subdir = self.subdir
         response = self.get_response(request)
         return response
