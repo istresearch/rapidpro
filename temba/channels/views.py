@@ -1608,16 +1608,14 @@ class ChannelCRUDL(SmartCRUDL):
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
 
-            return queryset.filter(is_active=True)
+            # order channels by role (DESC), channel (ASC) and created on date (ASC)
+            return queryset.filter(is_active=True).order_by("-role", "channel_type", "created_on")
 
         def pre_process(self, *args, **kwargs):
             # superuser sees things as they are
             if self.request.user.is_superuser:
                 return super().pre_process(*args, **kwargs)
 
-            # everybody else goes to a different page depending how many channels there are
-            org = self.request.user.get_org()
-            channels = list(Channel.objects.filter(org=org, is_active=True))
             return super().pre_process(*args, **kwargs)
 
         def get_name(self, obj):
