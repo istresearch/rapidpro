@@ -54,7 +54,7 @@ class CompletionTextarea(forms.Widget):
         default_attrs = {"width": "100%", "height": "100%", "subdir": ""}
         if attrs:
             default_attrs.update(attrs)
-        if hasattr(settings, 'SUB_DIR') and len(settings.SUB_DIR) is not None:
+        if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR is not None:
             default_attrs["subdir"] = settings.SUB_DIR.replace("/", "").replace("\\", "") + "/"
         super().__init__(default_attrs)
 
