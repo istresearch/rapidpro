@@ -1,7 +1,7 @@
 -load contacts
 
 -for run in runs
-  <tr class="exit-{{run.exit_type}}" {%if forloop.last%}ic-append-from="/flow/runs_partial/{{object.id}}?modified_on={{run.modified_on|date:'U'}}&id={{run.id}}" ic-trigger-on="scrolled-into-view" ic-target="#results_run_table" ic-template="results_run_table" ic-indicator="#indicator"{%endif%}>
+  <tr class="exit-{{run.exit_type}}" {%if forloop.last%}ic-append-from="{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/runs_partial/{{object.id}}?modified_on={{run.modified_on|date:'U'}}&id={{run.id}}" ic-trigger-on="scrolled-into-view" ic-target="#results_run_table" ic-template="results_run_table" ic-indicator="#indicator"{%endif%}>
     %td
       .details
         {{run.modified_on}}
