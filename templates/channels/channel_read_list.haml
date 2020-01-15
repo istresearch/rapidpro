@@ -40,15 +40,22 @@
       .formax-icon{class:'{{ channel|channel_icon }}'}
       .formax-container
         %div.formax-summary
-          {% if channel.channel_type == 'A' %}{{ channel.device }}
-          -if channel.os
-            (v{{channel.os}}){% endif %}
+          -if channel.channel_type == 'A'
+            -# Android channel format
+            -if not channel.name or channel.name == channel.address
+              -# no name defined - or name equals phone number (default); show device model + version
+              {{channel.device}}
+              -if channel.os
+                (v{{channel.os}})
+            -else
+              {{channel.name}}
+
           {% if channel.channel_type == 'T' %}
             Twilio Address{% endif %}
           {% if channel.channel_type == 'BWD' %}
-            Bandwidth Domestic Address{% endif %}
+            Bandwidth Domestic - {% endif %}
           {% if channel.channel_type == 'BWI' %}
-            Bandwidth International ({{channel.uuid}}) {% endif %}
+            Bandwidth International - {% endif %}
 
           {{ channel.get_address_display }}
           -with channel.get_sender as sender and channel.get_caller as caller

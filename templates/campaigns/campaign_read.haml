@@ -12,7 +12,7 @@
 -block title-text
   .title-text
     %h1
-      {{title}}
+      {{object.name}}
       -if object.is_archived
         -trans "(Archived)"
 
@@ -199,7 +199,7 @@
 
     $(".campaign-event").on('click', function() {
       var id = $(this).data('event-id');
-      document.location.href = '/campaignevent/read/' + id;
+      document.location.href = '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaignevent/read/' + id;
     });
 
     {% if org_perms.campaigns.campaignevent_create %}
@@ -211,12 +211,3 @@
         modal.show();
       });
     {% endif %}
-
-   {% if org_perms.contacts.contact_update %}
-     $(".update-campaign").live('click', function(){
-       var modal = new Modax('{% trans "Update Campaign" %}','{% url "campaigns.campaign_update" object.pk %}');
-       modal.setIcon('icon-instant');
-       modal.setRedirectOnSuccess(true);
-       modal.show();
-     });
-   {% endif %}
