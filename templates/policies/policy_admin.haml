@@ -43,7 +43,7 @@
   :javascript
 
     function view(policy_type) {
-      document.location.href = '/policy/' + policy_type
+      document.location.href = '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/policy/' + policy_type
     }
 
 - block extra-style

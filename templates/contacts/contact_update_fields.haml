@@ -16,7 +16,7 @@
 -block modal-script
   {{block.super}}
   :javascript
-    var input_url = '/contact/update_fields_input/{{contact.id}}/?field=';
+    var input_url = '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/contact/update_fields_input/{{contact.id}}/?field=';
     $(document).ready(function() {
     	$('input.select2_field').on('change', function(evt) {
         $('.rendered-field-input').children().css('visibility', 'hidden');
@@ -34,7 +34,7 @@
       Custom Field
 	%input.select2_field{
 	  name:'contact_field',
-      url:'/contactfield/?_format=select2',
+      url:'{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/contactfield/?_format=select2',
       placeholder: 'Select a custom field to update',
       value: "{{contact_field.id}}",
       text: "{{contact_field.label}}"

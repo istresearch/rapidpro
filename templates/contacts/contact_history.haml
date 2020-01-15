@@ -182,7 +182,7 @@
             .icon-docs-2
 
 -if has_older and not recent_only
-  %tr{ ic-append-from:"/contact/history/{{contact.uuid}}/?after={{after}}&before={{before}}", 
+  %tr{ ic-append-from:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/contact/history/{{contact.uuid}}/?after={{after}}&before={{before}}",
        ic-trigger-on:"scrolled-into-view", 
        ic-target:"table.activity tbody.previous", 
        ic-indicator:"#indicator" }
