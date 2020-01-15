@@ -160,7 +160,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         }
 
         channel = Channel.create(
-            org, user, country, "BWD", name=account_sid, address=phone_number, role=role, config=config,
+            org, user, country, "BWD", name=phone_number, address=phone_number, role=role, config=config,
             uuid=self.uuid
         )
 
