@@ -21,7 +21,7 @@ class PostmasterType(ChannelType):
     name = "Postmaster"
     icon = "icon-channel-postmaster"
     claim_blurb = _(
-        "Postmaster Channel"
+        "Engage uses your Android phone to send and receive messages on your behalf over multiple channel types such as SMS or WhatsApp"
     )
     claim_view = ClaimView
 
