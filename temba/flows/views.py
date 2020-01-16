@@ -1391,7 +1391,7 @@ class FlowCRUDL(SmartCRUDL):
                     messages.info(
                         self.request,
                         _("We are preparing your export. We will e-mail you at %s when it is ready.")
-                        % self.request.user.username,
+                        % self.request.user.email,
                     )
 
                 else:
