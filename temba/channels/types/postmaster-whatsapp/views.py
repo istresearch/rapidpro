@@ -28,13 +28,8 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
     uuid = None
 
     class Form(ClaimViewMixin.Form):
-        bw_account_sid = forms.CharField(label="Account SID", help_text=_("Your Bandwidth Account ID"))
-        bw_account_token = forms.CharField(label="Account Token", help_text=_("Your Bandwidth API Token"))
-        bw_account_secret = forms.CharField(label="Account Secret", help_text=_("Your Bandwidth API Secret"))
-        bw_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)",
-                                          help_text=_("Your Bandwidth Account Phone Number"))
-        bw_application_sid = forms.CharField(label="Application SID",
-                                             help_text=_("Your Bandwidth Account Application ID"))
+        pm_claim_code = forms.CharField(label="Claim Code", help_text=_("Claim Code"))
+        pm_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)", help_text=_("Your Device Phone Number"))
 
         def clean(self):
             from temba.utils.bandwidth import BandwidthRestClient

@@ -16,7 +16,7 @@ class PostmasterType(ChannelType):
     courier_url = r"^pm-wa/(?P<uuid>[a-z0-9\-]+)/(?P<action>receive|status)$"
 
     name = "Postmaster/WhatsApp"
-    icon = "icon-channel-postmaster"
+    icon = "icon-channel-postmaster-whatsapp"
     claim_blurb = _(
         "Send and receive messages over WhatsApp"
     )
