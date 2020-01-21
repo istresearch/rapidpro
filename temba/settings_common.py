@@ -990,7 +990,7 @@ SEND_CHATBASE = False
 SEND_CALLS = False
 
 CHANNEL_TYPES = [
-    "temba.channels.types.postmaster-whatsapp.PostmasterType",
+    "temba.channels.types.postmaster_whatsapp.PostmasterWhatsAppType",
     "temba.channels.types.bandwidth_international.BandwidthInternationalType",
     "temba.channels.types.bandwidth.BandwidthType",
     "temba.channels.types.arabiacell.ArabiaCellType",
