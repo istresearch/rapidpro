@@ -8,14 +8,22 @@ from django.utils import timezone
 
 from temba.channels.models import ChannelEvent
 from temba.flows.models import FlowStart
-from temba.flows.server.serialize import serialize_flow
 from temba.mailroom.client import FlowValidationException, MailroomException, get_client
 from temba.msgs.models import Broadcast, Msg
 from temba.tests import MockResponse, TembaTest, matchers
 from temba.utils import json
 
+from . import queue_interrupt
+
 
 class MailroomClientTest(TembaTest):
+    def test_version(self):
+        with patch("requests.get") as mock_get:
+            mock_get.return_value = MockResponse(200, '{"version": "5.3.4"}')
+            version = get_client().version()
+
+        self.assertEqual("5.3.4", version)
+
     @override_settings(TESTING=False)
     def test_validation_failure(self):
         with patch("requests.post") as mock_post:
@@ -41,12 +49,16 @@ class MailroomClientTest(TembaTest):
             mock_post.return_value = MockResponse(400, '{"errors":["Bad request", "Doh!"]}')
 
             with self.assertRaises(MailroomException) as e:
-                serialize_flow(flow)
+                get_client().flow_migrate(flow.as_json())
 
         self.assertEqual(
             e.exception.as_json(),
             {"endpoint": "flow/migrate", "request": matchers.Dict(), "response": {"errors": ["Bad request", "Doh!"]}},
         )
+
+    def test_empty_expression(self):
+        # empty is as empty does
+        self.assertEqual("", get_client().expression_migrate(""))
 
 
 class MailroomQueueTest(TembaTest):
@@ -142,8 +154,7 @@ class MailroomQueueTest(TembaTest):
             base_language="eng",
         )
 
-        with override_settings(TESTING=False):
-            bcast.send()
+        bcast.send()
 
         self.assert_org_queued(self.org, "batch")
         self.assert_queued_batch_task(
@@ -183,8 +194,7 @@ class MailroomQueueTest(TembaTest):
             include_active=True,
         )
 
-        with override_settings(TESTING=False):
-            start.async_start()
+        start.async_start()
 
         self.assert_org_queued(self.org, "batch")
         self.assert_queued_batch_task(
@@ -199,10 +209,57 @@ class MailroomQueueTest(TembaTest):
                     "flow_type": "M",
                     "contact_ids": [jim.id],
                     "group_ids": [bobs.id],
+                    "query": None,
                     "restart_participants": True,
                     "include_active": True,
                     "extra": {"foo": "bar"},
                 },
+                "queued_on": matchers.ISODate(),
+            },
+        )
+
+    def test_queue_interrupt_by_contacts(self):
+        jim = self.create_contact("Jim", "+12065551212")
+        bob = self.create_contact("Bob", "+12065551313")
+
+        queue_interrupt(self.org, contacts=[jim, bob])
+
+        self.assert_org_queued(self.org, "batch")
+        self.assert_queued_batch_task(
+            self.org,
+            {
+                "type": "interrupt_sessions",
+                "org_id": self.org.id,
+                "task": {"contact_ids": [jim.id, bob.id]},
+                "queued_on": matchers.ISODate(),
+            },
+        )
+
+    def test_queue_interrupt_by_channel(self):
+        self.channel.release()
+
+        self.assert_org_queued(self.org, "batch")
+        self.assert_queued_batch_task(
+            self.org,
+            {
+                "type": "interrupt_sessions",
+                "org_id": self.org.id,
+                "task": {"channel_ids": [self.channel.id]},
+                "queued_on": matchers.ISODate(),
+            },
+        )
+
+    def test_queue_interrupt_by_flow(self):
+        flow = self.get_flow("favorites")
+        flow.archive()
+
+        self.assert_org_queued(self.org, "batch")
+        self.assert_queued_batch_task(
+            self.org,
+            {
+                "type": "interrupt_sessions",
+                "org_id": self.org.id,
+                "task": {"flow_ids": [flow.id]},
                 "queued_on": matchers.ISODate(),
             },
         )
