@@ -4,7 +4,7 @@
 
 -block title-icon
   .title-icon
-    %span.glyph.icon-bandwidth
+    %span.glyph.icon-channel-bandwidth
 
 -block form-span
 
@@ -13,13 +13,13 @@
     %h1 Disconnect Bandwidth
 
 -block summary
-  -if request.META.channel and request.META.channel.channel_type == 'BWI'
-    Connected to Bandwidth International Account ({{channel.address}}) UUID: {{channel.uuid}}
+  -if object.is_connected_to_bandwidth_international
+    Connected to Bandwidth International Account {{account_sid}}
   -else
-    Disconnected from Bandwidth International Account ({{channel.address}}) UUID: {{channel.uuid}}
+    Disconnected from Bandwidth International Account {{account_sid}}
 
 -block post-form
-  -if request.META.channel and request.META.channel.channel_type == 'BWI' and request.META.HTTP_X_FORMAX
+  -if object.is_connected_to_bandwidth_international
     If you no longer want it connected, you can
     %a{href:'javascript:confirmBandwidthDisconnect();'}
       disconnect your Bandwidth International Account
@@ -38,7 +38,7 @@
     -if config.ACCOUNT_SID and config.ACCOUNT_TOKEN
       %input.btn.btn-danger{type:"submit", value:"{{ submit_button_name }}"}
     -else
-      %a.btn.btn-primary{href:"{% url 'orgs.org_bandwidth_connect'%}"}
+      %a.btn.btn-primary{href:"{% url 'orgs.org_bandwidth_international_connect'%}"}
         Connect Bandwidth
 
 -block extra-script

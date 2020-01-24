@@ -1,0 +1,41 @@
+-extends "smartmin/form.html"
+
+-load compress temba
+
+-block title-icon
+  .title-icon
+    %span.glyph.icon-channel-bandwidth
+
+-block title-text
+  .title-text
+    %h1 Connect Bandwidth International
+
+-block pre-form
+  .connect-help
+    %p
+      To connect your Bandwidth International Account you will need to provide your Bandwidth dashboard username and password, account ID, and application SID.
+
+    %p
+      All of these values can be found by logging into your <a target="bandwidth" href="https://dashboard.bandwidth.com">Bandwidth Dashboard page</a>.
+
+-block extra-script
+  {{block.super}}
+  :javascript
+    $(document).ready(function() {
+      $("form.smartmin-form").attr('autocomplete', 'off');
+    });
+
+-block extra-less
+  -compress css inline
+    {% lessblock %}
+      :plain
+        .connect-help {
+          margin-bottom: 25px;
+          width: 600;
+        }
+
+        a:hover {
+          text-decoration: none;
+        }
+
+    {% endlessblock %}

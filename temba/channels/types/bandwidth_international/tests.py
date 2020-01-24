@@ -27,7 +27,7 @@ class BandwidthTypeTest(TembaTest):
         response = self.client.get(claim_bandwidth)
         self.assertEqual(response.status_code, 302)
         response = self.client.get(claim_bandwidth, follow=True)
-        self.assertEqual(response.request["PATH_INFO"], reverse("orgs.org_bandwidth_connect"))
+        self.assertEqual(response.request["PATH_INFO"], reverse("orgs.org_bandwidth_international_connect"))
 
         # attach a Bandwidth accont to the org
         self.org.config = {BWI_ACCOUNT_SID: "bw-account-sid", BWI_ACCOUNT_TOKEN: "bw-account-token"}
@@ -44,14 +44,14 @@ class BandwidthTypeTest(TembaTest):
             mock_get_bandwidth_client.return_value = None
 
             response = self.client.get(claim_bandwidth)
-            self.assertRedirects(response, reverse("orgs.org_bandwidth_connect"))
+            self.assertRedirects(response, reverse("orgs.org_bandwidth_international_connect"))
 
             mock_get_bandwidth_client.side_effect = BandwidthMessageAPIException(
                 401, "http://bandwidth", msg="Authentication Failure", code=20003
             )
 
             response = self.client.get(claim_bandwidth)
-            self.assertRedirects(response, reverse("orgs.org_bandwidth_connect"))
+            self.assertRedirects(response, reverse("orgs.org_bandwidth_international_connect"))
 
         bandwidth_channel = self.org.channels.all().first()
         # make channel support sms by clearing both applications

@@ -93,7 +93,7 @@ BW_API_TYPE = "BW_API_TYPE"
 
 BWI_APPLICATION_SID = "BWI_APPLICATION_SID"
 BWI_ACCOUNT_SID = "BWI_ACCOUNT_SID"
-BWI_USER_NAME = "BWI_USER_NAME"
+BWI_USERNAME = "BWI_USERNAME"
 BWI_PASSWORD = "BWI_PASSWORD"
 BWI_ENCODING = "BWI_ENCODING"
 BWI_SENDER = "BWI_SENDER"
@@ -940,6 +940,29 @@ class Org(SmartModel):
         self.modified_by = user
         self.save()
 
+    def connect_bandwidth(self, account_sid, account_token, account_secret, application_sid, user):
+        bwd_config = {BW_ACCOUNT_SID: account_sid, BW_ACCOUNT_TOKEN: account_token, BW_ACCOUNT_SECRET: account_secret,
+                      BW_APPLICATION_SID: application_sid}
+
+        config = self.config
+        config.update(bwd_config)
+        self.config = config
+        self.modified_by = user
+        self.save()
+
+    def connect_bandwidth_international(self, account_sid, username, password, application_sid, user):
+        from temba.utils.bandwidth import AESCipher
+        bwi_key = os.environ.get("BWI_KEY")
+        bwi_config = {BWI_ACCOUNT_SID: account_sid, BWI_USERNAME: AESCipher(username, bwi_key).encrypt(),
+                      BWI_PASSWORD: AESCipher(password, bwi_key).encrypt(),
+                      BWI_APPLICATION_SID: application_sid}
+
+        config = self.config
+        config.update(bwi_config)
+        self.config = config
+        self.modified_by = user
+        self.save()
+
     def is_connected_to_nexmo(self):
         if self.config:
             nexmo_key = self.config.get(NEXMO_KEY, None)
@@ -967,7 +990,7 @@ class Org(SmartModel):
         return False
 
     def is_connected_to_bandwidth_international(self):
-        bwi_username = self.config.get(BWI_USER_NAME, None)
+        bwi_username = self.config.get(BWI_USERNAME, None)
         bwi_password = self.config.get(BWI_PASSWORD, None)
         if bwi_username and bwi_password:
             return True
@@ -1008,7 +1031,7 @@ class Org(SmartModel):
             if channel_type == "BWI":
                 self.config[BWI_ACCOUNT_SID] = ""
                 self.config[BWI_APPLICATION_SID] = ""
-                self.config[BWI_USER_NAME] = ""
+                self.config[BWI_USERNAME] = ""
                 self.config[BWI_PASSWORD] = ""
             elif channel_type == "BWD":
                 self.config[BW_ACCOUNT_SID] = ""
@@ -1086,7 +1109,7 @@ class Org(SmartModel):
 
         if self.config:
             bwi_account_sid = self.config.get(BWI_ACCOUNT_SID, None)
-            bwi_username = self.config.get(BWI_USER_NAME, None)
+            bwi_username = self.config.get(BWI_USERNAME, None)
             bwi_password = self.config.get(BWI_PASSWORD, None)
 
             if bwi_account_sid and bwi_username and bwi_password:
