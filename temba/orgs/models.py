@@ -59,7 +59,7 @@ BW_API_TYPE = "BW_API_TYPE"
 
 BWI_APPLICATION_SID = "BWI_APPLICATION_SID"
 BWI_ACCOUNT_SID = "BWI_ACCOUNT_SID"
-BWI_USER_NAME = "BWI_USER_NAME"
+BWI_USERNAME = "BWI_USERNAME"
 BWI_PASSWORD = "BWI_PASSWORD"
 BWI_ENCODING = "BWI_ENCODING"
 BWI_SENDER = "BWI_SENDER"
@@ -799,7 +799,7 @@ class Org(SmartModel):
         return False
 
     def is_connected_to_bandwidth_international(self):
-        bwi_username = self.config.get(BWI_USER_NAME, None)
+        bwi_username = self.config.get(BWI_USERNAME, None)
         bwi_password = self.config.get(BWI_PASSWORD, None)
         if bwi_username and bwi_password:
             return True
@@ -874,7 +874,7 @@ class Org(SmartModel):
 
         if self.config:
             bwi_account_sid = self.config.get(BWI_ACCOUNT_SID, None)
-            bwi_username = self.config.get(BWI_USER_NAME, None)
+            bwi_username = self.config.get(BWI_USERNAME, None)
             bwi_password = self.config.get(BWI_PASSWORD, None)
 
             if bwi_account_sid and bwi_username and bwi_password:

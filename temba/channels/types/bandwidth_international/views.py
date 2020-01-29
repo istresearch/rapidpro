@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.html import escape
 from smartmin.views import SmartFormView
 
-from temba.orgs.models import BWI_ACCOUNT_SID, BWI_APPLICATION_SID, BWI_USER_NAME, BWI_PASSWORD, BWI_ENCODING, \
+from temba.orgs.models import BWI_ACCOUNT_SID, BWI_APPLICATION_SID, BWI_USERNAME, BWI_PASSWORD, BWI_ENCODING, \
     BWI_SENDER
 from temba.utils import analytics
 from temba.utils.bandwidth import AESCipher

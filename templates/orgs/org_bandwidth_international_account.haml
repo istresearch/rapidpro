@@ -19,10 +19,14 @@
     Disconnected from Bandwidth International Account ({{channel.address}}) UUID: {{channel.uuid}}
 
 -block post-form
-  -if request.META.channel and request.META.channel.channel_type == 'BWI' and request.META.HTTP_X_FORMAX
-    If you no longer want it connected, you can
-    %a{href:'javascript:confirmBandwidthDisconnect();'}
-      disconnect your Bandwidth International Account
+  -if object.is_connected_to_bandwidth_international
+    -if org.administrators.all
+      -for user in org.administrators.all
+        -if user.id == request.user.id
+          - if org_perms.channels.channel_delete
+            If you no longer want it connected, you can
+            %a{href:'javascript:confirmBandwidthDisconnect();'}
+              disconnect your Bandwidth International Account
 
   - if org_perms.channels.channel_delete
     .disconnect-bandwidth.hide
