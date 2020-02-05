@@ -5,7 +5,7 @@ from bandwidth.messaging.api_exception_module import BandwidthMessageAPIExceptio
 from django.urls import reverse
 
 from temba.channels.models import Channel
-from temba.orgs.models import BWI_ACCOUNT_SID, BWI_ACCOUNT_TOKEN
+from temba.orgs.models import BWI_USERNAME, BWI_PASSWORD
 from temba.tests import TembaTest
 from temba.tests.bandwidth import MockRequestValidator
 
@@ -30,7 +30,7 @@ class BandwidthTypeTest(TembaTest):
         self.assertEqual(response.request["PATH_INFO"], reverse("orgs.org_bandwidth_international_connect"))
 
         # attach a Bandwidth accont to the org
-        self.org.config = {BWI_ACCOUNT_SID: "bw-account-sid", BWI_ACCOUNT_TOKEN: "bw-account-token"}
+        self.org.config = {BWI_USERNAME: "bwi-username", BWI_PASSWORD: "bwi-password"}
         self.org.save()
 
         # hit the claim page, should now have a claim bandwidth link

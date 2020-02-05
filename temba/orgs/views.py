@@ -70,8 +70,9 @@ from .models import (
     TopUp,
     UserSettings,
     get_stripe_credentials,
-    BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_ACCOUNT_SECRET, BW_PHONE_NUMBER, BWI_ACCOUNT_SID, BWI_USERNAME, BWI_PASSWORD,
-    BWI_APPLICATION_SID, BWI_ENCODING, BW_APPLICATION_SID)
+    BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_ACCOUNT_SECRET, BW_APPLICATION_SID, BW_PHONE_NUMBER,
+    BWI_SENDER, BWI_ENCODING, BWI_USERNAME, BWI_PASSWORD,
+)
 from .tasks import apply_topups_task
 
 
@@ -823,41 +824,19 @@ class OrgCRUDL(SmartCRUDL):
     class BandwidthInternationalConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
         class BandwidthInternationalConnectForm(forms.Form):
 
-            bwi_account_sid = forms.CharField(label="Account SID", help_text=_("Bandwidth Account ID"))
             bwi_username = forms.CharField(label="Username", help_text=_("Bandwidth Username"))
             bwi_password = forms.CharField(widget=forms.PasswordInput, label="Password",
                                            help_text=_("Bandwidth Password"))
-            bwi_application_sid = forms.CharField(label="Application SID",
-                                                  help_text=_("Bandwidth Account Application ID"))
 
             def clean(self):
-                bwi_account_sid = forms.CharField(label="Account SID", help_text=_("Bandwidth Account ID"))
                 bwi_username = forms.CharField(label="Username", help_text=_("Bandwidth Username"))
                 bwi_password = forms.CharField(widget=forms.PasswordInput, label="Password",
                                                help_text=_("Bandwidth Password"))
-                bwi_application_sid = forms.CharField(label="Application SID",
-                                                      help_text=_("Bandwidth Account Application ID"))
-
-                if not bwi_account_sid:
-                    raise ValidationError(_("You must enter your Bandwidth Account ID"))
 
                 if not bwi_username:
                     raise ValidationError(_("You must enter your Bandwidth Account Username"))
                 if not bwi_password:
                     raise ValidationError(_("You must enter your Bandwidth Account Password"))
-                if not bwi_application_sid:
-                    raise ValidationError(_("You must enter your Bandwidth Account's Application ID"))
-
-                try:
-                    from iris_sdk.client import Client
-                    client = Client(username=self.data['bwi_username'], password=self.data['bwi_password'],
-                                    account_id=self.data['bwi_account_sid'])
-                    if client:
-                        app_info = client.get("/accounts/{}/applications".format(self.cleaned_data['bwi_account_sid']))
-                except Exception:
-                    raise ValidationError(
-                        _("The Bandwidth account credentials seem invalid. Please check them again and retry.")
-                    )
 
                 return self.cleaned_data
 
@@ -868,15 +847,11 @@ class OrgCRUDL(SmartCRUDL):
         success_message = "Bandwidth Account successfully connected."
 
         def form_valid(self, form):
-
-            bwi_account_sid = form.cleaned_data["bwi_account_sid"]
             bwi_username = form.cleaned_data["bwi_username"]
             bwi_password = form.cleaned_data["bwi_password"]
-            bwi_application_sid = form.cleaned_data["bwi_application_sid"]
 
             org = self.get_object()
-            org.connect_bandwidth_international(bwi_account_sid, bwi_username, bwi_password,
-                                                bwi_application_sid, self.request.user)
+            org.connect_bandwidth_international(bwi_username, bwi_password, self.request.user)
             org.save()
 
             return HttpResponseRedirect(self.get_success_url())
@@ -2804,10 +2779,8 @@ class OrgCRUDL(SmartCRUDL):
         success_url = "@orgs.org_home"
 
         class BandwidthKeys(forms.ModelForm):
-            bwi_account_sid = forms.CharField(max_length=128, label=_("Account ID"), required=False)
             bwi_username = forms.CharField(max_length=128, label=_("Username"), required=False)
             bwi_password = forms.CharField(widget=forms.PasswordInput, max_length=128, label=_("Password"), required=False)
-            bwi_application_sid = forms.CharField(max_length=128, label=_("Application SID"), required=False)
             disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
             channel_id = forms.CharField(widget=forms.HiddenInput, max_length=6, required=False)
             key = forms.IntegerField(widget=forms.HiddenInput, required=False)
@@ -2815,24 +2788,19 @@ class OrgCRUDL(SmartCRUDL):
             def clean(self):
                 super().clean()
                 if self.cleaned_data.get("disconnect", "false") == "false":
-                    bwi_account_sid = self.cleaned_data.get("bwi_account_sid", None)
                     bwi_username = self.cleaned_data.get("bwi_username", None)
                     bwi_password = self.cleaned_data.get("bwi_password", None)
-
-                    if not bwi_account_sid:
-                        raise ValidationError(_("You must enter your Bandwidth Account SID"))
 
                     if not bwi_username:  # pragma: needs cover
                         raise ValidationError(_("You must enter your Bandwidth Username"))
 
-                    self.cleaned_data["bwi_account_sid"] = bwi_account_sid
                     self.cleaned_data["bwi_username"] = bwi_username
                     self.cleaned_data["bwi_password"] = bwi_password
                 return self.cleaned_data
 
             class Meta:
                 model = Org
-                fields = ("bwi_account_sid", "bwi_username", "bwi_password", "disconnect", "key")
+                fields = ("bwi_username", "bwi_password", "disconnect", "key")
 
         form_class = BandwidthKeys
 
@@ -2840,13 +2808,8 @@ class OrgCRUDL(SmartCRUDL):
             context = super().get_context_data(**kwargs)
             client = self.object.get_bandwidth_international_messaging_client()
             if client:
-                bwi_account_sid = str.lower(BWI_ACCOUNT_SID)
                 context[str.lower(BWI_USERNAME)] = client.config.username
                 context[str.lower(BWI_PASSWORD)] = ''
-                context[str.lower(BWI_APPLICATION_SID)] = self.org.config[BWI_APPLICATION_SID]
-                context[bwi_account_sid] = client.config.account_id
-                sid_length = len(context[bwi_account_sid])
-                context["account_sid"] = "%s%s" % ("\u066D" * (sid_length - 16), context[bwi_account_sid][-16:])
             return context
 
         def derive_initial(self):
@@ -2854,10 +2817,8 @@ class OrgCRUDL(SmartCRUDL):
             org = self.get_object()
             client = org.get_bandwidth_international_messaging_client()
             if client:
-                initial[str.lower(BWI_USERNAME)] = client.config.username
-                initial[str.lower(BWI_PASSWORD)] = ''
-                initial[str.lower(BWI_APPLICATION_SID)] = self.org.config[BWI_APPLICATION_SID]
-                initial[str.lower(BWI_ACCOUNT_SID)] = client.config.account_id
+                initial[str.lower(BWI_USERNAME)] = self.org.config[BWI_USERNAME]
+                initial[str.lower(BWI_PASSWORD)] = self.org.config[BWI_PASSWORD]
             initial["disconnect"] = "false"
             return initial
 
@@ -2869,12 +2830,9 @@ class OrgCRUDL(SmartCRUDL):
                 org.remove_bandwidth_account(user=user, international=True)
                 return HttpResponseRedirect(reverse("orgs.org_home"))
             else:
-                bwi_account_sid = form.cleaned_data["bwi_account_sid"]
                 bwi_username = form.cleaned_data["bwi_username"]
                 bwi_password = form.cleaned_data["bwi_password"]
-                bwi_application_sid = form.cleaned_data["bwi_application_sid"]
-                org.connect_bandwidth_international(bwi_account_sid, bwi_username, bwi_password,
-                                                    bwi_application_sid, self.request.user)
+                org.connect_bandwidth_international(bwi_username, bwi_password, self.request.user)
 
             response = self.render_to_response(self.get_context_data(form=form))
             response['REDIRECT'] = self.get_success_url()
