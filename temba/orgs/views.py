@@ -70,8 +70,9 @@ from .models import (
     TopUp,
     UserSettings,
     get_stripe_credentials,
-    BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_ACCOUNT_SECRET, BW_PHONE_NUMBER, BWI_ACCOUNT_SID, BWI_USER_NAME, BWI_PASSWORD,
-    BWI_APPLICATION_SID, BWI_ENCODING, BW_APPLICATION_SID)
+    BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_ACCOUNT_SECRET, BW_APPLICATION_SID, BW_PHONE_NUMBER,
+    BWI_SENDER, BWI_ENCODING, BWI_USERNAME, BWI_PASSWORD,
+)
 from .tasks import apply_topups_task
 
 
@@ -554,6 +555,7 @@ class OrgCRUDL(SmartCRUDL):
         "twilio_connect",
         "twilio_account",
         "bandwidth_connect",
+        "bandwidth_international_connect",
         "bandwidth_account",
         "bandwidth_international_account",
         "nexmo_configuration",
@@ -766,8 +768,9 @@ class OrgCRUDL(SmartCRUDL):
         class BandwidthConnectForm(forms.Form):
             bw_account_sid = forms.CharField(label="Account SID", help_text=_("Your Bandwidth Account ID"))
             bw_account_token = forms.CharField(label="Account Token", help_text=_("Your Bandwidth API Token"))
-            bw_account_secret = forms.CharField(label="Account Secret", help_text=_("Your Bandwidth API Secret"))
-            bw_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)", help_text=_("Your Bandwidth Account Phone Number"))
+            bw_account_secret = forms.CharField(label="Account Secret", help_text=_("Your Bandwidth API Secret"),
+                    widget=forms.PasswordInput(render_value=True)
+            )
             bw_application_sid = forms.CharField(label="Application SID", help_text=_("Your Bandwidth Account Application ID"))
 
             def clean(self):
@@ -776,7 +779,6 @@ class OrgCRUDL(SmartCRUDL):
                 bw_account_sid = self.cleaned_data.get("bw_account_sid", None)
                 bw_account_token = self.cleaned_data.get("bw_account_token", None)
                 bw_account_secret = self.cleaned_data.get("bw_account_secret", None)
-                bw_phone_number = self.cleaned_data.get("bw_phone_number", None)
                 bw_application_sid = self.cleaned_data.get("bw_application_sid", None)
 
                 if not bw_account_sid:  # pragma: needs cover
@@ -786,18 +788,14 @@ class OrgCRUDL(SmartCRUDL):
                     raise ValidationError(_("You must enter your Bandwidth Account Token"))
                 if not bw_account_secret:
                     raise ValidationError(_("You must enter your Bandwidth Account Secret"))
-                if not bw_phone_number:
-                    raise ValidationError(_("You must enter your Bandwidth Account's Phone Number"))
                 if not bw_application_sid:
                     raise ValidationError(_("You must enter your Bandwidth Account's Application ID"))
 
-                bw_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)",
-                                                  help_text=_("Your Bandwidth Account Phone Number"))
                 bw_application_sid = forms.CharField(help_text=_("Your Bandwidth Account Application ID"))
 
                 try:
                     client = BandwidthRestClient('{}'.format(bw_account_sid), '{}'.format(bw_account_token),
-                                                 '{}'.format(bw_account_secret), bw_phone_number, bw_application_sid, client_name='account', api_version='')
+                                                 '{}'.format(bw_account_secret), bw_application_sid, client_name='account', api_version='')
                     media = client.get_media()
                 except Exception:
                     raise ValidationError(
@@ -816,12 +814,47 @@ class OrgCRUDL(SmartCRUDL):
             bw_account_sid = form.cleaned_data["bw_account_sid"]
             bw_account_token = form.cleaned_data["bw_account_token"]
             bw_account_secret = form.cleaned_data["bw_account_secret"]
-            bw_phone_number = form.cleaned_data["bw_phone_number"]
             bw_application_sid = form.cleaned_data["bw_application_sid"]
 
             org = self.get_object()
-            org.connect_bandwidth(bw_account_sid, bw_account_token, bw_account_secret, bw_phone_number,
+            org.connect_bandwidth(bw_account_sid, bw_account_token, bw_account_secret,
                                   bw_application_sid, self.request.user)
+            org.save()
+
+            return HttpResponseRedirect(self.get_success_url())
+
+    class BandwidthInternationalConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
+        class BandwidthInternationalConnectForm(forms.Form):
+
+            bwi_username = forms.CharField(label="Username", help_text=_("Bandwidth Username"))
+            bwi_password = forms.CharField(label="Password", help_text=_("Bandwidth Password"),
+                    widget=forms.PasswordInput(render_value=True)
+            )
+
+            def clean(self):
+                bwi_username = forms.CharField(label="Username", help_text=_("Bandwidth Username"))
+                bwi_password = forms.CharField(widget=forms.PasswordInput, label="Password",
+                                               help_text=_("Bandwidth Password"))
+
+                if not bwi_username:
+                    raise ValidationError(_("You must enter your Bandwidth Account Username"))
+                if not bwi_password:
+                    raise ValidationError(_("You must enter your Bandwidth Account Password"))
+
+                return self.cleaned_data
+
+        form_class = BandwidthInternationalConnectForm
+        submit_button_name = "Save"
+        success_url = "@channels.types.bandwidth_international.claim"
+        field_config = dict(bwi_username=dict(label=""), bwi_password=dict(label=""))
+        success_message = "Bandwidth Account successfully connected."
+
+        def form_valid(self, form):
+            bwi_username = form.cleaned_data["bwi_username"]
+            bwi_password = form.cleaned_data["bwi_password"]
+
+            org = self.get_object()
+            org.connect_bandwidth_international(bwi_username, bwi_password, self.request.user)
             org.save()
 
             return HttpResponseRedirect(self.get_success_url())
@@ -2414,17 +2447,15 @@ class OrgCRUDL(SmartCRUDL):
                 if twilio_client:
                     formax.add_section("twilio", reverse("orgs.org_twilio_account"), icon="icon-channel-twilio")
 
-                for channel in channels:
-                    if channel.is_active:
-                        type = channel.channel_type or ''
-                        if channel.channel_type == "BWI" or channel.channel_type == "BWD":
-                            if channel.channel_type == "BWI":
-                                path = "orgs.org_bandwidth_international_account"
-                            elif channel.channel_type == "BWD":
-                                path = "orgs.org_bandwidth_account"
-                            self.request.META['channel'] = channel
-                            formax.add_section(type.lower(), reverse(path), icon="icon-channel-bandwidth")
+                bwi_client = org.get_bandwidth_international_messaging_client()
+                if bwi_client:
+                    formax.add_section("BWI", reverse("orgs.org_bandwidth_international_account"),
+                                       icon="icon-channel-bandwidth")
 
+                bwd_client = org.get_bandwidth_messaging_client()
+                if bwd_client:
+                    formax.add_section("BWD", reverse("orgs.org_bandwidth_account"),
+                                       icon="icon-channel-bandwidth")
                 nexmo_client = org.get_nexmo_client()
                 if nexmo_client:  # pragma: needs cover
                     formax.add_section("nexmo", reverse("orgs.org_nexmo_account"), icon="icon-channel-nexmo")
@@ -2656,8 +2687,9 @@ class OrgCRUDL(SmartCRUDL):
         class BandwidthKeys(forms.ModelForm):
             bw_account_sid = forms.CharField(max_length=128, label=_("Account ID"), required=False)
             bw_account_token = forms.CharField(max_length=128, label=_("Account Token"), required=False)
-            bw_account_secret = forms.CharField(max_length=128, label=_("Account Secret"), required=False)
-            bw_phone_number = forms.CharField(max_length=128, label=_("Phone Number"), required=False)
+            bw_account_secret = forms.CharField(max_length=128, label=_("Account Secret"), required=False,
+                    widget=forms.PasswordInput(render_value=True)
+            )
             bw_application_sid = forms.CharField(label="Application SID",
                                                  help_text=_("Your Bandwidth Account Application ID"), required=False)
             channel_id = forms.CharField(widget=forms.HiddenInput, max_length=6, required=False)
@@ -2668,10 +2700,8 @@ class OrgCRUDL(SmartCRUDL):
                 if self.cleaned_data.get("disconnect", "false") == "false":
                     bw_account_sid = self.cleaned_data.get("bw_account_sid", None)
                     bw_account_token = self.cleaned_data.get("bw_account_token", None)
-                    bw_phone_number = self.cleaned_data.get("bw_phone_number", None)
                     bw_application_sid = self.cleaned_data.get("bw_application_sid", None)
                     bw_account_secret = self.cleaned_data.get("bw_account_secret", None)
-                    channel_id = forms.CharField(widget=forms.HiddenInput, max_length=6, required=False)
 
                     if not bw_account_secret:
                         raise ValidationError(_("You must enter your Bandwidth Account Secret"))
@@ -2682,15 +2712,12 @@ class OrgCRUDL(SmartCRUDL):
                     if not bw_account_token:  # pragma: needs cover
                         raise ValidationError(_("You must enter your Bandwidth Account Token"))
 
-                    if not bw_phone_number or not str(bw_phone_number).startswith("+"):
-                        raise ValidationError(_("Please provide a valid E.164 formatted phone number (Ex. +14155552671)"))
-
                     if not bw_application_sid:
                         raise ValidationError(_("You must enter your Bandwidth Account's Application ID"))
 
                     try:
                         client = BandwidthRestClient('{}'.format(bw_account_sid), '{}'.format(bw_account_token),
-                                                     '{}'.format(bw_account_secret), bw_phone_number,
+                                                     '{}'.format(bw_account_secret),
                                                      bw_application_sid,
                                                      client_name='account', api_version='')
                         media = client.get_media()
@@ -2703,68 +2730,52 @@ class OrgCRUDL(SmartCRUDL):
 
             class Meta:
                 model = Org
-                fields = ("bw_account_sid", "bw_account_token", "bw_account_secret", "bw_phone_number",
+                fields = ("bw_account_sid", "bw_account_token", "bw_account_secret",
                           "bw_application_sid", "channel_id", "disconnect")
 
         form_class = BandwidthKeys
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            channel = None
-            if 'channel' in self.request.META is not None and self.request.META['channel'].config is not None:
-                channel = self.request.META['channel']
-            elif 'meta' in context['form'] and context['form'].Meta.channel is not None:
-                channel = context['form'].Meta.channel
-
-            if channel is not None:
-                context["channel"] = channel
+            client = self.object.get_bandwidth_messaging_client()
+            if client:
+                context[str.lower(BW_ACCOUNT_SID)] = self.org.config[BW_ACCOUNT_SID]
+                context[str.lower(BW_ACCOUNT_TOKEN)] = self.org.config[BW_ACCOUNT_TOKEN]
+                context[str.lower(BW_ACCOUNT_SECRET)] = self.org.config[BW_ACCOUNT_SECRET]
+                context[str.lower(BW_APPLICATION_SID)] = self.org.config[BW_APPLICATION_SID]
+                sid_length = len(context[str.lower(BW_ACCOUNT_SID)])
+                context["account_sid"] = "%s%s" % ("\u066D" * (sid_length - 16), context[str.lower(BW_ACCOUNT_SID)][-16:])
             return context
 
         def derive_initial(self):
             initial = {}
-            if 'channel' in self.request.META is not None and self.request.META['channel'].config is not None:
-                channel = self.request.META['channel']
-                config = channel.config
-                initial["channel_id"] = self.request.META['channel'].id
-                initial["bw_account_sid"] = config.get("account_sid", None)
-                initial["bw_account_token"] = config.get("auth_token", None)
-                initial["bw_account_secret"] = config.get("secret", None)
-                initial["bw_application_sid"] = config.get("application_sid", None)
-                initial["bw_phone_number"] = channel.address
-                initial["disconnect"] = "false"
+            org = self.get_object()
+            client = org.get_bandwidth_messaging_client()
+            config = self.org.config
+            if client:
+                initial[str.lower(BW_ACCOUNT_SID)] = config.get(BW_ACCOUNT_SID, None)
+                initial[str.lower(BW_ACCOUNT_TOKEN)] = config.get(BW_ACCOUNT_TOKEN, None)
+                initial[str.lower(BW_ACCOUNT_SECRET)] = config.get(BW_ACCOUNT_SECRET, None)
+                initial[str.lower(BW_APPLICATION_SID)] = config.get(BW_APPLICATION_SID, None)
+            initial["disconnect"] = "false"
             return initial
 
         def form_valid(self, form):
             disconnect = form.cleaned_data.get("disconnect", "false") == "true"
-            channel_id = form.cleaned_data.get('channel_id', None)
             user = self.request.user
             org = user.get_org()
-            if channel_id is not None:
-                for ch in org.cached_channels:
-                    if ch.pk == int(channel_id):
-                        channel = form.Meta.channel = ch
-                        break
 
-                if channel is not None:
-                    if disconnect:
-                        org.remove_bandwidth_account(user)
-                        return HttpResponseRedirect(reverse("orgs.org_home"))
-                    else:
-                        bw_account_sid = form.cleaned_data["bw_account_sid"]
-                        bw_account_token = form.cleaned_data["bw_account_token"]
-                        bw_account_secret = form.cleaned_data["bw_account_secret"]
-                        bw_application_sid = form.cleaned_data["bw_application_sid"]
-                        bw_phone_number = form.cleaned_data["bw_phone_number"]
+            if disconnect:
+                org.remove_bandwidth_account(user)
+                return HttpResponseRedirect(reverse("orgs.org_home"))
+            else:
+                bw_account_sid = form.cleaned_data["bw_account_sid"]
+                bw_account_token = form.cleaned_data["bw_account_token"]
+                bw_account_secret = form.cleaned_data["bw_account_secret"]
+                bw_application_sid = form.cleaned_data["bw_application_sid"]
 
-                        config = channel.config
-
-                        config[Channel.CONFIG_APPLICATION_SID] = bw_application_sid
-                        config[Channel.CONFIG_ACCOUNT_SID] = bw_account_sid
-                        config[Channel.CONFIG_AUTH_TOKEN] = bw_account_token
-                        config[Channel.CONFIG_SECRET] = bw_account_secret
-                        channel.address = bw_phone_number
-                        channel.save()
-
+                org.connect_bandwidth(bw_account_sid, bw_account_token, bw_account_secret, bw_application_sid,
+                                      self.request.user)
                 return super().form_valid(form)
 
     class BandwidthInternationalAccount(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
@@ -2773,14 +2784,10 @@ class OrgCRUDL(SmartCRUDL):
         success_url = "@orgs.org_home"
 
         class BandwidthKeys(forms.ModelForm):
-            bwi_account_sid = forms.CharField(max_length=128, label=_("Account ID"), required=False)
-            bwi_username = forms.CharField(max_length=128, label=_("Username"), required=False)
-            bwi_password = forms.CharField(widget=forms.PasswordInput, max_length=128, label=_("Password"), required=False)
-            bwi_application_sid = forms.CharField(max_length=128, label=_("Application SID"), required=False)
-            bwi_encoding = forms.ChoiceField(choices=[('gsm', "GSM"), ("ucs", "UCS"), ("auto", "Auto Detect")],
-                                             label="Messaging Encoding", required=False)
-            bwi_sender = forms.CharField(max_length=128, label=_("Sender"),
-                                         help_text=_("Sender (Name or Phone Number)"), required=False)
+            bwi_username = forms.CharField(max_length=128, label=_("Username"), required=True)
+            bwi_password = forms.CharField(max_length=128, label=_("Password"), required=True,
+                    widget=forms.PasswordInput(render_value=True)
+            )
             disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
             channel_id = forms.CharField(widget=forms.HiddenInput, max_length=6, required=False)
             key = forms.IntegerField(widget=forms.HiddenInput, required=False)
@@ -2788,97 +2795,55 @@ class OrgCRUDL(SmartCRUDL):
             def clean(self):
                 super().clean()
                 if self.cleaned_data.get("disconnect", "false") == "false":
-                    bwi_account_sid = self.cleaned_data.get("bwi_account_sid", None)
                     bwi_username = self.cleaned_data.get("bwi_username", None)
                     bwi_password = self.cleaned_data.get("bwi_password", None)
-                    bwi_application_sid = self.cleaned_data.get("bwi_application_sid")
-                    bwi_sender = self.cleaned_data.get("bwi_sender")
-                    bwi_encoding = self.cleaned_data.get("bwi_encoding")
-
-                    if not bwi_account_sid:
-                        raise ValidationError(_("You must enter your Bandwidth Account SID"))
 
                     if not bwi_username:  # pragma: needs cover
                         raise ValidationError(_("You must enter your Bandwidth Username"))
 
-                    self.cleaned_data["bwi_account_sid"] = bwi_account_sid
                     self.cleaned_data["bwi_username"] = bwi_username
                     self.cleaned_data["bwi_password"] = bwi_password
-                    self.cleaned_data["bwi_encoding"] = bwi_encoding
-                    self.cleaned_data["bwi_sender"] = bwi_sender
                 return self.cleaned_data
 
             class Meta:
                 model = Org
-                fields = ("bwi_account_sid", "bwi_username", "bwi_password", "bwi_encoding", "disconnect",
-                          "bwi_sender", "channel_id", "key")
+                fields = ("bwi_username", "bwi_password", "disconnect", "key")
 
         form_class = BandwidthKeys
 
+        def derive_initial(self):
+            initial = super().derive_initial()
+            org = self.get_object()
+            bwi_username = org.config.get(BWI_USERNAME, None)
+            bwi_password = org.config.get(BWI_PASSWORD, None)
+            bwi_key = os.environ.get("BWI_KEY")
+            initial[str.lower(BWI_USERNAME)] = AESCipher(bwi_username, bwi_key).decrypt()
+            initial[str.lower(BWI_PASSWORD)] = AESCipher(bwi_password, bwi_key).decrypt()
+            initial["disconnect"] = "false"
+            return initial
+
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            channel = None
-            if 'channel' in self.request.META is not None and self.request.META['channel'].config is not None:
-                channel = self.request.META['channel']
-            elif 'meta' in context['form'] and context['form'].Meta.channel is not None:
-                channel = context['form'].Meta.channel
-
-            if channel is not None:
-                context["channel"] = channel
-            return context
-
-        def derive_initial(self):
-            initial = {}
+            org = self.get_object()
+            bwi_username = org.config.get(BWI_USERNAME, None)
+            bwi_password = org.config.get(BWI_PASSWORD, None)
             bwi_key = os.environ.get("BWI_KEY")
-            if 'channel' in self.request.META is not None and self.request.META['channel'].config is not None:
-                config = self.request.META['channel'].config
-                initial["bwi_account_sid"] = config.get("account_sid", None)
-                initial["bwi_username"] = ''
-                username = config.get("username", None)
-                if bwi_key and len(bwi_key) > 0 and username is not None and len(username) > 0:
-                    initial["bwi_username"] = AESCipher(config.get("username"), bwi_key).decrypt()
-                initial["bwi_password"] = ''
-                initial["bwi_application_sid"] = config.get("application_sid", None)
-                initial["bwi_encoding"] = config.get("encoding", None)
-                initial["channel_id"] = self.request.META['channel'].id
-                initial["bwi_sender"] = config.get("sender", None)
-                initial["disconnect"] = "false"
-            return initial
+            context[str.lower(BWI_USERNAME)] = AESCipher(bwi_username, bwi_key).decrypt()
+            context[str.lower(BWI_PASSWORD)] = AESCipher(bwi_password, bwi_key).decrypt()
+            return context
 
         def form_valid(self, form):
             disconnect = form.cleaned_data.get("disconnect", "false") == "true"
-            channel_id = form.cleaned_data.get('channel_id', None)
-            channel = None
             user = self.request.user
             org = user.get_org()
+            if disconnect:
+                org.remove_bandwidth_account(user=user, international=True)
+                return HttpResponseRedirect(reverse("orgs.org_home"))
+            else:
+                bwi_username = form.cleaned_data["bwi_username"]
+                bwi_password = form.cleaned_data["bwi_password"]
+                org.connect_bandwidth_international(bwi_username, bwi_password, self.request.user)
 
-            if channel_id is not None:
-                for ch in org.cached_channels:
-                    if ch.pk == int(channel_id):
-                        channel = form.Meta.channel = ch
-                        break
-
-                if channel is not None:
-                    if disconnect:
-                        channel.release()
-                        return HttpResponseRedirect(reverse("orgs.org_home"))
-                    else:
-                        bwi_account_sid = form.cleaned_data["bwi_account_sid"]
-                        bwi_username = form.cleaned_data["bwi_username"]
-                        bwi_password = form.cleaned_data["bwi_password"]
-                        bwi_application_sid = form.cleaned_data["bwi_application_sid"]
-                        bwi_encoding = form.cleaned_data["bwi_encoding"]
-                        bwi_sender = form.cleaned_data["bwi_sender"]
-                        bwi_key = os.environ.get("BWI_KEY")
-                        config = channel.config
-                        config[Channel.CONFIG_APPLICATION_SID] = bwi_application_sid
-                        config[Channel.CONFIG_ACCOUNT_SID] = bwi_account_sid
-                        config[Channel.CONFIG_USERNAME] = AESCipher(bwi_username, bwi_key).encrypt()
-                        config[Channel.CONFIG_PASSWORD] = AESCipher(bwi_password, bwi_key).encrypt()
-                        config[Channel.CONFIG_ENCODING] = bwi_encoding
-                        config[Channel.CONFIG_SENDER] = bwi_sender
-                        channel.address = bwi_sender
-                        channel.save()
             response = self.render_to_response(self.get_context_data(form=form))
             response['REDIRECT'] = self.get_success_url()
             return response
