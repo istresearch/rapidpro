@@ -768,7 +768,9 @@ class OrgCRUDL(SmartCRUDL):
         class BandwidthConnectForm(forms.Form):
             bw_account_sid = forms.CharField(label="Account SID", help_text=_("Your Bandwidth Account ID"))
             bw_account_token = forms.CharField(label="Account Token", help_text=_("Your Bandwidth API Token"))
-            bw_account_secret = forms.CharField(label="Account Secret", help_text=_("Your Bandwidth API Secret"))
+            bw_account_secret = forms.CharField(label="Account Secret", help_text=_("Your Bandwidth API Secret"),
+                    widget=forms.PasswordInput(render_value=True)
+            )
             bw_application_sid = forms.CharField(label="Application SID", help_text=_("Your Bandwidth Account Application ID"))
 
             def clean(self):
@@ -825,8 +827,9 @@ class OrgCRUDL(SmartCRUDL):
         class BandwidthInternationalConnectForm(forms.Form):
 
             bwi_username = forms.CharField(label="Username", help_text=_("Bandwidth Username"))
-            bwi_password = forms.CharField(widget=forms.PasswordInput, label="Password",
-                                           help_text=_("Bandwidth Password"))
+            bwi_password = forms.CharField(label="Password", help_text=_("Bandwidth Password"),
+                    widget=forms.PasswordInput(render_value=True)
+            )
 
             def clean(self):
                 bwi_username = forms.CharField(label="Username", help_text=_("Bandwidth Username"))
@@ -843,7 +846,7 @@ class OrgCRUDL(SmartCRUDL):
         form_class = BandwidthInternationalConnectForm
         submit_button_name = "Save"
         success_url = "@channels.types.bandwidth_international.claim"
-        field_config = dict(bw_account_sid=dict(label=""), bw_account_token=dict(label=""))
+        field_config = dict(bwi_username=dict(label=""), bwi_password=dict(label=""))
         success_message = "Bandwidth Account successfully connected."
 
         def form_valid(self, form):
@@ -2684,7 +2687,9 @@ class OrgCRUDL(SmartCRUDL):
         class BandwidthKeys(forms.ModelForm):
             bw_account_sid = forms.CharField(max_length=128, label=_("Account ID"), required=False)
             bw_account_token = forms.CharField(max_length=128, label=_("Account Token"), required=False)
-            bw_account_secret = forms.CharField(max_length=128, label=_("Account Secret"), required=False)
+            bw_account_secret = forms.CharField(max_length=128, label=_("Account Secret"), required=False,
+                    widget=forms.PasswordInput(render_value=True)
+            )
             bw_application_sid = forms.CharField(label="Application SID",
                                                  help_text=_("Your Bandwidth Account Application ID"), required=False)
             channel_id = forms.CharField(widget=forms.HiddenInput, max_length=6, required=False)
@@ -2779,8 +2784,10 @@ class OrgCRUDL(SmartCRUDL):
         success_url = "@orgs.org_home"
 
         class BandwidthKeys(forms.ModelForm):
-            bwi_username = forms.CharField(max_length=128, label=_("Username"), required=False)
-            bwi_password = forms.CharField(widget=forms.PasswordInput, max_length=128, label=_("Password"), required=False)
+            bwi_username = forms.CharField(max_length=128, label=_("Username"), required=True)
+            bwi_password = forms.CharField(max_length=128, label=_("Password"), required=True,
+                    widget=forms.PasswordInput(render_value=True)
+            )
             disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
             channel_id = forms.CharField(widget=forms.HiddenInput, max_length=6, required=False)
             key = forms.IntegerField(widget=forms.HiddenInput, required=False)
@@ -2804,23 +2811,26 @@ class OrgCRUDL(SmartCRUDL):
 
         form_class = BandwidthKeys
 
-        def get_context_data(self, **kwargs):
-            context = super().get_context_data(**kwargs)
-            client = self.object.get_bandwidth_international_messaging_client()
-            if client:
-                context[str.lower(BWI_USERNAME)] = client.config.username
-                context[str.lower(BWI_PASSWORD)] = ''
-            return context
-
         def derive_initial(self):
-            initial = {}
+            initial = super().derive_initial()
             org = self.get_object()
-            client = org.get_bandwidth_international_messaging_client()
-            if client:
-                initial[str.lower(BWI_USERNAME)] = self.org.config[BWI_USERNAME]
-                initial[str.lower(BWI_PASSWORD)] = self.org.config[BWI_PASSWORD]
+            bwi_username = org.config.get(BWI_USERNAME, None)
+            bwi_password = org.config.get(BWI_PASSWORD, None)
+            bwi_key = os.environ.get("BWI_KEY")
+            initial[str.lower(BWI_USERNAME)] = AESCipher(bwi_username, bwi_key).decrypt()
+            initial[str.lower(BWI_PASSWORD)] = AESCipher(bwi_password, bwi_key).decrypt()
             initial["disconnect"] = "false"
             return initial
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            org = self.get_object()
+            bwi_username = org.config.get(BWI_USERNAME, None)
+            bwi_password = org.config.get(BWI_PASSWORD, None)
+            bwi_key = os.environ.get("BWI_KEY")
+            context[str.lower(BWI_USERNAME)] = AESCipher(bwi_username, bwi_key).decrypt()
+            context[str.lower(BWI_PASSWORD)] = AESCipher(bwi_password, bwi_key).decrypt()
+            return context
 
         def form_valid(self, form):
             disconnect = form.cleaned_data.get("disconnect", "false") == "true"

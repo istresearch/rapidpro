@@ -29,7 +29,7 @@ class BandwidthTypeTest(TembaTest):
         response = self.client.get(claim_bandwidth, follow=True)
         self.assertEqual(response.request["PATH_INFO"], reverse("orgs.org_bandwidth_international_connect"))
 
-        # attach a Bandwidth accont to the org
+        # attach a Bandwidth account to the org
         self.org.config = {BWI_USERNAME: "bwi-username", BWI_PASSWORD: "bwi-password"}
         self.org.save()
 
