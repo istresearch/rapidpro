@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartFormView
 
-from temba.orgs.models import BWI_ACCOUNT_SID, BWI_APPLICATION_SID, BWI_USERNAME, BWI_PASSWORD
+from temba.orgs.models import BWI_SENDER, BWI_ENCODING, BWI_USERNAME, BWI_PASSWORD
 from temba.utils import analytics
 from ...models import Channel
 from ...views import (
@@ -38,7 +38,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         def clean(self):
             BWI_KEY = os.environ.get("BWI_KEY")
             if not BWI_KEY or len(BWI_KEY) == 0:
-                raise ValidationError(_("The environment variable BWI_KEY  must be a valid encryption key"))
+                raise ValidationError(_("The environment variable BWI_KEY must be a valid encryption key"))
 
             return self.cleaned_data
 
@@ -66,7 +66,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
     submit_button_name = "Save"
     success_url = "@channels.types.bandwidth_international.claim"
     field_config = dict(bw_account_sid=dict(label=""), bw_account_token=dict(label=""))
-    success_message = "Bandwidth Account successfully connected."
+    success_message = "Bandwidth International account successfully connected."
 
     def form_valid(self, form):
         bwi_encoding = form.cleaned_data["bwi_encoding"]
@@ -80,7 +80,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
 
     def claim_number(self, user, phone_number, country, role):
         analytics.track(user.username, "temba.channel_claim_bandwidth_international",
-                        properties=dict(account_sid=BWI_ACCOUNT_SID))
+                        properties=dict(bwi_sender=BWI_SENDER))
         return None
 
     def create_channel(self, user, role, encoding, bwi_sender):
@@ -89,8 +89,6 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         callback_domain = org.get_brand_domain()
 
         config = {
-            Channel.CONFIG_APPLICATION_SID: org.config.get(BWI_APPLICATION_SID, None),
-            Channel.CONFIG_ACCOUNT_SID: org.config[BWI_ACCOUNT_SID],
             Channel.CONFIG_USERNAME: org.config.get(BWI_USERNAME, None),
             Channel.CONFIG_PASSWORD: org.config.get(BWI_PASSWORD, None),
             Channel.CONFIG_ENCODING: encoding,

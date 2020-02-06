@@ -57,8 +57,6 @@ BW_ACCOUNT_SECRET = "BW_ACCOUNT_SECRET"
 BW_PHONE_NUMBER = "BW_PHONE_NUMBER"
 BW_API_TYPE = "BW_API_TYPE"
 
-BWI_APPLICATION_SID = "BWI_APPLICATION_SID"
-BWI_ACCOUNT_SID = "BWI_ACCOUNT_SID"
 BWI_USERNAME = "BWI_USERNAME"
 BWI_PASSWORD = "BWI_PASSWORD"
 BWI_ENCODING = "BWI_ENCODING"
@@ -776,27 +774,24 @@ class Org(SmartModel):
         self.save(update_fields=("config", "modified_by", "modified_on"))
 
     def connect_bandwidth(self, account_sid, account_token, account_secret, application_sid, user):
-        bwd_config = {BW_ACCOUNT_SID: account_sid, BW_ACCOUNT_TOKEN: account_token, BW_ACCOUNT_SECRET: account_secret,
-                      BW_APPLICATION_SID: application_sid}
-
-        config = self.config
-        config.update(bwd_config)
-        self.config = config
+        self.config.update({
+            BW_ACCOUNT_SID: account_sid,
+            BW_ACCOUNT_TOKEN: account_token,
+            BW_ACCOUNT_SECRET: account_secret,
+            BW_APPLICATION_SID: application_sid,
+        })
         self.modified_by = user
-        self.save()
+        self.save(update_fields=("config", "modified_by", "modified_on"))
 
-    def connect_bandwidth_international(self, account_sid, username, password, application_sid, user):
+    def connect_bandwidth_international(self, username, password, user):
         from temba.utils.bandwidth import AESCipher
         bwi_key = os.environ.get("BWI_KEY")
-        bwi_config = {BWI_ACCOUNT_SID: account_sid, BWI_USERNAME: AESCipher(username, bwi_key).encrypt(),
-                      BWI_PASSWORD: AESCipher(password, bwi_key).encrypt(),
-                      BWI_APPLICATION_SID: application_sid}
-
-        config = self.config
-        config.update(bwi_config)
-        self.config = config
+        self.config.update({
+            BWI_USERNAME: AESCipher(username, bwi_key).encrypt(),
+            BWI_PASSWORD: AESCipher(password, bwi_key).encrypt(),
+        })
         self.modified_by = user
-        self.save()
+        self.save(update_fields=("config", "modified_by", "modified_on"))
 
     def is_connected_to_nexmo(self):
         if self.config:
@@ -860,8 +855,6 @@ class Org(SmartModel):
                 channel.release()
 
             if channel_type == "BWI":
-                self.config[BWI_ACCOUNT_SID] = ""
-                self.config[BWI_APPLICATION_SID] = ""
                 self.config[BWI_USERNAME] = ""
                 self.config[BWI_PASSWORD] = ""
             elif channel_type == "BWD":
@@ -919,16 +912,15 @@ class Org(SmartModel):
     def get_bandwidth_international_messaging_client(self):
 
         if self.config:
-            bwi_account_sid = self.config.get(BWI_ACCOUNT_SID, None)
             bwi_username = self.config.get(BWI_USERNAME, None)
             bwi_password = self.config.get(BWI_PASSWORD, None)
 
-            if bwi_account_sid and bwi_username and bwi_password:
+            bwi_key = os.environ.get("BWI_KEY")
+            if bwi_key and bwi_username and bwi_password:
                 from temba.utils.bandwidth import AESCipher
-                bwi_key = os.environ.get("BWI_KEY")
                 return Client(url="https://bulksms.ia2p.bandwidth.com:12021/bulk/sendsms",
                               username=AESCipher(bwi_username, bwi_key).decrypt(),
-                              password=AESCipher(bwi_password, bwi_key).decrypt(), account_id=bwi_account_sid)
+                              password=AESCipher(bwi_password, bwi_key).decrypt())
         return None
 
     def get_nexmo_client(self):
