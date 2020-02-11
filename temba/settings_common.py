@@ -398,6 +398,8 @@ PERMISSIONS = {
         "bandwidth_account",
         "bandwidth_international_account",
         "bandwidth_connect",
+        "postmaster_connect",
+        "postmaster_account",
         "token",
     ),
     "orgs.usersettings": ("phone",),
@@ -609,6 +611,8 @@ GROUP_PERMISSIONS = {
         "orgs.org_bandwidth_account",
         "orgs.org_bandwidth_international_account",
         "orgs.org_bandwidth_connect",
+        "orgs.org_postmaster_account",
+        "orgs.org_postmaster_connect",
         "orgs.org_token",
         "orgs.topup_list",
         "orgs.topup_read",
@@ -1019,6 +1023,7 @@ CLASSIFIER_TYPES = [
 ]
 
 CHANNEL_TYPES = [
+    "temba.channels.types.postmaster.PostmasterType",
     "temba.channels.types.bandwidth_international.BandwidthInternationalType",
     "temba.channels.types.bandwidth.BandwidthType",
     "temba.channels.types.arabiacell.ArabiaCellType",

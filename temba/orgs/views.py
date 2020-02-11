@@ -556,6 +556,8 @@ class OrgCRUDL(SmartCRUDL):
         "bandwidth_connect",
         "bandwidth_account",
         "bandwidth_international_account",
+        "postmaster_connect",
+        "postmaster_account",
         "nexmo_configuration",
         "nexmo_account",
         "nexmo_connect",
@@ -761,6 +763,103 @@ class OrgCRUDL(SmartCRUDL):
             org.save()
 
             return HttpResponseRedirect(self.get_success_url())
+
+    class PostmasterConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
+        class PostmasterConnectForm(forms.Form):
+            pm_receiver_id = forms.CharField(label="Receiver ID", help_text=_("Your Postmaster Receiver ID"))
+            pm_chat_mode = forms.CharField(label="Chat Mode", help_text=_("Your Postmaster Chat Mode"))
+
+            def clean(self):
+                pm_receiver_id = self.cleaned_data.get("pm_receiver_id", None)
+                pm_chat_mode = self.cleaned_data.get("pm_chat_mode", None)
+
+                if not pm_receiver_id:
+                    raise ValidationError(_("You must enter your Postmaster Receiver ID"))
+
+                if not pm_chat_mode:
+                    raise ValidationError(_("You must enter your Postmaster Chat Mode"))
+
+                return self.cleaned_data
+
+        form_class = PostmasterConnectForm
+        submit_button_name = "Save"
+        success_url = "@channels.types.postmaster.claim"
+        field_config = dict(pm_receiver_id=dict(label=""), pm_chat_mode=dict(label=""))
+        success_message = "Postmaster Account successfully connected."
+
+        def form_valid(self, form):
+            pm_receiver_id = form.cleaned_data["pm_receiver_id"]
+            pm_chat_mode = form.cleaned_data["pm_chat_mode"]
+
+            org = self.get_object()
+            org.connect_postmaster(pm_receiver_id, pm_chat_mode, self.request.user)
+            org.save()
+
+            return HttpResponseRedirect(self.get_success_url())
+
+    class PostmasterAccount(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+        success_message = ""
+
+        class PostmasterKeys(forms.ModelForm):
+            pm_receiver_id = forms.CharField(label="Receiver ID", help_text=_("Your Postmaster Receiver ID"))
+            pm_chat_mode = forms.CharField(label="Chat Mode", help_text=_("Your Postmaster Chat Mode"))
+            disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
+
+            def clean(self):
+                super().clean()
+                if self.cleaned_data.get("disconnect", "false") == "false":
+                    pm_receiver_id = self.cleaned_data.get("pm_receiver_id", None)
+                    pm_chat_mode = self.cleaned_data.get("pm_chat_mode", None)
+
+                    if not pm_receiver_id:
+                        raise ValidationError(_("You must enter your Postmaster Receiver ID"))
+
+                    if not pm_chat_mode:  # pragma: needs cover
+                        raise ValidationError(_("You must enter your Postmaster Chat Mode"))
+
+                return self.cleaned_data
+
+            class Meta:
+                model = Org
+                fields = ("pm_receiver_id", "pm_chat_mode", "disconnect")
+
+        form_class = PostmasterKeys
+
+        def derive_initial(self):
+            initial = super().derive_initial()
+            org = self.get_object()
+            config = org.config
+            initial["pm_receiver_id"] = config.get(Org.CONFIG_POSTMASTER_RECEIVER_ID, "")
+            initial["pm_chat_mode"] = config.get(Org.CONFIG_POSTMASTER_CHAT_MODE, "")
+            initial["disconnect"] = "false"
+            return initial
+
+        def form_valid(self, form):
+            disconnect = form.cleaned_data.get("disconnect", "false") == "true"
+            user = self.request.user
+            org = user.get_org()
+
+            if disconnect:
+                org.remove_postmaster_account(user)
+                return HttpResponseRedirect(reverse("orgs.org_home"))
+            else:
+                pm_receiver_id = form.cleaned_data["pm_receiver_id"]
+                pm_chat_mode = form.cleaned_data["api_secret"]
+
+                org.connect_nexmo(pm_receiver_id, pm_chat_mode, user)
+                return super().form_valid(form)
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+
+            org = self.get_object()
+            client = org.get_nexmo_client()
+            if client:
+                config = org.config
+                context["pm_receiver_id"] = config.get(Org.CONFIG_POSTMASTER_RECEIVER_ID, "")
+                context["pm_chat_mode"] = config.get(Org.CONFIG_POSTMASTER_CHAT_MODE, "")
+
+            return context
 
     class BandwidthConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
         class BandwidthConnectForm(forms.Form):

@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from django import forms
 from django.core.exceptions import ValidationError
 from smartmin.views import SmartFormView
 
@@ -17,16 +18,16 @@ from ...views import (
     ClaimViewMixin,
 )
 
-import temba.channels.types.postmaster.type.PostmasterType as PostmasterType
-
 
 class ClaimView(BaseClaimNumberMixin, SmartFormView):
+    code = "PSMS"
     uuid = None
 
     class Form(ClaimViewMixin.Form):
-        pm_receiver_id = None
-        pm_mode = None
-
+        CHAT_MODE_CHOICES = (("WA", _("WhatsApp")), ("TG", _("Telegram")), ("SMS", _("SMS")))
+        pm_receiver_id = forms.CharField(label="You must provide a Receiver ID", help_text=_("Postmaster Receiver ID"))
+        pm_mode = forms.ChoiceField(label="Postmaster Chat Mode", help_text=_("Postmaster Chat Mode"),
+                                    choices=CHAT_MODE_CHOICES)
         def clean(self):
 
             pm_receiver_id = self.cleaned_data.get("pm_receiver_id", None)
@@ -45,13 +46,13 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         self.client = None
 
     def get_search_countries_tuple(self):
-        if self.channel_type.code == PostmasterType.code:
+        if self.channel_type.code == self.code:
             return ["US"]
         else:
             return TWILIO_SEARCH_COUNTRIES
 
     def get_supported_countries_tuple(self):
-        if self.channel_type.code == PostmasterType.code:
+        if self.channel_type.code == self.code:
             return ["US"]
         else:
             return ALL_COUNTRIES
@@ -100,7 +101,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         }
 
         channel = Channel.create(
-            org, user, "US", PostmasterType.code, name=pm_receiver_id, address=pm_receiver_id, role=role, config=config,
+            org, user, "US", self.code, name=pm_receiver_id, address=pm_receiver_id, role=role, config=config,
             uuid=self.uuid
         )
 
