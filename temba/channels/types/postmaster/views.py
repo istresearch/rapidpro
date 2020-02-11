@@ -6,6 +6,7 @@ from smartmin.views import SmartFormView
 
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+
 from temba.utils import analytics
 from django.utils.translation import ugettext_lazy as _
 
@@ -24,10 +25,11 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
     uuid = None
 
     class Form(ClaimViewMixin.Form):
+
         CHAT_MODE_CHOICES = (("WA", _("WhatsApp")), ("TG", _("Telegram")), ("SMS", _("SMS")))
         pm_receiver_id = forms.CharField(label="You must provide a Receiver ID", help_text=_("Postmaster Receiver ID"))
         pm_chat_mode = forms.ChoiceField(label="Postmaster Chat Mode", help_text=_("Postmaster Chat Mode"),
-                                    choices=CHAT_MODE_CHOICES)
+                                         choices=CHAT_MODE_CHOICES)
 
         def clean(self):
 
@@ -38,6 +40,18 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
                 raise ValidationError(_("You must provide a Receiver ID"))
             if not pm_chat_mode:
                 raise ValidationError(_("You must select a chat mode"))
+
+            org = self.request.user.get_org()
+            if org is not None:
+                channel = None
+                channels = Channel.objects.filter(channel_type=ClaimView.code, is_active=True)
+                for ch in channels:
+                    if ch.config.get('chat_mode') == pm_chat_mode:
+                        channel = ch
+
+                if channel is not None:
+                    raise ValidationError(_("A chat mode for {} already exists for the {} org"
+                                            .format(dict(self.CHAT_MODE_CHOICES)[pm_chat_mode], org.name)))
 
             return self.cleaned_data
 
