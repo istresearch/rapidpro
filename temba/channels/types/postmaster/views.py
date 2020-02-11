@@ -20,14 +20,15 @@ from ...views import (
 
 
 class ClaimView(BaseClaimNumberMixin, SmartFormView):
-    code = "PSMS"
+    code = "PSM"
     uuid = None
 
     class Form(ClaimViewMixin.Form):
         CHAT_MODE_CHOICES = (("WA", _("WhatsApp")), ("TG", _("Telegram")), ("SMS", _("SMS")))
         pm_receiver_id = forms.CharField(label="You must provide a Receiver ID", help_text=_("Postmaster Receiver ID"))
-        pm_mode = forms.ChoiceField(label="Postmaster Chat Mode", help_text=_("Postmaster Chat Mode"),
+        pm_chat_mode = forms.ChoiceField(label="Postmaster Chat Mode", help_text=_("Postmaster Chat Mode"),
                                     choices=CHAT_MODE_CHOICES)
+
         def clean(self):
 
             pm_receiver_id = self.cleaned_data.get("pm_receiver_id", None)

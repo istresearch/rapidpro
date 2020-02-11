@@ -12,7 +12,7 @@ class PostmasterType(ChannelType):
     An IST Postmaster channel
     """
 
-    code = "PSMS"
+    code = "PSM"
     category = ChannelType.Category.PHONE
 
     courier_url = r"^psms/(?P<uuid>[a-z0-9\-]+)/(?P<action>receive|status)$"
