@@ -42,15 +42,13 @@ class AESCipher:
 
 
 class BandwidthRestClient(account.client_module.Client):  # pragma: no cover
-    bw_phone_number = None
     bw_application_sid = None
     bw_account_secret = None
     bw_account_token = None
 
-    def __init__(self, user_id=None, api_token=None, api_secret=None, phone_number=None, application_sid=None,  **other_options):
+    def __init__(self, user_id=None, api_token=None, api_secret=None, application_sid=None,  **other_options):
         super().__init__(user_id, api_token, api_secret, **other_options,
                          api_endpoint='https://messaging.bandwidth.com')
-        self.bw_phone_number = phone_number
         self.bw_application_sid = application_sid
         self.bw_account_token = api_token
         self.bw_account_secret = api_secret
