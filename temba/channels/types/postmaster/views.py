@@ -48,6 +48,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
                 for ch in channels:
                     if ch.config.get('chat_mode') == pm_chat_mode:
                         channel = ch
+                        break
 
                 if channel is not None:
                     raise ValidationError(_("A chat mode for {} already exists for the {} org"
