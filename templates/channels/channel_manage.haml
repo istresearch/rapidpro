@@ -1,0 +1,19 @@
+-extends "smartmin/list.html"
+
+
+-block page-top
+  .row-fluid
+    .span9
+      -block title
+        -block title-icon
+          %span.title-icon
+            .glyph.icon-phone2
+          -block title-text
+            .title-text
+              %h1
+                {{title}}
+    %div.channel-create-icon{title:"Add Channel", style:"float:right; margin-right:60px"}
+     %a.glyph.icon-plus-circle{href:"{% url 'channels.channel_claim' %}", style:"color:#3886e9; text-decoration: none; font-size: 36px;"}
+
+
+

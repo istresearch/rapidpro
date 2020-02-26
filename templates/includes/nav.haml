@@ -38,6 +38,11 @@
         %a.icon-nav-channels{href:"{% url 'channels.channel_list' %}", class:"{% active request 'channels' %}"}
           .title
             -trans "channels"
+    -else
+      %li.nav-channels
+        %a.icon-nav-channels{href:"{% url 'channels.channel_manage' %}", class:"{% active request 'channels' %}"}
+          .title
+            -trans "channels"
 
   -if request.user.is_superuser or perms.auth.user_list
     -if not user_org

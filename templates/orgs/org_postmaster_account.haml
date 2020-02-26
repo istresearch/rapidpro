@@ -1,0 +1,48 @@
+-extends "smartmin/form.html"
+
+-load compress temba smartmin i18n
+
+-block title-icon
+  .title-icon
+    %span.glyph.icon-bandwidth
+
+-block form-span
+
+-block title-text
+  .title-text
+    %h1 Disconnect Bandwidth
+
+-block summary
+  -if request.META.channel and request.META.channel.channel_type == 'BWD'
+    Connected to Bandwidth Account {{channel.name}}
+  -else
+    Disconnected from Bandwidth
+
+-block post-form
+  -if request.META.channel and request.META.channel.channel_type == 'BWD' and request.META.HTTP_X_FORMAX
+    If you no longer want it connected, you can
+    %a{href:'javascript:confirmBandwidthDisconnect();'}
+      disconnect your Bandwidth Account
+
+  - if org_perms.channels.channel_delete
+    .disconnect-bandwidth.hide
+      .title
+        -trans "Disconnect Bandwidth"
+      .body
+        -blocktrans
+          Disconnecting your Bandwidth account will also remove any Bandwidth channels connected to it. Are you sure you want to proceed?
+    %a#disconnect-bandwidth-form.posterize{href:'{% url "orgs.org_bandwidth_account" %}?disconnect=true&channel_id={{channel.id}}'}
+
+-block form-buttons
+  .form-actions
+    -if config.ACCOUNT_SID and config.ACCOUNT_TOKEN
+      %input.btn.btn-danger{type:"submit", value:"{{ submit_button_name }}"}
+    -else
+      %a.btn.btn-primary{href:"{% url 'orgs.org_bandwidth_connect'%}"}
+        Connect Bandwidth
+
+-block extra-script
+  :javascript
+    function confirmBandwidthDisconnect() {
+      removalConfirmation("disconnect-bandwidth", "Disconnect");
+    }
