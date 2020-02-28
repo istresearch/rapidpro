@@ -467,7 +467,7 @@ class AttachmentsEndpoint(View):
 
         try:
             client = botoclient('s3')
-            data = client.generate_presigned_post(bucket, path, Conditions=[{"acl": "public-read"}], ExpiresIn=expires)
+            data = client.generate_presigned_post(bucket, path, Conditions=[{"acl": acl}], ExpiresIn=expires)
             return Response(data, status=status.HTTP_200_OK)
         except ClientError as e:
             data = {'error': str(e)}
