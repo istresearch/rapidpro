@@ -146,6 +146,9 @@ class Org(SmartModel):
     CONFIG_CHATBASE_API_KEY = "CHATBASE_API_KEY"
     CONFIG_CHATBASE_VERSION = "CHATBASE_VERSION"
 
+    CONFIG_POSTMASTER_RECEIVER_ID = "RECEIVER_ID"
+    CONFIG_POSTMASTER_CHAT_MODE = "CHAT_MODE"
+
     # items in export JSON
     EXPORT_VERSION = "version"
     EXPORT_SITE = "site"
@@ -752,6 +755,12 @@ class Org(SmartModel):
 
     def connect_twilio(self, account_sid, account_token, user):
         self.config.update({Org.CONFIG_TWILIO_SID: account_sid, Org.CONFIG_TWILIO_TOKEN: account_token})
+        self.modified_by = user
+        self.save(update_fields=("config", "modified_by", "modified_on"))
+
+    def connect_postmaster(self, pm_receiver_id, pm_chat_mode, user):
+        self.config.update({Org.CONFIG_POSTMASTER_RECEIVER_ID: pm_receiver_id,
+                            Org.CONFIG_POSTMASTER_CHATMODE: pm_chat_mode})
         self.modified_by = user
         self.save(update_fields=("config", "modified_by", "modified_on"))
 
