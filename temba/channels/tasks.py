@@ -8,7 +8,7 @@ from celery.task import task
 
 from temba.utils.celery import nonoverlapping_task
 
-from .models import Alert, Channel, ChannelCount, ChannelLog
+from .models import Alert, Channel, ChannelCount, ChannelLog, SyncEvent
 
 logger = logging.getLogger(__name__)
 
