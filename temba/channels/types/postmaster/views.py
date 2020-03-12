@@ -10,7 +10,7 @@ from django.urls import reverse
 from temba.utils import analytics
 from django.utils.translation import ugettext_lazy as _
 
-
+from django.conf import settings
 from ...models import Channel
 from ...views import (
     ALL_COUNTRIES,
@@ -25,8 +25,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
     uuid = None
 
     class Form(ClaimViewMixin.Form):
-
-        CHAT_MODE_CHOICES = (("WA", _("WhatsApp")), ("TG", _("Telegram")), ("SMS", _("SMS")))
+        CHAT_MODE_CHOICES = getattr(settings, "CHAT_MODE_CHOICES", ())
         pm_receiver_id = forms.CharField(label="You must provide a Receiver ID", help_text=_("Postmaster Receiver ID"))
         pm_chat_mode = forms.ChoiceField(label="Postmaster Chat Mode", help_text=_("Postmaster Chat Mode"),
                                          choices=CHAT_MODE_CHOICES)
@@ -116,9 +115,12 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             Channel.CONFIG_CALLBACK_DOMAIN: callback_domain,
         }
 
+        import temba.contacts.models as Contacts
+        schemes = [getattr(Contacts, '{}_SCHEME'.format(dict(ClaimView.Form.CHAT_MODE_CHOICES)[pm_chat_mode]).upper())]
+
         channel = Channel.create(
-            org, user, "US", self.code, name=pm_receiver_id, address=pm_receiver_id, role=role, config=config,
-            uuid=self.uuid
+            org, user, None, self.code, name=pm_receiver_id, address=pm_receiver_id, role=role, config=config,
+            uuid=self.uuid, schemes=schemes
         )
 
         analytics.track(user.username, "temba.channel_claim_postmaster", properties=dict(number=pm_receiver_id))
