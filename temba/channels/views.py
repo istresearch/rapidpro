@@ -1653,6 +1653,8 @@ class ChannelCRUDL(SmartCRUDL):
                 return self.get_user().has_org_perm(self.org, permission)
             return False
 
+        link_url = 'uuid@channels.channel_read'
+        link_fields = ("name", "uuid", "address")
         fields = ('name', 'channel_type', 'created_on', 'modified_on', 'last_seen', 'uuid', 'address',
                   'country', 'device', 'schemes')
 
