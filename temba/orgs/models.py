@@ -875,6 +875,16 @@ class Org(SmartModel):
             self.modified_by = user
             self.save()
 
+    def remove_postmaster_account(self, user):
+        if self.config and type is not None:
+            channel_type = "PSM"
+
+            for channel in self.channels.filter(is_active=True, channel_type__in=[channel_type]):
+                channel.release()
+
+            self.modified_by = user
+            self.save()
+
     def remove_dtone_account(self, user):
         if self.config:
             self.config.pop(Org.CONFIG_DTONE_LOGIN, None)

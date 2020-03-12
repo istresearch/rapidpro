@@ -736,7 +736,7 @@ GROUP_PERMISSIONS = {
         "channels.channel_delete",
         "channels.channel_list",
         "channels.channel_read",
-        "channels.channel_read_list",
+        "channels.channel_channels",
         "channels.channel_search_numbers",
         "channels.channel_update",
         "channels.channelevent.*",
