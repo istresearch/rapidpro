@@ -10,8 +10,7 @@ from django.urls import reverse
 from temba.utils import analytics
 from django.utils.translation import ugettext_lazy as _
 
-from .. import TYPES
-from ..telegram import TelegramType
+from django.conf import settings
 from ...models import Channel
 from ...views import (
     ALL_COUNTRIES,
@@ -26,7 +25,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
     uuid = None
 
     class Form(ClaimViewMixin.Form):
-        CHAT_MODE_CHOICES = (("WA", _("WhatsApp")), ("TG", _("Telegram")), ("SMS", _("SMS")))
+        CHAT_MODE_CHOICES = getattr(settings, "CHAT_MODE_CHOICES", ())
         pm_receiver_id = forms.CharField(label="You must provide a Receiver ID", help_text=_("Postmaster Receiver ID"))
         pm_chat_mode = forms.ChoiceField(label="Postmaster Chat Mode", help_text=_("Postmaster Chat Mode"),
                                          choices=CHAT_MODE_CHOICES)
