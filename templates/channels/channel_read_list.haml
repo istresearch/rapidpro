@@ -65,9 +65,6 @@
                   %a.btn.btn-secondary.org-button.posterize{href:"{% url 'channels.channel_create_caller' %}?channel={{channel.pk}}"}
                     -trans "Enable Voice"
 
-                -if not sender.is_delegate_sender
-                  %a.btn.btn-secondary.org-button{href:'{% url "channels.channel_bulk_sender_options" %}?channel={{channel.pk}}'}
-                    -trans "Enable Bulk Sending"
 
           .channel-roles
                 -for delegate_channel in channel.get_delegate_channels
