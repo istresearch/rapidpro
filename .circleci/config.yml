@@ -51,6 +51,6 @@ workflows:
             - build
           context: globalconfig
           filters:
-            branches:
-              only: develop
+            tags:
+              ignore: /^test-.*/
 
