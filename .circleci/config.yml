@@ -36,12 +36,12 @@ jobs:
             else
                 PACKAGE_BRANCH=$BRANCH
             fi
-            printf "Triggering a $TRIGGER_PROJECT build on the $BRANCH branch\n\n"
+            printf "Triggering a $TRIGGER_PROJECT build on the $PACKAGE_BRANCH branch\n\n"
 
-            curl -XPOST --header "Content-Type: application/json" -d '{"'"branch"'":"'"$BRANCH"'"}' https://circleci.com/api/v1.1/project/github/$ORGANIZATION/$TRIGGER_PROJECT/build?circle-token=$CIRCLE_TOKEN
+            curl -XPOST --header "Content-Type: application/json" -d '{"'"branch"'":"'"$PACKAGE_BRANCH"'"}' https://circleci.com/api/v1.1/project/github/$ORGANIZATION/$TRIGGER_PROJECT/build?circle-token=$CIRCLE_TOKEN
 
             printf "\n\nBuild triggered\n\n"
-            printf "Follow the progress of the build on \nhttps://circleci.com/gh/$ORGANIZATION/$TRIGGER_PROJECT/tree/$BRANCH"
+            printf "Follow the progress of the build on \nhttps://circleci.com/gh/$ORGANIZATION/$TRIGGER_PROJECT/tree/$PACKAGE_BRANCH"
 workflows:
   version: 2
   engage:
