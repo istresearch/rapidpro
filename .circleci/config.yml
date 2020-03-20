@@ -31,17 +31,12 @@ jobs:
       - run:
           name: Trigger the docker build job
           command: |
-            if [[ $BRANCH == develop ]]; then
-                PACKAGE_BRANCH=$TRIGGER_PROJECT_BRANCH
-            else
-                PACKAGE_BRANCH=$BRANCH
-            fi
-            printf "Triggering a $TRIGGER_PROJECT build on the $PACKAGE_BRANCH branch\n\n"
+            printf "Triggering a $TRIGGER_PROJECT build on the $TRIGGER_PROJECT_BRANCH branch\n\n"
 
-            curl -XPOST --header "Content-Type: application/json" -d '{"'"branch"'":"'"$PACKAGE_BRANCH"'"}' https://circleci.com/api/v1.1/project/github/$ORGANIZATION/$TRIGGER_PROJECT/build?circle-token=$CIRCLE_TOKEN
+            curl -XPOST --header "Content-Type: application/json" -d '{"'"branch"'":"'"$TRIGGER_PROJECT_BRANCH"'"}' https://circleci.com/api/v1.1/project/github/$ORGANIZATION/$TRIGGER_PROJECT/build?circle-token=$CIRCLE_TOKEN
 
             printf "\n\nBuild triggered\n\n"
-            printf "Follow the progress of the build on \nhttps://circleci.com/gh/$ORGANIZATION/$TRIGGER_PROJECT/tree/$PACKAGE_BRANCH"
+            printf "Follow the progress of the build on \nhttps://circleci.com/gh/$ORGANIZATION/$TRIGGER_PROJECT/tree/$TRIGGER_PROJECT_BRANCH"
 workflows:
   version: 2
   engage:
@@ -56,6 +51,6 @@ workflows:
             - build
           context: globalconfig
           filters:
-            tags:
-              ignore: /^test-.*/
+            branches:
+              only: develop
 
