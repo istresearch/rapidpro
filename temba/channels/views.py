@@ -1595,6 +1595,7 @@ class ChannelCRUDL(SmartCRUDL):
             return context
 
     class ReadList(OrgPermsMixin, SmartListView):
+        paginate_by = settings.PAGINATE_CHANNELS_COUNT
         title = _("Channels")
         # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
         permission = "channels.channel_read"
@@ -1609,8 +1610,7 @@ class ChannelCRUDL(SmartCRUDL):
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
 
-            # order channels by role (DESC), channel (ASC) and created on date (ASC)
-            return queryset.filter(is_active=True).order_by("-role", "channel_type", "created_on")
+            return queryset.filter(is_active=True).order_by("-last_sync", "-created_on")
 
         def pre_process(self, *args, **kwargs):
             # superuser sees things as they are
@@ -1627,23 +1627,12 @@ class ChannelCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            # delayed sync event
-            sync_events = SyncEvent.objects.filter(channel__in=context['channel_list']).order_by("-created_on")
             for channel in context['channel_list']:
-                if not (channel.created_on > timezone.now() - timedelta(hours=1)):
-                    if sync_events:
-                        for sync_event in sync_events:
-                            if sync_event.channel_id == channel.id:
-                                latest_sync_event = sync_events[0]
-                                interval = timezone.now() - latest_sync_event.created_on
-                                seconds = interval.seconds + interval.days * 24 * 3600
-                                channel.last_sync = latest_sync_event
-                                if seconds > 3600:
-                                    channel.delayed_sync_event = latest_sync_event
+                channel.delayed_sync_event = channel.last_sync
             return context
 
     class Manage(OrgPermsMixin, SmartListView):
-        paginate_by = 25
+        paginate_by = settings.PAGINATE_CHANNELS_COUNT
         title = _("Manage Channels")
         # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
         permission = "channels.channel_read_list"
