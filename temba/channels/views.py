@@ -1595,6 +1595,7 @@ class ChannelCRUDL(SmartCRUDL):
             return context
 
     class ReadList(OrgPermsMixin, SmartListView):
+        paginate_by = settings.PAGINATE_CHANNELS_COUNT
         title = _("Channels")
         # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
         permission = "channels.channel_read"
@@ -1631,7 +1632,7 @@ class ChannelCRUDL(SmartCRUDL):
             return context
 
     class Manage(OrgPermsMixin, SmartListView):
-        paginate_by = 25
+        paginate_by = settings.PAGINATE_CHANNELS_COUNT
         title = _("Manage Channels")
         # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
         permission = "channels.channel_read_list"
