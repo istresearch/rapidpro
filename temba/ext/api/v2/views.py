@@ -35,7 +35,7 @@ class ExtChannelReadSerializer(ReadSerializer):
 
     class Meta:
         model = Channel
-        fields = ("uuid", "name", "address", "country", "device", "last_seen", "created_on")
+        fields = ("uuid", "name", "address", "country", "device", "last_seen", "created_on", "config")
 
 
 class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
@@ -111,6 +111,10 @@ class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
         address = params.get("address")
         if address:
             queryset = queryset.filter(address=address)
+
+        c_type = params.get("type")
+        if c_type:
+            queryset = queryset.filter(channel_type=c_type)
 
         return queryset
 
