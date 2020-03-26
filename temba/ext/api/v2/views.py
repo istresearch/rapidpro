@@ -35,7 +35,7 @@ class ExtChannelReadSerializer(ReadSerializer):
 
     class Meta:
         model = Channel
-        fields = ("uuid", "name", "address", "country", "device", "last_seen", "created_on", "config")
+        fields = ("uuid", "name", "address", "country", "device", "last_seen", "created_on", "config", "org_id")
 
 
 class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
@@ -59,10 +59,11 @@ class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
         * **network_type** - the type of network the device is connected to as reported by Android (string).
      * **last_seen** - the datetime when this channel was last seen (datetime).
      * **created_on** - the datetime when this channel was created (datetime).
+     * **config** - the channels config.
 
     Example:
 
-        GET /api/v2/channels.json
+        GET /ext/api/v2/channels.json
 
     Response containing the channels for your organization:
 
@@ -73,8 +74,9 @@ class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
             {
                 "uuid": "09d23a05-47fe-11e4-bfe9-b8f6b119e9ab",
                 "name": "Android Phone",
-                "address": "+250788123123",
+                "address": "pm_whatsapp_1",
                 "country": "RW",
+                "org_id": "1",
                 "device": {
                     "name": "Nexus 5X",
                     "power_level": 99,
@@ -140,6 +142,8 @@ class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
                     "help": "A channel UUID to filter by. ex: 09d23a05-47fe-11e4-bfe9-b8f6b119e9ab",
                 },
                 {"name": "address", "required": False, "help": "A channel address to filter by. ex: +250783530001"},
+                {"device": "device id", "required": False, "help": "A postmaster Device ID  to filter by. ex: pm_whatsapp_1"},
+                {"mode": "chat mode", "required": False, "help": "A Postmaster chat mode to filter by. ex WA, TG, SMS"},
             ],
         }
 
