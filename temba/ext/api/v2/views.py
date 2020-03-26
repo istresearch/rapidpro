@@ -123,7 +123,7 @@ class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
         if c_type:
             queryset = queryset.filter(channel_type=c_type)
 
-        c_address = params.get("device")
+        c_address = params.get("device_id")
         if c_address:
             queryset = queryset.filter(address=c_address)
 
@@ -147,8 +147,7 @@ class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
                     "help": "A channel UUID to filter by. ex: 09d23a05-47fe-11e4-bfe9-b8f6b119e9ab",
                 },
                 {"name": "address", "required": False, "help": "A channel address to filter by. ex: +250783530001"},
-                {"device": "device id", "required": False, "help": "A postmaster Device ID  to filter by. ex: pm_whatsapp_1"},
+                {"device_id": "device id", "required": False, "help": "A postmaster Device ID  to filter by. ex: pm_whatsapp_1"},
                 {"mode": "chat mode", "required": False, "help": "A Postmaster chat mode to filter by. ex WA, TG, SMS"},
             ],
         }
-
