@@ -116,6 +116,14 @@ class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
         if c_type:
             queryset = queryset.filter(channel_type=c_type)
 
+        c_address = params.get("device")
+        if c_address:
+            queryset = queryset.filter(address=c_address)
+
+        c_mode = params.get("mode")
+        if c_mode:
+            queryset = queryset.filter(config__contains='"chat_mode": "{}"'.format(c_mode))
+
         return queryset
 
     @classmethod
