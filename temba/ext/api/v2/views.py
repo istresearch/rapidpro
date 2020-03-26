@@ -35,7 +35,7 @@ class ExtChannelReadSerializer(ReadSerializer):
 
     class Meta:
         model = Channel
-        fields = ("uuid", "name", "address", "country", "device", "last_seen", "created_on", "config", "org_id")
+        fields = ("uuid", "name", "address", "country", "device", "last_seen", "created_on", "config")
 
 
 class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
@@ -76,7 +76,12 @@ class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
                 "name": "Android Phone",
                 "address": "pm_whatsapp_1",
                 "country": "RW",
-                "org_id": "1",
+                "config": {
+                    "device_id": "TgPM",
+                    "chat_mode": "TG",
+                    "callback_domain": "83f83d51.ngrok.io",
+                    "org_id": "1",
+                },
                 "device": {
                     "name": "Nexus 5X",
                     "power_level": 99,

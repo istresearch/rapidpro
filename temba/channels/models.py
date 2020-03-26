@@ -279,7 +279,7 @@ class Channel(TembaModel):
     CONFIG_AUTH_TOKEN = "auth_token"
     CONFIG_SECRET = "secret"
     CONFIG_CHANNEL_ID = "channel_id"
-    CONFIG_RECEIVER_ID = "receiver_id"
+    CONFIG_DEVICE_ID = "device_id"
     CONFIG_CHAT_MODE = "chat_mode"
     CONFIG_CHANNEL_MID = "channel_mid"
     CONFIG_FCM_ID = "FCM_ID"
