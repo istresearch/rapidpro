@@ -63,6 +63,7 @@ FCM_SCHEME = "fcm"
 WHATSAPP_SCHEME = "whatsapp"
 WECHAT_SCHEME = "wechat"
 FRESHCHAT_SCHEME = "freshchat"
+SMS_SCHEME = "sms"
 
 FACEBOOK_PATH_REF_PREFIX = "ref:"
 
@@ -82,6 +83,7 @@ URN_SCHEME_CONFIG = (
     (FCM_SCHEME, _("Firebase Cloud Messaging identifier"), FCM_SCHEME),
     (WHATSAPP_SCHEME, _("WhatsApp identifier"), WHATSAPP_SCHEME),
     (FRESHCHAT_SCHEME, _("Freshchat identifier"), FRESHCHAT_SCHEME),
+    (SMS_SCHEME, _("SMS identifier"), SMS_SCHEME),
 )
 
 

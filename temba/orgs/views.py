@@ -768,7 +768,7 @@ class OrgCRUDL(SmartCRUDL):
 
     class PostmasterConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
         class PostmasterConnectForm(forms.Form):
-            pm_receiver_id = forms.CharField(label="Receiver ID", help_text=_("Your Postmaster Receiver ID"))
+            pm_receiver_id = forms.CharField(label="Device ID", help_text=_("Your Postmaster Device ID"))
             pm_chat_mode = forms.CharField(label="Chat Mode", help_text=_("Your Postmaster Chat Mode"))
 
             def clean(self):
@@ -776,7 +776,7 @@ class OrgCRUDL(SmartCRUDL):
                 pm_chat_mode = self.cleaned_data.get("pm_chat_mode", None)
 
                 if not pm_receiver_id:
-                    raise ValidationError(_("You must enter your Postmaster Receiver ID"))
+                    raise ValidationError(_("You must enter your Postmaster Device ID"))
 
                 if not pm_chat_mode:
                     raise ValidationError(_("You must enter your Postmaster Chat Mode"))
@@ -803,7 +803,7 @@ class OrgCRUDL(SmartCRUDL):
         success_message = ""
 
         class PostmasterKeys(forms.ModelForm):
-            pm_receiver_id = forms.CharField(label="Receiver ID", help_text=_("Your Postmaster Receiver ID"))
+            pm_receiver_id = forms.CharField(label="Device ID", help_text=_("Your Postmaster Device ID"))
             pm_chat_mode = forms.CharField(label="Chat Mode", help_text=_("Your Postmaster Chat Mode"))
             disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
 
@@ -814,7 +814,7 @@ class OrgCRUDL(SmartCRUDL):
                     pm_chat_mode = self.cleaned_data.get("pm_chat_mode", None)
 
                     if not pm_receiver_id:
-                        raise ValidationError(_("You must enter your Postmaster Receiver ID"))
+                        raise ValidationError(_("You must enter your Postmaster Device ID"))
 
                     if not pm_chat_mode:  # pragma: needs cover
                         raise ValidationError(_("You must enter your Postmaster Chat Mode"))

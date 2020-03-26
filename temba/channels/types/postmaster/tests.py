@@ -29,7 +29,7 @@ class PostmasterTypeTest(TembaTest):
         self.assertEqual(response.request["PATH_INFO"], reverse("orgs.org_postmaster_connect"))
 
         # attach a Postmaster device to the org
-        self.org.config = {PMChannel.CONFIG_RECEIVER_ID: "pm-receiver-sid", PMChannel.CONFIG_RECEIVER_MODE: "pm-receiver-mode"}
+        self.org.config = {PMChannel.CONFIG_DEVICE_ID: "pm-device-id", PMChannel.CONFIG_CHAT_MODE: "pm-chat-mode"}
         self.org.save()
 
         # hit the claim page, should now have a claim postmaster link
