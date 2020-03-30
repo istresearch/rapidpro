@@ -1,15 +1,17 @@
 import pytz
 from rest_framework import serializers
 from rest_framework.reverse import reverse
+
+from temba.api.support import InvalidQueryError
 from temba.api.v2.views_base import (
     BaseAPIView,
     CreatedOnCursorPagination,
     ListAPIMixin,
-)
+    DeleteAPIMixin, WriteAPIMixin)
 from temba.channels.models import Channel
 from temba.ext.api.models import ExtAPIPermission
 from temba.api.models import SSLPermission
-from temba.api.v2.serializers import (ReadSerializer)
+from temba.api.v2.serializers import (ReadSerializer, WriteSerializer)
 
 
 class ExtChannelReadSerializer(ReadSerializer):
@@ -19,10 +21,10 @@ class ExtChannelReadSerializer(ReadSerializer):
     last_seen = serializers.DateTimeField(default_timezone=pytz.UTC)
 
     def get_country(self, obj):
-        return str(obj.country) if obj.country else None
+        return str(obj.country) if hasattr(obj, 'country') else None
 
     def get_device(self, obj):
-        if obj.channel_type != Channel.TYPE_ANDROID:
+        if hasattr(obj, 'channel_type') and obj.channel_type != Channel.TYPE_ANDROID:
             return None
 
         return {
@@ -38,7 +40,37 @@ class ExtChannelReadSerializer(ReadSerializer):
         fields = ("uuid", "name", "address", "country", "device", "last_seen", "created_on", "config")
 
 
-class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
+class ExtChannelWriteSerializer(WriteSerializer):
+
+    def validate_unit(self, value):
+        return self.UNITS[value]
+
+    def validate(self, data):
+        return data
+
+    def save(self):
+        ret = None
+        params = self.context['request'].query_params
+        channel_type = params.get("type")
+        if not channel_type:
+            raise InvalidQueryError(
+                "URL must contain a type parameter. ex: /ext/api/v2/channels.json?type=PSM&param1=val1&paramN=valN"
+            )
+
+        data = {}
+        for p in params:
+            data[p] = params[p]
+        type_from_code = Channel.get_type_from_code(channel_type)
+        type_from_code.claim_view.request = self.context['request']
+        form = type_from_code.claim_view.Form(data=data, request=self.context['request'], channel_type=channel_type)
+        form.is_valid()
+
+        ret = type_from_code.claim_view(channel_type).form_valid(form)
+        print(type_from_code)
+        return Channel.objects.filter(uuid=ret.url.split("/")[len(ret.url.split("/"))-2]).first()
+
+
+class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView):
     """
     This endpoint allows you to list channels in your account.
 
@@ -94,12 +126,42 @@ class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
             }]
         }
 
+    ## Adding a Channel
+
+    A **POST** can be used to create a new channel.
+
+    * **type** - the channel type (string)
+    * **params[]** - A list of parameter name/value mappings that are acceptable to the target channel type, as defined
+    in the channels claim view Form.
+
+    Example:
+
+        POST /ext/api/v2/channels.json?type=PSM&pm_chat_mode=WA&pm_device_id=weezer
+
+    You will receive a Channel object as a response if successful:
+
+        {
+            "uuid":"ef62ca26-023e-4c88-a939-0945e711e979",
+            "name":"weezer",
+            "address":"weezer",
+            "country":"",
+            "device":null,
+            "last_seen":"2020-03-30T16:29:13.078071Z",
+            "created_on":"2020-03-30T16:29:13.077260Z",
+            "config": {
+                "device_id": "weezer",
+                "chat_mode": "WA",
+                "callback_domain": "83f83d51.ngrok.io",
+                "org_id": 2
+            }
+        }
     """
 
     permission_classes = (SSLPermission, ExtAPIPermission)
     permission = "channels.channel_api"
     model = Channel
     serializer_class = ExtChannelReadSerializer
+    write_serializer_class = ExtChannelWriteSerializer
     pagination_class = CreatedOnCursorPagination
 
     def get_queryset(self):
@@ -149,5 +211,20 @@ class ExtChannelsEndpoint(ListAPIMixin, BaseAPIView):
                 {"name": "address", "required": False, "help": "A channel address to filter by. ex: +250783530001"},
                 {"device_id": "device id", "required": False, "help": "A postmaster Device ID  to filter by. ex: pm_whatsapp_1"},
                 {"mode": "chat mode", "required": False, "help": "A Postmaster chat mode to filter by. ex WA, TG, SMS"},
+            ],
+        }
+
+    @classmethod
+    def get_write_explorer(cls):
+        return {
+            "method": "POST",
+            "title": "Create Channel",
+            "url": reverse("ext.api.v2.channels"),
+            "slug": "channel-write",
+            "fields": [
+                {"name": "type", "required": True, "help": "The type of channel you want to create"},
+                {"name": "params[]", "required": True, "help": "A list of parameter name/value mappings that are "
+                                                               "acceptable to the target channel type, as defined "
+                                                               "in the channels claim view Form."},
             ],
         }

@@ -45,7 +45,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
                 channel = None
                 channels = Channel.objects.filter(channel_type=ClaimView.code, is_active=True)
                 for ch in channels:
-                    if ch.config.get('chat_mode') == pm_chat_mode:
+                    if ch.config.get('chat_mode') == pm_chat_mode and ch.org.id == org.id:
                         channel = ch
                         break
 
