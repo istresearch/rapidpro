@@ -19,19 +19,19 @@
     Disconnected from Bandwidth International Account
 
 -block post-form
-  -if object.is_connected_to_bandwidth_international
+  -if object.is_connected_to_bandwidth_international and request.META.HTTP_X_FORMAX
     If you no longer want it connected, you can
-    %a{href:'javascript:confirmBandwidthDisconnect();'}
+    %a{href:'javascript:confirmBandwidthInternationalDisconnect();'}
       disconnect your Bandwidth International Account
 
   - if org_perms.channels.channel_delete
-    .disconnect-bandwidth.hide
+    .disconnect-bandwidth-international.hide
       .title
-        -trans "Disconnect Bandwidth"
+        -trans "Disconnect Bandwidth International"
       .body
         -blocktrans
-          Disconnecting your Bandwidth account will also remove any Bandwidth channels connected to it. Are you sure you want to proceed?
-    %a#disconnect-bandwidth-form.posterize{href:'{% url "orgs.org_bandwidth_international_account" %}?disconnect=true&channel_id={{channel.id}}'}
+          Disconnecting your Bandwidth International account will also remove any Bandwidth International channels connected to it. Are you sure you want to proceed?
+    %a#disconnect-bandwidth-international-form.posterize{href:'{% url "orgs.org_bandwidth_international_account" %}?disconnect=true&channel_id={{channel.id}}'}
 
 -block form-buttons
   .form-actions
@@ -42,7 +42,8 @@
         Connect Bandwidth
 
 -block extra-script
+  {{block.super}}
   :javascript
-    function confirmBandwidthDisconnect() {
-      removalConfirmation("disconnect-bandwidth", "Disconnect");
+    function confirmBandwidthInternationalDisconnect() {
+      removalConfirmation("disconnect-bandwidth-international", "Disconnect");
     }

@@ -2883,8 +2883,8 @@ class OrgCRUDL(SmartCRUDL):
         success_url = "@orgs.org_home"
 
         class BandwidthKeys(forms.ModelForm):
-            bwi_username = forms.CharField(max_length=128, label=_("Username"), required=True)
-            bwi_password = forms.CharField(max_length=128, label=_("Password"), required=True,
+            bwi_username = forms.CharField(max_length=128, label=_("Username"), required=False)
+            bwi_password = forms.CharField(max_length=128, label=_("Password"), required=False,
                     widget=forms.PasswordInput(render_value=True)
             )
             disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
@@ -2918,7 +2918,7 @@ class OrgCRUDL(SmartCRUDL):
             bwi_key = os.environ.get("BWI_KEY")
             initial[str.lower(BWI_USERNAME)] = AESCipher(bwi_username, bwi_key).decrypt()
             initial[str.lower(BWI_PASSWORD)] = AESCipher(bwi_password, bwi_key).decrypt()
-            initial["disconnect"] = "false"
+            initial["disconnect"] = bool(self.request.POST.get("disconnect"))
             return initial
 
         def get_context_data(self, **kwargs):
