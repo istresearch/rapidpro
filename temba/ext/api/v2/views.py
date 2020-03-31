@@ -223,6 +223,7 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
             "slug": "channel-write",
             "fields": [
                 {"name": "type", "required": True, "help": "The type of channel you want to create"},
+                {"name": "org", "required": True, "help": "The Org that the channel will be created in"},
                 {"name": "params[]", "required": True, "help": "A list of parameter name/value mappings that are "
                                                                "acceptable to the target channel type, as defined "
                                                                "in the channels claim view Form."},
