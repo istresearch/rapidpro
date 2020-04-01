@@ -12,7 +12,7 @@ from temba.channels.models import Channel
 from temba.ext.api.models import ExtAPIPermission
 from temba.api.models import SSLPermission
 from temba.api.v2.serializers import (ReadSerializer, WriteSerializer)
-
+from temba.orgs.models import Org
 
 class ExtChannelReadSerializer(ReadSerializer):
     country = serializers.SerializerMethodField()
@@ -59,14 +59,21 @@ class ExtChannelWriteSerializer(WriteSerializer):
 
         data = {}
         for p in params:
-            data[p] = params[p]
+            if p == 'org':
+                org = Org.objects.filter(id=params[p]).first()
+                if org is not None:
+                    self.context['request'].user.set_org(org)
+            else:
+                data[p] = params[p]
         type_from_code = Channel.get_type_from_code(channel_type)
         type_from_code.claim_view.request = self.context['request']
         form = type_from_code.claim_view.Form(data=data, request=self.context['request'], channel_type=channel_type)
-        form.is_valid()
-
+        is_valid = form.is_valid()
+        if not is_valid:
+            ret = Channel(uuid=None, name=None, address=None, country=None, device=None,
+                          last_seen=None, created_on=None, config=form.errors.as_json())
+            return ret
         ret = type_from_code.claim_view(channel_type).form_valid(form)
-        print(type_from_code)
         return Channel.objects.filter(uuid=ret.url.split("/")[len(ret.url.split("/"))-2]).first()
 
 
@@ -91,7 +98,7 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
         * **network_type** - the type of network the device is connected to as reported by Android (string).
      * **last_seen** - the datetime when this channel was last seen (datetime).
      * **created_on** - the datetime when this channel was created (datetime).
-     * **config** - the channels config.
+     * **config** - the channels config OR errors if the channel creation fails.
 
     Example:
 
