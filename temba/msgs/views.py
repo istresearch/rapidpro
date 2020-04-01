@@ -37,6 +37,12 @@ from temba.utils.views import BaseActionForm
 from .models import INITIALIZING, QUEUED, Broadcast, ExportMessagesTask, Label, Msg, Schedule, SystemLabel
 from .tasks import export_messages_task
 
+import smartmin.widgets
+class DatePickerMedia:
+    js = ('{}js/bootstrap-datepicker.js'.format(settings.STATIC_URL),)
+    css = {'all': ('{}css/bootstrap-datepicker3.css'.format(settings.STATIC_URL),)}
+smartmin.widgets.DatePickerWidget.Media = DatePickerMedia
+
 
 def send_message_auto_complete_processor(request):
     """
