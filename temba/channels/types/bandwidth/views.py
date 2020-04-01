@@ -27,52 +27,24 @@ from xml.dom import minidom
 class ClaimView(BaseClaimNumberMixin, SmartFormView):
     uuid = None
 
+    def pre_process(self, *args, **kwargs):
+        org = self.request.user.get_org()
+        try:
+            self.client = org.get_bandwidth_messaging_client()
+            if not self.client:
+                return HttpResponseRedirect(reverse("orgs.org_bandwidth_connect"))
+        except Exception:
+            return HttpResponseRedirect(reverse("orgs.org_bandwidth_connect"))
+
     class Form(ClaimViewMixin.Form):
-        bw_account_sid = forms.CharField(label="Account SID", help_text=_("Your Bandwidth Account ID"))
-        bw_account_token = forms.CharField(label="Account Token", help_text=_("Your Bandwidth API Token"))
-        bw_account_secret = forms.CharField(label="Account Secret", help_text=_("Your Bandwidth API Secret"))
         bw_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)",
                                           help_text=_("Your Bandwidth Account Phone Number"))
-        bw_application_sid = forms.CharField(label="Application SID",
-                                             help_text=_("Your Bandwidth Account Application ID"))
 
         def clean(self):
-            from temba.utils.bandwidth import BandwidthRestClient
-
-            bw_account_sid = self.cleaned_data.get("bw_account_sid", None)
-            bw_account_token = self.cleaned_data.get("bw_account_token", None)
-            bw_account_secret = self.cleaned_data.get("bw_account_secret", None)
             bw_phone_number = self.cleaned_data.get("bw_phone_number", None)
-            bw_application_sid = self.cleaned_data.get("bw_application_sid", None)
 
-            if not bw_account_sid:  # pragma: needs cover
-                raise ValidationError(_("You must enter your Bandwidth Account ID"))
-
-            if not bw_account_token:
-                raise ValidationError(_("You must enter your Bandwidth Account Token"))
-            if not bw_account_secret:
-                raise ValidationError(_("You must enter your Bandwidth Account Secret"))
-            if not bw_phone_number:
-                raise ValidationError(_("You must enter your Bandwidth Account's Phone Number"))
-            if not bw_application_sid:
-                raise ValidationError(_("You must enter your Bandwidth Account's Application ID"))
             if not bw_phone_number or not str(bw_phone_number).startswith("+"):
                 raise ValidationError(_("Please provide a valid E.164 formatted phone number (Ex. +14155552671)"))
-
-            bw_phone_number = forms.CharField(label="Phone Number (Ex. +14155552671)",
-                                              help_text=_("Your Bandwidth Account Phone Number"))
-            bw_application_sid = forms.CharField(help_text=_("Your Bandwidth Account Application ID"))
-
-            try:
-                client = BandwidthRestClient('{}'.format(bw_account_sid), '{}'.format(bw_account_token),
-                                             '{}'.format(bw_account_secret), bw_phone_number, bw_application_sid,
-                                             client_name='account', api_version='')
-                media = client.get_media()
-            except Exception:
-                raise ValidationError(
-                    _("The Bandwidth account credentials seem invalid. Please check them again and retry.")
-                )
-
             return self.cleaned_data
 
     def __init__(self, channel_type):
@@ -81,16 +53,10 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         self.client = None
 
     def get_search_countries_tuple(self):
-        if self.channel_type.code == "BWD":
-            return ["US"]
-        else:
-            return TWILIO_SEARCH_COUNTRIES
+        return ["US"]
 
     def get_supported_countries_tuple(self):
-        if self.channel_type.code == "BWD":
-            return ["US"]
-        else:
-            return ALL_COUNTRIES
+        return ["US"]
 
     def get_search_url(self):
         return reverse("channels.channel_search_numbers")
@@ -100,7 +66,6 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # context["account_trial"] = self.account.type.lower() == "trial"
         return context
 
     def get_success_url(self):
@@ -113,32 +78,18 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
     success_message = "Bandwidth Account successfully connected."
 
     def form_valid(self, form):
-        from iris_sdk.client import Client
-        bw_account_sid = form.cleaned_data["bw_account_sid"]
-        bw_account_token = form.cleaned_data["bw_account_token"]
-        bw_account_secret = form.cleaned_data["bw_account_secret"]
         bw_phone_number = form.cleaned_data["bw_phone_number"]
-        bw_application_sid = form.cleaned_data["bw_application_sid"]
+        org = self.request.user.get_org()
+        config = org.config
 
+        bw_account_sid = config[BW_ACCOUNT_SID]
+        bw_application_sid = config[BW_APPLICATION_SID]
         channel = self.create_channel(self.request.user, Channel.ROLE_SEND + Channel.ROLE_CALL, bw_account_sid,
-                                      bw_application_sid, bw_account_token, bw_account_secret, bw_phone_number, "US")
-
+                                      bw_application_sid, config[BW_ACCOUNT_TOKEN], config[BW_ACCOUNT_SECRET],
+                                      bw_phone_number, "US")
         self.uuid = channel.uuid
-        bw_user = os.environ.get("BANDWIDTH_USER")
-        bw_pass = os.environ.get("BANDWIDTH_PASS")
-        if bw_user and bw_pass:
-            client = Client(url="https://dashboard.bandwidth.com", account_id=bw_account_sid, username=bw_user, password=bw_pass)
-            app_info = client.get("/api/accounts/{}/applications/{}".format(bw_account_sid, bw_application_sid))
-            if app_info and app_info.content:
-                node = minidom.parseString(app_info.content)
-                if node and len(node.getElementsByTagName("AppName")) > 0 \
-                        and len(node.getElementsByTagName("ApplicationId")) > 0:
-                    app_name = node.getElementsByTagName("AppName")[0].firstChild.wholeText
-                    app_id = node.getElementsByTagName("ApplicationId")[0].firstChild.wholeText
-                    msg_url = "https://{}/c/bwd/{}/receive".format(settings.HOSTNAME, self.uuid)
-                    data = "<Application><AppName>{}</AppName><CallbackUrl>{}</CallbackUrl></Application>"\
-                        .format(app_name, msg_url)
-                    client.put("/api/accounts/{}/applications/{}".format(bw_account_sid, app_id), data=data)
+        self.set_callback_url(bw_account_sid, bw_application_sid)
+
         return HttpResponseRedirect(self.get_success_url())
 
     def claim_number(self, user, phone_number, country, role):
@@ -167,3 +118,23 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         analytics.track(user.username, "temba.channel_claim_bandwidth", properties=dict(number=phone_number))
 
         return channel
+
+    # if channel is created, and dashboard credentials are present, then set the callback URL in BW dashboard
+    def set_callback_url(self, bw_account_sid, bw_application_sid):
+        from iris_sdk.client import Client
+        bw_user = os.environ.get("BANDWIDTH_USER")
+        bw_pass = os.environ.get("BANDWIDTH_PASS")
+        if bw_user and bw_pass:
+            client = Client(url="https://dashboard.bandwidth.com", account_id=bw_account_sid, username=bw_user,
+                            password=bw_pass)
+            app_info = client.get("/api/accounts/{}/applications/{}".format(bw_account_sid, bw_application_sid))
+            if app_info and app_info.content:
+                node = minidom.parseString(app_info.content)
+                if node and len(node.getElementsByTagName("AppName")) > 0 \
+                        and len(node.getElementsByTagName("ApplicationId")) > 0:
+                    app_name = node.getElementsByTagName("AppName")[0].firstChild.wholeText
+                    app_id = node.getElementsByTagName("ApplicationId")[0].firstChild.wholeText
+                    msg_url = "https://{}/c/bwd/{}/receive".format(settings.HOSTNAME, self.uuid)
+                    data = "<Application><AppName>{}</AppName><CallbackUrl>{}</CallbackUrl></Application>" \
+                        .format(app_name, msg_url)
+                    client.put("/api/accounts/{}/applications/{}".format(bw_account_sid, app_id), data=data)

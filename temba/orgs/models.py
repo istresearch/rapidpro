@@ -57,9 +57,7 @@ BW_ACCOUNT_SECRET = "BW_ACCOUNT_SECRET"
 BW_PHONE_NUMBER = "BW_PHONE_NUMBER"
 BW_API_TYPE = "BW_API_TYPE"
 
-BWI_APPLICATION_SID = "BWI_APPLICATION_SID"
-BWI_ACCOUNT_SID = "BWI_ACCOUNT_SID"
-BWI_USER_NAME = "BWI_USER_NAME"
+BWI_USERNAME = "BWI_USERNAME"
 BWI_PASSWORD = "BWI_PASSWORD"
 BWI_ENCODING = "BWI_ENCODING"
 BWI_SENDER = "BWI_SENDER"
@@ -147,6 +145,9 @@ class Org(SmartModel):
     CONFIG_CHATBASE_AGENT_NAME = "CHATBASE_AGENT_NAME"
     CONFIG_CHATBASE_API_KEY = "CHATBASE_API_KEY"
     CONFIG_CHATBASE_VERSION = "CHATBASE_VERSION"
+
+    CONFIG_POSTMASTER_DEVICE_ID = "DEVICE_ID"
+    CONFIG_POSTMASTER_CHAT_MODE = "CHAT_MODE"
 
     # items in export JSON
     EXPORT_VERSION = "version"
@@ -757,6 +758,12 @@ class Org(SmartModel):
         self.modified_by = user
         self.save(update_fields=("config", "modified_by", "modified_on"))
 
+    def connect_postmaster(self, pm_receiver_id, pm_chat_mode, user):
+        self.config.update({Org.CONFIG_POSTMASTER_RECEIVER_ID: pm_receiver_id,
+                            Org.CONFIG_POSTMASTER_CHATMODE: pm_chat_mode})
+        self.modified_by = user
+        self.save(update_fields=("config", "modified_by", "modified_on"))
+
     def connect_dtone(self, account_login, airtime_api_token, user):
         self.config.update(
             {Org.CONFIG_DTONE_LOGIN: account_login.strip(), Org.CONFIG_DTONE_API_TOKEN: airtime_api_token.strip()}
@@ -772,6 +779,26 @@ class Org(SmartModel):
                 Org.CONFIG_CHATBASE_VERSION: version,
             }
         )
+        self.modified_by = user
+        self.save(update_fields=("config", "modified_by", "modified_on"))
+
+    def connect_bandwidth(self, account_sid, account_token, account_secret, application_sid, user):
+        self.config.update({
+            BW_ACCOUNT_SID: account_sid,
+            BW_ACCOUNT_TOKEN: account_token,
+            BW_ACCOUNT_SECRET: account_secret,
+            BW_APPLICATION_SID: application_sid,
+        })
+        self.modified_by = user
+        self.save(update_fields=("config", "modified_by", "modified_on"))
+
+    def connect_bandwidth_international(self, username, password, user):
+        from temba.utils.bandwidth import AESCipher
+        bwi_key = os.environ.get("BWI_KEY")
+        self.config.update({
+            BWI_USERNAME: AESCipher(username, bwi_key).encrypt(),
+            BWI_PASSWORD: AESCipher(password, bwi_key).encrypt(),
+        })
         self.modified_by = user
         self.save(update_fields=("config", "modified_by", "modified_on"))
 
@@ -799,7 +826,7 @@ class Org(SmartModel):
         return False
 
     def is_connected_to_bandwidth_international(self):
-        bwi_username = self.config.get(BWI_USER_NAME, None)
+        bwi_username = self.config.get(BWI_USERNAME, None)
         bwi_password = self.config.get(BWI_PASSWORD, None)
         if bwi_username and bwi_password:
             return True
@@ -826,6 +853,37 @@ class Org(SmartModel):
             self.config.pop(Org.CONFIG_TWILIO_TOKEN, None)
             self.modified_by = user
             self.save(update_fields=("config", "modified_by", "modified_on"))
+
+    def remove_bandwidth_account(self, user, international=False):
+        if self.config:
+            channel_type = "BWD"
+            if international:
+                channel_type = "BWI"
+
+            for channel in self.channels.filter(is_active=True, channel_type__in=[channel_type]):
+                channel.release()
+
+            if channel_type == "BWI":
+                self.config[BWI_USERNAME] = ""
+                self.config[BWI_PASSWORD] = ""
+            elif channel_type == "BWD":
+                self.config[BW_ACCOUNT_SID] = ""
+                self.config[BW_APPLICATION_SID] = ""
+                self.config[BW_ACCOUNT_TOKEN] = ""
+                self.config[BW_ACCOUNT_SECRET] = ""
+
+            self.modified_by = user
+            self.save()
+
+    def remove_postmaster_account(self, user):
+        if self.config and type is not None:
+            channel_type = "PSM"
+
+            for channel in self.channels.filter(is_active=True, channel_type__in=[channel_type]):
+                channel.release()
+
+            self.modified_by = user
+            self.save()
 
     def remove_dtone_account(self, user):
         if self.config:
@@ -873,16 +931,15 @@ class Org(SmartModel):
     def get_bandwidth_international_messaging_client(self):
 
         if self.config:
-            bwi_account_sid = self.config.get(BWI_ACCOUNT_SID, None)
-            bwi_username = self.config.get(BWI_USER_NAME, None)
+            bwi_username = self.config.get(BWI_USERNAME, None)
             bwi_password = self.config.get(BWI_PASSWORD, None)
 
-            if bwi_account_sid and bwi_username and bwi_password:
+            bwi_key = os.environ.get("BWI_KEY")
+            if bwi_key and bwi_username and bwi_password:
                 from temba.utils.bandwidth import AESCipher
-                bwi_key = os.environ.get("BWI_KEY")
                 return Client(url="https://bulksms.ia2p.bandwidth.com:12021/bulk/sendsms",
                               username=AESCipher(bwi_username, bwi_key).decrypt(),
-                              password=AESCipher(bwi_password, bwi_key).decrypt(), account_id=bwi_account_sid)
+                              password=AESCipher(bwi_password, bwi_key).decrypt())
         return None
 
     def get_nexmo_client(self):

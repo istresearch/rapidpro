@@ -398,6 +398,9 @@ PERMISSIONS = {
         "bandwidth_account",
         "bandwidth_international_account",
         "bandwidth_connect",
+        "bandwidth_international_connect",
+        "postmaster_connect",
+        "postmaster_account",
         "token",
     ),
     "orgs.usersettings": ("phone",),
@@ -609,6 +612,9 @@ GROUP_PERMISSIONS = {
         "orgs.org_bandwidth_account",
         "orgs.org_bandwidth_international_account",
         "orgs.org_bandwidth_connect",
+        "orgs.org_bandwidth_international_connect",
+        "orgs.org_postmaster_account",
+        "orgs.org_postmaster_connect",
         "orgs.org_token",
         "orgs.topup_list",
         "orgs.topup_read",
@@ -730,7 +736,7 @@ GROUP_PERMISSIONS = {
         "channels.channel_delete",
         "channels.channel_list",
         "channels.channel_read",
-        "channels.channel_read_list",
+        "channels.channel_channels",
         "channels.channel_search_numbers",
         "channels.channel_update",
         "channels.channelevent.*",
@@ -1019,6 +1025,7 @@ CLASSIFIER_TYPES = [
 ]
 
 CHANNEL_TYPES = [
+    "temba.channels.types.postmaster.PostmasterType",
     "temba.channels.types.bandwidth_international.BandwidthInternationalType",
     "temba.channels.types.bandwidth.BandwidthType",
     "temba.channels.types.arabiacell.ArabiaCellType",
@@ -1150,3 +1157,5 @@ ELASTICSEARCH_URL = os.environ.get("ELASTICSEARCH_URL", "http://localhost:9200")
 # Maximum active objects are org can have
 MAX_ACTIVE_CONTACTFIELDS_PER_ORG = 255
 MAX_ACTIVE_GLOBALS_PER_ORG = 255
+
+PAGINATE_CHANNELS_COUNT = int(os.environ.get("PAGINATE_CHANNELS_COUNT", 25))

@@ -1330,6 +1330,7 @@ class ChannelCRUDL(SmartCRUDL):
         "update",
         "read",
         "read_list",
+        "manage",
         "delete",
         "search_numbers",
         "claim_android",
@@ -1594,6 +1595,7 @@ class ChannelCRUDL(SmartCRUDL):
             return context
 
     class ReadList(OrgPermsMixin, SmartListView):
+        paginate_by = settings.PAGINATE_CHANNELS_COUNT
         title = _("Channels")
         # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
         permission = "channels.channel_read"
@@ -1608,8 +1610,52 @@ class ChannelCRUDL(SmartCRUDL):
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
 
-            # order channels by role (DESC), channel (ASC) and created on date (ASC)
-            return queryset.filter(is_active=True).order_by("-role", "channel_type", "created_on")
+            return queryset.filter(is_active=True).order_by("-last_sync", "-created_on")
+
+        def pre_process(self, *args, **kwargs):
+            # superuser sees things as they are
+            if self.request.user.is_superuser:
+                return super().pre_process(*args, **kwargs)
+
+            return super().pre_process(*args, **kwargs)
+
+        def get_name(self, obj):
+            return obj.get_name()
+
+        def get_address(self, obj):
+            return obj.address if obj.address else _("Unknown")
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            for channel in context['channel_list']:
+                channel.delayed_sync_event = channel.last_sync
+            return context
+
+    class Manage(OrgPermsMixin, SmartListView):
+        paginate_by = settings.PAGINATE_CHANNELS_COUNT
+        title = _("Manage Channels")
+        # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
+        permission = "channels.channel_read_list"
+
+        def has_org_perm(self, permission):
+            if self.org:
+                return self.get_user().has_org_perm(self.org, permission)
+            return False
+
+        link_url = 'uuid@channels.channel_read'
+        link_fields = ("name", "uuid", "address")
+        fields = ('name', 'channel_type', 'created_on', 'modified_on', 'last_seen', 'uuid', 'address',
+                  'country', 'device', 'schemes')
+
+        def get_queryset(self, **kwargs):
+            queryset = super().get_queryset(**kwargs)
+
+            # org users see channels for their org, superuser sees all
+            if not self.request.user.is_superuser:
+                org = self.request.user.get_org()
+                queryset = queryset.filter(org=org)
+            return queryset.filter(is_active=True).order_by("-role", "channel_type", "created_on")\
+                .prefetch_related("sync_events")
 
         def pre_process(self, *args, **kwargs):
             # superuser sees things as they are
@@ -1627,16 +1673,18 @@ class ChannelCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             # delayed sync event
+            sync_events = SyncEvent.objects.filter(channel__in=context['channel_list']).order_by("-created_on")
             for channel in context['channel_list']:
-                if not channel.is_new():
-                    sync_events = SyncEvent.objects.filter(channel=channel.id).order_by("-created_on")
+                if not (channel.created_on > timezone.now() - timedelta(hours=1)):
                     if sync_events:
-                        latest_sync_event = sync_events[0]
-                        interval = timezone.now() - latest_sync_event.created_on
-                        seconds = interval.seconds + interval.days * 24 * 3600
-                        channel.last_sync = latest_sync_event
-                        if seconds > 3600:
-                            channel.delayed_sync_event = latest_sync_event
+                        for sync_event in sync_events:
+                            if sync_event.channel_id == channel.id:
+                                latest_sync_event = sync_events[0]
+                                interval = timezone.now() - latest_sync_event.created_on
+                                seconds = interval.seconds + interval.days * 24 * 3600
+                                channel.last_sync = latest_sync_event
+                                if seconds > 3600:
+                                    channel.delayed_sync_event = latest_sync_event
             return context
 
     class FacebookWhitelist(ModalMixin, OrgObjPermsMixin, SmartModelActionView):

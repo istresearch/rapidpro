@@ -5,7 +5,7 @@ from bandwidth.messaging.api_exception_module import BandwidthMessageAPIExceptio
 from django.urls import reverse
 
 from temba.channels.models import Channel
-from temba.orgs.models import BWI_ACCOUNT_SID, BWI_ACCOUNT_TOKEN
+from temba.orgs.models import BWI_USERNAME, BWI_PASSWORD
 from temba.tests import TembaTest
 from temba.tests.bandwidth import MockRequestValidator
 
@@ -27,10 +27,10 @@ class BandwidthTypeTest(TembaTest):
         response = self.client.get(claim_bandwidth)
         self.assertEqual(response.status_code, 302)
         response = self.client.get(claim_bandwidth, follow=True)
-        self.assertEqual(response.request["PATH_INFO"], reverse("orgs.org_bandwidth_connect"))
+        self.assertEqual(response.request["PATH_INFO"], reverse("orgs.org_bandwidth_international_connect"))
 
-        # attach a Bandwidth accont to the org
-        self.org.config = {BWI_ACCOUNT_SID: "bw-account-sid", BWI_ACCOUNT_TOKEN: "bw-account-token"}
+        # attach a Bandwidth account to the org
+        self.org.config = {BWI_USERNAME: "bwi-username", BWI_PASSWORD: "bwi-password"}
         self.org.save()
 
         # hit the claim page, should now have a claim bandwidth link
@@ -44,14 +44,14 @@ class BandwidthTypeTest(TembaTest):
             mock_get_bandwidth_client.return_value = None
 
             response = self.client.get(claim_bandwidth)
-            self.assertRedirects(response, reverse("orgs.org_bandwidth_connect"))
+            self.assertRedirects(response, reverse("orgs.org_bandwidth_international_connect"))
 
             mock_get_bandwidth_client.side_effect = BandwidthMessageAPIException(
                 401, "http://bandwidth", msg="Authentication Failure", code=20003
             )
 
             response = self.client.get(claim_bandwidth)
-            self.assertRedirects(response, reverse("orgs.org_bandwidth_connect"))
+            self.assertRedirects(response, reverse("orgs.org_bandwidth_international_connect"))
 
         bandwidth_channel = self.org.channels.all().first()
         # make channel support sms by clearing both applications

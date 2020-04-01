@@ -279,6 +279,8 @@ class Channel(TembaModel):
     CONFIG_AUTH_TOKEN = "auth_token"
     CONFIG_SECRET = "secret"
     CONFIG_CHANNEL_ID = "channel_id"
+    CONFIG_DEVICE_ID = "device_id"
+    CONFIG_CHAT_MODE = "chat_mode"
     CONFIG_CHANNEL_MID = "channel_mid"
     CONFIG_FCM_ID = "FCM_ID"
     CONFIG_MAX_LENGTH = "max_length"
@@ -362,6 +364,16 @@ class Channel(TembaModel):
         "schemes": ["tel"],
         "roles": ["send"],
     }
+
+    last_sync = models.ForeignKey(
+        'SyncEvent',
+        on_delete=models.SET_NULL,
+        related_name="channels",
+        verbose_name=_("Last Sync"),
+        blank=True,
+        null=True,
+        help_text=_("The last time that this channel was synced to the device"),
+    )
 
     channel_type = models.CharField(verbose_name=_("Channel Type"), max_length=3)
 
@@ -889,12 +901,7 @@ class Channel(TembaModel):
         return self.sync_events.filter(created_on__gt=timezone.now() - timedelta(hours=1)).order_by("-created_on")
 
     def get_last_sync(self):
-        if not hasattr(self, "_last_sync"):
-            last_sync = self.sync_events.order_by("-created_on").first()
-
-            self._last_sync = last_sync
-
-        return self._last_sync
+        return self.last_sync
 
     def get_last_power(self):
         last = self.get_last_sync()
@@ -1010,6 +1017,7 @@ class Channel(TembaModel):
         # make the channel inactive
         self.config.pop(Channel.CONFIG_FCM_ID, None)
         self.is_active = False
+        self.sync_event_id = None
         self.save(update_fields=["is_active", "config", "modified_on"])
 
         # mark any messages in sending mode as failed for this channel
@@ -1497,7 +1505,7 @@ class SyncEvent(SmartModel):
     channel = models.ForeignKey(
         Channel,
         related_name="sync_events",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Channel"),
         help_text=_("The channel that synced to the server"),
     )
@@ -1571,6 +1579,8 @@ class SyncEvent(SmartModel):
         sync_event.pending_messages = cmd.get("pending", cmd.get("pending_messages"))
         sync_event.retry_messages = cmd.get("retry", cmd.get("retry_messages"))
 
+        channel.last_sync = sync_event
+        channel.save()
         return sync_event
 
     def release(self):
