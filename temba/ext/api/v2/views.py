@@ -1,5 +1,5 @@
 import pytz
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.reverse import reverse
 
 from temba.api.support import InvalidQueryError
@@ -8,6 +8,7 @@ from temba.api.v2.views_base import (
     CreatedOnCursorPagination,
     ListAPIMixin,
     DeleteAPIMixin, WriteAPIMixin)
+from rest_framework.response import Response
 from temba.channels.models import Channel
 from temba.ext.api.models import ExtAPIPermission
 from temba.api.models import SSLPermission
@@ -202,6 +203,20 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
 
         return queryset
 
+    def delete(self, request, *args, **kwargs):
+        self.lookup_values = self.get_lookup_values()
+
+        if not self.lookup_values:
+            raise InvalidQueryError(
+                "URL must contain one of the following parameters: " + ", ".join(sorted(self.lookup_params.keys()))
+            )
+
+        channel = self.get_object()
+        if channel is not None:
+            channel.release()
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
     @classmethod
     def get_read_explorer(cls):
         return {
@@ -234,5 +249,17 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
                 {"name": "params[]", "required": True, "help": "A list of parameter name/value mappings that are "
                                                                "acceptable to the target channel type, as defined "
                                                                "in the channels claim view Form."},
+            ],
+        }
+
+    @classmethod
+    def get_delete_explorer(cls):
+        return {
+            "method": "DELETE",
+            "title": "Delete Channel",
+            "url": reverse("ext.api.v2.channels"),
+            "slug": "channel-delete",
+            "fields": [
+                {"name": "uuid", "required": True, "help": "The uuid of the channel to be deleted"},
             ],
         }
