@@ -399,15 +399,6 @@ class FlowCRUDL(SmartCRUDL):
                 ),
             )
 
-            use_new_editor = forms.TypedChoiceField(
-                label=_("New Editor (Beta)"),
-                help_text=_("Use new editor when authoring this flow"),
-                choices=((1, "Yes"), (0, "No")),
-                initial=0,
-                required=False,
-                coerce=int,
-            )
-
             def __init__(self, user, branding, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.user = user
@@ -430,7 +421,7 @@ class FlowCRUDL(SmartCRUDL):
 
             class Meta:
                 model = Flow
-                fields = ("name", "keyword_triggers", "flow_type", "base_language", "use_new_editor")
+                fields = ("name", "keyword_triggers", "flow_type", "base_language")
 
         form_class = FlowCreateForm
         success_url = "uuid@flows.flow_editor"
