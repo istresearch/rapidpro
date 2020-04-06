@@ -1596,10 +1596,9 @@ class SyncEvent(SmartModel):
 
     @classmethod
     def trim(cls):
-        week_ago = timezone.now() - timedelta(days=7)
-        for event in cls.objects.filter(created_on__lte=week_ago):
+        days_ago = timezone.now() - timedelta(days=settings.SYNC_EVENT_TRIM_DAYS)
+        for event in cls.objects.filter(created_on__lte=days_ago):
             event.release()
-
 
 @receiver(pre_save, sender=SyncEvent)
 def pre_save(sender, instance, **kwargs):
