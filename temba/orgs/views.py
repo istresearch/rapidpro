@@ -1370,7 +1370,7 @@ class OrgCRUDL(SmartCRUDL):
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
-            context["searches"] = ["Nyaruka"]
+            context["searches"] = settings.ORG_SEARCH_CONTEXT
             return context
 
         def lookup_field_link(self, context, field, obj):

@@ -1139,6 +1139,11 @@ EVENT_FIRE_TRIM_DAYS = 90
 FLOW_SESSION_TRIM_DAYS = 7
 
 # -----------------------------------------------------------------------------------
+# Installs can also choose how long to keep SyncEvents around. Default is 7 days.
+# -----------------------------------------------------------------------------------
+SYNC_EVENT_TRIM_DAYS = 7
+
+# -----------------------------------------------------------------------------------
 # Mailroom - disabled by default, but is where simulation happens
 # -----------------------------------------------------------------------------------
 MAILROOM_URL = None
@@ -1158,4 +1163,10 @@ ELASTICSEARCH_URL = os.environ.get("ELASTICSEARCH_URL", "http://localhost:9200")
 MAX_ACTIVE_CONTACTFIELDS_PER_ORG = 255
 MAX_ACTIVE_GLOBALS_PER_ORG = 255
 
+# -----------------------------------------------------------------------------------
+# Other defaults
+# -----------------------------------------------------------------------------------
+# How many sequential contacts on import triggers suspension
+SEQUENTIAL_CONTACTS_THRESHOLD = int(os.environ.get("SEQUENTIAL_CONTACTS_THRESHOLD", 5000))
+ORG_SEARCH_CONTEXT = ["Nyaruka"]
 PAGINATE_CHANNELS_COUNT = int(os.environ.get("PAGINATE_CHANNELS_COUNT", 25))
