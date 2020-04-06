@@ -52,6 +52,14 @@ def trim_sync_events_task():  # pragma: needs cover
     """
     SyncEvent.trim()
 
+@nonoverlapping_task(track_started=True, name="trim_sync_events_task")
+def trim_sync_events_task():  # pragma: needs cover
+    """
+    Runs daily and clears any channel sync events that are older than 7 days
+    """
+    SyncEvent.trim()
+
+
 @nonoverlapping_task(track_started=True, name="trim_channel_log_task")
 def trim_channel_log_task():  # pragma: needs cover
     """

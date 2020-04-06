@@ -251,7 +251,7 @@
         onPrimary: function(){
           $("#run_" + id).fadeOut();
 
-          $.post('/flowrun/delete/' + id + '/').fail(function() {
+          $.post('{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flowrun/delete/' + id + '/').fail(function() {
             // in the off chance we failed, bring it back
             $("#run_" + id).fadeIn();
           });
@@ -517,7 +517,7 @@
 
     function updateCharts() {
 
-      $.get("/flow/category_counts/{{object.uuid}}", function(data) {
+      $.get("{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/category_counts/{{object.uuid}}", function(data) {
 
         if (data.counts) {
           // determine chart sizes
@@ -588,7 +588,7 @@
 
   .tab-content
     #overview.tab-pane.active
-      .text-center{ic-get-from:'/flow/activity_chart/{{object.id}}', ic-trigger-on:'load'}
+      .text-center{ic-get-from:'{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/activity_chart/{{object.id}}', ic-trigger-on:'load'}
         %i.fa.fa-spinner.fa-spin.fa-2x
     
     #analytics.tab-pane
@@ -598,7 +598,7 @@
       .scroll-x
         .responded-checkbox
           .runs-show#show-all-runs{
-                                      ic-get-from:"/flow/run_table/{{object.id}}/",
+                                      ic-get-from:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/run_table/{{object.id}}/",
                                       ic-on-beforeSend:'$("#results_run_table").empty();',
                                       ic-on-beforeTrigger: 'localStorage.setItem("responded", "false");',
                                       ic-trigger-on:"click",
@@ -608,7 +608,7 @@
           .runs-show-sep
             |
           .runs-show.active{
-                                      ic-get-from:"/flow/run_table/{{object.id}}/",
+                                      ic-get-from:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/run_table/{{object.id}}/",
                                       ic-on-beforeSend:'$("#results_run_table").empty();',
                                       ic-on-beforeTrigger: 'localStorage.setItem("responded", "true");',
                                       ic-trigger-on:"click",
@@ -618,7 +618,7 @@
             
           .input-group
             %input.contact-search{type:"text", name:"q", placeholder:"Search Contacts",
-                                      ic-get-from:"/flow/run_table/{{object.id}}/",
+                                      ic-get-from:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/run_table/{{object.id}}/",
                                       ic-on-beforeSend:'$("#results_run_table").empty()',
                                       ic-trigger-on:"keyup changed",
                                       ic-local-vars: "responded",
@@ -651,7 +651,7 @@
                 .remove.icon-close{ onclick: 'hideColumn({{forloop.counter0}});' }
 
           %tbody{id:"results_run_table"}
-            %tr{ic-append-from:"/flow/run_table/{{object.id}}", ic-trigger-on:"load", ic-target:"#results_run_table", ic-indicator:"#indicator"}
+            %tr{ic-append-from:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/run_table/{{object.id}}", ic-trigger-on:"load", ic-target:"#results_run_table", ic-indicator:"#indicator"}
 
   #indicator{style:"display:none"}
     .loader

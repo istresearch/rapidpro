@@ -47,6 +47,7 @@ from temba.orgs.models import Org
 from temba.orgs.views import AnonMixin, ModalMixin, OrgObjPermsMixin, OrgPermsMixin
 from temba.utils import analytics, json
 from temba.utils.http import http_headers
+from temba.utils.models import patch_queryset_count
 
 from .models import (
     Alert,
@@ -1329,6 +1330,7 @@ class ChannelCRUDL(SmartCRUDL):
         "update",
         "read",
         "read_list",
+        "manage",
         "delete",
         "search_numbers",
         "claim_android",
@@ -1593,6 +1595,7 @@ class ChannelCRUDL(SmartCRUDL):
             return context
 
     class ReadList(OrgPermsMixin, SmartListView):
+        paginate_by = settings.PAGINATE_CHANNELS_COUNT
         title = _("Channels")
         # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
         permission = "channels.channel_read"
@@ -1607,16 +1610,58 @@ class ChannelCRUDL(SmartCRUDL):
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
 
-            return queryset.filter(is_active=True)
+            return queryset.filter(is_active=True).order_by("-last_sync", "-created_on")
 
         def pre_process(self, *args, **kwargs):
             # superuser sees things as they are
             if self.request.user.is_superuser:
                 return super().pre_process(*args, **kwargs)
 
-            # everybody else goes to a different page depending how many channels there are
-            org = self.request.user.get_org()
-            channels = list(Channel.objects.filter(org=org, is_active=True))
+            return super().pre_process(*args, **kwargs)
+
+        def get_name(self, obj):
+            return obj.get_name()
+
+        def get_address(self, obj):
+            return obj.address if obj.address else _("Unknown")
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            for channel in context['channel_list']:
+                channel.delayed_sync_event = channel.last_sync
+            return context
+
+    class Manage(OrgPermsMixin, SmartListView):
+        paginate_by = settings.PAGINATE_CHANNELS_COUNT
+        title = _("Manage Channels")
+        # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
+        permission = "channels.channel_read_list"
+
+        def has_org_perm(self, permission):
+            if self.org:
+                return self.get_user().has_org_perm(self.org, permission)
+            return False
+
+        link_url = 'uuid@channels.channel_read'
+        link_fields = ("name", "uuid", "address")
+        fields = ('name', 'channel_type', 'created_on', 'modified_on', 'last_seen', 'uuid', 'address',
+                  'country', 'device', 'schemes')
+
+        def get_queryset(self, **kwargs):
+            queryset = super().get_queryset(**kwargs)
+
+            # org users see channels for their org, superuser sees all
+            if not self.request.user.is_superuser:
+                org = self.request.user.get_org()
+                queryset = queryset.filter(org=org)
+            return queryset.filter(is_active=True).order_by("-role", "channel_type", "created_on")\
+                .prefetch_related("sync_events")
+
+        def pre_process(self, *args, **kwargs):
+            # superuser sees things as they are
+            if self.request.user.is_superuser:
+                return super().pre_process(*args, **kwargs)
+
             return super().pre_process(*args, **kwargs)
 
         def get_name(self, obj):
@@ -1628,16 +1673,18 @@ class ChannelCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             # delayed sync event
+            sync_events = SyncEvent.objects.filter(channel__in=context['channel_list']).order_by("-created_on")
             for channel in context['channel_list']:
-                if not channel.is_new():
-                    sync_events = SyncEvent.objects.filter(channel=channel.id).order_by("-created_on")
+                if not (channel.created_on > timezone.now() - timedelta(hours=1)):
                     if sync_events:
-                        latest_sync_event = sync_events[0]
-                        interval = timezone.now() - latest_sync_event.created_on
-                        seconds = interval.seconds + interval.days * 24 * 3600
-                        channel.last_sync = latest_sync_event
-                        if seconds > 3600:
-                            channel.delayed_sync_event = latest_sync_event
+                        for sync_event in sync_events:
+                            if sync_event.channel_id == channel.id:
+                                latest_sync_event = sync_events[0]
+                                interval = timezone.now() - latest_sync_event.created_on
+                                seconds = interval.seconds + interval.days * 24 * 3600
+                                channel.last_sync = latest_sync_event
+                                if seconds > 3600:
+                                    channel.delayed_sync_event = latest_sync_event
             return context
 
     class FacebookWhitelist(ModalMixin, OrgObjPermsMixin, SmartModelActionView):
@@ -1848,7 +1895,7 @@ class ChannelCRUDL(SmartCRUDL):
             user = self.request.user
 
             channel = form.cleaned_data["channel"]
-            Channel.add_send_channel(user, channel)
+            Channel.add_nexmo_bulk_sender(user, channel)
             return super().form_valid(form)
 
         def form_invalid(self, form):
@@ -1877,7 +1924,9 @@ class ChannelCRUDL(SmartCRUDL):
                 channel = self.cleaned_data["channel"]
                 channel = self.org.channels.filter(pk=channel).first()
                 if not channel:
-                    raise forms.ValidationError(_("Sorry, a caller cannot be added for that number"))
+                    raise forms.ValidationError(_("A caller cannot be added for that number"))
+                if channel.get_caller():
+                    raise forms.ValidationError(_("A caller has already been added for that number"))
                 return channel
 
         form_class = CallerForm
@@ -2127,7 +2176,8 @@ class ChannelCRUDL(SmartCRUDL):
 
                 return JsonResponse(numbers, safe=False)
             except Exception as e:
-                return JsonResponse(dict(error=str(e)))
+                raise e
+                # return JsonResponse(dict(error=str(e)))
 
     class SearchPlivo(SearchNumbers):
         class SearchPlivoForm(forms.Form):
@@ -2251,9 +2301,9 @@ class ChannelLogCRUDL(SmartCRUDL):
                     ChannelLog.objects.filter(channel=channel, connection=None)
                     .exclude(msg=None)
                     .order_by("-created_on")
-                    .select_related("msg__contact", "msg")
+                    .select_related("msg", "msg__contact", "msg__contact_urn", "channel", "channel__org")
                 )
-                events.count = lambda: channel.get_non_ivr_log_count()
+                patch_queryset_count(events, channel.get_non_ivr_log_count)
 
             return events
 
@@ -2262,10 +2312,10 @@ class ChannelLogCRUDL(SmartCRUDL):
             context["channel"] = self.derive_channel()
             return context
 
-    class Connection(AnonMixin, OrgPermsMixin, SmartReadView):
+    class Connection(AnonMixin, SmartReadView):
         model = ChannelConnection
 
-    class Read(AnonMixin, OrgPermsMixin, SmartReadView):
+    class Read(OrgPermsMixin, SmartReadView):
         fields = ("description", "created_on")
 
         def derive_org(self):

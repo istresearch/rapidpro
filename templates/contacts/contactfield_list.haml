@@ -6,7 +6,7 @@
   {{ title }}
 
 -block top-form
-  - if view.search_fields and object_list
+  - if view.search_fields
     - block search-form
       %form
         %input.input-medium.search-query{type:'text', placeholder:'Search', name:"search", value:"{{ search }}"}
@@ -64,16 +64,26 @@
                       -for field in fields
                         %td{class:'value-{{field}} {% get_class field obj %}' }
                           {% get_value obj field %}
-                      -if obj.flow_count or obj.campaign_count or obj.contactgroup_count
-                        %td{class:'field-dependencies'}
+                      %td{ style:"min-width: 240px" }
+                        {{ obj.label }}
+                      %td
+                        -if obj.show_in_table
+                          %span.label.label-info
+                            -trans "Featured"
+                      %td{ style:"font-family: monospace; font-size: 12px;" }
+                        @fields.{{ obj.key }}
+                      %td
+                        {{ obj.get_value_type_display }}
+                      %td{class:'field-dependencies'}
+                        -if obj.flow_count or obj.campaign_count or obj.contactgroup_count
                           %a{href:"#", class:'field-dependencies', onClick:"showDetailContactFieldModal({{ obj.id }}, \"{{ obj.label }}\");"}
-                            {% blocktrans count counter=obj.flow_count|add:obj.campaign_count|add:obj.contactgroup_count %}
+                            {% blocktrans trimmed count counter=obj.flow_count|add:obj.campaign_count|add:obj.contactgroup_count %}
                               {{counter}} Use
                             {% plural %}
                               {{counter}} Uses
                             {% endblocktrans %}
-                      -else
-                        %td
+                        -else
+                          %td
 
                       %td
 
@@ -180,7 +190,7 @@
   }
 
   function showUpdateContactFieldModal(cfid) {
-    var updateUrl = '{% if brand.sub_dir %}/{{brand.sub_dir}}{%else%}{%endif%}/contactfield/update/' + cfid + '/';
+    var updateUrl = '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/contactfield/update/' + cfid + '/';
 
     var modal = new Modax('{% trans "Update Contact Field" %}', updateUrl);
 
@@ -227,7 +237,7 @@
   };
 
   function showDeleteContactFieldModal(cfid) {
-    var deleteUrl = '{% if brand.sub_dir %}/{{brand.sub_dir}}{%else%}{%endif%}/contactfield/delete/' + cfid + '/';
+    var deleteUrl = '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/contactfield/delete/' + cfid + '/';
 
     var modal = new Modax('{% trans "Delete Contact Field" %}', deleteUrl);
 
@@ -251,7 +261,7 @@
   };
 
   function showDetailContactFieldModal(cfid, label) {
-    var detailUrl = '{% if brand.sub_dir %}/{{brand.sub_dir}}{%else%}{%endif%}/contactfield/detail/' + cfid + '/';
+    var detailUrl = '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/contactfield/detail/' + cfid + '/';
 
     var modal = new Modax(label + ' ' + '{% trans "Uses" %}', detailUrl);
 
@@ -316,23 +326,6 @@
 
     .drag-icon {
       width: 15px;
-    }
-
-    .value-label {
-      min-width: 240px;
-    }
-    .value-key {
-      width: 240px;
-    }
-    .value-value_type {
-      width: 80px;
-    }
-    .value-show_in_table {
-      width: 50px;
-    }
-
-    td.value-show_in_table {
-      text-align: center;
     }
 
     td.field-dependencies {

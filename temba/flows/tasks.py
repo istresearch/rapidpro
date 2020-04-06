@@ -1,7 +1,9 @@
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import iso8601
+import pytz
+from django_redis import get_redis_connection
 
 from django.conf import settings
 from django.utils import timezone
@@ -9,7 +11,6 @@ from django.utils.timesince import timesince
 
 from celery.task import task
 
-from temba.orgs.models import Org
 from temba.utils.celery import nonoverlapping_task
 
 from .models import (
@@ -18,6 +19,7 @@ from .models import (
     FlowNodeCount,
     FlowPathCount,
     FlowPathRecentRun,
+    FlowRevision,
     FlowRun,
     FlowRunCount,
     FlowSession,
@@ -26,13 +28,6 @@ from .models import (
 
 FLOW_TIMEOUT_KEY = "flow_timeouts_%y_%m_%d"
 logger = logging.getLogger(__name__)
-
-
-@task(track_started=True, name="send_email_action_task")
-def send_email_action_task(org_id, recipients, subject, message):
-    org = Org.objects.filter(pk=org_id, is_active=True).first()
-    if org:
-        org.email_action_send(recipients, subject, message)
 
 
 @task(track_started=True, name="update_run_expirations_task")
@@ -44,18 +39,6 @@ def update_run_expirations_task(flow_id):
         if run.path:
             last_arrived_on = iso8601.parse_date(run.path[-1]["arrived_on"])
             run.update_expiration(last_arrived_on)
-
-
-@task(track_started=True, name="continue_parent_flows")  # pragma: no cover
-def continue_parent_flows(run_ids):
-    runs = FlowRun.objects.filter(pk__in=run_ids)
-    FlowRun.continue_parent_flow_runs(runs)
-
-
-@task(track_started=True, name="interrupt_flow_runs_task")
-def interrupt_flow_runs_task(flow_id):
-    runs = FlowRun.objects.filter(is_active=True, exit_type=None, flow_id=flow_id)
-    FlowRun.bulk_exit(runs, FlowRun.EXIT_TYPE_INTERRUPTED)
 
 
 @task(track_started=True, name="export_flow_results_task")
@@ -82,6 +65,25 @@ def squash_flowruncounts():
     FlowCategoryCount.squash()
     FlowPathRecentRun.prune()
     FlowStartCount.squash()
+
+
+@nonoverlapping_task(track_started=True, name="trim_flow_revisions")
+def trim_flow_revisions():
+    start = timezone.now()
+
+    # get when the last time we trimmed was
+    r = get_redis_connection()
+    last_trim = r.get(FlowRevision.LAST_TRIM_KEY)
+    if not last_trim:
+        last_trim = 0
+
+    last_trim = datetime.utcfromtimestamp(int(last_trim)).astimezone(pytz.utc)
+    count = FlowRevision.trim(last_trim)
+
+    r.set(FlowRevision.LAST_TRIM_KEY, int(timezone.now().timestamp()))
+
+    elapsed = timesince(start)
+    print(f"Trimmed {count} flow revisions since {last_trim} in {elapsed}")
 
 
 @nonoverlapping_task(track_started=True, name="trim_flow_sessions")

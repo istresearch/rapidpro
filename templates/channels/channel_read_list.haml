@@ -40,15 +40,22 @@
       .formax-icon{class:'{{ channel|channel_icon }}'}
       .formax-container
         %div.formax-summary
-          {% if channel.channel_type == 'A' %}{{ channel.device }}
-          -if channel.os
-            (v{{channel.os}}){% endif %}
+          -if channel.channel_type == 'A'
+            -# Android channel format
+            -if not channel.name or channel.name == channel.address
+              -# no name defined - or name equals phone number (default); show device model + version
+              {{channel.device}}
+              -if channel.os
+                (v{{channel.os}})
+            -else
+              {{channel.name}}
+
           {% if channel.channel_type == 'T' %}
             Twilio Address{% endif %}
           {% if channel.channel_type == 'BWD' %}
-            Bandwidth Domestic Address{% endif %}
+            Bandwidth Domestic - {% endif %}
           {% if channel.channel_type == 'BWI' %}
-            Bandwidth International ({{channel.uuid}}) {% endif %}
+            Bandwidth International - {% endif %}
 
           {{ channel.get_address_display }}
           -with channel.get_sender as sender and channel.get_caller as caller
@@ -58,9 +65,6 @@
                   %a.btn.btn-secondary.org-button.posterize{href:"{% url 'channels.channel_create_caller' %}?channel={{channel.pk}}"}
                     -trans "Enable Voice"
 
-                -if not sender.is_delegate_sender
-                  %a.btn.btn-secondary.org-button{href:'{% url "channels.channel_bulk_sender_options" %}?channel={{channel.pk}}'}
-                    -trans "Enable Bulk Sending"
 
           .channel-roles
                 -for delegate_channel in channel.get_delegate_channels
