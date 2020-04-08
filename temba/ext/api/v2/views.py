@@ -14,15 +14,24 @@ from temba.ext.api.models import ExtAPIPermission
 from temba.api.models import SSLPermission
 from temba.api.v2.serializers import (ReadSerializer, WriteSerializer)
 from temba.orgs.models import Org
+import json
 
 class ExtChannelReadSerializer(ReadSerializer):
     country = serializers.SerializerMethodField()
     device = serializers.SerializerMethodField()
     created_on = serializers.DateTimeField(default_timezone=pytz.UTC)
     last_seen = serializers.DateTimeField(default_timezone=pytz.UTC)
+    config = serializers.SerializerMethodField()
 
     def get_country(self, obj):
         return str(obj.country) if hasattr(obj, 'country') else None
+
+    def get_config(self, obj):
+        if not hasattr(obj, 'config'):
+            return None
+
+        return obj.config
+
 
     def get_device(self, obj):
         if hasattr(obj, 'channel_type') and obj.channel_type != Channel.TYPE_ANDROID:
