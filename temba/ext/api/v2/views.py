@@ -50,7 +50,6 @@ class ExtChannelWriteSerializer(WriteSerializer):
         return data
 
     def save(self):
-        ret = None
         params = self.context['request'].query_params
         channel_type = params.get("type")
         if not channel_type:
@@ -213,9 +212,22 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
 
         channel = self.get_object()
         if channel is not None:
-            channel.release()
-            return Response(status=status.HTTP_200_OK)
-        return Response(status=status.HTTP_404_NOT_FOUND)
+            data = {
+                "name": channel.device,
+                "id": channel.id,
+                "uuid": channel.uuid,
+                "is_active": channel.is_active,
+                "response": {
+                    "status": status.HTTP_200_OK,    # Default to STATUS 200 OK
+                    "errors": [],
+                },
+            }
+            try:
+                channel.release()
+            except Exception as e:
+                data["response"]["status"] = status.HTTP_500_INTERNAL_SERVER_ERROR
+                data["response"]["errors"] = e.args
+            return Response(content_type="application/json", data=data, status=data["response"]["status"])
 
     @classmethod
     def get_read_explorer(cls):
