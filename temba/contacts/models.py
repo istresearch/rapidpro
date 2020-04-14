@@ -67,6 +67,12 @@ SMS_SCHEME = "sms"
 
 FACEBOOK_PATH_REF_PREFIX = "ref:"
 
+# Postmaster schemes
+PM_WHATSAPP_SCHEME = "pm_whatsapp"
+PM_TELEGRAM_SCHEME = "pm_telegram"
+PM_SIGNAL_SCHEME = "pm_signal"
+PM_LINE_SCHEME = "pm_line"
+
 # Scheme, Label, Export/Import Header, Context Key
 URN_SCHEME_CONFIG = (
     (TEL_SCHEME, _("Phone number"), "tel_e164"),
@@ -84,6 +90,10 @@ URN_SCHEME_CONFIG = (
     (WHATSAPP_SCHEME, _("WhatsApp identifier"), WHATSAPP_SCHEME),
     (FRESHCHAT_SCHEME, _("Freshchat identifier"), FRESHCHAT_SCHEME),
     (SMS_SCHEME, _("SMS identifier"), SMS_SCHEME),
+    (PM_WHATSAPP_SCHEME, _("Postmaster WhatsApp identifier"), PM_WHATSAPP_SCHEME),
+    (PM_TELEGRAM_SCHEME, _("Postmaster Telegram identifier"), PM_TELEGRAM_SCHEME),
+    (PM_SIGNAL_SCHEME, _("Postmaster Signal identifier"), PM_SIGNAL_SCHEME),
+    (PM_LINE_SCHEME, _("Postmaster Line identifier"), PM_LINE_SCHEME),
 )
 
 

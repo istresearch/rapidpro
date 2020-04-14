@@ -118,7 +118,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         }
 
         import temba.contacts.models as Contacts
-        schemes = [getattr(Contacts, '{}_SCHEME'.format(dict(ClaimView.Form.CHAT_MODE_CHOICES)[pm_chat_mode]).upper())]
+        schemes = [getattr(Contacts, 'PM_{}_SCHEME'.format(dict(ClaimView.Form.CHAT_MODE_CHOICES)[pm_chat_mode]).upper())]
 
         channel = Channel.create(
             org, user, None, self.code, name=pm_device_id, address=pm_device_id, role=role, config=config,

@@ -5,7 +5,7 @@ from temba.channels.types.postmaster.views import ClaimView
 from temba.utils.fields import SelectWidget
 from .. import TYPES
 
-from ...models import ChannelType
+from ...models import ChannelType, Channel
 from ...views import TYPE_UPDATE_FORM_CLASSES, UpdateChannelForm
 
 
@@ -20,6 +20,10 @@ class UpdatePostmasterForm(UpdateChannelForm):
         from temba.channels.types.postmaster.views import ClaimView as ClaimView
         widgets = {"schemes": SelectWidget(choices=ClaimView.Form.CHAT_MODE_CHOICES, attrs={"style": "width:360px"})}
 
+    def save(self, commit=True):
+        config = self.object.config
+        config[Channel.CONFIG_CHAT_MODE] = self.cleaned_data['schemes'][0]
+        return super().save(commit=commit)
 
 class PostmasterType(ChannelType):
     """
