@@ -38,9 +38,7 @@ from django.utils.http import urlencode
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
 
-from temba.apks.models import Apk
-from temba.contacts.models import TEL_SCHEME, URN, ContactURN
-from temba.formax import FormaxMixin
+from temba.contacts.models import TEL_SCHEME, URN
 from temba.msgs.models import OUTGOING, PENDING, QUEUED, WIRED, Msg, SystemLabel
 from temba.msgs.views import InboxView
 from temba.orgs.models import Org
@@ -641,10 +639,6 @@ def get_channel_read_url(channel):
     return reverse("channels.channel_read", args=[channel.uuid])
 
 
-def get_channel_read_url_list():
-    return reverse("channels.channel_read_list")
-
-
 def channel_status_processor(request):
     status = dict()
     user = request.user
@@ -854,7 +848,7 @@ def sync(request, channel_id):
 
                         # tell the channel to update its org if this channel got moved
                         if channel.org and "org_id" in cmd and channel.org.pk != cmd["org_id"]:
-                            commands.append(dict(cmd="claim", org_id=channel.org.pk, org_name=channel.org.name))
+                            commands.append(dict(cmd="claim", org_id=channel.org.pk))
 
                         # we don't ack status messages since they are always included
                         handled = False
@@ -1235,91 +1229,39 @@ class BaseClaimNumberMixin(ClaimViewMixin):
         return self.form_invalid(form)
 
 
-class ClaimAndroidForm(forms.Form):
-    claim_code = forms.CharField(max_length=12, help_text=_("The claim code from your Android phone"))
-    phone_number = forms.CharField(max_length=15, help_text=_("The phone number of the phone"))
-
-    def __init__(self, *args, **kwargs):
-        self.org = kwargs.pop("org")
-        super().__init__(*args, **kwargs)
-
-    def clean_claim_code(self):
-        claim_code = self.cleaned_data["claim_code"]
-        claim_code = claim_code.replace(" ", "").upper()
-
-        # is there a channel with that claim?
-        channel = Channel.objects.filter(claim_code=claim_code, is_active=True).first()
-
-        if not channel:
-            raise forms.ValidationError(_("Invalid claim code, please check and try again."))
-        else:
-            self.cleaned_data["channel"] = channel
-
-        return claim_code
-
-    def clean_phone_number(self):
-        number = self.cleaned_data["phone_number"]
-
-        if "channel" in self.cleaned_data:
-            channel = self.cleaned_data["channel"]
-
-            # ensure number is valid for the channel's country
-            try:
-                normalized = phonenumbers.parse(number, channel.country.code)
-                if not phonenumbers.is_possible_number(normalized):
-                    raise forms.ValidationError(_("Invalid phone number, try again."))
-            except Exception:  # pragma: no cover
-                raise forms.ValidationError(_("Invalid phone number, try again."))
-
-            number = phonenumbers.format_number(normalized, phonenumbers.PhoneNumberFormat.E164)
-
-            # ensure no other active channel has this number
-            if self.org.channels.filter(address=number, is_active=True).exclude(pk=channel.pk).exists():
-                raise forms.ValidationError(_("Another channel has this number. Please remove that channel first."))
-
-        return number
-
-
 class UpdateChannelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.object = kwargs["object"]
         del kwargs["object"]
 
         super().__init__(*args, **kwargs)
-        self.add_config_fields()
 
-    def add_config_fields(self):
-        pass
+        self.config_fields = []
+
+        if TEL_SCHEME in self.object.schemes:
+            self.add_config_field(
+                Channel.CONFIG_ALLOW_INTERNATIONAL,
+                forms.BooleanField(required=False, help_text=_("Allow international sending")),
+                False,
+            )
+
+    def add_config_field(self, config_key, field, default):
+        field.initial = self.instance.config.get(config_key, default)
+
+        self.fields[config_key] = field
+        self.config_fields.append(config_key)
 
     class Meta:
         model = Channel
         fields = "name", "address", "country", "alert_email"
-        config_fields = []
         readonly = ("address", "country")
         labels = {"address": _("Address")}
         helps = {"address": _("The number or address of this channel")}
 
 
-class UpdateNexmoForm(UpdateChannelForm):
+class UpdateTelChannelForm(UpdateChannelForm):
     class Meta(UpdateChannelForm.Meta):
-        readonly = ("country",)
-
-
-class UpdateAndroidForm(UpdateChannelForm):
-    class Meta(UpdateChannelForm.Meta):
-        readonly = []
-        helps = {"address": _("Phone number of this device")}
-
-
-class UpdateTwitterForm(UpdateChannelForm):
-    class Meta(UpdateChannelForm.Meta):
-        fields = "name", "address", "alert_email"
-        readonly = ("address",)
-        labels = {"address": _("Handle")}
-        helps = {"address": _("Twitter handle of this channel")}
-
-
-TYPE_UPDATE_FORM_CLASSES = {Channel.TYPE_ANDROID: UpdateAndroidForm}
+        helps = {"address": _("Phone number of this channel")}
 
 
 class ChannelCRUDL(SmartCRUDL):
@@ -1329,11 +1271,8 @@ class ChannelCRUDL(SmartCRUDL):
         "claim",
         "update",
         "read",
-        "read_list",
-        "manage",
         "delete",
         "search_numbers",
-        "claim_android",
         "configuration",
         "search_nexmo",
         "bulk_sender_options",
@@ -1368,7 +1307,7 @@ class ChannelCRUDL(SmartCRUDL):
                     links.append(
                         dict(title=_("Disable Bulk Sending"), style="btn-primary", href="#", js_class="remove-sender")
                     )
-                elif self.get_object().channel_type == Channel.TYPE_ANDROID:
+                elif self.get_object().is_android():
                     links.append(
                         dict(
                             title=_("Enable Bulk Sending"),
@@ -1594,99 +1533,6 @@ class ChannelCRUDL(SmartCRUDL):
 
             return context
 
-    class ReadList(OrgPermsMixin, SmartListView):
-        paginate_by = settings.PAGINATE_CHANNELS_COUNT
-        title = _("Channels")
-        # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
-        permission = "channels.channel_read"
-        fields = ('is_active', 'created_by', 'created_on', 'modified_by', 'modified_on', 'uuid', 'channel_type', 'name',
-                  'address', 'country', 'org', 'claim_code', 'secret', 'last_seen', 'device', 'os', 'alert_email',
-                  'config', 'schemes', 'role', 'parent', 'bod', 'tps')
-        def get_queryset(self, **kwargs):
-            queryset = super().get_queryset(**kwargs)
-
-            # org users see channels for their org, superuser sees all
-            if not self.request.user.is_superuser:
-                org = self.request.user.get_org()
-                queryset = queryset.filter(org=org)
-
-            return queryset.filter(is_active=True).order_by("-last_sync", "-created_on")
-
-        def pre_process(self, *args, **kwargs):
-            # superuser sees things as they are
-            if self.request.user.is_superuser:
-                return super().pre_process(*args, **kwargs)
-
-            return super().pre_process(*args, **kwargs)
-
-        def get_name(self, obj):
-            return obj.get_name()
-
-        def get_address(self, obj):
-            return obj.address if obj.address else _("Unknown")
-
-        def get_context_data(self, **kwargs):
-            context = super().get_context_data(**kwargs)
-            for channel in context['channel_list']:
-                channel.delayed_sync_event = channel.last_sync
-            return context
-
-    class Manage(OrgPermsMixin, SmartListView):
-        paginate_by = settings.PAGINATE_CHANNELS_COUNT
-        title = _("Manage Channels")
-        # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
-        permission = "channels.channel_read_list"
-
-        def has_org_perm(self, permission):
-            if self.org:
-                return self.get_user().has_org_perm(self.org, permission)
-            return False
-
-        link_url = 'uuid@channels.channel_read'
-        link_fields = ("name", "uuid", "address")
-        fields = ('name', 'channel_type', 'created_on', 'modified_on', 'last_seen', 'uuid', 'address',
-                  'country', 'device', 'schemes')
-
-        def get_queryset(self, **kwargs):
-            queryset = super().get_queryset(**kwargs)
-
-            # org users see channels for their org, superuser sees all
-            if not self.request.user.is_superuser:
-                org = self.request.user.get_org()
-                queryset = queryset.filter(org=org)
-            return queryset.filter(is_active=True).order_by("-role", "channel_type", "created_on")\
-                .prefetch_related("sync_events")
-
-        def pre_process(self, *args, **kwargs):
-            # superuser sees things as they are
-            if self.request.user.is_superuser:
-                return super().pre_process(*args, **kwargs)
-
-            return super().pre_process(*args, **kwargs)
-
-        def get_name(self, obj):
-            return obj.get_name()
-
-        def get_address(self, obj):
-            return obj.address if obj.address else _("Unknown")
-
-        def get_context_data(self, **kwargs):
-            context = super().get_context_data(**kwargs)
-            # delayed sync event
-            sync_events = SyncEvent.objects.filter(channel__in=context['channel_list']).order_by("-created_on")
-            for channel in context['channel_list']:
-                if not (channel.created_on > timezone.now() - timedelta(hours=1)):
-                    if sync_events:
-                        for sync_event in sync_events:
-                            if sync_event.channel_id == channel.id:
-                                latest_sync_event = sync_events[0]
-                                interval = timezone.now() - latest_sync_event.created_on
-                                seconds = interval.seconds + interval.days * 24 * 3600
-                                channel.last_sync = latest_sync_event
-                                if seconds > 3600:
-                                    channel.delayed_sync_event = latest_sync_event
-            return context
-
     class FacebookWhitelist(ModalMixin, OrgObjPermsMixin, SmartModelActionView):
         class DomainForm(forms.Form):
             whitelisted_domain = forms.URLField(
@@ -1804,9 +1650,8 @@ class ChannelCRUDL(SmartCRUDL):
             return kwargs
 
         def pre_save(self, obj):
-            if obj.config:
-                for field in self.form.Meta.config_fields:  # pragma: needs cover
-                    obj.config[field] = self.form.cleaned_data[field]
+            for field in self.form.config_fields:
+                obj.config[field] = self.form.cleaned_data[field]
             return obj
 
         def post_save(self, obj):
@@ -1951,7 +1796,7 @@ class ChannelCRUDL(SmartCRUDL):
         def get_success_url(self):
             return reverse("orgs.org_home")
 
-    class Configuration(OrgPermsMixin, SmartReadView):
+    class Configuration(OrgObjPermsMixin, SmartReadView):
         slug_url_kwarg = "uuid"
 
         def get_context_data(self, **kwargs):
@@ -1966,68 +1811,7 @@ class ChannelCRUDL(SmartCRUDL):
             context["configuration_urls"] = channel_type.get_configuration_urls(self.object)
             context["show_public_addresses"] = channel_type.show_public_addresses
 
-            if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR is not None:
-                context['subdir'] = settings.SUB_DIR.replace("/", "").replace("\\", "")
             return context
-
-    class ClaimAndroid(OrgPermsMixin, SmartFormView):
-        fields = ("claim_code", "phone_number")
-        form_class = ClaimAndroidForm
-        title = _("Connect Android Channel")
-        permission = "channels.channel_claim"
-
-        def get_form_kwargs(self):
-            kwargs = super().get_form_kwargs()
-            kwargs["org"] = self.request.user.get_org()
-            return kwargs
-
-        def get_context_data(self, **kwargs):
-            context = super().get_context_data(**kwargs)
-            context["relayer_app"] = Apk.objects.filter(apk_type=Apk.TYPE_RELAYER).order_by("-created_on").first()
-            return context
-
-        def get_success_url(self):
-            return "%s?success" % reverse("public.public_welcome")
-
-        def form_valid(self, form):
-            org = self.request.user.get_org()
-
-            if not org:  # pragma: no cover
-                raise Exception(_("No org for this user, cannot claim"))
-
-            self.object = Channel.objects.filter(claim_code=self.form.cleaned_data["claim_code"]).first()
-
-            country = self.object.country
-            phone_country = ContactURN.derive_country_from_tel(
-                self.form.cleaned_data["phone_number"], str(self.object.country)
-            )
-
-            # always prefer the country of the phone number they are entering if we have one
-            if phone_country and phone_country != country:  # pragma: needs cover
-                self.object.country = phone_country
-
-            analytics.track(self.request.user.username, "temba.channel_create")
-
-            self.object.claim(org, self.request.user, self.form.cleaned_data["phone_number"])
-            self.object.save()
-
-            # trigger a sync
-            self.object.trigger_sync()
-
-            return super().form_valid(form)
-
-        def derive_org(self):
-            user = self.request.user
-            org = None
-
-            if not user.is_anonymous:
-                org = user.get_org()
-
-            org_id = self.request.session.get("org_id", None)
-            if org_id:  # pragma: needs cover
-                org = Org.objects.get(pk=org_id)
-
-            return org
 
     class List(OrgPermsMixin, SmartListView):
         title = _("Channels")
@@ -2041,9 +1825,6 @@ class ChannelCRUDL(SmartCRUDL):
             if not self.request.user.is_superuser:
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
-
-            if self.request.user.is_superuser and not self.request.GET.get("showall"):
-                queryset = queryset.filter(org__isnull=False)
 
             return queryset.filter(is_active=True)
 
@@ -2068,9 +1849,6 @@ class ChannelCRUDL(SmartCRUDL):
 
         def get_address(self, obj):
             return obj.address if obj.address else _("Unknown")
-
-        def lookup_field_link(self, context, field, obj):
-            return reverse('channels.channel_read', args=[obj.uuid])
 
     class SearchNumbers(OrgPermsMixin, SmartFormView):
         class SearchNumbersForm(forms.Form):
@@ -2315,12 +2093,11 @@ class ChannelLogCRUDL(SmartCRUDL):
     class Connection(AnonMixin, SmartReadView):
         model = ChannelConnection
 
-    class Read(OrgPermsMixin, SmartReadView):
+    class Read(OrgObjPermsMixin, SmartReadView):
         fields = ("description", "created_on")
 
-        def derive_org(self):
-            object = self.get_object()
-            return object.channel.org if object else None
+        def get_object_org(self):
+            return self.get_object().channel.org
 
         def derive_queryset(self, **kwargs):
             queryset = super().derive_queryset(**kwargs)

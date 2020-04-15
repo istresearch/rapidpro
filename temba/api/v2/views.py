@@ -77,6 +77,7 @@ from .serializers import (
     FlowStartReadSerializer,
     FlowStartWriteSerializer,
     GlobalReadSerializer,
+    GlobalWriteSerializer,
     LabelReadSerializer,
     LabelWriteSerializer,
     MsgBulkActionSerializer,
@@ -259,6 +260,7 @@ class ExplorerView(SmartTemplateView):
             FlowStartsEndpoint.get_read_explorer(),
             FlowStartsEndpoint.get_write_explorer(),
             GlobalsEndpoint.get_read_explorer(),
+            GlobalsEndpoint.get_write_explorer(),
             GroupsEndpoint.get_read_explorer(),
             GroupsEndpoint.get_write_explorer(),
             GroupsEndpoint.get_delete_explorer(),
@@ -1931,9 +1933,11 @@ class FlowsEndpoint(ListAPIMixin, BaseAPIView):
      * **archived** - whether this flow is archived (boolean), filterable as `archived`
      * **labels** - the labels for this flow (array of objects)
      * **expires** - the time (in minutes) when this flow's inactive contacts will expire (integer)
+     * **runs** - the counts of completed, interrupted and expired runs (object)
+     * **results** - the results that this flow may create (array)
+     * **parent_refs** - the keys of the parent flow results referenced in this flow (array)
      * **created_on** - when this flow was created (datetime)
      * **modified_on** - when this flow was last modified (datetime), filterable as `before` and `after`.
-     * **runs** - the counts of completed, interrupted and expired runs (object)
 
     Example:
 
@@ -1966,6 +1970,7 @@ class FlowsEndpoint(ListAPIMixin, BaseAPIView):
                             "node_uuids": ["99afcda7-f928-4d4a-ae83-c90c96deb76d"]
                         }
                     ],
+                    "parent_refs": [],
                     "created_on": "2016-01-06T15:33:00.813162Z",
                     "modified_on": "2017-01-07T13:14:00.453567Z"
                 },
@@ -2032,9 +2037,9 @@ class FlowsEndpoint(ListAPIMixin, BaseAPIView):
         }
 
 
-class GlobalsEndpoint(ListAPIMixin, BaseAPIView):
+class GlobalsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
     """
-    This endpoint allows you to list the active globals on your account.
+    This endpoint allows you to list, create, and update active globals on your account.
 
     ## Listing Globals
 
@@ -2064,15 +2069,73 @@ class GlobalsEndpoint(ListAPIMixin, BaseAPIView):
                 ...
             ]
         }
+
+    ## Adding a Global
+
+    A **POST** can be used to create a new Global. Don't specify a key as this will be generated for you.
+
+     * **name** - the name of the global
+     * **value** - the value of the global
+
+    Example:
+
+        POST /api/v2/global.json
+        {
+            "name": "Org Name",
+            "value": "Acme Ltd"
+        }
+
+    You will receive a global object as a response if successful:
+
+        {
+            "key": "org_name",
+            "name": "Org Name",
+            "value": "Acme Ltd",
+            "modified_on": "2013-02-27T09:06:15.456"
+        }
+
+    ## Updating a Global
+
+    A **POST** can also be used to update an existing global if you specify its key in the URL.
+
+    Example:
+
+        POST /api/v2/globals.json?key=org_name
+        {
+            "value": "Acme Ltd"
+        }
+
+    You will receive the updated global object as a response if successful:
+
+        {
+            "key": "org_name",
+            "name": "Org Name",
+            "value": "Acme Ltd",
+            "modified_on": "2013-02-27T09:06:15.456"
+        }
     """
 
     permission = "globals.global_api"
     model = Global
     serializer_class = GlobalReadSerializer
+    write_serializer_class = GlobalWriteSerializer
     pagination_class = ModifiedOnCursorPagination
+    lookup_params = {"key": "key"}
 
     def filter_queryset(self, queryset):
-        return self.filter_before_after(queryset, "modified_on")
+        params = self.request.query_params
+        # filter by key (optional)
+        key = params.get("key")
+        if key:
+            queryset = queryset.filter(key=key)
+
+        # filter by modified (optional)
+        before = params.get("before")
+        after = params.get("after")
+        if before or after:
+            return self.filter_before_after(queryset, "modified_on")
+
+        return queryset.filter(is_active=True)
 
     @classmethod
     def get_read_explorer(cls):
@@ -2092,6 +2155,21 @@ class GlobalsEndpoint(ListAPIMixin, BaseAPIView):
                     "required": False,
                     "help": "Only return globals modified after this date, ex: 2015-01-28T18:00:00.000",
                 },
+                {"name": "key", "required": False, "help": "A global key filter by"},
+            ],
+        }
+
+    @classmethod
+    def get_write_explorer(cls):
+        return {
+            "method": "POST",
+            "title": "Add or Update Globals ",
+            "url": reverse("api.v2.globals"),
+            "slug": "globals-write",
+            "params": [{"name": "key", "required": False, "help": "Key of an existing global to update"}],
+            "fields": [
+                {"name": "name", "required": False, "help": "the Name value of the global"},
+                {"name": "value", "required": True, "help": "the new value of the global"},
             ],
         }
 
@@ -3093,7 +3171,11 @@ class RunsEndpoint(ListAPIMixin, BaseAPIView):
             {
                 "id": 12345678,
                 "flow": {"uuid": "f5901b62-ba76-4003-9c62-72fdacc1b7b7", "name": "Favorite Color"},
-                "contact": {"uuid": "d33e9ad5-5c35-414c-abd4-e7451c69ff1d", "name": "Bob McFlow"},
+                "contact": {
+                    "uuid": "d33e9ad5-5c35-414c-abd4-e7451c69ff1d",
+                    "urn": "tel:+12065551212",
+                    "name": "Bob McFlow"
+                },
                 "responded": true,
                 "path": [
                     {"node": "27a86a1b-6cc4-4ae3-b73d-89650966a82f", "time": "2015-11-11T13:05:50.457742Z"},
@@ -3175,6 +3257,7 @@ class RunsEndpoint(ListAPIMixin, BaseAPIView):
         queryset = queryset.prefetch_related(
             Prefetch("flow", queryset=Flow.objects.only("uuid", "name", "base_language")),
             Prefetch("contact", queryset=Contact.objects.only("uuid", "name", "language")),
+            Prefetch("contact__urns", ContactURN.objects.order_by("-priority", "id")),
             Prefetch("start", queryset=FlowStart.objects.only("uuid")),
         )
 
@@ -3230,7 +3313,7 @@ class FlowStartsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
      * **groups** - the list of groups that were started in the flow (objects)
      * **restart_particpants** - whether the contacts were restarted in this flow (boolean)
      * **status** - the status of this flow start
-     * **extra** - the dictionary of extra parameters passed to the flow start (object)
+     * **params** - the dictionary of extra parameters passed to the flow start (object)
      * **created_on** - the datetime when this flow start was created (datetime)
      * **modified_on** - the datetime when this flow start was modified (datetime)
 
@@ -3255,7 +3338,7 @@ class FlowStartsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
                     ],
                     "restart_participants": true,
                     "status": "complete",
-                    "extra": {
+                    "params": {
                         "first_name": "Ryan",
                         "last_name": "Lewis"
                     },
@@ -3277,7 +3360,7 @@ class FlowStartsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
      * **contacts** - the UUIDs of the contacts you want to start in this flow (array of up to 100 strings, optional)
      * **urns** - the URNs you want to start in this flow (array of up to 100 strings, optional)
      * **restart_participants** - whether to restart participants already in this flow (optional, defaults to true)
-     * **extra** - a dictionary of extra parameters to pass to the flow start (accessible via @trigger in your flow)
+     * **params** - a dictionary of extra parameters to pass to the flow start (accessible via @trigger.params in your flow)
 
     Example:
 
@@ -3287,7 +3370,7 @@ class FlowStartsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
             "groups": ["f5901b62-ba76-4003-9c62-72fdacc15515"],
             "contacts": ["f5901b62-ba76-4003-9c62-fjjajdsi15553"],
             "urns": ["twitter:sirmixalot", "tel:+12065551212"],
-            "extra": {"first_name": "Ryan", "last_name": "Lewis"}
+            "params": {"first_name": "Ryan", "last_name": "Lewis"}
         }
 
     Response is the created flow start:
@@ -3303,7 +3386,7 @@ class FlowStartsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
             ],
             "restart_participants": true,
             "status": "complete",
-            "extra": {
+            "params": {
                 "first_name": "Ryan",
                 "last_name": "Lewis"
             },

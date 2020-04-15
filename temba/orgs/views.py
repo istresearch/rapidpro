@@ -14,6 +14,7 @@ import phonenumbers
 import pytz
 import requests
 from iris_sdk import Account
+from packaging.version import Version
 from smartmin.views import (
     SmartCreateView,
     SmartCRUDL,
@@ -600,7 +601,7 @@ class OrgCRUDL(SmartCRUDL):
                 except (DjangoUnicodeDecodeError, ValueError):
                     raise ValidationError(_("This file is not a valid flow definition file."))
 
-                if Flow.is_before_version(json_data.get("version", 0), Org.EARLIEST_IMPORT_VERSION):
+                if Version(str(json_data.get("version", 0))) < Version(Org.EARLIEST_IMPORT_VERSION):
                     raise ValidationError(
                         _("This file is no longer valid. Please export a new version and try again.")
                     )

@@ -6,7 +6,7 @@ from temba.utils.fields import SelectWidget
 from .. import TYPES
 
 from ...models import ChannelType, Channel
-from ...views import TYPE_UPDATE_FORM_CLASSES, UpdateChannelForm
+from ...views import UpdateChannelForm
 
 
 class UpdatePostmasterForm(UpdateChannelForm):
@@ -24,6 +24,7 @@ class UpdatePostmasterForm(UpdateChannelForm):
         config = self.object.config
         config[Channel.CONFIG_CHAT_MODE] = self.cleaned_data['schemes'][0]
         return super().save(commit=commit)
+
 
 class PostmasterType(ChannelType):
     """
@@ -61,7 +62,7 @@ class PostmasterType(ChannelType):
     def schemes(self):
         for type in TYPES:
             if self._scheme is not None and type.name.lower() == self._scheme.lower():
-                self.update_form = TYPE_UPDATE_FORM_CLASSES.get(type.code)
+                self.update_form = UpdatePostmasterForm
         return self._scheme
 
     @schemes.setter
