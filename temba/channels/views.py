@@ -638,6 +638,8 @@ ALL_COUNTRIES = sorted(((code, name) for code, name in COUNTRIES_NAMES.items()),
 def get_channel_read_url(channel):
     return reverse("channels.channel_read", args=[channel.uuid])
 
+def get_channel_read_url_list():
+    return reverse("channels.channel_read_list")
 
 def channel_status_processor(request):
     status = dict()
@@ -848,7 +850,7 @@ def sync(request, channel_id):
 
                         # tell the channel to update its org if this channel got moved
                         if channel.org and "org_id" in cmd and channel.org.pk != cmd["org_id"]:
-                            commands.append(dict(cmd="claim", org_id=channel.org.pk))
+                            commands.append(dict(cmd="claim", org_id=channel.org.pk, org_name=channel.org.name))
 
                         # we don't ack status messages since they are always included
                         handled = False
@@ -1271,6 +1273,8 @@ class ChannelCRUDL(SmartCRUDL):
         "claim",
         "update",
         "read",
+        "read_list",
+        "manage",
         "delete",
         "search_numbers",
         "configuration",
@@ -1533,6 +1537,100 @@ class ChannelCRUDL(SmartCRUDL):
 
             return context
 
+    class ReadList(OrgPermsMixin, SmartListView):
+        paginate_by = settings.PAGINATE_CHANNELS_COUNT
+        title = _("Channels")
+        # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
+        permission = "channels.channel_read"
+        fields = ('is_active', 'created_by', 'created_on', 'modified_by', 'modified_on', 'uuid', 'channel_type', 'name',
+                  'address', 'country', 'org', 'claim_code', 'secret', 'last_seen', 'device', 'os', 'alert_email',
+                  'config', 'schemes', 'role', 'parent', 'bod', 'tps')
+
+        def get_queryset(self, **kwargs):
+            queryset = super().get_queryset(**kwargs)
+
+            # org users see channels for their org, superuser sees all
+            if not self.request.user.is_superuser:
+                org = self.request.user.get_org()
+                queryset = queryset.filter(org=org)
+
+            return queryset.filter(is_active=True).order_by("-last_sync", "-created_on")
+
+        def pre_process(self, *args, **kwargs):
+            # superuser sees things as they are
+            if self.request.user.is_superuser:
+                return super().pre_process(*args, **kwargs)
+
+            return super().pre_process(*args, **kwargs)
+
+        def get_name(self, obj):
+            return obj.get_name()
+
+        def get_address(self, obj):
+            return obj.address if obj.address else _("Unknown")
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            for channel in context['channel_list']:
+                channel.delayed_sync_event = channel.last_sync
+            return context
+
+    class Manage(OrgPermsMixin, SmartListView):
+        paginate_by = settings.PAGINATE_CHANNELS_COUNT
+        title = _("Manage Channels")
+        # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
+        permission = "channels.channel_read_list"
+
+        def has_org_perm(self, permission):
+            if self.org:
+                return self.get_user().has_org_perm(self.org, permission)
+            return False
+
+        link_url = 'uuid@channels.channel_read'
+        link_fields = ("name", "uuid", "address")
+        fields = ('name', 'channel_type', 'created_on', 'modified_on', 'last_seen', 'uuid', 'address',
+                  'country', 'device', 'schemes')
+
+        def get_queryset(self, **kwargs):
+            queryset = super().get_queryset(**kwargs)
+
+            # org users see channels for their org, superuser sees all
+            if not self.request.user.is_superuser:
+                org = self.request.user.get_org()
+                queryset = queryset.filter(org=org)
+            return queryset.filter(is_active=True).order_by("-role", "channel_type", "created_on") \
+                .prefetch_related("sync_events")
+
+        def pre_process(self, *args, **kwargs):
+            # superuser sees things as they are
+            if self.request.user.is_superuser:
+                return super().pre_process(*args, **kwargs)
+
+            return super().pre_process(*args, **kwargs)
+
+        def get_name(self, obj):
+            return obj.get_name()
+
+        def get_address(self, obj):
+            return obj.address if obj.address else _("Unknown")
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            # delayed sync event
+            sync_events = SyncEvent.objects.filter(channel__in=context['channel_list']).order_by("-created_on")
+            for channel in context['channel_list']:
+                if not (channel.created_on > timezone.now() - timedelta(hours=1)):
+                    if sync_events:
+                        for sync_event in sync_events:
+                            if sync_event.channel_id == channel.id:
+                                latest_sync_event = sync_events[0]
+                                interval = timezone.now() - latest_sync_event.created_on
+                                seconds = interval.seconds + interval.days * 24 * 3600
+                                channel.last_sync = latest_sync_event
+                                if seconds > 3600:
+                                    channel.delayed_sync_event = latest_sync_event
+            return context
+
     class FacebookWhitelist(ModalMixin, OrgObjPermsMixin, SmartModelActionView):
         class DomainForm(forms.Form):
             whitelisted_domain = forms.URLField(
@@ -1650,8 +1748,9 @@ class ChannelCRUDL(SmartCRUDL):
             return kwargs
 
         def pre_save(self, obj):
-            for field in self.form.config_fields:
-                obj.config[field] = self.form.cleaned_data[field]
+            if obj.config:
+                for field in self.form.Meta.config_fields:  # pragma: needs cover
+                    obj.config[field] = self.form.cleaned_data[field]
             return obj
 
         def post_save(self, obj):
