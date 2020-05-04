@@ -32,23 +32,19 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         pm_chat_mode = forms.ChoiceField(label="Postmaster Chat Mode", help_text=_("Postmaster Chat Mode"),
                                          choices=CHAT_MODE_CHOICES)
         pm_claim_code = forms.CharField(label="Claim Code", help_text=_("Claim Code"))
-        pm_server_url = forms.CharField(label="Post Office URL", help_text=_("Post Office URL"))
 
         def clean(self):
 
             pm_device_id = self.cleaned_data.get("pm_device_id", None)
             pm_chat_mode = self.cleaned_data.get("pm_chat_mode", None)
             pm_claim_code = self.cleaned_data.get("pm_claim_code", None)
-            pm_server_url = self.cleaned_data.get("pm_server_url", None)
 
             if not pm_device_id:  # pragma: needs cover
                 raise ValidationError(_("You must provide a Device ID"))
             if not pm_chat_mode:
-                raise ValidationError(_("You must select a chat mode"))
+                raise ValidationError(_("You must select a Chat mode"))
             if not pm_claim_code:
-                raise ValidationError(_("You must provide a Claim Code"))
-            if not pm_server_url:
-                raise ValidationError(_("You must provide a Server URL"))
+                raise ValidationError(_("You must provide a Claim code"))
 
             org = self.request.user.get_org()
             if org is not None:
@@ -106,10 +102,9 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         pm_device_id = form.cleaned_data["pm_device_id"]
         pm_chat_mode = form.cleaned_data["pm_chat_mode"]
         pm_claim_code = form.cleaned_data["pm_claim_code", None]
-        pm_server_url = form.cleaned_data["pm_server_url", None]
 
         channel = self.create_channel(self.request.user, Channel.ROLE_SEND + Channel.ROLE_CALL, pm_device_id,
-                                      pm_chat_mode, pm_claim_code, pm_server_url)
+                                      pm_chat_mode, pm_claim_code)
 
         self.uuid = channel.uuid
         channel.config['org_id'] = channel.org.id
@@ -121,7 +116,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
                         properties=dict(address=phone_number))
         return None
 
-    def create_channel(self, user, role, pm_device_id, pm_chat_mode, pm_claim_code, pm_server_url):
+    def create_channel(self, user, role, pm_device_id, pm_chat_mode, pm_claim_code):
         org = user.get_org()
         self.uuid = uuid4()
         callback_domain = org.get_brand_domain()
@@ -130,18 +125,20 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             Channel.CONFIG_CHAT_MODE: pm_chat_mode,
             Channel.CONFIG_CALLBACK_DOMAIN: callback_domain,
             Channel.CONFIG_CLAIM_CODE: pm_claim_code,
-            Channel.CONFIG_PM_SERVER_URL: pm_server_url,
         }
 
         import temba.contacts.models as Contacts
         prefix = 'PM_'
         if pm_chat_mode == 'SMS':
             prefix = ''
+
+        kwargs = {'claim_code': pm_claim_code}
+
         schemes = [getattr(Contacts,
                            '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[pm_chat_mode]).upper())]
         channel = Channel.create(
             org, user, None, self.code, name=pm_device_id, address=pm_device_id, role=role, config=config,
-            uuid=self.uuid, schemes=schemes
+            uuid=self.uuid, schemes=schemes, kwargs=kwargs
         )
 
         analytics.track(user.username, "temba.channel_claim_postmaster", properties=dict(number=pm_device_id))

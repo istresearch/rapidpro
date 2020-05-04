@@ -6,12 +6,26 @@
 
   %h2.font_normalize.header-margin
     {{ title }}
+  %span
+    To register Postmaster, hit the SCAN QR Code button in the app.
 
-
--block pre-form
+-block fields
   -if po_qr and po_qr.qr_base64
-    %div{class:"pm-qr; float-right; inline-block; pull-right", style:"width: 800px;"}
-      %img{ src:"data:png;base64, {{po_qr.qr_base64}}" }
+    %div{class:"pm-qr;"}
+      %img{ src:"data:png;base64, {{po_qr.qr_base64}}" }{style:"padding-left: 110px; padding-bottom: 20px"}
+      %div{style:"padding-left: 100px; padding-bottom: 20px"}
+        %div
+          %code
+            Claim Code: {{po_qr.data.claim_code}}
+        %div
+          %code
+            Server: {{po_qr.data.server}}
+        %div
+          %code
+            API Key: {{po_qr.data.api_key}}
+
+
+-block form-buttons
 
 -block extra-script
   {{ block.super }}
@@ -21,4 +35,21 @@
       $("#id_country").select2();
     });
 
+    setInterval(
+    function pollUntilDone(url, interval, timeout) {
+
+      $.get('{% url "ext.api.v2.channels" %}?claim_code={{po_qr.data.claim_code}}', function(data) {
+        if (Array.isArray(data['results'])) {
+          window.location = '{% url "orgs.org_home" %}';
+        }
+      });
+    }, 5000);
+
+-block extra-style
+  {{ block.super }}
+
+  :css
+    .pm-qr {
+      width: 500px !important;
+    }
 

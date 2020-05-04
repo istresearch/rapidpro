@@ -197,6 +197,10 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
         if address:
             queryset = queryset.filter(address=address)
 
+        claim_code = params.get("claim_code")
+        if claim_code:
+            queryset = queryset.filter(claim_code=claim_code)
+
         c_type = params.get("type")
         if c_type:
             queryset = queryset.filter(channel_type=c_type)
