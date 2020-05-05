@@ -106,7 +106,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         device_id = form.cleaned_data["device_id"]
         device_name = form.cleaned_data["device_name"]
         chat_mode = form.cleaned_data["chat_mode"]
-        claim_code = form.cleaned_data["claim_code", None]
+        claim_code = form.cleaned_data["claim_code"]
 
         channel = self.create_channel(self.request.user, Channel.ROLE_SEND + Channel.ROLE_CALL, device_id,
                                       device_name, chat_mode, claim_code)
