@@ -143,8 +143,6 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         if chat_mode == 'SMS':
             prefix = ''
 
-        kwargs = {'claim_code': claim_code}
-
         schemes = [getattr(Contacts,
                            '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[chat_mode]).upper())]
         channel = Channel.create(
