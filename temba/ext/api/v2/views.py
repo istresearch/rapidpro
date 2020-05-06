@@ -152,7 +152,7 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
 
     Example:
 
-        POST /ext/api/v2/channels.json?type=PSM&pm_chat_mode=WA&pm_device_id=weezer
+        POST /ext/api/v2/channels.json?type=PSM&chat_mode=WA&device_id=weezer
 
     You will receive a Channel object as a response if successful:
 
@@ -196,6 +196,10 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
         address = params.get("address")
         if address:
             queryset = queryset.filter(address=address)
+
+        claim_code = params.get("claim_code")
+        if claim_code:
+            queryset = queryset.filter(config__contains='"claim_code": "{}"'.format(claim_code))
 
         c_type = params.get("type")
         if c_type:

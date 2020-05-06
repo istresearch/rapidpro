@@ -758,9 +758,9 @@ class Org(SmartModel):
         self.modified_by = user
         self.save(update_fields=("config", "modified_by", "modified_on"))
 
-    def connect_postmaster(self, pm_receiver_id, pm_chat_mode, user):
-        self.config.update({Org.CONFIG_POSTMASTER_RECEIVER_ID: pm_receiver_id,
-                            Org.CONFIG_POSTMASTER_CHATMODE: pm_chat_mode})
+    def connect_postmaster(self, receiver_id, chat_mode, user):
+        self.config.update({Org.CONFIG_POSTMASTER_RECEIVER_ID: receiver_id,
+                            Org.CONFIG_POSTMASTER_CHATMODE: chat_mode})
         self.modified_by = user
         self.save(update_fields=("config", "modified_by", "modified_on"))
 
