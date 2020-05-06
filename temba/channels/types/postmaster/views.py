@@ -34,7 +34,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         chat_mode = forms.ChoiceField(label="Postmaster Chat Mode", help_text=_("Postmaster Chat Mode"),
                                          choices=CHAT_MODE_CHOICES)
         claim_code = forms.CharField(label="Claim Code", help_text=_("Claim Code"))
-        org_id = forms.CharField(label="Org ID", help_text=_("Org ID"))
+        org_id = forms.IntegerField(label="Org ID", help_text=_("Org ID"))
 
         def clean(self):
 
