@@ -147,7 +147,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
                            '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[chat_mode]).upper())]
         channel = Channel.create(
             org, user, None, self.code, name=device_name, address=device_id, role=role, config=config,
-            uuid=self.uuid, schemes=schemes, claim_code=claim_code
+            uuid=self.uuid, schemes=schemes
         )
 
         analytics.track(user.username, "temba.channel_claim_postmaster", properties=dict(number=device_id))

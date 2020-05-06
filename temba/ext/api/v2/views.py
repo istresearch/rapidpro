@@ -199,7 +199,7 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
 
         claim_code = params.get("claim_code")
         if claim_code:
-            queryset = queryset.filter(claim_code=claim_code)
+            queryset = queryset.filter(config__contains='"claim_code": "{}"'.format(claim_code))
 
         c_type = params.get("type")
         if c_type:
