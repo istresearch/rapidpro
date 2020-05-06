@@ -139,7 +139,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         }
 
         import temba.contacts.models as Contacts
-        prefix = ''
+        prefix = 'PM_'
         if chat_mode == 'SMS':
             prefix = ''
 
