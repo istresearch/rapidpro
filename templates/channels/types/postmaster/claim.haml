@@ -1,28 +1,35 @@
 -extends "channels/channel_claim_form.html"
 -load i18n
 
+
 -block title
-  .medium-help.float-left{class:"{{ view.channel_type.icon }}"}
+  %div
+    %h2.font_normalize
+      .medium-help{class:"{{ view.channel_type.icon }}"}
+      {{ title }}
 
-  %h2.font_normalize.header-margin
-    {{ title }}
-  %span
+  %span.middle
     To register Postmaster, hit the SCAN QR Code button in the app.
-
 -block fields
   -if po_qr and po_qr.qr_base64
     %div{class:"pm-qr;"}
-      %img{ src:"data:png;base64, {{po_qr.qr_base64}}" }{style:"padding-left: 110px; padding-bottom: 20px"}
-      %div{style:"padding-left: 100px; padding-bottom: 20px"}
-        %div
-          %code
-            Claim Code: {{po_qr.data.claim_code}}
-        %div
-          %code
-            Server: {{po_qr.data.server}}
-        %div
-          %code
-            API Key: {{po_qr.data.api_key}}
+      %img{ src:"data:png;base64, {{po_qr.qr_base64}}" }{style:"padding-bottom: 20px"}
+    %div{style:"padding-bottom: 20px; display:inline-block; max-width:400px; text-align:left;"}
+      %div
+        %span
+          Claim Code:
+        %code
+          {{po_qr.data.claim_code}}
+      %div
+        %span
+          Server:
+        %code
+          {{po_qr.data.server}}
+      %div
+        %span
+          API Key:
+        %code
+          {{po_qr.data.api_key}}
 
 
 -block form-buttons
@@ -49,7 +56,13 @@
   {{ block.super }}
 
   :css
-    .pm-qr {
-      width: 500px !important;
+    .page-content{
+      text-align: center;
+    }
+    .span9 {
+      width: 100% !important;
+    }
+    .top-bar{
+    margin: 0px;
     }
 
