@@ -769,17 +769,17 @@ class OrgCRUDL(SmartCRUDL):
 
     class PostmasterConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
         class PostmasterConnectForm(forms.Form):
-            pm_receiver_id = forms.CharField(label="Device ID", help_text=_("Your Postmaster Device ID"))
-            pm_chat_mode = forms.CharField(label="Chat Mode", help_text=_("Your Postmaster Chat Mode"))
+            receiver_id = forms.CharField(label="Device ID", help_text=_("Your Postmaster Device ID"))
+            chat_mode = forms.CharField(label="Chat Mode", help_text=_("Your Postmaster Chat Mode"))
 
             def clean(self):
-                pm_receiver_id = self.cleaned_data.get("pm_receiver_id", None)
-                pm_chat_mode = self.cleaned_data.get("pm_chat_mode", None)
+                receiver_id = self.cleaned_data.get("receiver_id", None)
+                chat_mode = self.cleaned_data.get("chat_mode", None)
 
-                if not pm_receiver_id:
+                if not receiver_id:
                     raise ValidationError(_("You must enter your Postmaster Device ID"))
 
-                if not pm_chat_mode:
+                if not chat_mode:
                     raise ValidationError(_("You must enter your Postmaster Chat Mode"))
 
                 return self.cleaned_data
@@ -787,15 +787,15 @@ class OrgCRUDL(SmartCRUDL):
         form_class = PostmasterConnectForm
         submit_button_name = "Save"
         success_url = "@channels.types.postmaster.claim"
-        field_config = dict(pm_receiver_id=dict(label=""), pm_chat_mode=dict(label=""))
+        field_config = dict(receiver_id=dict(label=""), chat_mode=dict(label=""))
         success_message = "Postmaster Account successfully connected."
 
         def form_valid(self, form):
-            pm_receiver_id = form.cleaned_data["pm_receiver_id"]
-            pm_chat_mode = form.cleaned_data["pm_chat_mode"]
+            receiver_id = form.cleaned_data["receiver_id"]
+            chat_mode = form.cleaned_data["chat_mode"]
 
             org = self.get_object()
-            org.connect_postmaster(pm_receiver_id, pm_chat_mode, self.request.user)
+            org.connect_postmaster(receiver_id, chat_mode, self.request.user)
             org.save()
 
             return HttpResponseRedirect(self.get_success_url())
@@ -804,27 +804,27 @@ class OrgCRUDL(SmartCRUDL):
         success_message = ""
 
         class PostmasterKeys(forms.ModelForm):
-            pm_receiver_id = forms.CharField(label="Device ID", help_text=_("Your Postmaster Device ID"))
-            pm_chat_mode = forms.CharField(label="Chat Mode", help_text=_("Your Postmaster Chat Mode"))
+            receiver_id = forms.CharField(label="Device ID", help_text=_("Your Postmaster Device ID"))
+            chat_mode = forms.CharField(label="Chat Mode", help_text=_("Your Postmaster Chat Mode"))
             disconnect = forms.CharField(widget=forms.HiddenInput, max_length=6, required=True)
 
             def clean(self):
                 super().clean()
                 if self.cleaned_data.get("disconnect", "false") == "false":
-                    pm_receiver_id = self.cleaned_data.get("pm_receiver_id", None)
-                    pm_chat_mode = self.cleaned_data.get("pm_chat_mode", None)
+                    receiver_id = self.cleaned_data.get("receiver_id", None)
+                    chat_mode = self.cleaned_data.get("chat_mode", None)
 
-                    if not pm_receiver_id:
+                    if not receiver_id:
                         raise ValidationError(_("You must enter your Postmaster Device ID"))
 
-                    if not pm_chat_mode:  # pragma: needs cover
+                    if not chat_mode:  # pragma: needs cover
                         raise ValidationError(_("You must enter your Postmaster Chat Mode"))
 
                 return self.cleaned_data
 
             class Meta:
                 model = Org
-                fields = ("pm_receiver_id", "pm_chat_mode", "disconnect")
+                fields = ("receiver_id", "chat_mode", "disconnect")
 
         form_class = PostmasterKeys
 
@@ -832,8 +832,8 @@ class OrgCRUDL(SmartCRUDL):
             initial = super().derive_initial()
             org = self.get_object()
             config = org.config
-            initial["pm_receiver_id"] = config.get(Org.CONFIG_POSTMASTER_RECEIVER_ID, "")
-            initial["pm_chat_mode"] = config.get(Org.CONFIG_POSTMASTER_CHAT_MODE, "")
+            initial["receiver_id"] = config.get(Org.CONFIG_POSTMASTER_RECEIVER_ID, "")
+            initial["chat_mode"] = config.get(Org.CONFIG_POSTMASTER_CHAT_MODE, "")
             initial["disconnect"] = "false"
             return initial
 
@@ -846,10 +846,10 @@ class OrgCRUDL(SmartCRUDL):
                 org.remove_postmaster_account(user)
                 return HttpResponseRedirect(reverse("orgs.org_home"))
             else:
-                pm_receiver_id = form.cleaned_data["pm_receiver_id"]
-                pm_chat_mode = form.cleaned_data["api_secret"]
+                receiver_id = form.cleaned_data["receiver_id"]
+                chat_mode = form.cleaned_data["api_secret"]
 
-                org.connect_nexmo(pm_receiver_id, pm_chat_mode, user)
+                org.connect_nexmo(receiver_id, chat_mode, user)
                 return super().form_valid(form)
 
         def get_context_data(self, **kwargs):
@@ -859,8 +859,8 @@ class OrgCRUDL(SmartCRUDL):
             client = org.get_nexmo_client()
             if client:
                 config = org.config
-                context["pm_receiver_id"] = config.get(Org.CONFIG_POSTMASTER_RECEIVER_ID, "")
-                context["pm_chat_mode"] = config.get(Org.CONFIG_POSTMASTER_CHAT_MODE, "")
+                context["receiver_id"] = config.get(Org.CONFIG_POSTMASTER_RECEIVER_ID, "")
+                context["chat_mode"] = config.get(Org.CONFIG_POSTMASTER_CHAT_MODE, "")
 
             return context
 
