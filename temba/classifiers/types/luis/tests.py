@@ -1,8 +1,11 @@
 from unittest.mock import patch
 
+from requests import RequestException
+
 from django.urls import reverse
 
 from temba.classifiers.models import Classifier
+from temba.request_logs.models import HTTPLog
 from temba.tests import MockResponse, TembaTest
 
 from .type import LuisType
@@ -42,16 +45,19 @@ class LuisTypeTest(TembaTest):
 
         with patch("requests.get") as mock_get:
             mock_get.return_value = MockResponse(400, '{ "error": "true" }')
-            logs = []
+            self.assertEqual(HTTPLog.objects.filter(classifier=c).count(), 1)
             with self.assertRaises(Exception):
-                c.get_type().get_active_intents_from_api(c, logs)
-                self.assertEqual(1, len(logs))
+                c.get_type().get_active_intents_from_api(c)
+                self.assertEqual(HTTPLog.objects.filter(classifier=c).count(), 2)
+
+            mock_get.side_effect = RequestException("Network is unreachable", response=MockResponse(100, ""))
+            c.get_type().get_active_intents_from_api(c)
+            self.assertEqual(HTTPLog.objects.filter(classifier=c).count(), 3)
 
         with patch("requests.get") as mock_get:
             mock_get.return_value = MockResponse(200, INTENT_RESPONSE)
-            logs = []
-            intents = c.get_type().get_active_intents_from_api(c, logs)
-            self.assertEqual(1, len(logs))
+            intents = c.get_type().get_active_intents_from_api(c)
+            self.assertEqual(HTTPLog.objects.filter(classifier=c).count(), 4)
             self.assertEqual(2, len(intents))
             car = intents[0]
             self.assertEqual("Book Car", car.name)
@@ -76,12 +82,11 @@ class LuisTypeTest(TembaTest):
         response = self.client.post(url, post_data)
         self.assertFormError(response, "form", "app_id", ["This field is required."])
 
-        # ok, will everything out
         post_data["name"] = "Booker"
         post_data["app_id"] = "12345"
         post_data["version"] = "0.1"
         post_data["primary_key"] = "sesame"
-        post_data["endpoint_url"] = "http://foo.bar/luis"
+        post_data["endpoint_url"] = "http://nyaruka.com/luis"
 
         # can't connect
         with patch("requests.get") as mock_get:
@@ -102,7 +107,7 @@ class LuisTypeTest(TembaTest):
             self.assertEqual("Booker", c.name)
             self.assertEqual("luis", c.classifier_type)
             self.assertEqual("sesame", c.config[LuisType.CONFIG_PRIMARY_KEY])
-            self.assertEqual("http://foo.bar/luis", c.config[LuisType.CONFIG_ENDPOINT_URL])
+            self.assertEqual("http://nyaruka.com/luis", c.config[LuisType.CONFIG_ENDPOINT_URL])
             self.assertEqual("0.1", c.config[LuisType.CONFIG_VERSION])
 
             self.assertEqual(2, c.intents.all().count())
