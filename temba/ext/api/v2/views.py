@@ -32,9 +32,8 @@ class ExtChannelReadSerializer(ReadSerializer):
 
         return obj.config
 
-
     def get_device(self, obj):
-        if hasattr(obj, 'channel_type') and obj.channel_type != Channel.TYPE_ANDROID:
+        if not obj.is_android():
             return None
 
         return {
