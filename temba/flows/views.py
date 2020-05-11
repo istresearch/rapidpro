@@ -395,7 +395,7 @@ class FlowCRUDL(SmartCRUDL):
                 choices=(
                     (Flow.TYPE_MESSAGE, "Messaging"),
                     (Flow.TYPE_VOICE, "Phone Call"),
-                    (Flow.TYPE_SURVEY, "Surveyor"),
+                    #(Flow.TYPE_SURVEY, "Surveyor"), # P4-1483
                 ),
             )
 
@@ -406,7 +406,7 @@ class FlowCRUDL(SmartCRUDL):
                 org_languages = self.user.get_org().languages.all().order_by("orgs", "name")
                 language_choices = ((lang.iso_code, lang.name) for lang in org_languages)
 
-                flow_types = branding.get("flow_types", [Flow.TYPE_MESSAGE, Flow.TYPE_VOICE, Flow.TYPE_SURVEY])
+                flow_types = branding.get("flow_types", [Flow.TYPE_MESSAGE, Flow.TYPE_VOICE]) # P4-1483 Removed Flow.TYPE_SURVEY
 
                 # prune our choices by brand config
                 choices = []
