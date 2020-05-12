@@ -691,7 +691,7 @@ class MsgCRUDL(SmartCRUDL):
         template_name = "msgs/msg_failed.haml"
         success_message = ""
         system_label = SystemLabel.TYPE_FAILED
-        actions = ["resend"]
+        actions = ["resend", "delete"]
         allow_export = True
         show_channel_logs = True
 
