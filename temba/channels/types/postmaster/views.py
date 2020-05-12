@@ -145,8 +145,11 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
 
         schemes = [getattr(Contacts,
                            '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[chat_mode]).upper())]
+        
+        name_with_scheme = '{} [{}]'.format(device_name, schemes[0])
+
         channel = Channel.create(
-            org, user, None, self.code, name=device_name, address=device_id, role=role, config=config,
+            org, user, None, self.code, name=name_with_scheme, address=device_id, role=role, config=config,
             uuid=self.uuid, schemes=schemes
         )
 
