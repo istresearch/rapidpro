@@ -57,7 +57,10 @@
           {% if channel.channel_type == 'BWI' %}
             Bandwidth International - {% endif %}
 
-          {{ channel.get_address_display }}
+          -if channel.channel_type == 'PSM'
+            {{ channel.name }}
+          -else
+            {{ channel.get_address_display }}
           -with channel.get_sender as sender and channel.get_caller as caller
             -if channel.channel_type == 'A'
               .pull-right
