@@ -1641,15 +1641,6 @@ class ChannelCRUDL(SmartCRUDL):
             if self.has_org_perm("channels.channel_claim"):
                 links.append(dict(title=_("Add Channel"), href=reverse("channels.channel_claim")))
 
-            if self.has_org_perm("classifiers.classifier_connect"):
-                links.append(dict(title=_("Add Classifier"), href=reverse("classifiers.classifier_connect")))
-
-            if self.has_org_perm("orgs.org_export"):
-                links.append(dict(title=_("Export"), href=reverse("orgs.org_export")))
-
-            if self.has_org_perm("orgs.org_import"):
-                links.append(dict(title=_("Import"), href=reverse("orgs.org_import")))
-
             return links
 
         def get_channel_log(self, obj):
