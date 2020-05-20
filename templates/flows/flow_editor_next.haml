@@ -159,7 +159,10 @@
     }
 
     function handleActivityClicked(nodeUUID, count) {
-      showCompose(false, null, nodeUUID, count);
+      var endpoint = '{% url "msgs.broadcast_send" %}';
+      var modal = document.querySelector("#send-message-modal");
+      modal.endpoint = endpoint + "?step_node=" + nodeUUID + "&count=" + count;
+      modal.open = true;
     }
 
     const config = {
@@ -176,6 +179,12 @@
       onActivityClicked: handleActivityClicked,
       mutable: {{mutable|lower}},
       filters: {{feature_filters|to_json}},
+
+      help: {
+        legacy_extra: 'https://help.nyaruka.com/en/articles/3747485-migrating-away-from-legacy_extra',
+        missing_dependency: 'http://help.nyaruka.com/en/articles/3747650-fixing-missing-dependencies',
+        invalid_regex: 'http://help.nyaruka.com/en/articles/3747654-invalid-regular-expressions'
+      },
 
       endpoints: {
 
@@ -202,8 +211,11 @@
 
         completion: '/mr/docs/completion.json',
         functions: '/mr/docs/functions.json',
+
+        {% if can_simulate %}
         simulateStart: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/simulate/{{object.id}}/',
         simulateResume: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/simulate/{{object.id}}/'
+        {% endif %}
       }
     };
 
@@ -273,6 +285,8 @@
 
   -include "msgs/msg_send_modal.html"
   -include "delete_modal_include.html"
+
+  %rp-modax#send-message-modal{ header:"Send Message" }
 
   #toolbar
     .actions.pull-right

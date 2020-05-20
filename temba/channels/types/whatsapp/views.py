@@ -9,6 +9,7 @@ from temba.contacts.models import URN
 from temba.orgs.views import OrgPermsMixin
 from temba.request_logs.models import HTTPLog
 from temba.templates.models import TemplateTranslation
+from temba.utils.fields import ExternalURLField
 from temba.utils.views import PostOnlyMixin
 
 from ...models import Channel
@@ -65,7 +66,7 @@ class TemplatesView(OrgPermsMixin, SmartReadView):
 
 class SyncLogsView(OrgPermsMixin, SmartReadView):
     """
-    Displays a simple table of the Whatsapp Templates Synced requests for this channel
+    Displays a simple table of the WhatsApp Templates Synced requests for this channel
     """
 
     model = Channel
@@ -91,7 +92,14 @@ class SyncLogsView(OrgPermsMixin, SmartReadView):
 
         # include all our http sync logs as well
         context["sync_logs"] = (
-            HTTPLog.objects.filter(log_type=HTTPLog.WHATSAPP_TEMPLATES_SYNCED, channel=self.object)
+            HTTPLog.objects.filter(
+                log_type__in=[
+                    HTTPLog.WHATSAPP_TEMPLATES_SYNCED,
+                    HTTPLog.WHATSAPP_TOKENS_SYNCED,
+                    HTTPLog.WHATSAPP_CONTACTS_REFRESHED,
+                ],
+                channel=self.object,
+            )
             .order_by("-created_on")
             .prefetch_related("channel")
         )
@@ -104,7 +112,7 @@ class ClaimView(ClaimViewMixin, SmartFormView):
         country = forms.ChoiceField(
             choices=ALL_COUNTRIES, label=_("Country"), help_text=_("The country this phone number is used in")
         )
-        base_url = forms.URLField(help_text=_("The base URL for your WhatsApp enterprise installation"))
+        base_url = ExternalURLField(help_text=_("The base URL for your WhatsApp enterprise installation"))
         username = forms.CharField(
             max_length=32, help_text=_("The username to access your WhatsApp enterprise account")
         )

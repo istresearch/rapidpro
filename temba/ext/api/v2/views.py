@@ -32,9 +32,8 @@ class ExtChannelReadSerializer(ReadSerializer):
 
         return obj.config
 
-
     def get_device(self, obj):
-        if hasattr(obj, 'channel_type') and obj.channel_type != Channel.TYPE_ANDROID:
+        if not obj.is_android():
             return None
 
         return {
@@ -152,7 +151,7 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
 
     Example:
 
-        POST /ext/api/v2/channels.json?type=PSM&pm_chat_mode=WA&pm_device_id=weezer
+        POST /ext/api/v2/channels.json?type=PSM&chat_mode=WA&device_id=weezer
 
     You will receive a Channel object as a response if successful:
 
@@ -197,6 +196,10 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
         if address:
             queryset = queryset.filter(address=address)
 
+        claim_code = params.get("claim_code")
+        if claim_code:
+            queryset = queryset.filter(config__contains='"claim_code": "{}"'.format(claim_code))
+
         c_type = params.get("type")
         if c_type:
             queryset = queryset.filter(channel_type=c_type)
@@ -229,13 +232,18 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
                 "response": {
                     "status": status.HTTP_200_OK,    # Default to STATUS 200 OK
                     "errors": [],
+                    "dependent_flows": [],
                 },
             }
             try:
                 channel.release()
             except Exception as e:
-                data["response"]["status"] = status.HTTP_500_INTERNAL_SERVER_ERROR
+                data["response"]["status"] = status.HTTP_400_BAD_REQUEST
                 data["response"]["errors"] = e.args
+                dependent_flows = []
+                for flow in channel.dependent_flows.distinct():
+                    dependent_flows.append(flow)
+                data["response"]["dependent_flows"] = dependent_flows
             return Response(content_type="application/json", data=data, status=data["response"]["status"])
 
     @classmethod
