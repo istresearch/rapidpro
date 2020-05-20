@@ -14,8 +14,8 @@
                 {{title}}
 
     -if org_perms.channels.channel_claim
-      %div.channel-create-icon{title:"Add Channel", style:"float:right; margin-right:60px"}
-        %a.glyph.icon-plus-circle{href:"{% url 'channels.channel_claim' %}", style:"color:#3886e9; text-decoration: none; font-size: 36px;"}
+      %div.channel-create-icon{title:"Add Channel", style:"float:right;"}
+        -include "gear_links_include.haml"
 
 -block top-form
   - if view.search_fields and object_list
