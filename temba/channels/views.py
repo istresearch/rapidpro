@@ -1576,9 +1576,33 @@ class ChannelCRUDL(SmartCRUDL):
             return context
 
     class Manage(OrgPermsMixin, SmartListView):
+
+        def get_gear_links(self):
+            links = []
+
+            links.append(dict(title=_("Logout"), style="hidden", href=reverse("users.user_logout")))
+
+            if self.has_org_perm("channels.channel_claim"):
+                links.append(dict(title=_("Add Channel"), href=reverse("channels.channel_claim")))
+
+            return links
+
+        def get_channel_log(self, obj):
+            return "Channel Log"
+
+        def get_settings(self, obj):
+            return "Settings"
+
+        def lookup_field_link(self, context, field, obj):
+            if field == 'channel_log':
+                return reverse('channels.channellog_list', args=[obj.uuid])
+            elif field == 'settings':
+                return reverse("channels.channel_configuration", args=[obj.uuid])
+            else:
+                return reverse('channels.channel_read', args=[obj.uuid])
+
         paginate_by = settings.PAGINATE_CHANNELS_COUNT
         title = _("Manage Channels")
-        # exclude = ("id", "is_active", "created_by", "modified_by", "modified_on")
         permission = "channels.channel_read_list"
 
         def has_org_perm(self, permission):
@@ -1587,9 +1611,9 @@ class ChannelCRUDL(SmartCRUDL):
             return False
 
         link_url = 'uuid@channels.channel_read'
-        link_fields = ("name", "uuid", "address")
-        fields = ('name', 'channel_type', 'created_on', 'modified_on', 'last_seen', 'uuid', 'address',
-                  'country', 'device', 'schemes')
+        link_fields = ("name", "uuid", "address", "channel_log", "settings")
+        field_config = {"channel_type": {"label": "Type"}, "uuid": {"label": "UUID"}}
+        fields = ('name', 'channel_type', 'last_seen', 'uuid', 'address', 'country', 'device', 'channel_log', 'settings')
 
         def get_queryset(self, **kwargs):
             queryset = super().get_queryset(**kwargs)
@@ -1598,6 +1622,7 @@ class ChannelCRUDL(SmartCRUDL):
             if not self.request.user.is_superuser:
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
+
             return queryset.filter(is_active=True).order_by("-role", "channel_type", "created_on") \
                 .prefetch_related("sync_events")
 
