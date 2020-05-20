@@ -77,6 +77,10 @@
       z-index: 1000 !important;
     }
 
+    .org-header .toggle{
+      z-index: 1001 !important;
+    }
+
     #top-menu {
       z-index: inherit;
     }
@@ -112,7 +116,7 @@
       visibility: visible;
       min-height: 1000px;
       width: 100%;
-      
+
       background-color: #f9f9f9;
       background-position: 13px 13px;
       background-image: linear-gradient(0deg, transparent 24%, rgba(61,177,255,0.15) 25%, rgba(61,177,255,0.15) 26%, transparent 27%, transparent 74%, rgba(61,177,255,0.15) 75%, rgba(61,177,255,0.15) 76%, transparent 77%, transparent),linear-gradient(90deg, transparent 24%, rgba(61,177,255,0.15) 25%, rgba(61,177,255,0.15) 26%, transparent 27%, transparent 74%, rgba(61,177,255,0.15) 75%, rgba(61,177,255,0.15) 76%, transparent 77%, transparent);
@@ -166,7 +170,7 @@
     }
 
     const config = {
-      
+
       // TODO: Remove once legacy editor is gone
       // this is only to support manual migration
       forceSaveOnLoad: "{{migrate}}" == "True",
@@ -241,7 +245,7 @@
         var modal = new Modax(gettext('Start Flow'), '{% url "flows.flow_broadcast" object.pk %}');
         var onActions = {
           onSuccess: function(data) {
-            // trigger an update right after sending so we have 
+            // trigger an update right after sending so we have
             // and opportunity to show "starting" status
             window.triggerActivityUpdate();
           },

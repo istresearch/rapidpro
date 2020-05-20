@@ -19,7 +19,7 @@ from temba.contacts.models import (
     WHATSAPP_SCHEME,
     ContactField,
     ContactURN,
-)
+    PM_WHATSAPP_SCHEME, PM_TELEGRAM_SCHEME, PM_SIGNAL_SCHEME, PM_LINE_SCHEME)
 from temba.ivr.models import IVRCall
 from temba.msgs.models import ERRORED, FAILED
 
@@ -38,6 +38,10 @@ URN_SCHEME_ICONS = {
     FCM_SCHEME: "icon-fcm",
     FRESHCHAT_SCHEME: "icon-freshchat",
     WHATSAPP_SCHEME: "icon-whatsapp",
+    PM_WHATSAPP_SCHEME: "icon-whatsapp",
+    PM_TELEGRAM_SCHEME: "icon-telegram",
+    PM_SIGNAL_SCHEME: "icon-signal",
+    PM_LINE_SCHEME: "icon-line",
 }
 
 ACTIVITY_ICONS = {

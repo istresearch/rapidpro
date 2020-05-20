@@ -38,7 +38,7 @@
     setInterval(
     function pollUntilDone(url, interval, timeout) {
 
-      $.get('{% url "ext.api.v2.channels" %}.json?claim_code={{po_qr.data.claim_code}}', function(data) {
+      $.get('{% url "ext.api.v2.channel.status" %}.json?claim_code={{po_qr.data.claim_code}}', function(data) {
         if (Array.isArray(data['results']) && data['results'].length > 0) {
           window.location = '{% url "orgs.org_home" %}';
         }
