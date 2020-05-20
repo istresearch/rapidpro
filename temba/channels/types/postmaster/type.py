@@ -72,6 +72,8 @@ class PostmasterType(ChannelType):
     )
     claim_view = ClaimView
 
+    show_config_page = False
+
     schemes = None
     _scheme = schemes
     max_length = 1600

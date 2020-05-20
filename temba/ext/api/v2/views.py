@@ -1,4 +1,5 @@
 import pytz
+from django.http import Http404
 from rest_framework import serializers, status
 from rest_framework.reverse import reverse
 
@@ -11,7 +12,7 @@ from temba.api.v2.views_base import (
 from rest_framework.response import Response
 from temba.channels.models import Channel
 from temba.ext.api.models import ExtAPIPermission
-from temba.api.models import SSLPermission
+from temba.api.models import SSLPermission, APIPermission
 from temba.api.v2.serializers import (ReadSerializer, WriteSerializer)
 from temba.orgs.models import Org
 import json
@@ -290,5 +291,127 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
             "slug": "channel-delete",
             "fields": [
                 {"name": "uuid", "required": True, "help": "The uuid of the channel to be deleted"},
+            ],
+        }
+
+
+class ExtStatusEndpoint(ListAPIMixin, BaseAPIView):
+    """
+    This endpoint allows you to list channels in your account.
+
+    ## Listing All Channels across all organizations.
+
+    A **GET** returns the list of all channels across all organizations, in the order of last created. Note that for
+    Android devices, all status information is as of the last time it was seen and can be null before the first sync.
+
+     * **uuid** - the UUID of the channel (string), filterable as `uuid`.
+     * **name** - the name of the channel (string).
+     * **address** - the address (e.g. phone number, Twitter handle) of the channel (string), filterable as `address`.
+     * **country** - which country the sim card for this channel is registered for (string, two letter country code).
+     * **device** - information about the device if this is an Android channel:
+        * **name** - the name of the device (string).
+        * **power_level** - the power level of the device (int).
+        * **power_status** - the power status, either ```STATUS_DISCHARGING``` or ```STATUS_CHARGING``` (string).
+        * **power_source** - the source of power as reported by Android (string).
+        * **network_type** - the type of network the device is connected to as reported by Android (string).
+     * **last_seen** - the datetime when this channel was last seen (datetime).
+     * **created_on** - the datetime when this channel was created (datetime).
+     * **config** - the channels config OR errors if the channel creation fails.
+
+    Example:
+
+        GET /ext/api/v2/channel/status.json?claim_code=ABCDEFG
+
+    Response containing the channels for your organization:
+
+        {
+            "next": null,
+            "previous": null,
+            "results": [
+            {
+                "uuid": "09d23a05-47fe-11e4-bfe9-b8f6b119e9ab",
+                "name": "Android Phone",
+                "address": "pm_whatsapp_1",
+                "country": "RW",
+                "config": {
+                    "device_id": "TgPM",
+                    "chat_mode": "TG",
+                    "callback_domain": "83f83d51.ngrok.io",
+                    "org_id": "1",
+                },
+                "device": {
+                    "name": "Nexus 5X",
+                    "power_level": 99,
+                    "power_status": "STATUS_DISCHARGING",
+                    "power_source": "BATTERY",
+                    "network_type": "WIFI",
+                },
+                "last_seen": "2016-03-01T05:31:27.456",
+                "created_on": "2014-06-23T09:34:12.866",
+            }]
+        }
+    """
+
+    permission_classes = (SSLPermission, APIPermission)
+    permission = "channels.channel_claim"
+    model = Channel
+    serializer_class = ExtChannelReadSerializer
+    write_serializer_class = ExtChannelWriteSerializer
+    pagination_class = CreatedOnCursorPagination
+
+    def get_queryset(self):
+        return getattr(self.model, self.model_manager).filter()
+
+    def filter_queryset(self, queryset):
+        params = self.request.query_params
+        queryset = queryset.filter(is_active=True)
+
+        # filter by UUID (optional)
+        uuid = params.get("uuid")
+        if uuid:
+            queryset = queryset.filter(uuid=uuid)
+
+        # filter by address (optional)
+        address = params.get("address")
+        if address:
+            queryset = queryset.filter(address=address)
+
+        claim_code = params.get("claim_code")
+        if claim_code and len(claim_code) > 0:
+            queryset = queryset.filter(config__contains='"claim_code": "{}"'.format(claim_code))
+        else:
+            raise Http404('A valid claim_code request parameter must be provided')
+
+        c_type = params.get("type")
+        if c_type:
+            queryset = queryset.filter(channel_type=c_type)
+
+        c_address = params.get("device_id")
+        if c_address:
+            queryset = queryset.filter(address=c_address)
+
+        c_mode = params.get("mode")
+        if c_mode:
+            queryset = queryset.filter(config__contains='"chat_mode": "{}"'.format(c_mode))
+
+        return queryset
+
+    @classmethod
+    def get_read_explorer(cls):
+        return {
+            "method": "GET",
+            "title": "List Channels across all Orgs",
+            "url": reverse("ext.api.v2.channel.status"),
+            "slug": "channel-status",
+            "params": [
+                {
+                    "name": "uuid",
+                    "required": False,
+                    "help": "A channel UUID to filter by. ex: 09d23a05-47fe-11e4-bfe9-b8f6b119e9ab",
+                },
+                {"claim_code": "claim_code", "required": True, "help": "A claim code generated by the Postoffice service"},
+                {"name": "address", "required": False, "help": "A channel address to filter by. ex: +250783530001"},
+                {"device_id": "device id", "required": False, "help": "A postmaster Device ID  to filter by. ex: pm_whatsapp_1"},
+                {"mode": "chat mode", "required": False, "help": "A Postmaster chat mode to filter by. ex WA, TG, SMS"},
             ],
         }
