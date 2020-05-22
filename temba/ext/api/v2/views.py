@@ -243,7 +243,7 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
                 data["response"]["errors"] = e.args
                 dependent_flows = []
                 for flow in channel.dependent_flows.distinct():
-                    dependent_flows.append(flow)
+                    dependent_flows.append(flow.as_json())
                 data["response"]["dependent_flows"] = dependent_flows
             return Response(content_type="application/json", data=data, status=data["response"]["status"])
 
