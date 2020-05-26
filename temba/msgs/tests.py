@@ -43,19 +43,9 @@ from temba.schedules.models import Schedule
 from temba.tests import AnonymousOrg, TembaTest
 from temba.tests.engine import MockSessionWriter
 from temba.tests.s3 import MockS3Client
-<<<<<<< HEAD
-from temba.utils import dict_to_struct, json
-from temba.utils.dates import datetime_to_str
-from temba.utils.expressions import get_function_listing
-from temba.values.constants import Value
-
-from .management.commands.msg_console import MessageConsole
-from .tasks import squash_msgcounts
-=======
 from temba.utils import json
 
 from .tasks import retry_errored_messages, squash_msgcounts
->>>>>>> 5346833eb01384ae2fcf312d2e72d191c994b2d9
 from .templatetags.sms import as_icon
 
 
