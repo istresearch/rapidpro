@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from temba.channels.types.postmaster.views import ClaimView
@@ -5,11 +7,12 @@ from temba.channels.types.postmaster.views import ClaimView
 from temba.utils.fields import SelectWidget
 from .. import TYPES
 
-from ...models import ChannelType
-from ...views import TYPE_UPDATE_FORM_CLASSES, UpdateChannelForm
+from ...models import ChannelType, Channel
+from ...views import UpdateChannelForm
 
 
 class UpdatePostmasterForm(UpdateChannelForm):
+    CHAT_MODE_CHOICES = getattr(settings, "CHAT_MODE_CHOICES", ())
 
     class Meta(UpdateChannelForm.Meta):
         fields = "name", "address", "schemes"
@@ -19,6 +22,37 @@ class UpdatePostmasterForm(UpdateChannelForm):
         labels = {"schemes": _("Chat Mode")}
         from temba.channels.types.postmaster.views import ClaimView as ClaimView
         widgets = {"schemes": SelectWidget(choices=ClaimView.Form.CHAT_MODE_CHOICES, attrs={"style": "width:360px"})}
+
+    def clean(self):
+        self._validate_unique = True
+        scheme = self.cleaned_data['schemes'][0]
+        channel = self.object
+        if channel.org is not None:
+            channels = Channel.objects.filter(channel_type=ClaimView.code, is_active=True)
+            exists = None
+            for ch in channels:
+                if ch.config.get('chat_mode') == scheme and ch.org.id == channel.org.id:
+                    exists = True
+                    break
+
+            if bool(exists):
+                raise ValidationError(_("A chat mode for {} already exists for the {} org"
+                                        .format(dict(self.CHAT_MODE_CHOICES)[config['chat_mode']], channel.org.name)))
+        return self.cleaned_data
+
+    def save(self, commit=True):
+        config = self.object.config
+        config[Channel.CONFIG_CHAT_MODE] = self.cleaned_data['schemes'][0]
+
+        import temba.contacts.models as Contacts
+        prefix = 'PM_'
+        pm_chat_mode = config['chat_mode']
+        if pm_chat_mode == 'SMS':
+            prefix = ''
+        schemes = [getattr(Contacts,
+                           '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[pm_chat_mode]).upper())]
+        self.object.schemes = schemes
+        return super().save(commit=commit)
 
 
 class PostmasterType(ChannelType):
@@ -37,6 +71,8 @@ class PostmasterType(ChannelType):
         """Use Postmaster compatible android devices with Pulse Engage"""
     )
     claim_view = ClaimView
+
+    show_config_page = False
 
     schemes = None
     _scheme = schemes
@@ -57,7 +93,7 @@ class PostmasterType(ChannelType):
     def schemes(self):
         for type in TYPES:
             if self._scheme is not None and type.name.lower() == self._scheme.lower():
-                self.update_form = TYPE_UPDATE_FORM_CLASSES.get(type.code)
+                self.update_form = UpdatePostmasterForm
         return self._scheme
 
     @schemes.setter

@@ -77,6 +77,10 @@
       z-index: 1000 !important;
     }
 
+    .org-header .toggle{
+      z-index: 1001 !important;
+    }
+
     #top-menu {
       z-index: inherit;
     }
@@ -112,7 +116,7 @@
       visibility: visible;
       min-height: 1000px;
       width: 100%;
-      
+
       background-color: #f9f9f9;
       background-position: 13px 13px;
       background-image: linear-gradient(0deg, transparent 24%, rgba(61,177,255,0.15) 25%, rgba(61,177,255,0.15) 26%, transparent 27%, transparent 74%, rgba(61,177,255,0.15) 75%, rgba(61,177,255,0.15) 76%, transparent 77%, transparent),linear-gradient(90deg, transparent 24%, rgba(61,177,255,0.15) 25%, rgba(61,177,255,0.15) 26%, transparent 27%, transparent 74%, rgba(61,177,255,0.15) 75%, rgba(61,177,255,0.15) 76%, transparent 77%, transparent);
@@ -159,11 +163,14 @@
     }
 
     function handleActivityClicked(nodeUUID, count) {
-      showCompose(false, null, nodeUUID, count);
+      var endpoint = '{% url "msgs.broadcast_send" %}';
+      var modal = document.querySelector("#send-message-modal");
+      modal.endpoint = endpoint + "?step_node=" + nodeUUID + "&count=" + count;
+      modal.open = true;
     }
 
     const config = {
-      
+
       // TODO: Remove once legacy editor is gone
       // this is only to support manual migration
       forceSaveOnLoad: "{{migrate}}" == "True",
@@ -176,6 +183,12 @@
       onActivityClicked: handleActivityClicked,
       mutable: {{mutable|lower}},
       filters: {{feature_filters|to_json}},
+
+      help: {
+        legacy_extra: 'https://help.nyaruka.com/en/articles/3747485-migrating-away-from-legacy_extra',
+        missing_dependency: 'http://help.nyaruka.com/en/articles/3747650-fixing-missing-dependencies',
+        invalid_regex: 'http://help.nyaruka.com/en/articles/3747654-invalid-regular-expressions'
+      },
 
       endpoints: {
 
@@ -202,8 +215,11 @@
 
         completion: '/mr/docs/completion.json',
         functions: '/mr/docs/functions.json',
+
+        {% if can_simulate %}
         simulateStart: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/simulate/{{object.id}}/',
         simulateResume: '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/flow/simulate/{{object.id}}/'
+        {% endif %}
       }
     };
 
@@ -229,7 +245,7 @@
         var modal = new Modax(gettext('Start Flow'), '{% url "flows.flow_broadcast" object.pk %}');
         var onActions = {
           onSuccess: function(data) {
-            // trigger an update right after sending so we have 
+            // trigger an update right after sending so we have
             // and opportunity to show "starting" status
             window.triggerActivityUpdate();
           },
@@ -273,6 +289,8 @@
 
   -include "msgs/msg_send_modal.html"
   -include "delete_modal_include.html"
+
+  %rp-modax#send-message-modal{ header:"Send Message" }
 
   #toolbar
     .actions.pull-right

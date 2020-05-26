@@ -19,7 +19,7 @@ from temba.contacts.models import (
     WHATSAPP_SCHEME,
     ContactField,
     ContactURN,
-)
+    PM_WHATSAPP_SCHEME, PM_TELEGRAM_SCHEME, PM_SIGNAL_SCHEME, PM_LINE_SCHEME)
 from temba.ivr.models import IVRCall
 from temba.msgs.models import ERRORED, FAILED
 
@@ -38,6 +38,10 @@ URN_SCHEME_ICONS = {
     FCM_SCHEME: "icon-fcm",
     FRESHCHAT_SCHEME: "icon-freshchat",
     WHATSAPP_SCHEME: "icon-whatsapp",
+    PM_WHATSAPP_SCHEME: "icon-whatsapp",
+    PM_TELEGRAM_SCHEME: "icon-telegram",
+    PM_SIGNAL_SCHEME: "icon-signal",
+    PM_LINE_SCHEME: "icon-line",
 }
 
 ACTIVITY_ICONS = {
@@ -199,6 +203,16 @@ def history_class(item):
             classes.append("warning")
         elif item["type"] == "campaign_fired" and obj.fired_result == EventFire.RESULT_SKIPPED:
             classes.append("skipped")
+
+    if item["type"] not in (
+        "call_started",
+        "campaign_fired",
+        "flow_entered",
+        "flow_exited",
+        "msg_created",
+        "msg_received",
+    ):
+        classes.append("detail-event")
 
     return " ".join(classes)
 
