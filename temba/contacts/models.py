@@ -86,7 +86,6 @@ URN_SCHEME_CONFIG = (
     (FCM_SCHEME, _("Firebase Cloud Messaging identifier"), FCM_SCHEME),
     (WHATSAPP_SCHEME, _("WhatsApp identifier"), WHATSAPP_SCHEME),
     (FRESHCHAT_SCHEME, _("Freshchat identifier"), FRESHCHAT_SCHEME),
-    (SMS_SCHEME, _("SMS identifier"), SMS_SCHEME),
     (PM_WHATSAPP_SCHEME, _("Postmaster WhatsApp identifier"), PM_WHATSAPP_SCHEME),
     (PM_TELEGRAM_SCHEME, _("Postmaster Telegram identifier"), PM_TELEGRAM_SCHEME),
     (PM_SIGNAL_SCHEME, _("Postmaster Signal identifier"), PM_SIGNAL_SCHEME),
