@@ -25,19 +25,20 @@ class UpdatePostmasterForm(UpdateChannelForm):
 
     def clean(self):
         self._validate_unique = True
+        config = self.object.config
         scheme = self.cleaned_data['schemes'][0]
         channel = self.object
         if channel.org is not None:
-            channels = Channel.objects.filter(channel_type=ClaimView.code, is_active=True)
-            exists = None
+            channels = Channel.objects.filter(channel_type=ClaimView.code, is_active=True, address=config['device_id'])
             for ch in channels:
                 if ch.config.get('chat_mode') == scheme and ch.org.id == channel.org.id:
-                    exists = True
+                    if ch.__eq__(channel):
+                        break
+                    else:
+                        raise ValidationError(_("A chat mode for {} already exists for the {} org".
+                                                format(scheme, channel.org.name)))
                     break
 
-            if bool(exists):
-                raise ValidationError(_("A chat mode for {} already exists for the {} org"
-                                        .format(dict(self.CHAT_MODE_CHOICES)[config['chat_mode']], channel.org.name)))
         return self.cleaned_data
 
     def save(self, commit=True):
@@ -49,6 +50,9 @@ class UpdatePostmasterForm(UpdateChannelForm):
         pm_chat_mode = config['chat_mode']
         if pm_chat_mode == 'SMS':
             prefix = ''
+
+        self.object.name = '{} [{}]'.format(config['device_name'],
+                                            '{}{}'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[pm_chat_mode]).lower())
         schemes = [getattr(Contacts,
                            '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[pm_chat_mode]).upper())]
         self.object.schemes = schemes
