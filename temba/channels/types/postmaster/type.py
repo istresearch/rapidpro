@@ -9,7 +9,7 @@ from .. import TYPES
 
 from ...models import ChannelType, Channel
 from ...views import UpdateChannelForm
-
+from django import forms
 
 class UpdatePostmasterForm(UpdateChannelForm):
     CHAT_MODE_CHOICES = getattr(settings, "CHAT_MODE_CHOICES", ())
@@ -17,11 +17,19 @@ class UpdatePostmasterForm(UpdateChannelForm):
     class Meta(UpdateChannelForm.Meta):
         fields = "name", "address", "schemes"
         config_fields = ["schemes", ]
-        readonly = ("address",)
+        readonly = ("address", "name")
         helps = {"schemes": _("The Chat Mode that Postmaster will operate under.")}
         labels = {"schemes": _("Chat Mode")}
+
         from temba.channels.types.postmaster.views import ClaimView as ClaimView
-        widgets = {"schemes": SelectWidget(choices=ClaimView.Form.CHAT_MODE_CHOICES, attrs={"style": "width:360px"})}
+        prefix = 'PM_'
+        chat_mode_choices = []
+        for value, label in ClaimView.Form.CHAT_MODE_CHOICES:
+            if value == 'SMS':
+                prefix = ''
+            chat_mode_choices.append(('{}{}'.format(prefix, label).lower(), label))
+        chat_mode_choices = tuple(chat_mode_choices)
+        widgets = {"schemes": SelectWidget(choices=chat_mode_choices, attrs={"style": "width:360px"})}
 
     def clean(self):
         self._validate_unique = True
@@ -48,7 +56,15 @@ class UpdatePostmasterForm(UpdateChannelForm):
         import temba.contacts.models as Contacts
         prefix = 'PM_'
         pm_chat_mode = config['chat_mode']
-        if pm_chat_mode == 'SMS':
+
+        if len(pm_chat_mode.split('pm_')) > 1:
+            pm_chat_mode = pm_chat_mode.split('pm_')[1]
+            for value, label in ClaimView.Form.CHAT_MODE_CHOICES:
+                if label.lower() == pm_chat_mode:
+                    pm_chat_mode = value
+
+        if pm_chat_mode.upper() == 'SMS':
+            pm_chat_mode = 'SMS'
             prefix = ''
 
         self.object.name = '{} [{}]'.format(config['device_name'],
