@@ -4,7 +4,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from temba.channels.types.postmaster.views import ClaimView
 
-from temba.utils.fields import SelectWidget
 from .. import TYPES
 
 from ...models import ChannelType, Channel
@@ -14,21 +13,32 @@ from ...views import UpdateChannelForm
 class UpdatePostmasterForm(UpdateChannelForm):
     CHAT_MODE_CHOICES = getattr(settings, "CHAT_MODE_CHOICES", ())
 
+    def __init__(self, *args, **kwargs):
+        super(UpdatePostmasterForm, self).__init__(*args, **kwargs)
+
     class Meta(UpdateChannelForm.Meta):
         fields = "name", "address", "schemes"
-        config_fields = ["schemes", ]
-        readonly = ("address",)
+        readonly = ("address", "schemes")
         helps = {"schemes": _("The Chat Mode that Postmaster will operate under.")}
         labels = {"schemes": _("Chat Mode")}
+
         from temba.channels.types.postmaster.views import ClaimView as ClaimView
-        widgets = {"schemes": SelectWidget(choices=ClaimView.Form.CHAT_MODE_CHOICES, attrs={"style": "width:360px"})}
+        prefix = 'PM_'
+        chat_mode_choices = []
+        for value, label in ClaimView.Form.CHAT_MODE_CHOICES:
+            if value == 'SMS':
+                prefix = ''
+            chat_mode_choices.append(('{}{}'.format(prefix, label).lower(), label))
+        chat_mode_choices = tuple(chat_mode_choices)
 
     def clean(self):
         self._validate_unique = True
         config = self.object.config
-        scheme = self.cleaned_data['schemes'][0]
+        scheme = None
+        if hasattr(self.cleaned_data, 'scheme'):
+            scheme = self.cleaned_data['schemes'][0]
         channel = self.object
-        if channel.org is not None:
+        if channel.org is not None and scheme is not None:
             channels = Channel.objects.filter(channel_type=ClaimView.code, is_active=True, address=config['device_id'])
             for ch in channels:
                 if ch.config.get('chat_mode') == scheme and ch.org.id == channel.org.id:
@@ -43,16 +53,24 @@ class UpdatePostmasterForm(UpdateChannelForm):
 
     def save(self, commit=True):
         config = self.object.config
-        config[Channel.CONFIG_CHAT_MODE] = self.cleaned_data['schemes'][0]
+
+        if hasattr(self.cleaned_data, 'schemes'):
+            config[Channel.CONFIG_CHAT_MODE] = self.cleaned_data['schemes'][0]
 
         import temba.contacts.models as Contacts
         prefix = 'PM_'
         pm_chat_mode = config['chat_mode']
-        if pm_chat_mode == 'SMS':
+
+        if len(pm_chat_mode.split('pm_')) > 1:
+            pm_chat_mode = pm_chat_mode.split('pm_')[1]
+            for value, label in ClaimView.Form.CHAT_MODE_CHOICES:
+                if label.lower() == pm_chat_mode:
+                    pm_chat_mode = value
+
+        if pm_chat_mode.upper() == 'SMS':
+            pm_chat_mode = 'SMS'
             prefix = ''
 
-        self.object.name = '{} [{}]'.format(config['device_name'],
-                                            '{}{}'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[pm_chat_mode]).lower())
         schemes = [getattr(Contacts,
                            '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[pm_chat_mode]).upper())]
         self.object.schemes = schemes
