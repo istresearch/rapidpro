@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@nyaruka/flow-editor": "1.8.8",
-    "coffeescript": "1.12.7",
-    "less": "2.7.1",
+    "coffeescript": "2.5.1",
+    "less": "3.11.1",
     "react": "16.3.2",
     "react-dom": "16.3.3"
   },
