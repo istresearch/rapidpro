@@ -729,7 +729,7 @@ GROUP_PERMISSIONS = {
         "orgs.usersettings_update",
         "channels.channel_api",
         "channels.channel_bulk_sender_options",
-        # "channels.channel_claim",
+        "channels.channel_claim",
         "channels.channel_configuration",
         "channels.channel_create",
         "channels.channel_create_bulk_sender",
