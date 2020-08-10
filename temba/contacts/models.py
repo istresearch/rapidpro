@@ -69,6 +69,7 @@ PM_WHATSAPP_SCHEME = "pm_whatsapp"
 PM_TELEGRAM_SCHEME = "pm_telegram"
 PM_SIGNAL_SCHEME = "pm_signal"
 PM_LINE_SCHEME = "pm_line"
+PM_VK_SCHEME = "pm_vk"
 
 # Scheme, Label, Export/Import Header, Context Key
 URN_SCHEME_CONFIG = (
@@ -90,6 +91,7 @@ URN_SCHEME_CONFIG = (
     (PM_TELEGRAM_SCHEME, _("Postmaster Telegram identifier"), PM_TELEGRAM_SCHEME),
     (PM_SIGNAL_SCHEME, _("Postmaster Signal identifier"), PM_SIGNAL_SCHEME),
     (PM_LINE_SCHEME, _("Postmaster Line identifier"), PM_LINE_SCHEME),
+    (PM_VK_SCHEME, _("Postmaster VK identifier"), PM_VK_SCHEME),
     (VK_SCHEME, _("VK identifier"), VK_SCHEME),
 )
 
