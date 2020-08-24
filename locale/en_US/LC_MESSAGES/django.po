@@ -4490,20 +4490,20 @@ msgstr ""
 msgid "Download Now"
 msgstr ""
 
-msgid "Scenarios"
-msgstr ""
+msgid "Campaigns"
+msgstr "Scenarios"
 
 msgid "(Archived)"
 msgstr ""
 
-msgid "No group assigned to this scenario"
-msgstr ""
+msgid "No group assigned to this campaign"
+msgstr "No group assigned to this scenario"
 
-msgid "No events in this scenario yet."
-msgstr ""
+msgid "No events in this campaign yet."
+msgstr "No events in this scenario yet."
 
-msgid "Update Scenario"
-msgstr ""
+msgid "Update Campaign"
+msgstr "Update Scenario"
 
 msgid "If the contact is already active in a flow"
 msgstr ""
@@ -7461,8 +7461,8 @@ msgstr ""
 msgid "Everything Else"
 msgstr ""
 
-msgid "Flows and Scenarios"
-msgstr ""
+msgid "Flows and Campaigns"
+msgstr "Flows and Scenarios"
 
 msgid "Select Everthing Else"
 msgstr ""
@@ -7470,8 +7470,8 @@ msgstr ""
 msgid "Select All"
 msgstr ""
 
-msgid "Import Flows and Scenarios"
-msgstr ""
+msgid "Import Flows and Campaigns"
+msgstr "Import Flows and Scenarios"
 
 msgid "If you have an export file with flows and or campaigns, select it below to import it into your account."
 msgstr ""

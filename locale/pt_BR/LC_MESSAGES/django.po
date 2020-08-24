@@ -122,7 +122,7 @@ msgid "Edit"
 msgstr "Editar"
 
 #, fuzzy
-msgid "Update Scenario"
+msgid "Update Campaign"
 msgstr "Atualizar campanha"
 
 #, fuzzy
@@ -5726,7 +5726,7 @@ msgstr "Resultados ao vivo"
 
 #, fuzzy
 #| msgid "campaigns"
-msgid "Scenarios"
+msgid "Campaigns"
 msgstr "campanhas"
 
 #, fuzzy
@@ -5741,7 +5741,7 @@ msgstr "O nome deste contato"
 
 #, fuzzy
 #| msgid "The name of this contact"
-msgid "No events in this scenario yet."
+msgid "No events in this campaign yet."
 msgstr "O nome deste contato"
 
 #, fuzzy
@@ -9643,7 +9643,7 @@ msgid "Everything Else"
 msgstr "Ignorar todo o resto"
 
 #, fuzzy
-msgid "Flows and Scenarios"
+msgid "Flows and Campaigns"
 msgstr "Atualizar campanha"
 
 #, fuzzy
@@ -9655,7 +9655,7 @@ msgid "Select All"
 msgstr "Enviar todas"
 
 #, fuzzy
-msgid "Import Flows and Scenarios"
+msgid "Import Flows and Campaigns"
 msgstr "Atualizar campanha"
 
 msgid "If you have an export file with flows and or campaigns, select it below to import it into your account."

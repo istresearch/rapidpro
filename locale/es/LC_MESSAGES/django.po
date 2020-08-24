@@ -116,7 +116,7 @@ msgstr "Evento del transmisor"
 msgid "Edit"
 msgstr "Editar"
 
-msgid "Update Scenario"
+msgid "Update Campaign"
 msgstr "Campaña de actualización"
 
 #, fuzzy
@@ -6032,7 +6032,7 @@ msgstr "Descargar Resultados"
 
 #, fuzzy
 #| msgid "campaigns"
-msgid "Scenarios"
+msgid "Campaigns"
 msgstr "campañas"
 
 #, fuzzy
@@ -6042,12 +6042,12 @@ msgstr "Archivado"
 
 #, fuzzy
 #| msgid "The name of this contact"
-msgid "No group assigned to this scenario"
+msgid "No group assigned to this campaign"
 msgstr "El nombre de este contacto"
 
 #, fuzzy
 #| msgid "The name of this contact"
-msgid "No events in this scenario yet."
+msgid "No events in this campaign yet."
 msgstr "El nombre de este contacto"
 
 #, fuzzy
@@ -10399,7 +10399,7 @@ msgstr "Elegir Grupo"
 msgid "Everything Else"
 msgstr "Todo lo demás"
 
-msgid "Flows and Scenarios"
+msgid "Flows and Campaigns"
 msgstr "Flujos y Campañas"
 
 msgid "Select Everthing Else"
@@ -10408,7 +10408,7 @@ msgstr "Elegir todo lo demás"
 msgid "Select All"
 msgstr "Elegir todos"
 
-msgid "Import Flows and Scenarios"
+msgid "Import Flows and Campaigns"
 msgstr "Importar Flujos y Campañas"
 
 msgid "If you have an export file with flows and or campaigns, select it below to import it into your account."

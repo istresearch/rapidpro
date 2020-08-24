@@ -103,7 +103,7 @@ msgstr "Ajouter un évènement"
 msgid "Edit"
 msgstr "Modifier"
 
-msgid "Update Scenario"
+msgid "Update Campaign"
 msgstr " mise à jour de campagne"
 
 msgid "Service"
@@ -4716,7 +4716,7 @@ msgstr "Votre téléchargement devrait démarrer automatiquement. S'il ne démar
 msgid "Download Now"
 msgstr "Télécharger maintenant"
 
-msgid "Scenarios"
+msgid "Campaigns"
 msgstr "Campagnes"
 
 msgid "(Archived)"
@@ -4725,7 +4725,7 @@ msgstr "(Archivé)"
 msgid "No group assigned to this campaign"
 msgstr "Aucun groupe affecté à cette campagne"
 
-msgid "No events in this scenario yet."
+msgid "No events in this campaign yet."
 msgstr "Aucun événement dans cette campagne pour le moment."
 
 msgid "If the contact is already active in a flow"
@@ -8549,7 +8549,7 @@ msgstr "Sélectionner un groupe"
 msgid "Everything Else"
 msgstr "Tout le reste"
 
-msgid "Flows and Scenarios"
+msgid "Flows and Campaigns"
 msgstr "Flux et campagnes"
 
 msgid "Select Everthing Else"
@@ -8558,7 +8558,7 @@ msgstr "Sélectionner tout le reste"
 msgid "Select All"
 msgstr "Tout sélectionner"
 
-msgid "Import Flows and Scenarios"
+msgid "Import Flows and Campaigns"
 msgstr "Importer des flux et des campagnes"
 
 msgid "If you have an export file with flows and or campaigns, select it below to import it into your account."
