@@ -723,7 +723,7 @@ class CampaignsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
      * **uuid** - the UUID of the campaign (string), filterable as `uuid`.
      * **name** - the name of the campaign (string).
      * **archived** - whether this campaign is archived (boolean)
-     * **group** - the group this campaign operates on (object).
+     * **group** - the group this scenario (campaign) operates on (object).
      * **created_on** - when the campaign was created (datetime), filterable as `before` and `after`.
 
     Example:
@@ -813,7 +813,7 @@ class CampaignsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
     def get_read_explorer(cls):
         return {
             "method": "GET",
-            "title": "List Campaigns",
+            "title": "List Scenarios (Campaigns)",
             "url": reverse("api.v2.campaigns"),
             "slug": "campaign-list",
             "params": [{"name": "uuid", "required": False, "help": "A campaign UUID to filter by"}],
@@ -823,16 +823,16 @@ class CampaignsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
     def get_write_explorer(cls):
         return {
             "method": "POST",
-            "title": "Add or Update Campaigns",
+            "title": "Add or Update Scenarios (Campaigns)",
             "url": reverse("api.v2.campaigns"),
             "slug": "campaign-write",
-            "params": [{"name": "uuid", "required": False, "help": "UUID of the campaign to be updated"}],
+            "params": [{"name": "uuid", "required": False, "help": "UUID of the scenario (campaign) to be updated"}],
             "fields": [
-                {"name": "name", "required": True, "help": "The name of the campaign"},
+                {"name": "name", "required": True, "help": "The name of the scenario (campaign)"},
                 {
                     "name": "group",
                     "required": True,
-                    "help": "The UUID of the contact group operated on by the campaign",
+                    "help": "The UUID of the contact group operated on by the scenario (campaign)",
                 },
             ],
         }
@@ -1000,7 +1000,7 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAP
     def get_write_explorer(cls):
         return {
             "method": "POST",
-            "title": "Add or Update Campaign Events",
+            "title": "Add or Update Scenario Events",
             "url": reverse("api.v2.campaign_events"),
             "slug": "campaign-event-write",
             "params": [{"name": "uuid", "required": False, "help": "The UUID of the campaign event to update"}],

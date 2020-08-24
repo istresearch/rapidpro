@@ -5,7 +5,7 @@
 
 -block title
   %h1
-    -trans "Import Flows and Campaigns"
+    -trans "Import Flows and Scenarios"
 
 - block pjax
 
@@ -16,7 +16,7 @@
       .row{style:"height:250px;"}
         .span9
           %p
-            -trans "If you have an export file with flows and or campaigns, select it below to import it into your account."
+            -trans "If you have an export file with flows and or scenarios, select it below to import it into your account."
 
           - block import-status
             %form#import-form.smartmin-form.horizontal-form{method:"post", action:"{% url 'orgs.org_import' %}", enctype:"multipart/form-data"}
@@ -43,10 +43,10 @@
                 .attn
                   -trans "Warning!"
 
-                -trans "If you have flows or campaigns with the same names or UUIDs as the ones you are importing they will be replaced and all history for them will be lost."
+                -trans "If you have flows or scenarios with the same names or UUIDs as the ones you are importing they will be replaced and all history for them will be lost."
                 %p
                 %b
-                  -trans "Do not proceed unless you are willing to replace your existing flows and campaigns."
+                  -trans "Do not proceed unless you are willing to replace your existing flows and scenarios."
 
               .form-buttons
                 %input.btn.btn-primary{type:"submit", value:'{% trans "Import" %}'}

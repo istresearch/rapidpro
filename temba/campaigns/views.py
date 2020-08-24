@@ -20,7 +20,7 @@ from .models import Campaign, CampaignEvent, EventFire
 
 
 class CampaignActionForm(BaseActionForm):
-    allowed_actions = (("archive", "Archive Campaigns"), ("restore", "Restore Campaigns"))
+    allowed_actions = (("archive", "Archive Scenarios"), ("restore", "Restore Scenarios"))
 
     model = Campaign
     has_is_active = True
@@ -89,7 +89,7 @@ class CampaignCRUDL(SmartCRUDL):
                 campaign = Campaign.objects.filter(id=campaign_id, is_active=True, is_archived=False)
 
                 if not campaign.exists():
-                    raise Http404("Campaign not found")
+                    raise Http404("Scenario not found")
 
         def get_success_url(self):
             return reverse("campaigns.campaign_read", args=[self.object.pk])
@@ -156,18 +156,13 @@ class CampaignCRUDL(SmartCRUDL):
                         dict(title=_("Export"), href=f"{reverse('orgs.org_export')}?campaign={self.object.id}")
                     )
 
-                if self.has_org_perm("orgs.org_export"):
-                    links.append(
-                        dict(title=_("Export"), href=f"{reverse('orgs.org_export')}?campaign={self.object.id}")
-                    )
-
                 if self.has_org_perm("campaigns.campaign_update"):
                     links.append(
                         dict(
                             id="campaign-update",
                             title=_("Edit"),
                             href=reverse("campaigns.campaign_update", args=[self.object.pk]),
-                            modax=_("Update Campaign"),
+                            modax=_("Update Scenario"),
                         )
                     )
 
@@ -240,6 +235,7 @@ class CampaignCRUDL(SmartCRUDL):
             context["folders"] = self.get_folders()
             context["request_url"] = self.request.path
             context["actions"] = self.actions
+            context["title"] = 'Scenarios'
             return context
 
         def get_folders(self):
@@ -284,7 +280,7 @@ class CampaignCRUDL(SmartCRUDL):
 
         fields = ()
         success_url = "id@campaigns.campaign_read"
-        success_message = _("Campaign archived")
+        success_message = _("Scenario archived")
 
         def save(self, obj):
             obj.apply_action_archive(self.request.user, Campaign.objects.filter(id=obj.id))
@@ -293,7 +289,7 @@ class CampaignCRUDL(SmartCRUDL):
     class Activate(OrgMixin, OrgPermsMixin, SmartUpdateView):
         fields = ()
         success_url = "id@campaigns.campaign_read"
-        success_message = _("Campaign activated")
+        success_message = _("Scenario activated")
 
         def save(self, obj):
             obj.apply_action_restore(self.request.user, Campaign.objects.filter(id=obj.id))
@@ -529,7 +525,7 @@ class CampaignEventCRUDL(SmartCRUDL):
         def pre_process(self, request, *args, **kwargs):
             event = self.get_object()
             if not event.is_active:
-                messages.error(self.request, "Campaign event no longer exists")
+                messages.error(self.request, "Scenario event no longer exists")
                 return HttpResponseRedirect(reverse("campaigns.campaign_read", args=[event.campaign.pk]))
 
         def get_object_org(self):
@@ -727,7 +723,7 @@ class CampaignEventCRUDL(SmartCRUDL):
                 campaign = Campaign.objects.filter(id=campaign_id, is_active=True, is_archived=False)
 
                 if not campaign.exists():
-                    raise Http404("Campaign not found")
+                    raise Http404("Scenario not found")
 
         def derive_fields(self):
 

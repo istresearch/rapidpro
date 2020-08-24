@@ -8,7 +8,7 @@
     }
 
 -block page-title
-  -trans "Campaigns"
+  -trans "Scenarios"
 
 -block title-icon
   .title-icon
@@ -27,12 +27,12 @@
           .span3.sidebox
             %div{style:"margin-bottom: 10px"}
               - if org_perms.campaigns.campaign_create
-                %rp-modax{ header:"Create Campaign", endpoint:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/create/" }
-                  %rp-button{ name:"Create Campaign", primary: 'true' }
+                %rp-modax{ header:"Create Scenario", endpoint:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/create/" }
+                  %rp-button{ name:"Create Scenario", primary: 'true' }
 
             #sidebar-nav
               %ul.nav.nav-list.level1
-                %li.nav-header Campaigns
+                %li.nav-header Scenarios
                 - for folder in folders
                   %li{'class':"{% if folder.url == request_url %}active{% endif %}" }
                     %a{'href':'{{folder.url}}'}
@@ -77,7 +77,7 @@
 
                   {% empty %}
                   <tr class="empty_list">
-                    <td colspan=3>No matching campaigns.</td>
+                    <td colspan=3>No matching scenarios.</td>
                   </tr>
                 {% endfor %}
 
@@ -104,7 +104,7 @@
 
     {% if org_perms.campaigns.campaign_update %}
       $(document).on('click', '.update-campaign', function(e){
-         var modal = new Modax('Update Campaign', '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/update/' + $(this).data("object-id") + '/');
+         var modal = new Modax('Update Scenario', '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/update/' + $(this).data("object-id") + '/');
          modal.setIcon('icon-feed');
          modal.setRedirectOnSuccess(true);
          modal.show();

@@ -156,7 +156,7 @@
 
   -blocktrans
     Select all of the items below that you would like to include in your export. We've grouped them
-    together based on which flows and campaigns work with each other. Any related triggers will automatically
+    together based on which flows and scenarios work with each other. Any related triggers will automatically
     be included in the export.
 
   %form.export{method:'POST'}
@@ -191,7 +191,7 @@
           -trans "Everything Else"
       -else
         %h3
-          -trans "Flows and Campaigns"
+          -trans "Flows and Scenarios"
 
       .exportables
         -if buckets

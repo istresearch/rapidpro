@@ -586,7 +586,7 @@ class ContactField(SmartModel):
                         field.value_type == Value.TYPE_DATETIME
                         and field.campaign_events.filter(is_active=True).exists()
                     ):
-                        raise ValueError("Cannot change field type for '%s' while it is used in campaigns." % key)
+                        raise ValueError("Cannot change field type for '%s' while it is used in scenarios." % key)
 
                     field.value_type = value_type
                     changed = True

@@ -78,12 +78,12 @@ msgstr "El usuario no tiene permiso para crear un SMS"
 
 #, fuzzy
 #| msgid "The name of this contact"
-msgid "The name of this campaign"
+msgid "The name of this scenario"
 msgstr "El nombre de este contacto"
 
 #, fuzzy
 #| msgid "The org this call is connected to"
-msgid "The group this campaign operates on"
+msgid "The group this scenario operates on"
 msgstr "La organización a la que esta llamada está conectada"
 
 msgid "Minutes"
@@ -116,7 +116,7 @@ msgstr "Evento del transmisor"
 msgid "Edit"
 msgstr "Editar"
 
-msgid "Update Campaign"
+msgid "Update Scenario"
 msgstr "Campaña de actualización"
 
 #, fuzzy
@@ -6032,7 +6032,7 @@ msgstr "Descargar Resultados"
 
 #, fuzzy
 #| msgid "campaigns"
-msgid "Campaigns"
+msgid "Scenarios"
 msgstr "campañas"
 
 #, fuzzy
@@ -6042,12 +6042,12 @@ msgstr "Archivado"
 
 #, fuzzy
 #| msgid "The name of this contact"
-msgid "No group assigned to this campaign"
+msgid "No group assigned to this scenario"
 msgstr "El nombre de este contacto"
 
 #, fuzzy
 #| msgid "The name of this contact"
-msgid "No events in this campaign yet."
+msgid "No events in this scenario yet."
 msgstr "El nombre de este contacto"
 
 #, fuzzy
@@ -8650,7 +8650,7 @@ msgstr "Sin flujos que correspondan."
 
 #, fuzzy
 #| msgid "Flows and Campaigns"
-msgid "No related campaigns."
+msgid "No related scenarios."
 msgstr "Flujos y Campañas"
 
 #, fuzzy
@@ -10399,7 +10399,7 @@ msgstr "Elegir Grupo"
 msgid "Everything Else"
 msgstr "Todo lo demás"
 
-msgid "Flows and Campaigns"
+msgid "Flows and Scenarios"
 msgstr "Flujos y Campañas"
 
 msgid "Select Everthing Else"
@@ -10408,7 +10408,7 @@ msgstr "Elegir todo lo demás"
 msgid "Select All"
 msgstr "Elegir todos"
 
-msgid "Import Flows and Campaigns"
+msgid "Import Flows and Scenarios"
 msgstr "Importar Flujos y Campañas"
 
 msgid "If you have an export file with flows and or campaigns, select it below to import it into your account."

@@ -83,12 +83,12 @@ msgstr "Usuário não tem permissão para criar um SMS"
 
 #, fuzzy
 #| msgid "The name of this contact"
-msgid "The name of this campaign"
+msgid "The name of this scenario"
 msgstr "O nome deste contato"
 
 #, fuzzy
 #| msgid "The org this call is connected to"
-msgid "The group this campaign operates on"
+msgid "The group this scenario operates on"
 msgstr "A Organização com a qual esta chamada está conectada"
 
 msgid "Minutes"
@@ -122,7 +122,7 @@ msgid "Edit"
 msgstr "Editar"
 
 #, fuzzy
-msgid "Update Campaign"
+msgid "Update Scenario"
 msgstr "Atualizar campanha"
 
 #, fuzzy
@@ -5726,7 +5726,7 @@ msgstr "Resultados ao vivo"
 
 #, fuzzy
 #| msgid "campaigns"
-msgid "Campaigns"
+msgid "Scenarios"
 msgstr "campanhas"
 
 #, fuzzy
@@ -5741,7 +5741,7 @@ msgstr "O nome deste contato"
 
 #, fuzzy
 #| msgid "The name of this contact"
-msgid "No events in this campaign yet."
+msgid "No events in this scenario yet."
 msgstr "O nome deste contato"
 
 #, fuzzy
@@ -9643,7 +9643,7 @@ msgid "Everything Else"
 msgstr "Ignorar todo o resto"
 
 #, fuzzy
-msgid "Flows and Campaigns"
+msgid "Flows and Scenarios"
 msgstr "Atualizar campanha"
 
 #, fuzzy
@@ -9655,7 +9655,7 @@ msgid "Select All"
 msgstr "Enviar todas"
 
 #, fuzzy
-msgid "Import Flows and Campaigns"
+msgid "Import Flows and Scenarios"
 msgstr "Atualizar campanha"
 
 msgid "If you have an export file with flows and or campaigns, select it below to import it into your account."
