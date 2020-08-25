@@ -71,7 +71,7 @@
 
                 -if campaigns
                   %li.nav-header
-                    -trans "Scenarios"
+                    -trans "Campaigns"
                   -for campaign in campaigns
                     %li{'class': '{% if current_campaign.id == campaign.campaign__id %}active{% endif %}'}
                       %a{'href':'{% url "flows.flow_campaign" campaign.campaign__id %}'}

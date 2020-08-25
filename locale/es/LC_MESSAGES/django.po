@@ -78,12 +78,12 @@ msgstr "El usuario no tiene permiso para crear un SMS"
 
 #, fuzzy
 #| msgid "The name of this contact"
-msgid "The name of this scenario"
+msgid "The name of this campaign"
 msgstr "El nombre de este contacto"
 
 #, fuzzy
 #| msgid "The org this call is connected to"
-msgid "The group this scenario operates on"
+msgid "The group this campaign operates on"
 msgstr "La organización a la que esta llamada está conectada"
 
 msgid "Minutes"

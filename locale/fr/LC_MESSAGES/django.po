@@ -73,10 +73,10 @@ msgstr "Fichier introuvable"
 msgid "You do not have permission to access this file"
 msgstr "Vous ne disposez pas des permissions pour accéder à ce fichier"
 
-msgid "The name of this scenario"
+msgid "The name of this campaign"
 msgstr "Le nom de cette campagne"
 
-msgid "The group this scenario operates on"
+msgid "The group this campaign operates on"
 msgstr "Le groupe sur lequel cette campagne opère"
 
 msgid "Minutes"

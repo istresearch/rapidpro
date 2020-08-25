@@ -126,10 +126,10 @@ msgid "Service"
 msgstr ""
 
 msgid "Campaign archived"
-msgstr ""
+msgstr "Scenario archived"
 
 msgid "Campaign activated"
-msgstr ""
+msgstr "Scenario activated"
 
 msgid "Select the event type"
 msgstr ""
@@ -3783,7 +3783,7 @@ msgid "The import file"
 msgstr ""
 
 msgid "Update all flows and campaigns"
-msgstr ""
+msgstr "Update all flows and scenarios"
 
 msgid "Sorry, import is a premium feature"
 msgstr ""
@@ -6154,7 +6154,7 @@ msgid "Flows:"
 msgstr ""
 
 msgid "Campaign events:"
-msgstr ""
+msgstr "Scenario events:"
 
 msgid "Contact groups:"
 msgstr ""
@@ -6761,7 +6761,7 @@ msgid "flows"
 msgstr ""
 
 msgid "campaigns"
-msgstr ""
+msgstr "scenarios"
 
 msgid "triggers"
 msgstr ""
@@ -7483,7 +7483,7 @@ msgid "If you have flows or campaigns with the same names or UUIDs as the ones y
 msgstr ""
 
 msgid "Do not proceed unless you are willing to replace your existing flows and campaigns."
-msgstr ""
+msgstr "Do not proceed unless you are willing to replace your existing flows and scenarios."
 
 msgid "Add guest viewers to"
 msgstr ""

@@ -162,7 +162,7 @@ class CampaignCRUDL(SmartCRUDL):
                             id="campaign-update",
                             title=_("Edit"),
                             href=reverse("campaigns.campaign_update", args=[self.object.pk]),
-                            modax=_("Update Scenario"),
+                            modax=_("Update Campaign"),
                         )
                     )
 
@@ -280,7 +280,7 @@ class CampaignCRUDL(SmartCRUDL):
 
         fields = ()
         success_url = "id@campaigns.campaign_read"
-        success_message = _("Scenario archived")
+        success_message = _("Campaign archived")
 
         def save(self, obj):
             obj.apply_action_archive(self.request.user, Campaign.objects.filter(id=obj.id))
@@ -289,7 +289,7 @@ class CampaignCRUDL(SmartCRUDL):
     class Activate(OrgMixin, OrgPermsMixin, SmartUpdateView):
         fields = ()
         success_url = "id@campaigns.campaign_read"
-        success_message = _("Scenario activated")
+        success_message = _("Campaign activated")
 
         def save(self, obj):
             obj.apply_action_restore(self.request.user, Campaign.objects.filter(id=obj.id))
