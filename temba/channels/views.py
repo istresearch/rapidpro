@@ -1255,7 +1255,7 @@ class UpdateChannelForm(forms.ModelForm):
 
     class Meta:
         model = Channel
-        fields = "name", "address", "country", "alert_email"
+        fields = "name", "address", "country", "alert_email", "tps"
         readonly = ("address", "country")
         labels = {"address": _("Address")}
         helps = {"address": _("The number or address of this channel")}
