@@ -46,6 +46,8 @@
           - if caller and caller != sender
             <a class="btn btn-tiny" href="{% url 'channels.channellog_list' caller.uuid %}?sessions=1">{%trans "Call Log"%}</a>
 
+      <a class="purge-outbox btn btn-tiny" href="{% url 'channels.purge_outbox' channel.uuid%}">{%trans "Purge Outbox"%}</a>
+
       -for link in object.get_type.extra_links
         <a class="btn btn-tiny" href="{% url link.name object.uuid %}">{{ link.link }}</a>
 
@@ -377,6 +379,22 @@
 
           {% endif %}
 
+      .purge-outbox.hide
+        .title
+          -trans "Purge Outbox"
+        .body
+          %p
+            -trans "Purge all messages from the outbox?"
+          %p
+            -trans "Once the outbox is purged, it's messages will be gone forever. There is no way to undo this operation."
+
+      .purge-outbox-success.hide
+        .title
+          -trans "Purge Successful"
+      .purge-outbox-error.hide
+        .title
+          -trans "An error has occured"
+
     %a#deletion-form.posterize{href:'{% url "channels.channel_delete" object.pk %}'}
 
     .remove-sender.hide
@@ -504,6 +522,44 @@
   <script src="{{ STATIC_URL }}bower/highcharts/highcharts.js"></script>
 
 :javascript
+
+  {% if org_perms.channels.channel_delete %}
+    $(".purge-outbox").live('click', function(e){
+        e.preventDefault();
+        modal = new ConfirmationModal($('.purge-outbox > .title').html(), $('.purge-outbox > .body').html());
+        modal.addClass('alert');
+        modal.setListeners({onPrimary: function(){
+              $.ajax({
+                  type: "GET",
+                  url: "{% url 'channels.purge_outbox' channel.uuid%}",
+                  success: function(data, textStatus, xhr){
+                    var successModal = new ConfirmationModal($('.purge-outbox-success > .title').html(), data);
+                    successModal.addClass('alert');
+                    successModal.show();
+                    successModal.setListeners({onPrimary: function(){
+                      successModal.dismiss();
+                    }}, false);
+                    successModal.hideSecondaryButton();
+                    successModal.setPrimaryButton('{% trans "Ok" %}');
+                    modal.dismiss();
+                  },
+                  error: function(request, status, error){
+                    var errorModal = new ConfirmationModal($('.purge-outbox-error > .title').html(), request.status + " " + error);
+                    errorModal.addClass('alert');
+                    errorModal.setListeners({onPrimary: function(){
+                      errorModal.dismiss();
+                    }}, false);
+                    errorModal.hideSecondaryButton();
+                    errorModal.show();
+                    modal.dismiss();
+                  }
+                });
+            }}, false);
+        modal.setPrimaryButton('{% trans "Purge" %}');
+
+        modal.show();
+        });
+  {% endif %}
 
   {% if org_perms.channels.channel_delete %}
     $(".remove-channel").live('click', function(){
