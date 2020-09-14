@@ -88,3 +88,20 @@ def trim_channel_log_task():  # pragma: needs cover
 )
 def squash_channelcounts():
     ChannelCount.squash()
+
+@task(track_started=True, name="update_postmaster_sync_task")
+def update_postmaster_sync_task():
+    """
+    Run every 5 minutes and updates postmaster channel sync times.
+    """
+    import requests
+    api_url = getattr(settings, "POST_OFFICE_API_URL")
+    api_key = getattr(settings, "POST_OFFICE_API_KEY")
+    from temba.channels.types.postmaster import PostmasterType
+    for channel in Channel.objects.filter(is_active=True, channel_type=PostmasterType.code):
+        try:
+            resp = requests.get(f"{api_url}/engage/admin/device?id={channel.address}", headers={'x-api-key': api_key})
+            channel.last_seen = resp.json()['devices'][0]['last_seen']
+            channel.save()
+        except Exception as ex:
+            logger.debug(f'{ex}: {api_url}/engage/admin/device?id={channel.address} {resp.status_code} {resp.content}')
