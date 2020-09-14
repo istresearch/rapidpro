@@ -916,6 +916,7 @@ CELERYBEAT_SCHEDULE = {
     "refresh-whatsapp-tokens": {"task": "refresh_whatsapp_tokens", "schedule": timedelta(hours=24)},
     "refresh-whatsapp-templates": {"task": "refresh_whatsapp_templates", "schedule": timedelta(seconds=900)},
     # "resume_failed_tasks": {"task": "resume_failed_tasks", "schedule": timedelta(seconds=1800)},
+    "update-postmaster-sync": {"task": "update_postmaster_sync_task", "schedule": timedelta(seconds=300)},
 }
 
 # Mapping of task name to task function path, used when CELERY_ALWAYS_EAGER is set to True
@@ -1177,3 +1178,7 @@ MAX_ACTIVE_GLOBALS_PER_ORG = 255
 SEQUENTIAL_CONTACTS_THRESHOLD = int(os.environ.get("SEQUENTIAL_CONTACTS_THRESHOLD", 5000))
 ORG_SEARCH_CONTEXT = ["Nyaruka"]
 PAGINATE_CHANNELS_COUNT = int(os.environ.get("PAGINATE_CHANNELS_COUNT", 25))
+
+POST_OFFICE_API_URL = os.environ.get('POST_OFFICE_API_URL', 'http://postoffice:8088/postoffice')
+POST_OFFICE_API_KEY = os.environ.get('POST_OFFICE_API_KEY', 'abc123')
+
