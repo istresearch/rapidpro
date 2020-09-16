@@ -1198,9 +1198,10 @@ class MsgBulkActionSerializer(WriteSerializer):
     label_name = serializers.CharField(required=False, max_length=Label.MAX_NAME_LEN)
 
     def validate_messages(self, value):
-        for msg in value:
-            if msg and msg.direction != "I":
-                raise serializers.ValidationError("Not an incoming message: %d" % msg.id)
+        if not ('request' in self.context and 'action' in self.context['request'].data):
+            for msg in value:
+                if msg and msg.direction != "I":
+                    raise serializers.ValidationError("Not an incoming message: %d" % msg.id)
 
         return value
 
