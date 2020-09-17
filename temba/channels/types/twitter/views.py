@@ -83,7 +83,7 @@ class ClaimView(NonAtomicMixin, ClaimViewMixin, SmartFormView):
 
 class UpdateForm(UpdateChannelForm):
     class Meta(UpdateChannelForm.Meta):
-        fields = "name", "address", "alert_email"
+        fields = "name", "address", "alert_email", "tps"
         readonly = ("address",)
         labels = {"address": _("Handle")}
         helps = {"address": _("Twitter handle of this channel")}

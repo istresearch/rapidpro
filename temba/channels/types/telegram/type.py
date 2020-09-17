@@ -16,7 +16,7 @@ class UpdateTelegramForm(UpdateChannelForm):
         self.fields["forward_id"] = forms.CharField(max_length=255, required=False, help_text=_("Telegram ID to forward unhandleable messages to"), initial=self.instance.config.get("forward_id",""))
 
     class Meta(UpdateChannelForm.Meta):
-        fields = "name", "address", "country", "alert_email"
+        fields = "name", "address", "country", "alert_email", "tps"
         config_fields = ["forward_id",]
         readonly = ("address","country")
 

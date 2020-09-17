@@ -17,7 +17,7 @@ class UpdatePostmasterForm(UpdateChannelForm):
         super(UpdatePostmasterForm, self).__init__(*args, **kwargs)
 
     class Meta(UpdateChannelForm.Meta):
-        fields = "name", "address", "schemes"
+        fields = "name", "address", "schemes", "tps"
         readonly = ("address", "schemes")
         helps = {"schemes": _("The Chat Mode that Postmaster will operate under.")}
         labels = {"schemes": _("Chat Mode")}
