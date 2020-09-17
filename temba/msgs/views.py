@@ -615,20 +615,30 @@ class MsgCRUDL(SmartCRUDL):
                     end_date=end_date,
                 )
 
-                on_transaction_commit(lambda: export_messages_task.delay(export.id))
+                if settings.ASYNC_MESSAGE_EXPORT:
+                    on_transaction_commit(lambda: export_messages_task.delay(export.id))
 
-                if not getattr(settings, "CELERY_ALWAYS_EAGER", False):  # pragma: needs cover
-                    messages.info(
-                        self.request,
-                        _("We are preparing your export. We will e-mail you at %s when " "it is ready.")
-                        % self.request.user.email,
-                    )
+                    if not getattr(settings, "CELERY_ALWAYS_EAGER", False):  # pragma: needs cover
+                        messages.info(
+                            self.request,
+                            _("We are preparing your export. We will e-mail you at %s when " "it is ready.")
+                            % self.request.user.email,
+                        )
+
+                    else:
+                        dl_url = reverse("assets.download", kwargs=dict(type="message_export", pk=export.pk))
+                        messages.info(
+                            self.request,
+                            _("Export complete, you can find it here: %s (production users " "will get an email)")
+                            % dl_url,
+                        )
 
                 else:
+                    on_transaction_commit(lambda: export_messages_task.run(export.id))
                     dl_url = reverse("assets.download", kwargs=dict(type="message_export", pk=export.pk))
                     messages.info(
                         self.request,
-                        _("Export complete, you can find it here: %s (production users " "will get an email)")
+                        _("Export complete, you can find it here: %s")
                         % dl_url,
                     )
 
