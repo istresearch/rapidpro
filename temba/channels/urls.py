@@ -3,7 +3,7 @@ from django.conf.urls import include, url
 from temba.utils.views import CourierURLHandler
 
 from .models import Channel
-from .views import ChannelCRUDL, ChannelEventCRUDL, ChannelLogCRUDL
+from .views import ChannelCRUDL, ChannelEventCRUDL, ChannelLogCRUDL, PurgeOutbox
 
 # we iterate all our channel types, finding all the URLs they want to wire in
 courier_urls = []
@@ -28,4 +28,5 @@ urlpatterns = [
     url(r"^channels/", include(ChannelCRUDL().as_urlpatterns() + ChannelLogCRUDL().as_urlpatterns())),
     url(r"^c/", include(courier_urls)),
     url(r"^channels/types/", include(type_urls)),
+    url(r"^channels/purge/(?P<channel_uuid>[^/]+)/$", PurgeOutbox.as_view(), name="channels.purge_outbox"),
 ]
