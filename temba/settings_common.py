@@ -1182,3 +1182,4 @@ PAGINATE_CHANNELS_COUNT = int(os.environ.get("PAGINATE_CHANNELS_COUNT", 25))
 POST_OFFICE_API_URL = os.environ.get('POST_OFFICE_API_URL', 'http://postoffice:8088/postoffice')
 POST_OFFICE_API_KEY = os.environ.get('POST_OFFICE_API_KEY', 'abc123')
 
+ASYNC_MESSAGE_EXPORT = os.environ.get('ASYNC_MESSAGE_EXPORT', 'on') == 'on'

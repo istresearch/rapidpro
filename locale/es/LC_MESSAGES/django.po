@@ -8650,7 +8650,7 @@ msgstr "Sin flujos que correspondan."
 
 #, fuzzy
 #| msgid "Flows and Campaigns"
-msgid "No related campaigns."
+msgid "No related scenarios."
 msgstr "Flujos y Campañas"
 
 #, fuzzy

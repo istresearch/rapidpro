@@ -24,12 +24,12 @@ class Campaign(TembaModel):
 
     org = models.ForeignKey(Org, related_name="campaigns", on_delete=models.PROTECT)
 
-    name = models.CharField(max_length=MAX_NAME_LEN, help_text=_("The name of this campaign"))
+    name = models.CharField(max_length=MAX_NAME_LEN, help_text=_("The name of this scenario"))
 
     group = models.ForeignKey(
         ContactGroup,
         on_delete=models.PROTECT,
-        help_text=_("The group this campaign operates on"),
+        help_text=_("The group this scenario operates on"),
         related_name="campaigns",
     )
 

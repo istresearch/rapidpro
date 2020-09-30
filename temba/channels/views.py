@@ -11,6 +11,7 @@ import phonenumbers
 import pytz
 import requests
 import twilio.base.exceptions
+from django.views.generic.base import View
 from django_countries.data import COUNTRIES
 from smartmin.views import (
     SmartCRUDL,
@@ -1255,7 +1256,7 @@ class UpdateChannelForm(forms.ModelForm):
 
     class Meta:
         model = Channel
-        fields = "name", "address", "country", "alert_email"
+        fields = "name", "address", "country", "alert_email", "tps"
         readonly = ("address", "country")
         labels = {"address": _("Address")}
         helps = {"address": _("The number or address of this channel")}
@@ -1265,6 +1266,35 @@ class UpdateTelChannelForm(UpdateChannelForm):
     class Meta(UpdateChannelForm.Meta):
         helps = {"address": _("Phone number of this channel")}
 
+
+class PurgeOutbox(View):  # pragma: no cover
+
+    @csrf_exempt
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        courier_url = getattr(settings, "COURIER_URL", ())
+        response = ""
+        if courier_url is not None and len(courier_url) > 0 \
+                and 'channel_uuid' in kwargs and kwargs['channel_uuid'] is not None:
+            full_courier_url = "{}/purge/{}".format(courier_url, kwargs['channel_uuid'])
+            r = None
+            try:
+                r = requests.post(full_courier_url, headers={"Content-Type": "{}".format("application/json")})
+                response = "The courier service returned with status {}: {}".format(r.status_code,
+                                                                                    json.loads(r.content)['message'])
+            except ConnectionError as e:
+                response = "An unknown error has occured."
+        else:
+            if courier_url is None or len(courier_url) == 0:
+                response = "An error has occurred. Please check your courier URL configuration"
+            elif 'channel_uuid' not in kwargs or kwargs['channel_uuid'] is None:
+                response = "A valid channel ID must be provided"
+        return HttpResponse(response)
+
+    def post(self, request, *args, **kwargs):
+        return HttpResponse("ILLEGAL METHOD")
 
 class ChannelCRUDL(SmartCRUDL):
     model = Channel
