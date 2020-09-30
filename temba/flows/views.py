@@ -173,12 +173,12 @@ class FlowActionMixin(SmartListView):
             if form.cleaned_data["action"] == "archive" and ignored:
                 if len(ignored) > 1:
                     toast = _(
-                        "%s are used inside a campaign. To archive them, first remove them from your campaigns."
+                        "%s are used inside a scenario. To archive them, first remove them from your scenarios."
                         % " and ".join(ignored)
                     )
                 else:
                     toast = _(
-                        "%s is used inside a campaign. To archive it, first remove it from your campaigns."
+                        "%s is used inside a scenario. To archive it, first remove it from your scenarios."
                         % ignored[0]
                     )
 
