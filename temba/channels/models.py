@@ -83,7 +83,7 @@ class ChannelType(metaclass=ABCMeta):
     update_form = None
 
     max_length = -1
-    max_tps = None
+    max_tps = getattr(settings, "DEFAULT_TPS", 10)
     attachment_support = False
     free_sending = False
     quick_reply_text_size = 20
@@ -518,6 +518,7 @@ class Channel(TembaModel):
             address=address,
             config=config,
             role=role,
+            tps=getattr(settings, "DEFAULT", 10),
             schemes=schemes,
             created_by=user,
             modified_by=user,

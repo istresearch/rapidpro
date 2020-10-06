@@ -1805,6 +1805,12 @@ class ChannelCRUDL(SmartCRUDL):
         def pre_save(self, obj):
             for field in self.form.config_fields:
                 obj.config[field] = self.form.cleaned_data[field]
+            if hasattr(obj, 'tps'):
+                max_tps = getattr(settings, "MAX_TPS", 50)
+                if obj.tps <= 0:
+                    obj.tps = getattr(settings, "DEFAULT_TPS", 10)
+                elif obj.tps > max_tps:
+                    obj.tps = max_tps
             return obj
 
         def post_save(self, obj):
