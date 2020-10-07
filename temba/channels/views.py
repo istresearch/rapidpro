@@ -1233,6 +1233,8 @@ class BaseClaimNumberMixin(ClaimViewMixin):
 
 
 class UpdateChannelForm(forms.ModelForm):
+    tps = forms.IntegerField(label="Maximum Transactions per Second", required=False)
+
     def __init__(self, *args, **kwargs):
         self.object = kwargs["object"]
         del kwargs["object"]
@@ -1807,6 +1809,9 @@ class ChannelCRUDL(SmartCRUDL):
                 obj.config[field] = self.form.cleaned_data[field]
             if hasattr(obj, 'tps'):
                 max_tps = getattr(settings, "MAX_TPS", 50)
+                if obj.tps is None:
+                    obj.tps = getattr(settings, "DEFAULT_TPS", 10)
+
                 if obj.tps <= 0:
                     obj.tps = getattr(settings, "DEFAULT_TPS", 10)
                 elif obj.tps > max_tps:
