@@ -1280,7 +1280,7 @@ class PurgeOutbox(View):  # pragma: no cover
         response = ""
         if courier_url is not None and len(courier_url) > 0 \
                 and 'channel_uuid' in kwargs and kwargs['channel_uuid'] is not None:
-            full_courier_url = "{}/purge/{}".format(courier_url, kwargs['channel_uuid'])
+            full_courier_url = "{}/purge/{}/{}".format(courier_url, kwargs['channel_type'], kwargs['channel_uuid'])
             r = None
             try:
                 r = requests.post(full_courier_url, headers={"Content-Type": "{}".format("application/json")})

@@ -28,5 +28,5 @@ urlpatterns = [
     url(r"^channels/", include(ChannelCRUDL().as_urlpatterns() + ChannelLogCRUDL().as_urlpatterns())),
     url(r"^c/", include(courier_urls)),
     url(r"^channels/types/", include(type_urls)),
-    url(r"^channels/purge/(?P<channel_uuid>[^/]+)/$", PurgeOutbox.as_view(), name="channels.purge_outbox"),
+    url(r"^channels/purge/(?P<channel_type>[^/]+)/(?P<channel_uuid>[^/]+)/$", PurgeOutbox.as_view(), name="channels.purge_outbox"),
 ]
