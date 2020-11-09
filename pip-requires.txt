@@ -22,6 +22,7 @@ boto3
 librato_bg
 nexmo
 pyfcm
+pyotp
 python-gcm
 python-telegram-bot
 raven
@@ -34,6 +35,7 @@ elasticsearch_dsl
 ########################## file types ##########################
 geojson
 markdown
+polib
 pyexcel
 pyexcel-xls
 pyexcel-xlsx
