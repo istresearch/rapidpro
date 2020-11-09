@@ -1,4 +1,4 @@
-<rp-completion 
+<temba-completion 
   {% include "django/forms/widgets/attrs.html" %}  
   
   name="{{widget.name}}"
@@ -9,4 +9,4 @@
   fieldsEndpoint="/{% if widget.attrs.subdir %}{{widget.attrs.subdir}}{%endif%}api/v2/fields.json"
   globalsEndpoint:"/{% if widget.attrs.subdir %}{{widget.attrs.subdir}}{%endif%}api/v2/globals.json"
   textarea>
-</rp-completion>
+</temba-completion>
