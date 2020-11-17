@@ -46,7 +46,7 @@
           - if caller and caller != sender
             <a class="btn btn-tiny" href="{% url 'channels.channellog_list' caller.uuid %}?sessions=1">{%trans "Call Log"%}</a>
 
-      <a class="purge-outbox btn btn-tiny" href="{% url 'channels.purge_outbox' channel.uuid%}">{%trans "Purge Outbox"%}</a>
+      <a class="purge-outbox btn btn-tiny" href="{% url 'channels.purge_outbox' channel.channel_type channel.uuid%}">{%trans "Purge Outbox"%}</a>
 
       -for link in object.get_type.extra_links
         <a class="btn btn-tiny" href="{% url link.name object.uuid %}">{{ link.link }}</a>
@@ -531,7 +531,7 @@
         modal.setListeners({onPrimary: function(){
               $.ajax({
                   type: "GET",
-                  url: "{% url 'channels.purge_outbox' channel.uuid%}",
+                  url: "{% url 'channels.purge_outbox' channel.channel_type channel.uuid %}",
                   success: function(data, textStatus, xhr){
                     var successModal = new ConfirmationModal($('.purge-outbox-success > .title').html(), data);
                     successModal.addClass('alert');
