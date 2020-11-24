@@ -96,7 +96,8 @@ class ExtChannelWriteSerializer(WriteSerializer):
                 channel.name = '{} [{}]'.format(data.get("device_name"), schemes[0])
                 channel.config["device_name"] = data.get("device_name")
 
-                return channel.save(update_fields=["name", "config"])
+                save_resp = channel.save(update_fields=["name", "config"])
+                return channel
             else:
                 return channel
         else:
