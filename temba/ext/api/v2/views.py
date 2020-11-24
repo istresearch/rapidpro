@@ -76,14 +76,39 @@ class ExtChannelWriteSerializer(WriteSerializer):
                 data[p] = params[p]
         type_from_code = Channel.get_type_from_code(channel_type)
         type_from_code.claim_view.request = self.context['request']
-        form = type_from_code.claim_view.Form(data=data, request=self.context['request'], channel_type=channel_type)
-        is_valid = form.is_valid()
-        if not is_valid:
-            ret = Channel(uuid=None, name=None, address=None, country=None, device=None,
-                          last_seen=None, created_on=None, config=form.errors.as_json())
-            return ret
-        ret = type_from_code.claim_view(channel_type).form_valid(form)
-        return Channel.objects.filter(uuid=ret.url.split("/")[len(ret.url.split("/"))-2]).first()
+
+        if channel_type == "PSM" and len(data.get("uuid", "")) > 0:
+            channels = Channel.objects.filter(uuid=data.get("uuid"), is_active=True)
+            if len(channels) < 0:
+                raise InvalidQueryError(_("Invalid channel UUID provided"))
+
+            channel = channels[0]
+
+            if channel.config["device_name"] != data.get("device_name"):
+                import temba.contacts.models as Contacts
+                prefix = 'PM_'
+                if channel.config.get("chat_mode") == 'SMS':
+                    prefix = ''
+
+                schemes = [getattr(Contacts,
+                                   '{}{}_SCHEME'.format(prefix, dict(type_from_code.claim_view.Form.CHAT_MODE_CHOICES)[channel.config.get("chat_mode")]).upper())]
+
+                channel.name = '{} [{}]'.format(data.get("device_name"), schemes[0])
+                channel.config["device_name"] = data.get("device_name")
+
+                return channel.save(update_fields=["name", "config"])
+            else:
+                return channel
+        else:
+            form = type_from_code.claim_view.Form(data=data, request=self.context['request'], channel_type=channel_type)
+            is_valid = form.is_valid()
+            if not is_valid:
+                ret = Channel(uuid=None, name=None, address=None, country=None, device=None,
+                              last_seen=None, created_on=None, config=form.errors.as_json())
+                return ret
+            ret = type_from_code.claim_view(channel_type).form_valid(form)
+
+            return Channel.objects.filter(uuid=ret.url.split("/")[len(ret.url.split("/"))-2]).first()
 
 
 class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView):
