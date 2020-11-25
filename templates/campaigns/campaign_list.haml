@@ -3,7 +3,7 @@
 
 -block extra-style
   :css
-    rp-button {
+    temba-button {
       display: block;
     }
 
@@ -27,8 +27,8 @@
           .span3.sidebox
             %div{style:"margin-bottom: 10px"}
               - if org_perms.campaigns.campaign_create
-                %rp-modax{ header:"Create Scenario", endpoint:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/create/" }
-                  %rp-button{ name:"Create Scenario", primary: 'true' }
+                %temba-modax{ header:"Create Scenario", endpoint:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/create/" }
+                  %temba-button{ name:"Create Scenario", primary: 'true' }
 
             #sidebar-nav
               %ul.nav.nav-list.level1
@@ -104,7 +104,7 @@
 
     {% if org_perms.campaigns.campaign_update %}
       $(document).on('click', '.update-campaign', function(e){
-         var modal = new Modax('Update Scenario', '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/update/' + $(this).data("object-id") + '/');
+         var modal = new Modax('{{_("Update Scenario")|escapejs }}', '{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/update/' + $(this).data("object-id") + '/');
          modal.setIcon('icon-feed');
          modal.setRedirectOnSuccess(true);
          modal.show();

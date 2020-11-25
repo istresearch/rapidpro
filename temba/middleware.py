@@ -73,7 +73,6 @@ class BrandingMiddleware:
 
     @classmethod
     def get_branding_for_host(cls, host):
-
         brand_key = host
 
         # ignore subdomains
@@ -89,6 +88,12 @@ class BrandingMiddleware:
 
         if branding:
             branding["brand"] = brand_key
+
+            # derive the keys for our brand based on our aliases
+            if "aliases" in branding:
+                branding["keys"] = [brand_key] + branding["aliases"]
+            else:
+                branding["keys"] = [brand_key]
         else:
             # if that brand isn't configured, use the default
             branding = settings.BRANDING.get(settings.DEFAULT_BRAND)
