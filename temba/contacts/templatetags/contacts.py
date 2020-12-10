@@ -46,7 +46,7 @@ URN_SCHEME_ICONS = {
     PM_VK_SCHEME: "icon-vk",
     PM_VIBER_SCHEME: "icon-viber",
     PM_TWITTER_SCHEME: "icon-twitter",
-    PM_KAKAO_SCHEME: "icon-kakao",
+    PM_KAKAO_SCHEME: "icon-engage-kakao",
 }
 
 ACTIVITY_ICONS = {
