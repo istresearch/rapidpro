@@ -20,7 +20,7 @@ from temba.contacts.models import (
     ContactField,
     ContactURN,
     PM_WHATSAPP_SCHEME, PM_TELEGRAM_SCHEME, PM_SIGNAL_SCHEME, PM_LINE_SCHEME,
-    PM_VK_SCHEME, PM_VIBER_SCHEME, PM_TWITTER_SCHEME)
+    PM_VK_SCHEME, PM_VIBER_SCHEME, PM_TWITTER_SCHEME, PM_KAKAO_SCHEME)
 from temba.ivr.models import IVRCall
 from temba.msgs.models import ERRORED, FAILED
 
@@ -46,6 +46,7 @@ URN_SCHEME_ICONS = {
     PM_VK_SCHEME: "icon-vk",
     PM_VIBER_SCHEME: "icon-viber",
     PM_TWITTER_SCHEME: "icon-twitter",
+    PM_KAKAO_SCHEME: "icon-kakao",
 }
 
 ACTIVITY_ICONS = {
