@@ -1385,9 +1385,6 @@ class Label(TembaModel):
         changed = set()
 
         for msg in msgs:
-            if msg.direction != INCOMING:
-                raise ValueError("Can only apply labels to incoming messages")
-
             # if we are adding the label and this message doesnt have it, add it
             if add:
                 if not msg.labels.filter(pk=self.pk):
