@@ -75,6 +75,8 @@ PM_VIBER_SCHEME = "pm_viber"
 PM_LINE_SCHEME = "pm_line"
 PM_VK_SCHEME = "pm_vk"
 PM_TWITTER_SCHEME = "pm_twitter"
+PM_KAKAO_SCHEME = "pm_kakao"
+PM_IMO_SCHEME = "pm_imo"
 
 # Scheme, Label, Export/Import Header, Context Key
 URN_SCHEME_CONFIG = (
@@ -99,6 +101,8 @@ URN_SCHEME_CONFIG = (
     (PM_LINE_SCHEME, _("Postmaster Line identifier"), PM_LINE_SCHEME),
     (PM_VK_SCHEME, _("Postmaster VK identifier"), PM_VK_SCHEME),
     (PM_TWITTER_SCHEME, _("Postmaster Twitter identifier"), PM_TWITTER_SCHEME),
+    (PM_KAKAO_SCHEME, _("Postmaster Kakao Identifier"), PM_KAKAO_SCHEME),
+    (PM_IMO_SCHEME, _("Postmaster IMO Identifier"), PM_IMO_SCHEME),
     (VK_SCHEME, _("VK identifier"), VK_SCHEME),
 )
 

@@ -959,6 +959,7 @@ CELERYBEAT_SCHEDULE = {
     "trim-sync-events": {"task": "trim_sync_events_task", "schedule": crontab(hour=3, minute=0)},
     "trim-webhook-event": {"task": "trim_webhook_event_task", "schedule": crontab(hour=3, minute=0)},
     "update-org-activity": {"task": "update_org_activity_task", "schedule": crontab(hour=3, minute=5)},
+    "update-postmaster-sync": {"task": "update_postmaster_sync_task", "schedule": timedelta(seconds=300)},
 }
 
 # Mapping of task name to task function path, used when CELERY_ALWAYS_EAGER is set to True
@@ -1265,3 +1266,8 @@ POST_OFFICE_API_URL = os.environ.get('POST_OFFICE_API_URL', 'http://postoffice:8
 POST_OFFICE_API_KEY = os.environ.get('POST_OFFICE_API_KEY', 'abc123')
 
 ASYNC_MESSAGE_EXPORT = os.environ.get('ASYNC_MESSAGE_EXPORT', 'on') == 'on'
+
+#Use CHAT_MODE_CHOICES to configure the chatmodes that are available to the Postmaster channel
+CHAT_MODE_CHOICES = (("WA", _("WhatsApp")), ("TG", _("Telegram")),  ("LN", _("LINE")), ("SIG", _("SIGNAL")),
+                     ("SMS", _("TEL")), ("VK", _("VK")), ("VB", _("VIBER")), ("TWTR", _("TWITTER")),
+                     ("KAKAO", _("KAKAO")), ("IMO", _("IMO")))

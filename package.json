@@ -9,11 +9,12 @@
     ]
   },
   "dependencies": {
-    "@nyaruka/flow-editor": "1.9.8",
+    "@nyaruka/flow-editor": "github:istresearch/floweditor#v1.9.8-1",
     "@nyaruka/temba-components": "0.1.7",
+    "coffee-script": "1.12.7",
     "coffeescript": "1.12.7",
     "fa-icons": "0.2.0",
-    "less": "2.7.1",
+    "less": "4.0.0",
     "react": "16.3.2",
     "react-dom": "16.3.3"
   },
