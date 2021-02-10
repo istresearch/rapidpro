@@ -1270,4 +1270,5 @@ ASYNC_MESSAGE_EXPORT = os.environ.get('ASYNC_MESSAGE_EXPORT', 'on') == 'on'
 #Use CHAT_MODE_CHOICES to configure the chatmodes that are available to the Postmaster channel
 CHAT_MODE_CHOICES = (("WA", _("WhatsApp")), ("TG", _("Telegram")),  ("LN", _("LINE")), ("SIG", _("SIGNAL")),
                      ("SMS", _("TEL")), ("VK", _("VK")), ("VB", _("VIBER")), ("TWTR", _("TWITTER")),
-                     ("KAKAO", _("KAKAO")), ("IMO", _("IMO")))
+                     ("KAKAO", _("KAKAO")), ("IMO", _("IMO")), ("IG", _("Instagram")), ("FB", _("Facebook")))
+
