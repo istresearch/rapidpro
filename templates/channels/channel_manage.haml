@@ -16,9 +16,11 @@
     -if org_perms.channels.channel_claim
       %div.channel-create-icon{title:"Add Channel", style:"float:right;"}
         -include "gear_links_include.haml"
+      %form
+        %input.input-medium.search-query{type:'text', placeholder:'Search', name:"search", value:"{{search}}"}
 
 -block top-form
-  - if view.search_fields and object_list
+  - if view.search_fields
     - block search-form
       %form
         %input.input-medium.search-query{type:'text', placeholder:'Search', name:"search", value:"{{search}}"}
@@ -43,8 +45,10 @@
                 %tr
                   - for field in fields
                     %th{ class:'header-{{field}} {% if view|field_orderable:field %}header {% if field == order %}{% if order_asc %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}', id:'header-{{field}}' }
-                      {% get_label field %}
-
+                      -if field  != "channel_log" and field != "settings"
+                        <a href="{% url 'channels.channel_manage' %}?sort={{field}}">{% get_label field %}</a>
+                      -else
+                        {% get_label field %}
                 %tbody
                   - for obj in object_list
                     %tr{ class:'{% cycle "row2" "row1" %} {% if not obj.is_active and obj|is_smartobject %}inactive{% endif %}'}

@@ -1613,6 +1613,8 @@ class ChannelCRUDL(SmartCRUDL):
 
     class Manage(OrgPermsMixin, SmartListView):
 
+        search_fields = ("name", "address",  "uuid", "channel_type",  "country", "device", "last_seen")
+
         def get_gear_links(self):
             links = []
 
@@ -1659,8 +1661,40 @@ class ChannelCRUDL(SmartCRUDL):
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
 
+            sort = self.request.GET.get('sort')
+            if sort:
+                if sort in set(self.fields):
+                    return queryset.filter(is_active=True).order_by("{}".format(sort)) \
+                        .prefetch_related("sync_events")
             return queryset.filter(is_active=True).order_by("-role", "channel_type", "created_on") \
                 .prefetch_related("sync_events")
+
+        def derive_queryset(self, **kwargs):
+            queryset = super(SmartListView, self).get_queryset(**kwargs)
+
+            # apply any filtering
+            search_fields = self.derive_search_fields()
+            search_query = self.request.GET.get('search')
+            if search_fields and search_query:
+                term_queries = []
+                for term in search_query.split(' '):
+                    field_queries = []
+                    for field in search_fields:
+                        from django.db.models import Q
+                        field_queries.append(Q(**{"{}__contains".format(field): term}))
+                    from functools import reduce
+                    import operator
+                    term_queries.append(reduce(operator.or_, field_queries))
+
+                queryset = queryset.filter(reduce(operator.and_, term_queries))
+
+            # add any select related
+            related = self.derive_select_related()
+            if related:
+                queryset = queryset.select_related(*related)
+
+            # return our queryset
+            return queryset
 
         def pre_process(self, *args, **kwargs):
             # superuser sees things as they are
