@@ -1,6 +1,25 @@
 -extends "smartmin/base.html"
 -load smartmin i18n
 
+-block extra-style
+  :css
+    table .headerSortUp, table .headerSortDown {
+      background-color: rgba(141, 192, 219, 0.25);
+      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+    }
+
+    table .headerSortDown {
+      background-image: url({{STATIC_URL}}img/sort_dsc.png);
+      background-repeat: no-repeat;
+      background-position: 98% 50%;
+    }
+
+    table .headerSortUp {
+      background-image: url({{STATIC_URL}}img/sort_asc.png);
+      background-repeat: no-repeat;
+      background-position: 98% 50%;
+    }
+
 -block page-top
   .row-fluid
     .span9
@@ -46,7 +65,7 @@
                   - for field in fields
                     %th{ class:'header-{{field}} {% if view|field_orderable:field %}header {% if field == order %}{% if order_asc %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}', id:'header-{{field}}' }
                       -if field  != "channel_log" and field != "settings"
-                        <a href="{% url 'channels.channel_manage' %}?sort={{field}}">{% get_label field %}</a>
+                        <a href="{% url 'channels.channel_manage' %}?sort={{field}}{% if field == order and order_asc is null %}&_order=order_asc{% endif %}">{% get_label field %}</a>
                       -else
                         {% get_label field %}
                 %tbody
@@ -99,7 +118,11 @@
       }
       {% endif %}
 
-      document.location = "{{url_params|urlencode}}_order=" + field;
+      if ($(this).find('a:first').length > 0) {
+        if ($(this).find('a:first')[0].href !=null) {
+          document.location = $(this).find('a:first')[0].href
+        }
+      }
     });
   });
 </script>
