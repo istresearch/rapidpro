@@ -1613,6 +1613,8 @@ class ChannelCRUDL(SmartCRUDL):
 
     class Manage(OrgPermsMixin, SmartListView):
 
+        search_fields = ("name", "address",  "uuid", "channel_type",  "country", "device", "last_seen")
+
         def get_gear_links(self):
             links = []
 
@@ -1650,6 +1652,7 @@ class ChannelCRUDL(SmartCRUDL):
         link_fields = ("name", "uuid", "address", "channel_log", "settings")
         field_config = {"channel_type": {"label": "Type"}, "uuid": {"label": "UUID"}}
         fields = ('name', 'channel_type', 'last_seen', 'uuid', 'address', 'country', 'device', 'channel_log', 'settings')
+        order_excluded_fields = ('channel_log', 'settings')
 
         def get_queryset(self, **kwargs):
             queryset = super().get_queryset(**kwargs)
@@ -1659,8 +1662,55 @@ class ChannelCRUDL(SmartCRUDL):
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
 
+            sort = self.request.GET.get('sort')
+            if sort:
+                if sort in set(self.fields):
+                    order = "-"
+                    if "order_asc" == self.request.GET.get("_order"):
+                        order = ""
+                    return queryset.filter(is_active=True).order_by("{}{}".format(order, sort)) \
+                        .prefetch_related("sync_events")
             return queryset.filter(is_active=True).order_by("-role", "channel_type", "created_on") \
                 .prefetch_related("sync_events")
+
+        def derive_queryset(self, **kwargs):
+            queryset = super(SmartListView, self).get_queryset(**kwargs)
+
+            # apply any filtering
+            search_fields = self.derive_search_fields()
+            search_query = self.request.GET.get('search')
+            if search_fields and search_query:
+                term_queries = []
+                for term in search_query.split(' '):
+                    field_queries = []
+                    for field in search_fields:
+                        from django.db.models import Q
+                        field_queries.append(Q(**{"{}__contains".format(field): term}))
+                    from functools import reduce
+                    import operator
+                    term_queries.append(reduce(operator.or_, field_queries))
+
+                queryset = queryset.filter(reduce(operator.and_, term_queries))
+
+            # add any select related
+            related = self.derive_select_related()
+            if related:
+                queryset = queryset.select_related(*related)
+
+            # return our queryset
+            return queryset
+
+        def lookup_field_orderable(self, field):
+            """
+            Returns whether the passed in field is sortable or not, by default all 'raw' fields, that
+            is fields that are part of the model are sortable.
+            """
+            if field in self.order_excluded_fields:
+                return False
+
+            if field in self.fields:
+                return True
+            return False
 
         def pre_process(self, *args, **kwargs):
             # superuser sees things as they are
@@ -1678,6 +1728,7 @@ class ChannelCRUDL(SmartCRUDL):
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)
             # delayed sync event
+            context['order'] = self.request.GET.get("sort")
             sync_events = SyncEvent.objects.filter(channel__in=context['channel_list']).order_by("-created_on")
             for channel in context['channel_list']:
                 if not (channel.created_on > timezone.now() - timedelta(hours=1)):
