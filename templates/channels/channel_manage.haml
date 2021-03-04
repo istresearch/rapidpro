@@ -65,7 +65,7 @@
                   - for field in fields
                     %th{ class:'header-{{field}} {% if view|field_orderable:field %}header {% if field == order %}{% if order_asc %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}', id:'header-{{field}}' }
                       -if field  != "channel_log" and field != "settings"
-                        <a href="{% url 'channels.channel_manage' %}?sort={{field}}{% if field == order and order_asc is null %}&_order=order_asc{% endif %}">{% get_label field %}</a>
+                        <a href="{% url 'channels.channel_manage' %}?sort={{field}}{% if search is not null %}&search={{search}}{% endif %}{% if field == order and order_asc is null %}&_order=order_asc{% endif %}">{% get_label field %}</a>
                       -else
                         {% get_label field %}
                 %tbody
