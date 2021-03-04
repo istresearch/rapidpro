@@ -26,7 +26,8 @@
       .body
         %p
           - if current_label.is_folder
-            - trans "Are you sure you want to remove this folder? This will also delete any labels contained in this folder."
+            - if not current_label.has_child_labels
+              - trans "Are you sure you want to remove this folder? This will also delete any labels contained in this folder."
           - else
             {% if current_label.dependent_flows.count == 0 %}
             - trans "Are you sure you want to remove this label?"
@@ -34,9 +35,14 @@
             - trans "This label cannot be removed because it in use."
             {% endif %}
         %p
-          %b {{ current_label }}
+          %b
+            - if not current_label.has_child_labels
+              {{ current_label }}
           %p
-            {% if current_label.dependent_flows.count == 0 %}
+            {% if current_label.has_child_labels %}
+              <b>{{ current_label }} </b>
+              - trans " cannot be deleted since it is a parent to other labels."
+            {% elif current_label.dependent_flows.count == 0 %}
               -trans "Once it is removed, it will be gone forever. There is no way to undo this operation."
             {% else %}
               {% blocktrans count num_flows=current_label.dependent_flows.count %}
@@ -64,7 +70,7 @@
       modal = new ConfirmationModal($('.deletion > .title').html(), $('.deletion > .body').html());
       modal.addClass('alert');
 
-      {% if current_label.dependent_flows.count == 0 %}
+      {% if current_label.dependent_flows.count == 0 and not current_label.has_child_labels%}
           modal.setListeners({onPrimary: function(){
             $('#delete-form').click();
           }}, false);
