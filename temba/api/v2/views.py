@@ -1428,7 +1428,8 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView)
             "language": "eng",
             "urns": ["tel:+250788123123", "twitter:ben"],
             "groups": [{"name": "Devs", "uuid": "6685e933-26e1-4363-a468-8f7268ab63a9"}],
-            "fields": {}
+            "fields": {},
+            "channel": "72c80c36-0deb-4d15-b1dd-e4a97cb7ce08"
         }
 
         POST /api/v2/contacts.json?urn=tel%3A%2B250783835665
