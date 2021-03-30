@@ -77,6 +77,9 @@ PM_VK_SCHEME = "pm_vk"
 PM_TWITTER_SCHEME = "pm_twitter"
 PM_KAKAO_SCHEME = "pm_kakao"
 PM_IMO_SCHEME = "pm_imo"
+PM_FACEBOOK_SCHEME = "pm_facebook"
+PM_INSTAGRAM_SCHEME = "pm_instagram"
+PM_MOBYX_SCHEME = "pm_mobyx"
 
 # Scheme, Label, Export/Import Header, Context Key
 URN_SCHEME_CONFIG = (
@@ -94,17 +97,21 @@ URN_SCHEME_CONFIG = (
     (FCM_SCHEME, _("Firebase Cloud Messaging identifier"), FCM_SCHEME),
     (WHATSAPP_SCHEME, _("WhatsApp identifier"), WHATSAPP_SCHEME),
     (FRESHCHAT_SCHEME, _("Freshchat identifier"), FRESHCHAT_SCHEME),
-    (PM_WHATSAPP_SCHEME, _("Postmaster WhatsApp identifier"), PM_WHATSAPP_SCHEME),
-    (PM_TELEGRAM_SCHEME, _("Postmaster Telegram identifier"), PM_TELEGRAM_SCHEME),
-    (PM_SIGNAL_SCHEME, _("Postmaster Signal identifier"), PM_SIGNAL_SCHEME),
-    (PM_VIBER_SCHEME, _("Postmaster Viber identifier"), PM_VIBER_SCHEME),
-    (PM_LINE_SCHEME, _("Postmaster Line identifier"), PM_LINE_SCHEME),
-    (PM_VK_SCHEME, _("Postmaster VK identifier"), PM_VK_SCHEME),
-    (PM_TWITTER_SCHEME, _("Postmaster Twitter identifier"), PM_TWITTER_SCHEME),
-    (PM_KAKAO_SCHEME, _("Postmaster Kakao Identifier"), PM_KAKAO_SCHEME),
-    (PM_IMO_SCHEME, _("Postmaster IMO Identifier"), PM_IMO_SCHEME),
     (VK_SCHEME, _("VK identifier"), VK_SCHEME),
-)
+
+    (PM_FACEBOOK_SCHEME, _("Postmaster Facebook Identifier"), PM_FACEBOOK_SCHEME),
+    (PM_IMO_SCHEME, _("Postmaster IMO Identifier"), PM_IMO_SCHEME),
+    (PM_INSTAGRAM_SCHEME, _("Postmaster Instagram Identifier"), PM_INSTAGRAM_SCHEME),
+    (PM_KAKAO_SCHEME, _("Postmaster Kakao Identifier"), PM_KAKAO_SCHEME),
+    (PM_LINE_SCHEME, _("Postmaster Line identifier"), PM_LINE_SCHEME),
+    (PM_SIGNAL_SCHEME, _("Postmaster Signal identifier"), PM_SIGNAL_SCHEME),
+    (PM_TELEGRAM_SCHEME, _("Postmaster Telegram identifier"), PM_TELEGRAM_SCHEME),
+    (PM_TWITTER_SCHEME, _("Postmaster Twitter identifier"), PM_TWITTER_SCHEME),
+    (PM_VIBER_SCHEME, _("Postmaster Viber identifier"), PM_VIBER_SCHEME),
+    (PM_VK_SCHEME, _("Postmaster VK identifier"), PM_VK_SCHEME),
+    (PM_WHATSAPP_SCHEME, _("Postmaster WhatsApp identifier"), PM_WHATSAPP_SCHEME),
+    (PM_MOBYX_SCHEME, _("Postmaster Mobyx identifier"), PM_MOBYX_SCHEME),
+ )
 
 
 IMPORT_HEADERS = tuple((f"URN:{c[0]}", c[0]) for c in URN_SCHEME_CONFIG)

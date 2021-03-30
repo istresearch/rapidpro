@@ -185,6 +185,7 @@ class BroadcastReadSerializer(ReadSerializer):
     contacts = fields.ContactField(many=True)
     groups = fields.ContactGroupField(many=True)
     created_on = serializers.DateTimeField(default_timezone=pytz.UTC)
+    channel = fields.ChannelField(required=False)
 
     def get_status(self, obj):
         return Msg.STATUSES.get(self.STATUS_MAP.get(obj.status, SENT))
@@ -197,7 +198,7 @@ class BroadcastReadSerializer(ReadSerializer):
 
     class Meta:
         model = Broadcast
-        fields = ("id", "urns", "contacts", "groups", "text", "status", "created_on")
+        fields = ("id", "urns", "contacts", "groups", "text", "status", "created_on", "channel")
 
 
 class BroadcastWriteSerializer(WriteSerializer):
@@ -563,6 +564,7 @@ class ContactWriteSerializer(WriteSerializer):
     urns = fields.URNListField(required=False)
     groups = fields.ContactGroupField(many=True, required=False, allow_dynamic=False)
     fields = fields.LimitedDictField(required=False, child=serializers.CharField(allow_blank=True, allow_null=True))
+    channel = serializers.CharField(required=False, max_length=64, allow_null=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -627,7 +629,7 @@ class ContactWriteSerializer(WriteSerializer):
         urns = self.validated_data.get("urns")
         groups = self.validated_data.get("groups")
         custom_fields = self.validated_data.get("fields")
-
+        channel = self.validated_data.get('channel')
         mods = []
 
         with transaction.atomic():
@@ -640,6 +642,23 @@ class ContactWriteSerializer(WriteSerializer):
 
                 if "urns" in self.validated_data and urns is not None:
                     mods += self.instance.update_urns(urns)
+                if "channel" in self.validated_data and channel is not None:
+                    h_priority = 0
+                    for urn in self.instance.get_urns():
+                        if urn.priority > h_priority:
+                            h_priority = urn.priority
+                    for urn in self.instance.get_urns():
+                        ch = Channel.objects.filter(uuid=channel).first()
+                        urn_matched = False
+                        for scheme in ch.schemes:
+                            if urn.scheme == scheme:
+                                urn.channel_id = ch.id
+                                urn.priority = (h_priority + 1)
+                                urn.save()
+                                urn_matched = True
+                                break
+                        if urn_matched:
+                            break
             else:
                 self.instance = Contact.get_or_create_by_urns(
                     self.context["org"], self.context["user"], name, urns=urns, language=language
