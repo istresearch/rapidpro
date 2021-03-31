@@ -82,7 +82,7 @@ def export_cto_msgs():
                 zipfile.write(f"{working_dir}/{filename}.txt", f"{filename}.txt")
                 sess = boto3.session.Session(aws_access_key_id=AWS_S3_ACCESS_KEY_ID, aws_secret_access_key=AWS_S3_SECRET_ACCESS_KEY)
             client = sess.client('s3', endpoint_url=AWS_S3_ENDPOINT_URL, region_name=AWS_S3_REGION)
-            object_path = f"{AWS_S3_PATH}/{filename}.zip" if AWS_S3_PATH else "{filename}.zip""
+            object_path = f"{AWS_S3_PATH}/{filename}.zip" if AWS_S3_PATH else "{filename}.zip"
             response = client.upload_file(zipfile_path, AWS_S3_BUCKET, object_path)
             logger.info(f"task=export_cto_msgs,cto={cto_label},bucket={AWS_S3_BUCKET},object_path={object_path}")
             rmtree(temp_dir)
