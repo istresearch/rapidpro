@@ -20,7 +20,7 @@ from .models import (
     SystemLabelCount,
 )
 
-from cto import export_cto_msgs
+from .cto import export_cto_msgs
 
 logger = logging.getLogger(__name__)
 
