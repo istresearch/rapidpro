@@ -17,6 +17,7 @@ LABEL_PREFIX = os.getenv("CTO_LABEL_PREFIX", "CTO")
 NAME_FORMAT = os.getenv("CTO_NAME_FORMAT", "MAD_{cto}_%Y-%m-%dT%H-%M-%S")
 METADATA_DATE_FORMAT = os.getenv("CTO_METADATA_DATE_FORMAT", "%Y-%m-%dT%H:%M:%S")
 INTERVAL_HOURS = int(os.getenv("CTO_INTERVAL_HOURS", "1"))
+CTO_UUID = os.getenv("CTO_UUID", "00000000-0000-0000-0000-000000000000")
 
 AWS_S3_ACCESS_KEY_ID = os.getenv("CTO_AWS_S3_ACCESS_KEY_ID", "CTO_AWS_S3_ACCESS_KEY_ID_NOT_SET")
 AWS_S3_SECRET_ACCESS_KEY = os.getenv("CTO_AWS_S3_SECRET_ACCESS_KEY", "CTO_AWS_S3_SECRET_ACCESS_KEY_NOT_SET")
@@ -75,7 +76,7 @@ def export_cto_msgs():
             with open(f"{working_dir}/{filename}.txt", "w") as metadata_file:
                 first_msg_label = first_msg.strftime(METADATA_DATE_FORMAT)
                 last_msg_label = last_msg.strftime(METADATA_DATE_FORMAT)
-                metadata_file.write(METADATA_FILE_TEMPLATE.format(first_msg=first_msg_label, last_msg=last_msg_label, cto_label=cto_label))
+                metadata_file.write(METADATA_FILE_TEMPLATE.format(first_msg=first_msg_label, last_msg=last_msg_label, cto_label=cto_label, uuid=CTO_UUID))
             zipfile_path = f"{temp_dir}/{filename}.zip"
             with ZipFile(zipfile_path, "w") as zipfile:
                 zipfile.write(f"{working_dir}/{filename}.xml", f"{filename}.xml")
