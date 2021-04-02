@@ -158,7 +158,7 @@ def squash_msgcounts():
     LabelCount.squash()
     BroadcastMsgCount.squash()
 
-@nonoverlapping_task(track_started=True, name="export_cto_msgs", lock_timeout=86400)
+@nonoverlapping_task(track_started=True, name="export_cto_msgs", lock_timeout=3600)
 def export_cto_msgs_task():
     logger.info("Starting export_cto_msgs task")
     export_cto_msgs()
