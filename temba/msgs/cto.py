@@ -75,7 +75,7 @@ def export_cto_msgs():
             working_dir = f"{temp_dir}/{filename}"
             os.mkdir(working_dir)
             with open(f"{working_dir}/{filename}.xml", "wb") as xml_file:
-                xml_file.write(dicttoxml.dicttoxml(xml_output))
+                xml_file.write(dicttoxml.dicttoxml(xml_output, custom_root='messages', attr_type=False))
             with open(f"{working_dir}/{filename}.txt", "w") as metadata_file:
                 first_msg_label = first_msg.strftime(METADATA_DATE_FORMAT)
                 last_msg_label = last_msg.strftime(METADATA_DATE_FORMAT)
