@@ -33,49 +33,9 @@
               .claim-description
                 %div
                   {% include ch_type.get_claim_blurb %}
-    -else
-      .claim-row.android-channel.recommended
-        .recommendation
-          -blocktrans trimmed
-            We recommend using an Android phone with a local sim card for your country. This phone
-            will send and receive messages for you. You will only need one phone per country depending on
-            message volume. Don't worry! The people you are texting with can still use basic phones.
-        .row
-          .span3
-            %a.btn.btn-primary.btn-primary-muted.btn-claim{href:"{% url 'channels.types.android.claim' %}"}
-              .btn-container
-                .claim-glyph.icon-channel-android
-                %p.claim-text
-                  -trans "Android Phone"
-
-          .span8
-            .claim-description
-              %div
-                -blocktrans trimmed
-                  Works in any country and uses the cell phone plan
-                  you already have. You just need an Android phone
-                  to get started.
 
     %h3
       -trans "Phone Channels"
-
-    - if recommended_channels
-      .claim-row.android-channel
-        .row
-          .span3
-            %a.btn.btn-primary.btn-primary-muted.btn-claim{href:"{% url 'channels.types.android.claim' %}"}
-              .btn-container
-                .claim-glyph.icon-channel-android
-                %p.claim-text
-                  -trans "Android Phone"
-
-          .span8
-            .claim-description
-              %div
-                -blocktrans trimmed
-                  Works in any country and uses the cell phone plan
-                  you already have. You just need an Android phone
-                  to get started.
 
     -for ch_type in channel_types.PHONE
       .claim-row

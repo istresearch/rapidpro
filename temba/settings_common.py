@@ -1137,7 +1137,6 @@ CHANNEL_TYPES = [
     "temba.channels.types.zenvia.ZenviaType",
     "temba.channels.types.i2sms.I2SMSType",
     "temba.channels.types.clicksend.ClickSendType",
-    "temba.channels.types.android.AndroidType",
 ]
 
 # -----------------------------------------------------------------------------------
