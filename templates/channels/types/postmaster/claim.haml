@@ -40,7 +40,7 @@
 
       $.get('{% url "ext.api.v2.channel.status" %}.json?claim_code={{po_qr.data.claim_code}}', function(data) {
         if (Array.isArray(data['results']) && data['results'].length > 0) {
-          window.location = '{% url "orgs.org_home" %}';
+          window.location = '{% url "channels.channel_manage" %}?search=' + data['results'][0]["address"];
         }
       });
     }, 5000);
