@@ -11,6 +11,7 @@ import phonenumbers
 import pytz
 import requests
 import twilio.base.exceptions
+from django.contrib.postgres.forms import JSONField
 from django.views.generic.base import View
 from django_countries.data import COUNTRIES
 from smartmin.views import (
@@ -1238,6 +1239,7 @@ class BaseClaimNumberMixin(ClaimViewMixin):
 
 class UpdateChannelForm(forms.ModelForm):
     tps = forms.IntegerField(label="Maximum Transactions per Second", required=False)
+    config = JSONField()
 
     def __init__(self, *args, **kwargs):
         self.object = kwargs["object"]
@@ -1262,7 +1264,7 @@ class UpdateChannelForm(forms.ModelForm):
 
     class Meta:
         model = Channel
-        fields = "name", "address", "country", "alert_email", "tps"
+        fields = "name", "address", "country", "alert_email", "tps", "config"
         readonly = ("address", "country")
         labels = {"address": _("Address")}
         helps = {"address": _("The number or address of this channel")}
