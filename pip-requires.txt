@@ -33,6 +33,7 @@ elasticsearch
 elasticsearch_dsl
 
 ########################## file types ##########################
+dicttoxml
 geojson
 markdown
 polib
