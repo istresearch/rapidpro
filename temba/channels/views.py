@@ -1239,7 +1239,7 @@ class BaseClaimNumberMixin(ClaimViewMixin):
 
 class UpdateChannelForm(forms.ModelForm):
     tps = forms.IntegerField(label="Maximum Transactions per Second", required=False)
-    config = JSONField()
+    config = JSONField(required=False)
 
     def __init__(self, *args, **kwargs):
         self.object = kwargs["object"]
@@ -1248,13 +1248,6 @@ class UpdateChannelForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         self.config_fields = []
-
-        if TEL_SCHEME in self.object.schemes:
-            self.add_config_field(
-                Channel.CONFIG_ALLOW_INTERNATIONAL,
-                forms.BooleanField(required=False, help_text=_("Allow international sending")),
-                False,
-            )
 
     def add_config_field(self, config_key, field, default):
         field.initial = self.instance.config.get(config_key, default)
