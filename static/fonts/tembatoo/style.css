@@ -1,10 +1,10 @@
 @font-face {
   font-family: 'tembatoo';
-  src:  url('fonts/tembatoo.eot?5ko17c');
-  src:  url('fonts/tembatoo.eot?5ko17c#iefix') format('embedded-opentype'),
-    url('fonts/tembatoo.ttf?5ko17c') format('truetype'),
-    url('fonts/tembatoo.woff?5ko17c') format('woff'),
-    url('fonts/tembatoo.svg?5ko17c#tembatoo') format('svg');
+  src:  url('fonts/tembatoo.eot?2cwtct');
+  src:  url('fonts/tembatoo.eot?2cwtct#iefix') format('embedded-opentype'),
+    url('fonts/tembatoo.ttf?2cwtct') format('truetype'),
+    url('fonts/tembatoo.woff?2cwtct') format('woff'),
+    url('fonts/tembatoo.svg?2cwtct#tembatoo') format('svg');
   font-weight: normal;
   font-style: normal;
   font-display: block;
@@ -25,6 +25,9 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.icon-tembatoo-fbm:before {
+  content: "\e906";
+}
 .icon-tembatoo-mobyx:before {
   content: "\e905";
 }
