@@ -81,6 +81,7 @@ PM_FACEBOOK_SCHEME = "pm_facebook"
 PM_INSTAGRAM_SCHEME = "pm_instagram"
 PM_MOBYX_SCHEME = "pm_mobyx"
 PM_FBM_SCHEME = "pm_fbm"
+PM_EMAIL_SCHEME = "pm_email"
 
 # Scheme, Label, Export/Import Header, Context Key
 URN_SCHEME_CONFIG = (
@@ -101,6 +102,7 @@ URN_SCHEME_CONFIG = (
     (VK_SCHEME, _("VK identifier"), VK_SCHEME),
 
     (PM_FACEBOOK_SCHEME, _("Postmaster Facebook Identifier"), PM_FACEBOOK_SCHEME),
+    (PM_EMAIL_SCHEME, _("Postmaster Email Identifier"), PM_EMAIL_SCHEME),
     (PM_IMO_SCHEME, _("Postmaster IMO Identifier"), PM_IMO_SCHEME),
     (PM_INSTAGRAM_SCHEME, _("Postmaster Instagram Identifier"), PM_INSTAGRAM_SCHEME),
     (PM_KAKAO_SCHEME, _("Postmaster Kakao Identifier"), PM_KAKAO_SCHEME),
