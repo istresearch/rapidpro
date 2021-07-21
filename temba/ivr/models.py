@@ -27,7 +27,7 @@ class IVRCall(ChannelConnection):
         (15, _("After 15 minutes")),
     )
 
-    IVR_RETRY_CHOICES = ((-1, _("Never")), (30, _("After 30 minutes")), (60, _("After 1 hour")), (1440, _("After 1 day")))
+    IVR_RETRY_CHOICES = ((1, _("Never")), (30, _("After 30 minutes")), (60, _("After 1 hour")), (1440, _("After 1 day")))
 
     objects = IVRManager()
 
