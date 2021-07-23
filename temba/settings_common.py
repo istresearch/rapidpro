@@ -1271,5 +1271,5 @@ ASYNC_MESSAGE_EXPORT = os.environ.get('ASYNC_MESSAGE_EXPORT', 'on') == 'on'
 CHAT_MODE_CHOICES = (("WA", _("WhatsApp")), ("TG", _("Telegram")),  ("LN", _("LINE")), ("SIG", _("SIGNAL")),
                      ("SMS", _("TEL")), ("VK", _("VK")), ("VB", _("VIBER")), ("TWTR", _("TWITTER")),
                      ("KAKAO", _("KAKAO")), ("IMO", _("IMO")), ("IG", _("Instagram")), ("FB", _("Facebook")),
-                     ("MBX", _("Mobyx")), ("FBM", _("Messenger")), ("EMAIL", _("Email")))
+                     ("MBX", _("Mobyx")), ("FBM", _("FBM")), ("EMAIL", _("Email")))
 
