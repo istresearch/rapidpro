@@ -21,7 +21,7 @@ from temba.contacts.models import (
     ContactURN,
     PM_WHATSAPP_SCHEME, PM_TELEGRAM_SCHEME, PM_SIGNAL_SCHEME, PM_LINE_SCHEME,
     PM_VK_SCHEME, PM_VIBER_SCHEME, PM_TWITTER_SCHEME, PM_KAKAO_SCHEME, PM_IMO_SCHEME,
-    PM_FACEBOOK_SCHEME, PM_INSTAGRAM_SCHEME, PM_MOBYX_SCHEME)
+    PM_FACEBOOK_SCHEME, PM_INSTAGRAM_SCHEME, PM_MOBYX_SCHEME, PM_FBM_SCHEME, PM_EMAIL_SCHEME)
 from temba.ivr.models import IVRCall
 from temba.msgs.models import ERRORED, FAILED
 
@@ -52,6 +52,8 @@ URN_SCHEME_ICONS = {
     PM_FACEBOOK_SCHEME: "icon-facebook",
     PM_INSTAGRAM_SCHEME: "icon-tembatoo-instagram",
     PM_MOBYX_SCHEME: "icon-tembatoo-mobyx",
+    PM_FBM_SCHEME: "icon-tembatoo-fbm",
+    PM_EMAIL_SCHEME: "icon-envelop",
 }
 
 ACTIVITY_ICONS = {
