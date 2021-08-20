@@ -410,9 +410,7 @@ PERMISSIONS = {
         "twilio_account",
         "twilio_connect",
         "bandwidth_account",
-        "bandwidth_international_account",
         "bandwidth_connect",
-        "bandwidth_international_connect",
         "postmaster_connect",
         "postmaster_account",
         "two_factor",
@@ -637,9 +635,7 @@ GROUP_PERMISSIONS = {
         "orgs.org_twilio_account",
         "orgs.org_twilio_connect",
         "orgs.org_bandwidth_account",
-        "orgs.org_bandwidth_international_account",
         "orgs.org_bandwidth_connect",
-        "orgs.org_bandwidth_international_connect",
         "orgs.org_postmaster_account",
         "orgs.org_postmaster_connect",
         "orgs.org_token",
@@ -1078,7 +1074,6 @@ TICKETER_TYPES = ["temba.tickets.types.mailgun.MailgunType", "temba.tickets.type
 
 CHANNEL_TYPES = [
     "temba.channels.types.postmaster.PostmasterType",
-    "temba.channels.types.bandwidth_international.BandwidthInternationalType",
     "temba.channels.types.bandwidth.BandwidthType",
     "temba.channels.types.arabiacell.ArabiaCellType",
     "temba.channels.types.whatsapp.WhatsAppType",
