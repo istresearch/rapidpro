@@ -387,8 +387,8 @@ class ExtStatusEndpoint(ListAPIMixin, BaseAPIView):
 
     def get(self, request, *args, **kwargs):
         from temba.channels.types.postmaster import postoffice
-        claim_code = request.query_params.get("claim_code")
-        r = postoffice.channel_status()
+        nonce = request.query_params.get("api_key")
+        r = postoffice.channel_status(nonce)
         if r is not None:
             return Response(r, status=status.HTTP_200_OK)
         else:
