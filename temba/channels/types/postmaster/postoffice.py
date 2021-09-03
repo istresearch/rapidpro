@@ -21,8 +21,9 @@ def fetch_qr_code(org):
 
 def channel_status(nonce):
     if server_url is not None and api_key is not None:
-        r = requests.post("{}/engage/claimUsedBy".format(server_url), headers={"x-api-key": "{}".format(api_key)}, data={"api_key": nonce})
+        data = json.dumps({"api_key": nonce})
+        r = requests.post("{}/engage/claimUsedBy".format(server_url), headers={"x-api-key": "{}".format(api_key)}, data=data)
         if r.status_code == 200:
-            return json.loads(r.content)
+            return json.loads(r.content)["relayer_id"]
     return None
 

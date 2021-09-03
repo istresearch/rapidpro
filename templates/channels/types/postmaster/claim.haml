@@ -44,10 +44,9 @@
     setInterval(
     function pollUntilDone(url, interval, timeout) {
       if($('#enable-multiple')[0].checked == false){
-        $.get('{% url "ext.api.v2.channel.status" %}.json?api_key={{po_qr.data.api_key}}', function(data) {
-          if (data['relayer_id'] && data['relayer_id'].length > 0) {
-            console.log(data['relayer_id']);
-            // window.location = '{% url "channels.channel_manage" %}?search=' + data['relayer_id'];
+        $.get('{% url "ext.api.v2.channel.status" %}.json?api_key={{po_qr.data.api_key}}', function(relayer_id) {
+          if (relayer_id && relayer_id.length > 0) {
+            window.location = '{% url "channels.channel_manage" %}?search=' + relayer_id;
           }
         });
       }
