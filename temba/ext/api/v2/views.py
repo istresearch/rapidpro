@@ -385,42 +385,17 @@ class ExtStatusEndpoint(ListAPIMixin, BaseAPIView):
     write_serializer_class = ExtChannelWriteSerializer
     pagination_class = CreatedOnCursorPagination
 
+    def get(self, request, *args, **kwargs):
+        from temba.channels.types.postmaster import postoffice
+        claim_code = request.query_params.get("claim_code")
+        r = postoffice.channel_status()
+        if r is not None:
+            return Response(r, status=status.HTTP_200_OK)
+        else:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
     def get_queryset(self):
         return getattr(self.model, self.model_manager).filter()
-
-    def filter_queryset(self, queryset):
-        params = self.request.query_params
-        queryset = queryset.filter(is_active=True)
-
-        # filter by UUID (optional)
-        uuid = params.get("uuid")
-        if uuid:
-            queryset = queryset.filter(uuid=uuid)
-
-        # filter by address (optional)
-        address = params.get("address")
-        if address:
-            queryset = queryset.filter(address=address)
-
-        claim_code = params.get("claim_code")
-        if claim_code and len(claim_code) > 0:
-            queryset = queryset.filter(config__contains='"claim_code": "{}"'.format(claim_code))
-        else:
-            raise Http404('A valid claim_code request parameter must be provided')
-
-        c_type = params.get("type")
-        if c_type:
-            queryset = queryset.filter(channel_type=c_type)
-
-        c_address = params.get("device_id")
-        if c_address:
-            queryset = queryset.filter(address=c_address)
-
-        c_mode = params.get("mode")
-        if c_mode:
-            queryset = queryset.filter(config__contains='"chat_mode": "{}"'.format(c_mode))
-
-        return queryset
 
     @classmethod
     def get_read_explorer(cls):
