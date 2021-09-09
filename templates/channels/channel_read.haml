@@ -355,6 +355,7 @@
 
         %p
           -trans "Once it is removed, it will be gone forever. There is no way to undo this operation."
+
           %ul
           - for flow in object.dependent_flows.all
             %li
@@ -548,10 +549,10 @@
       modal = new ConfirmationModal($('.deletion > .title').html(), $('.deletion > .body').html());
       modal.addClass('alert');
 
-          modal.setListeners({onPrimary: function(){
-            $('#deletion-form').click();
-          }}, false);
-          modal.setPrimaryButton('{{ _("Remove")|escapejs }}');
+	  modal.setListeners({onPrimary: function(){
+		$('#deletion-form').click();
+	  }}, false);
+	  modal.setPrimaryButton('{{ _("Remove")|escapejs }}');
 
       modal.show();
       });
