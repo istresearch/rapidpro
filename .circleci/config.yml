@@ -31,15 +31,14 @@ jobs:
             else
               export VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
             fi
-            source scm/utils-engage.sh
       - run:
           name: Ensure Base GEOS Image Exists, building if necessary
           command: |
-            EnsureGeosImage ${IMAGE_NAME}
+            source scm/utils-engage.sh; EnsureGeosImage ${IMAGE_NAME}
       - run:
           name: Ensure Libs Image Exists, building if necessary
           command: |
-            EnsureLibsImage ${IMAGE_NAME}
+            source scm/utils-engage.sh; EnsureLibsImage ${IMAGE_NAME}
       - run:
           name: Build Engage Code Image
           command: |
