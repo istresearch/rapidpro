@@ -1,57 +1,100 @@
 version: 2
+
 jobs:
-  build:
+  build-containers:
     docker:
-      - image: docker:18.03.0
+      - image: circleci/buildpack-deps:stretch
     steps:
       - checkout
-      - setup_remote_docker:
-          docker_layer_caching: true
       - run:
-          name: Build 
+          name: Avoid "Are you sure you want to connect?" to GitHub
           command: |
-            apk add --update python openssh git curl
-            BRANCH=${CIRCLE_BRANCH#*/}
-            VERSION=`cat VERSION`
-            FROM_RP_TAG=v5.0.0
+            mkdir -p ~/.ssh
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+            chmod 600 ~/.ssh/known_hosts
+      - setup_remote_docker
+      - run:
+          name: Login to Docker
+          command: |
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+      - run:
+          name: Source build scripts
+          command: |
+            export FROM_RP_TAG=v5.0.0
+            export IMAGE_NAME=istresearch/p4-engage
+            export BRANCH=${CIRCLE_BRANCH#*/}
+            export VERSION_STR=$(cat VERSION)
             if [[ ! -z $CIRCLE_TAG ]]; then
-              VERSION_TAG="${VERSION}"
-            elif [[ $BRANCH == develop ]]; then
-              VERSION_TAG="${VERSION}-dev"
+              export VERSION_TAG="${VERSION_STR}"
+            elif [[ "$BRANCH" == "develop" ]]; then
+              export VERSION_TAG="${VERSION_STR}-dev"
             else
-              VERSION_TAG="ci-${VERSION}-${BRANCH}"
+              export VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
             fi
-            docker build -t istresearch/p4-engage:code-${VERSION_TAG} .
-            docker login -u $DOCKER_USER -p $DOCKER_PASS
-            docker push istresearch/p4-engage:code-${VERSION_TAG}
-  package:
-    docker:
-      - image: spotify/alpine
-    steps:
+            source scm/utils-engage.sh
       - run:
-          name: Trigger the docker build job
+          name: Ensure Base GEOS Image Exists, building if necessary
           command: |
-            printf "Triggering a $TRIGGER_PROJECT build on the $TRIGGER_PROJECT_BRANCH branch\n\n"
+            EnsureGeosImage ${IMAGE_NAME}
+      - run:
+          name: Ensure Libs Image Exists, building if necessary
+          command: |
+            EnsureLibsImage ${IMAGE_NAME}
+      - run:
+          name: Build Engage Code Image
+          command: |
+            IMAGE_TAG=code-${VERSION_TAG}
+            UILIBS_TAG=$(cat scm/uilibs_tag.txt)
+            echo "Building Docker container $IMAGE_NAME:$IMAGE_TAG using :${UILIBS_TAG}..."
+            docker build --build-arg FROM_UILIBS_TAG=${UILIBS_TAG} -t $IMAGE_NAME:$IMAGE_TAG -f docker/Dockerfile.code .
+            docker push $IMAGE_NAME:$IMAGE_TAG
+            scm/pr-comment.sh "Container built: $IMAGE_NAME:$IMAGE_TAG"
+      - run:
+          name: Build "Default Branding" Image
+          command: |
+            IMG_NAME=istresearch/rapidpro
+            IMG_TAG=${VERSION_TAG}
+            echo "Building Docker container ${IMG_NAME}:${IMG_TAG}..."
+            docker build --build-arg VERSION_TAG=$VERSION_TAG -t ${IMG_NAME}:${IMG_TAG} -f docker/Dockerfile.rp .
+            docker push ${IMG_NAME}:${IMG_TAG}
+            scm/pr-comment.sh "Container built: ${IMG_NAME}:${IMG_TAG}"
+      - run:
+          name: Build "Engage Branding" Image
+          command: |
+            IMG_NAME=istresearch/p4-engage
+            IMG_TAG=${VERSION_TAG}
+            echo "Building Docker container ${IMG_NAME}:${IMG_TAG}..."
+            docker build --build-arg VERSION_TAG=$VERSION_TAG -t ${IMG_NAME}:${IMG_TAG} -f docker/Dockerfile.engage .
+            docker push ${IMG_NAME}:${IMG_TAG}
+            scm/pr-comment.sh "Container built: ${IMG_NAME}:${IMG_TAG}"
+            if [[ $BRANCH == develop ]]; then
+              docker tag ${IMG_NAME}:${IMG_TAG} ${IMG_NAME}:ci-develop
+              docker push ${IMG_NAME}:ci-develop
+            fi
+      - run:
+          name: Build "Generic Branding" Image
+          command: |
+            IMG_NAME=istresearch/rapidpro
+            IMG_TAG=${VERSION_TAG}-generic
+            echo "Building Docker container ${IMG_NAME}:${IMG_TAG}..."
+            docker build --build-arg VERSION_TAG=$VERSION_TAG -t ${IMG_NAME}:${IMG_TAG} -f docker/Dockerfile.generic .
+            docker push ${IMG_NAME}:${IMG_TAG}
+            scm/pr-comment.sh "Container built: ${IMG_NAME}:${IMG_TAG}"
+      - run:
+          name: Deploy
+          command: |
+            if [[ "$BRANCH" == "develop" ]] || [[ "$BRANCH" == "main" ]] || [[ "$BRANCH" == "master" ]]; then
+              curl --user ${CIRCLE_API_USER_TOKEN}: --data build_parameters[CIRCLE_JOB]=eks_deploy --data build_parameters[DEPLOY_PROJECT]=pulse-engage https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/develop
+            else
+              echo "Skipping deploy step"
+            fi
 
-            curl -XPOST --header "Content-Type: application/json" -d '{"'"branch"'":"'"$TRIGGER_PROJECT_BRANCH"'"}' https://circleci.com/api/v1.1/project/github/$ORGANIZATION/$TRIGGER_PROJECT/build?circle-token=$CIRCLE_TOKEN
-
-            printf "\n\nBuild triggered\n\n"
-            printf "Follow the progress of the build on \nhttps://circleci.com/gh/$ORGANIZATION/$TRIGGER_PROJECT/tree/$TRIGGER_PROJECT_BRANCH"
 workflows:
   version: 2
-  engage:
+  pipeline:
     jobs:
-      - build:
+      - build-containers:
           context: globalconfig
           filters:
             tags:
               ignore: /^test-.*/
-      - package:
-          requires:
-            - build
-          context: globalconfig
-          filters:
-            branches:
-              only: develop
-
-
