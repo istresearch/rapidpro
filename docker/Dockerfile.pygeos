@@ -1,6 +1,13 @@
+FROM python:3.6-alpine as load-files
+
+COPY docker/geolibs.sh /opt/
+
+# ========================================================================
+
 FROM python:3.6-alpine
 
-COPY scm/geolibs.sh /
+COPY --from=load-files /opt /
+
 RUN set -ex \
  && apk add --no-cache --virtual .build-deps \
 	  gcc \
@@ -11,5 +18,6 @@ RUN set -ex \
 	  linux-headers \
  && sh /geolibs.sh \
  && apk del .build-deps
+ && rm /geolibs.sh
 
 CMD ["python3"]
