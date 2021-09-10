@@ -18,30 +18,30 @@ jobs:
           command: |
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
       - run:
-          name: Source build scripts
-          command: |
-            export FROM_RP_TAG=v5.0.0
-            export IMAGE_NAME=istresearch/p4-engage
-            export BRANCH=${CIRCLE_BRANCH#*/}
-            export VERSION_STR=$(cat VERSION)
-            if [[ ! -z $CIRCLE_TAG ]]; then
-              export VERSION_TAG="${VERSION_STR}"
-            elif [[ "$BRANCH" == "develop" ]]; then
-              export VERSION_TAG="${VERSION_STR}-dev"
-            else
-              export VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
-            fi
-      - run:
           name: Ensure Base GEOS Image Exists, building if necessary
           command: |
+            IMAGE_NAME=istresearch/p4-engage
             source scm/utils-engage.sh; EnsureGeosImage ${IMAGE_NAME}
       - run:
           name: Ensure Libs Image Exists, building if necessary
           command: |
+            IMAGE_NAME=istresearch/p4-engage
             source scm/utils-engage.sh; EnsureLibsImage ${IMAGE_NAME}
       - run:
           name: Build Engage Code Image
           command: |
+            BRANCH=${CIRCLE_BRANCH#*/}
+            VERSION_STR=$(cat VERSION)
+            if [[ ! -z $CIRCLE_TAG ]]; then
+              VERSION_TAG="${VERSION_STR}"
+            elif [[ "$BRANCH" == "develop" ]]; then
+              VERSION_TAG="${VERSION_STR}-dev"
+            else
+              VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
+            fi
+            echo ${VERSION_TAG} >> scm/version_tag.txt
+
+            IMAGE_NAME=istresearch/p4-engage
             IMAGE_TAG=code-${VERSION_TAG}
             UILIBS_TAG=$(cat scm/uilibs_tag.txt)
             echo "Building Docker container $IMAGE_NAME:$IMAGE_TAG using :${UILIBS_TAG}..."
@@ -51,34 +51,40 @@ jobs:
       - run:
           name: Build "Default Branding" Image
           command: |
-            IMG_NAME=istresearch/rapidpro
-            IMG_TAG=${VERSION_TAG}
-            echo "Building Docker container ${IMG_NAME}:${IMG_TAG}..."
-            docker build --build-arg VERSION_TAG=$VERSION_TAG -t ${IMG_NAME}:${IMG_TAG} -f docker/Dockerfile.rp .
-            docker push ${IMG_NAME}:${IMG_TAG}
-            scm/pr-comment.sh "Container built: ${IMG_NAME}:${IMG_TAG}"
+            FROM_RP_TAG=v5.0.0
+            VERSION_TAG=$(cat scm/version_tag.txt)
+            IMAGE_NAME=istresearch/rapidpro
+            IMAGE_TAG=${VERSION_TAG}
+            echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
+            docker build --build-arg VERSION_TAG=$VERSION_TAG -t ${IMAGE_NAME}:${IMAGE_TAG} -f docker/Dockerfile.rp .
+            docker push ${IMAGE_NAME}:${IMAGE_TAG}
+            scm/pr-comment.sh "Container built: ${IMAGE_NAME}:${IMAGE_TAG}"
       - run:
           name: Build "Engage Branding" Image
           command: |
-            IMG_NAME=istresearch/p4-engage
-            IMG_TAG=${VERSION_TAG}
-            echo "Building Docker container ${IMG_NAME}:${IMG_TAG}..."
-            docker build --build-arg VERSION_TAG=$VERSION_TAG -t ${IMG_NAME}:${IMG_TAG} -f docker/Dockerfile.engage .
-            docker push ${IMG_NAME}:${IMG_TAG}
-            scm/pr-comment.sh "Container built: ${IMG_NAME}:${IMG_TAG}"
+            FROM_RP_TAG=v5.0.0
+            VERSION_TAG=$(cat scm/version_tag.txt)
+            IMAGE_NAME=istresearch/p4-engage
+            IMAGE_TAG=${VERSION_TAG}
+            echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
+            docker build --build-arg VERSION_TAG=${VERSION_TAG} -t ${IMAGE_NAME}:${IMAGE_TAG} -f docker/Dockerfile.engage .
+            docker push ${IMAGE_NAME}:${IMAGE_TAG}
+            scm/pr-comment.sh "Container built: ${IMAGE_NAME}:${IMAGE_TAG}"
             if [[ $BRANCH == develop ]]; then
-              docker tag ${IMG_NAME}:${IMG_TAG} ${IMG_NAME}:ci-develop
-              docker push ${IMG_NAME}:ci-develop
+              docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:ci-develop
+              docker push ${IMAGE_NAME}:ci-develop
             fi
       - run:
           name: Build "Generic Branding" Image
           command: |
-            IMG_NAME=istresearch/rapidpro
-            IMG_TAG=${VERSION_TAG}-generic
-            echo "Building Docker container ${IMG_NAME}:${IMG_TAG}..."
-            docker build --build-arg VERSION_TAG=$VERSION_TAG -t ${IMG_NAME}:${IMG_TAG} -f docker/Dockerfile.generic .
-            docker push ${IMG_NAME}:${IMG_TAG}
-            scm/pr-comment.sh "Container built: ${IMG_NAME}:${IMG_TAG}"
+            FROM_RP_TAG=v5.0.0
+            VERSION_TAG=$(cat scm/version_tag.txt)
+            IMAGE_NAME=istresearch/rapidpro
+            IMAGE_TAG=${VERSION_TAG}-generic
+            echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
+            docker build --build-arg VERSION_TAG=$VERSION_TAG -t ${IMAGE_NAME}:${IMAGE_TAG} -f docker/Dockerfile.generic .
+            docker push ${IMAGE_NAME}:${IMAGE_TAG}
+            scm/pr-comment.sh "Container built: ${IMAGE_NAME}:${IMAGE_TAG}"
       - run:
           name: Deploy
           command: |
