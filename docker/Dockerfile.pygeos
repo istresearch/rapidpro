@@ -17,7 +17,7 @@ RUN set -ex \
 	  musl-dev \
 	  linux-headers \
  && sh /geolibs.sh \
- && apk del .build-deps
+ && apk del .build-deps \
  && rm /geolibs.sh
 
 CMD ["python3"]
