@@ -65,8 +65,9 @@ RUN set -ex && apk add --no-cache --virtual .build-deps \
 	openssl \
 	tar
 	  
-# TODO determine if a more recent version of Node is needed
-RUN set -ex && apk add --no-cache nodejs-lts nodejs-npm
+RUN apk add --no-cache nodejs-lts
+#RUN apk add --no-cache nodejs-npm  <- changed its name in alpine to just "npm"
+RUN apk add --no-cache npm
 
 RUN npm install -g coffee-script less bower
 
