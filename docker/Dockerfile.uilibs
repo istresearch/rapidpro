@@ -4,7 +4,7 @@ FROM istresearch/p4-engage:${FROM_PYGEOS_TAG} as load-files
 COPY pip-freeze.txt /opt/code2use/pip-freeze.txt
 COPY pip-add-reqs.txt /opt/code2use/pip-add-reqs.txt
 COPY package-lock.json /opt/code2use/package-lock.json
-#COPY package.json /opt/code2use/package.json
+COPY package.json /opt/code2use/package.json
 
 # ========================================================================
 
@@ -28,7 +28,8 @@ RUN echo $COLOR_MSG-----[ building FROM istresearch/p4-engage:${FROM_PYGEOS_TAG}
 
 USER root
 
-ENV PIP_RETRIES=120 \
+ENV PYTHON=/usr/local/bin/python3 \
+    PIP_RETRIES=120 \
     PIP_TIMEOUT=400 \
     PIP_DEFAULT_TIMEOUT=400 \
     C_FORCE_ROOT=1 \
@@ -63,36 +64,44 @@ RUN set -ex && apk add --no-cache --virtual .build-deps \
 	libzmq \
 	libmagic \
 	openssl \
+	openssl-dev \
 	tar
 	  
-RUN apk add --no-cache nodejs-lts
-#RUN apk add --no-cache nodejs-npm  <- changed its name in alpine to just "npm"
-RUN apk add --no-cache npm
+RUN apk add --no-cache nodejs-lts npm
 
-RUN npm install -g coffee-script less bower
+RUN npm install -g coffeescript less bower
 
-RUN pip install -U virtualenv && virtualenv /venv
+RUN addgroup engage; adduser -D -S -s /bin/false -u 1717 engage -g engage
 
-COPY --from=load-files /opt/code2use /rapidpro
+RUN mkdir -p /venv; chown -R engage:engage /rapidpro /venv
+COPY --from=load-files --chown=engage:engage /opt/code2use /rapidpro
 
-RUN LIBRARY_PATH=/lib:/usr/lib /bin/sh -c "/venv/bin/pip install setuptools==33.1.1" \
-    && LIBRARY_PATH=/lib:/usr/lib /bin/sh -c "/venv/bin/pip install -r pip-freeze.txt" \
-    && LIBRARY_PATH=/lib:/usr/lib /bin/sh -c "/venv/bin/pip install -r pip-add-reqs.txt" \
-    && runDeps="$( \
-      scanelf --needed --nobanner --recursive /venv \
-              | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
-              | sort -u \
-              | xargs -r apk info --installed \
-              | sort -u \
+ENV PATH=/home/engage/.local/bin:$PATH \
+    PYTHON=/usr/local/bin/python3 \
+    LIBRARY_PATH=/lib:/usr/lib:$LIBRARY_PATH
+
+RUN python3 -m venv /venv && source /venv/bin/activate
+RUN pip install setuptools==33.1.1
+RUN pip install cffi
+RUN pip install -r pip-freeze.txt
+RUN pip install -r pip-add-reqs.txt
+
+# install more lib dependencies
+USER root
+RUN runDeps="$( \
+    scanelf --needed --nobanner --recursive /venv \
+      | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
+      | sort -u \
+      | xargs -r apk info --installed \
+      | sort -u \
     )" \
-    && apk --no-cache add --virtual .python-rundeps $runDeps \
-    && apk del .build-deps && rm -rf /var/cache/apk/*
+ && apk --no-cache add --virtual .python-rundeps $runDeps \
+ && apk del .build-deps && rm -rf /var/cache/apk/*
+ 
+#RUN npm install --global node-gyp@latest \
+# && npm config set node_gyp $(npm prefix -g)/lib/node_modules/node-gyp/bin/node-gyp.js
 
-RUN addgroup engage
-RUN adduser -D -S -s /bin/false -u 1717 engage -g engage
-
-RUN chown -R engage:engage /rapidpro
 USER engage:engage
 
 # Run this after switching from root so prepare will run on packages
-RUN npm install
+RUN npm --production install
