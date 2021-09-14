@@ -9,7 +9,6 @@
     ]
   },
   "dependencies": {
-    "react-scripts": "*",
     "@nyaruka/flow-editor": "github:istresearch/floweditor#v1.9.8-2",
     "@nyaruka/temba-components": "0.1.7",
     "coffeescript": "1.12.7",
