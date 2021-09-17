@@ -3,7 +3,7 @@ version: 2
 jobs:
   build-containers:
     docker:
-      - image: circleci/buildpack-deps:stretch
+      - image: cimg/base:stable
     steps:
       - checkout
       - run:
