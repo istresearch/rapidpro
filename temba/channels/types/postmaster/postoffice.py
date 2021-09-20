@@ -2,8 +2,9 @@ from django.conf import settings
 import requests
 import json
 
-server_url = getattr(settings, "POST_OFFICE_API_URL", ())
-api_key = getattr(settings, "POST_OFFICE_API_KEY", ())
+po_server_url = getattr(settings, "POST_OFFICE_API_URL", ())
+po_api_key = getattr(settings, "POST_OFFICE_API_KEY", ())
+po_api_header = "po-api-key"
 
 
 def __init__(self, channel_type):
@@ -12,18 +13,18 @@ def __init__(self, channel_type):
 
 def fetch_qr_code(org):
     data = json.dumps({"org_id": org.id, "org_name": org.name})
-    if server_url is not None and api_key is not None:
-        r = requests.post("{}/engage/claim".format(server_url), headers={"x-api-key": "{}".format(api_key)}, data=data)
+    if po_server_url is not None and po_api_key is not None:
+        r = requests.post("{}/engage/claim".format(po_server_url), headers={po_api_header: "{}".format(po_api_key)}, data=data)
         if r.status_code == 200:
-            return json.loads(r.content)
+            return json.loads(r.content)["data"]
     return None
 
 
 def channel_status(nonce):
-    if server_url is not None and api_key is not None:
+    if po_server_url is not None and po_api_key is not None:
         data = json.dumps({"api_key": nonce})
-        r = requests.post("{}/engage/claimUsedBy".format(server_url), headers={"x-api-key": "{}".format(api_key)}, data=data)
+        r = requests.post("{}/engage/claimUsedBy".format(po_server_url), headers={po_api_header: "{}".format(po_api_key)}, data=data)
         if r.status_code == 200:
-            return json.loads(r.content)["relayer_id"]
+            return json.loads(r.content)["data"]["relayer_id"]
     return None
 
