@@ -955,7 +955,7 @@ CELERYBEAT_SCHEDULE = {
     "trim-sync-events": {"task": "trim_sync_events_task", "schedule": crontab(hour=3, minute=0)},
     "trim-webhook-event": {"task": "trim_webhook_event_task", "schedule": crontab(hour=3, minute=0)},
     "update-org-activity": {"task": "update_org_activity_task", "schedule": crontab(hour=3, minute=5)},
-    "update-postmaster-sync": {"task": "update_postmaster_sync_task", "schedule": timedelta(seconds=300)},
+    #"update-postmaster-sync": {"task": "update_postmaster_sync_task", "schedule": timedelta(seconds=300)},
 }
 
 # Mapping of task name to task function path, used when CELERY_ALWAYS_EAGER is set to True
