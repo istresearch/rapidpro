@@ -50,7 +50,8 @@ function runActionOnObjectRows(action) {
     jQuery.ajaxSettings.traditional = true;
     fetchPJAXContent('', '#pjax', {
         postData: { objects: objectIds, action: action, pjax: 'true' },
-        forceReload: true
+        forceReload: true,
+        followRedirects: true
     });
 }
 

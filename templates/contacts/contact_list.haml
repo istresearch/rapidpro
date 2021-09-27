@@ -147,9 +147,12 @@
 
               .list-container
                 %table.list-table.contact_list.table.object-list.table.table-condensed{style: '{% if not org_perms.contacts.contact_update %}margin-top:10px{% endif %}'}
-                  %tr.contacts
+                  %tr.contacts.multiselect-header
                     - if org_perms.contacts.contact_update
-                      %th
+                      %th{style: 'padding-left:0px'}
+                        %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox{style: 'padding-left: 5px'}
+                        %div{style: 'padding-top: 4px; width: 12px'}
+                          Select all
 
                     %th
                     %th
