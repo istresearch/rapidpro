@@ -24,7 +24,7 @@
 
 
   function fetchPJAXContent(url, container, options) {
-      console.log("blh");
+
       var type = 'GET';
       var data = undefined;
       if (options) {
@@ -86,9 +86,6 @@
                     options['onSuccess']();
                 }
             }
-          },
-          error: function(error){
-              console.log("errored");
           }
       });
   }
@@ -102,24 +99,24 @@
 var refreshTimeout = 10000;
 function refresh(onSuccess, forceReload){
 
-  // var url = "{{url_params|safe}}"
-  // {% if page_obj %}
-  //   url += "page={{page_obj.number}}";
-  // {% endif %}
-  //
-  // if (url == '') {
-  //     url = '?';
-  // }
-  //
-  // url += '&ts=' + new Date().getTime() + "&refresh=" + refreshTimeout;
-  //
-  // fetchPJAXContent(url, '#pjax', {
-  //     forceReload: forceReload,
-  //     onSuccess: onSuccess,
-  //     onIgnore: function() {
-  //         scheduleRefresh();
-  //     }
-  // });
+  var url = "{{url_params|safe}}"
+  {% if page_obj %}
+    url += "page={{page_obj.number}}";
+  {% endif %}
+
+  if (url == '') {
+      url = '?';
+  }
+
+  url += '&ts=' + new Date().getTime() + "&refresh=" + refreshTimeout;
+
+  fetchPJAXContent(url, '#pjax', {
+      forceReload: forceReload,
+      onSuccess: onSuccess,
+      onIgnore: function() {
+          scheduleRefresh();
+      }
+  });
 }
 
 refreshTimeout = {{ refresh }};
