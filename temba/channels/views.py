@@ -1787,7 +1787,7 @@ class ChannelCRUDL(SmartCRUDL):
             channel = self.get_object()
 
             try:
-                channel.release(trigger_sync=self.request.META["SERVER_NAME"] != "testserver")
+                channel.release(trigger_sync=self.request.META["SERVER_NAME"] != "testserver", check_dependent_flows=False)
 
                 if channel.channel_type == "T" and not channel.is_delegate_sender():
                     messages.info(

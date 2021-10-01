@@ -263,7 +263,10 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
                 },
             }
             try:
-                channel.release()
+                if request.query_params.get("force_delete") is not None and request.query_params.get("force_delete").lower() in ["true", "1"]:
+                    channel.release(check_dependent_flows=False)
+                else:
+                    channel.release(check_dependent_flows=True)
             except Exception as e:
                 data["response"]["status"] = status.HTTP_400_BAD_REQUEST
                 data["response"]["errors"] = e.args
