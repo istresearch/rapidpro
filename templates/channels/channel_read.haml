@@ -356,7 +356,7 @@
           .number.text-center
             {{ object.get_channel_type_display }} {{ object.get_address_display|default:'' }}
           {% else %}
-          - trans "This channel is still in use. Press Ok to force delete it. "
+          - trans "This channel is still in use. Please confirm that you want to force remove it."
           .number.text-center
             {{ object.get_channel_type_display }} {{ object.get_address_display|default:'' }}
           {% endif %}
