@@ -263,7 +263,7 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
                 },
             }
             try:
-                if request.query_params.get("force_delete").lower() in ["true", "1"]:
+                if request.query_params.get("force_delete") is not None and request.query_params.get("force_delete").lower() in ["true", "1"]:
                     channel.release(check_dependent_flows=False)
                 else:
                     channel.release(check_dependent_flows=True)
