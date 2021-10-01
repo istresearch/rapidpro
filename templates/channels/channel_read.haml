@@ -356,7 +356,7 @@
           .number.text-center
             {{ object.get_channel_type_display }} {{ object.get_address_display|default:'' }}
           {% else %}
-          - trans "This channel cannot be removed because it in use."
+          - trans "This channel is still in use. Press Ok to force delete it. "
           .number.text-center
             {{ object.get_channel_type_display }} {{ object.get_address_display|default:'' }}
           {% endif %}
@@ -574,9 +574,9 @@
 
       {% else %}
           modal.setListeners({onPrimary: function(){
-            modal.dismiss();
+            $('#deletion-form').click();
           }}, false);
-          modal.setPrimaryButton('{{ _("Ok")|escapejs }}');
+          modal.setPrimaryButton('{{ _("Force Remove")|escapejs }}');
       {% endif %}
 
       modal.show();
