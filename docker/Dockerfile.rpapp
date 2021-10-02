@@ -29,8 +29,13 @@ ARG ARG_C_FORCE_ROOT
 ENV C_FORCE_ROOT=$ARG_C_FORCE_ROOT
 
 USER root
-# temp libs we only need for inital npm install
-RUN set -ex; apk add --update --no-cache --virtual .build-deps \
+# runtime libs we need/want to keep around
+RUN set -ex; apk add --update --no-cache \
+	git \
+	libmagic \
+	libressl \
+	ncurses \
+	postgresql-client \
 	rsync \
  && rm -rf /var/cache/apk/*
 
@@ -43,15 +48,6 @@ RUN rsync -a /opt/rp/ ./
 # cleanup
 USER root
 RUN apk del .build-deps && rm -R /opt/rp
-
-# runtime libs we need to keep around
-RUN set -ex; apk add --update --no-cache \
-	git \
-	libmagic \
-	libressl \
-	ncurses \
-	postgresql-client \
- && rm -rf /var/cache/apk/*
 
 # needed for scripts like collectstatic
 RUN npm install -g less
