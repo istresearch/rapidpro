@@ -47,7 +47,7 @@ RUN rsync -a /opt/rp/ ./
 
 # cleanup
 USER root
-RUN apk del .build-deps && rm -R /opt/rp
+RUN rm -R /opt/rp
 
 # needed for scripts like collectstatic
 RUN npm install -g less
