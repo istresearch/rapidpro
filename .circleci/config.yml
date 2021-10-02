@@ -32,7 +32,7 @@ jobs:
           command: |
             source scm/utils-engage.sh; EnsurePyLibsImage
       - run:
-          name: Ensure Jsthon Libs Image Exists, building if necessary
+          name: Ensure JavaScript/Node Libs Image Exists, building if necessary
           command: |
             source scm/utils-engage.sh; EnsureJsLibsImage
       - run:
