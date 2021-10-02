@@ -1,77 +1,60 @@
-ARG VERSION_TAG
-FROM istresearch/p4-engage:code-${VERSION_TAG} as load-files
-
-USER root
-
-# apply branding
-COPY --chown=engage:engage docker/overrides/settings-generic.py /opt/code2use/temba/settings.py
-COPY --chown=engage:engage docker/customizations/generic /opt/code2use/rapidpro/
-
-COPY --chown=engage:engage docker/overrides/urls.py /opt/code2use/temba/
-
-# 500.html needed to keep the missing template from causing an exception during error handling
-COPY --chown=engage:engage docker/overrides/500.html /opt/code2use/templates/
-
-COPY --chown=engage:engage docker/overrides/init_db.sql /opt/code2use/rapidpro/
-COPY --chown=engage:engage docker/overrides/clear-compressor-cache.py /opt/code2use/rapidpro/
-COPY --chown=engage:engage docker/overrides/Procfile /opt/code2use/rapidpro/
-COPY --chown=engage:engage docker/overrides/startup.py /opt/code2use/rapidpro/
-COPY --chown=engage:engage docker/overrides/db-init.sh /opt/code2use/rapidpro/
-COPY --chown=engage:engage docker/overrides/web-static.py /opt/code2use/rapidpro/
-
-COPY --chown=engage:engage docker/overrides/startup.sh /opt/code2use/root/
+ARG RAPIDPRO_VERSION=v5.0.0
+ARG RAPIDPRO_REPO=istresearch/rapidpro
+ARG FROM_STAGE_TAG
 
 # ========================================================================
 
-ARG VERSION_TAG
-FROM istresearch/p4-engage:code-${VERSION_TAG}
-
-# Colors! :D
-ENV COLOR_NONE=\033[0m \
-	COLOR_GREEN=\033[0;32m \
-	COLOR_RED=\033[0;31m \
-	COLOR_CYAN=\033[0;36m
-# Once colors have been defined, we can use them for specific things.
-ENV COLOR_MSG=$COLOR_CYAN
-
-# while doing the build, no interaction possible
-ENV DEBIAN_FRONTEND noninteractive
-
-# Redeclaring after FROM because we have to in order to get the value
-ARG VERSION_TAG
-RUN echo $COLOR_MSG-----[ building FROM istresearch/p4-engage:code-${VERSION_TAG} ]-----$COLOR_NONE
-
-WORKDIR /rapidpro
+FROM istresearch/p4-engage:${FROM_STAGE_TAG}
 
 ARG RAPIDPRO_VERSION
 ARG RAPIDPRO_REPO
 ENV RAPIDPRO_VERSION=${RAPIDPRO_VERSION:-master}
 ENV RAPIDPRO_REPO=${RAPIDPRO_REPO:-istresearch/rapidpro}
 
-ENV UWSGI_VIRTUALENV=/venv UWSGI_WSGI_FILE=temba/wsgi.py UWSGI_HTTP=:8000 UWSGI_MASTER=1 UWSGI_WORKERS=8 UWSGI_HARAKIRI=20
+ENV UWSGI_VIRTUALENV=venv UWSGI_WSGI_FILE=temba/wsgi.py UWSGI_HTTP=:8000 UWSGI_MASTER=1 UWSGI_WORKERS=8 UWSGI_HARAKIRI=20
 # Enable HTTP 1.1 Keep Alive options for uWSGI (http-auto-chunked needed when ConditionalGetMiddleware not installed)
 # These options don't appear to be configurable via environment variables, so pass them in here instead
-ENV STARTUP_CMD="/venv/bin/uwsgi --http-auto-chunked --http-keepalive"
-ENV CELERY_CMD="/venv/bin/celery --beat --app=temba worker --loglevel=INFO --queues=celery,msgs,flows,handler"
+ENV STARTUP_CMD="venv/bin/uwsgi --http-auto-chunked --http-keepalive"
+ENV CELERY_CMD="venv/bin/celery --beat --app=temba worker --loglevel=INFO --queues=celery,msgs,flows,handler"
 
-USER engage:engage
-
-COPY --from=load-files /opt/code2use/temba /rapidpro/temba/
-COPY --from=load-files /opt/code2use/templates /rapidpro/templates/
-COPY --from=load-files /opt/code2use/rapidpro /rapidpro/
-COPY --from=load-files /opt/code2use/root /
-# also copy procfile to root
-COPY --from=load-files /opt/code2use/rapidpro/Procfile /
-
-CMD ["/startup.sh"]
-
+# must be same as UWSGI_HTTP defined above in UWSGI_VIRTUALENV
 EXPOSE 8000
+
+USER engage
+WORKDIR /rapidpro
+CMD ["/startup.sh"]
 
 LABEL org.label-schema.name="Engage" \
       org.label-schema.description="Enabling Global Conversations." \
       org.label-schema.version=$VERSION_TAG \
       org.label-schema.schema-version="1.0"
 
-RUN mkdir -p /rapidpro/static/sitestatic &&	cp -fr /rapidpro/static/brands /rapidpro/static/sitestatic/brands \
- && REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 /venv/bin/python manage.py collectstatic --noinput --no-post-process \
- && REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 /venv/bin/python manage.py compress --extension='.haml' --force -v0
+# apply branding
+COPY --chown=engage:engage docker/overrides/settings-generic.py       temba/settings.py
+COPY --chown=engage:engage docker/customizations/generic              /opt/rp
+RUN rsync -a /opt/rp/ ./
+
+COPY --chown=engage:engage docker/overrides/urls.py                   temba/urls.py
+
+# 500.html needed to keep the missing template from causing an exception during error handling
+COPY --chown=engage:engage docker/overrides/500.html                  templates/500.html
+
+COPY --chown=engage:engage docker/overrides/init_db.sql               ./init_db.sql
+COPY --chown=engage:engage docker/overrides/clear-compressor-cache.py ./clear-compressor-cache.py
+COPY --chown=engage:engage docker/overrides/Procfile                  ./Procfile
+COPY --chown=engage:engage docker/overrides/startup.py                ./startup.py
+COPY --chown=engage:engage docker/overrides/db-init.sh                ./db-init.sh
+COPY --chown=engage:engage docker/overrides/web-static.sh             ./web-static.sh
+
+COPY --chown=engage:engage docker/overrides/startup.sh                /startup.sh
+
+# compress static files
+RUN mkdir -p static/sitestatic \
+ && cp -fr static/brands static/sitestatic/brands \
+ && source venv/bin/activate; PATH=node_modules/coffeescript/bin:$PATH REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py collectstatic --noinput --no-post-process \
+ && source venv/bin/activate; PATH=node_modules/coffeescript/bin:$PATH REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py compress --extension='.haml' --force -v0
+
+# cleanup
+USER root
+RUN rm -R /opt/rp
+USER engage

@@ -14,6 +14,55 @@ if [[ -z "${UTILS_PATH}" ]]; then
 fi
 source "${UTILS_PATH}/utils.sh"
 
+DEFAULT_IMAGE_NAME=istresearch/p4-engage
+
+
+####################
+# Get the file containing the image tag  for stage image specified by arg.
+# @param string $1 - the stage image base name.
+function GetImgStageFile()
+{
+  IMG_STAGE=$1
+  echo "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
+}
+
+####################
+# Get the image tag for stage image specified by arg.
+# @param string $1 - the stage image base name.
+function GetImgStageTag()
+{
+  IMG_STAGE_FILE=$(GetImgStageFile $1)
+  if [[ ! -f "${IMG_STAGE_FILE}" ]]; then
+    echo "Error: ${IMG_STAGE_FILE} not found."
+    exit 2
+  fi
+  echo "`cat ${IMG_STAGE_FILE}`"
+}
+
+####################
+# Determine the image tag for Python3 & GEOS image based on its requirements file(s).
+# Ensure the docker image tagged with the special tag exists; build if needed.
+# @param string $1 - the base image to use.
+function EnsureBaseImage()
+{
+  if [[ -z "$1" ]]; then
+    IMAGE_NAME=$DEFAULT_IMAGE_NAME
+  else
+    IMAGE_NAME=$1
+  fi
+  IMG_STAGE=base
+  DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
+  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}"`
+  echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
+  if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
+    echo "Building Docker container $IMAGE_NAME:$IMAGE_TAG..."
+    #if debugging, can add arg --progress=plain to the docker build command
+    docker build -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
+    docker push $IMAGE_NAME:$IMAGE_TAG
+    "${UTILS_PATH}/pr-comment.sh" "Base Image built: $IMAGE_NAME:$IMAGE_NAME"
+  fi
+  PrintPaddedTextRight "Using Base Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
+}
 
 ####################
 # Determine the image tag for Python3 & GEOS image based on its requirements file(s).
@@ -21,37 +70,169 @@ source "${UTILS_PATH}/utils.sh"
 # @param string $1 - the base image to use.
 function EnsureGeosImage()
 {
-  IMAGE_NAME=$1
-  IMAGE_TAG=pygeos-`CalcFileArgsMD5 "docker/Dockerfile.pygeos" "docker/geolibs.sh"`
-  echo $IMAGE_TAG >> "${UTILS_PATH}/pygeos_tag.txt"
-  if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
-    echo "Building Docker container $IMAGE_NAME:$IMAGE_TAG..."
-    docker build -t $IMAGE_NAME:$IMAGE_TAG -f docker/Dockerfile.pygeos .
-    docker push $IMAGE_NAME:$IMAGE_TAG
-    "${UTILS_PATH}/pr-comment.sh" "Python3/GEOS Image built: $IMAGE_NAME:$IMAGE_NAME"
+  if [[ -z "$1" ]]; then
+    IMAGE_NAME=$DEFAULT_IMAGE_NAME
+  else
+    IMAGE_NAME=$1
   fi
-  PrintPaddedTextRight "Using Python3/GEOS Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
+  IMG_STAGE=pygeos
+  DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
+  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile base)"`
+  echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
+  if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
+    BASE_TAG=`GetImgStageTag base`
+    PrintPaddedTextRight "  Using Base Tag" $BASE_TAG ${COLOR_MSG_INFO}
+    echo "Building Docker container $IMAGE_NAME:$IMAGE_TAG..."
+    #if debugging, can add arg --progress=plain to the docker build command
+    docker build --build-arg FROM_BASE_TAG=$BASE_TAG \
+        -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
+    docker push $IMAGE_NAME:$IMAGE_TAG
+    "${UTILS_PATH}/pr-comment.sh" "osgeo.org GEO Libs Image built: $IMAGE_NAME:$IMAGE_NAME"
+  fi
+  PrintPaddedTextRight "Using osgeo.org GEO Libs Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
 }
+
+####################
+# Determine the image tag for Python Libs image based on its requirements file(s).
+# Ensure the docker image tagged with the special tag exists; build if needed.
+# @param string $1 - the base image to use.
+function EnsurePyLibsImage()
+{
+  if [[ -z "$1" ]]; then
+    IMAGE_NAME=$DEFAULT_IMAGE_NAME
+  else
+    IMAGE_NAME=$1
+  fi
+  IMG_STAGE=pylibs
+  DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
+  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile pygeos)" "pip-freeze.txt" "pip-add-reqs.txt"`
+  echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
+  if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
+    FROM_STAGE_TAG=`GetImgStageTag pygeos`
+    PrintPaddedTextRight "  Using pygeos Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
+    echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
+    #if debugging, can add arg --progress=plain to the docker build command
+    docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
+        -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
+    docker push $IMAGE_NAME:$IMAGE_TAG
+    "${UTILS_PATH}/pr-comment.sh" "Python Libs Image built: $IMAGE_NAME:$IMAGE_NAME"
+  fi
+  PrintPaddedTextRight "Using Python Libs Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
+}
+
 
 ####################
 # Determine the image tag for Libs image based on its requirements file(s).
 # Ensure the docker image tagged with the special tag exists; build if needed.
 # @param string $1 - the base image to use.
-function EnsureLibsImage()
+function EnsureJsLibsImage()
 {
-  IMAGE_NAME=$1
-  IMAGE_TAG=uilibs-`CalcFileArgsMD5 "pip-freeze.txt" "pip-add-reqs.txt" "package-lock.json"`
-  echo $IMAGE_TAG >> "${UTILS_PATH}/uilibs_tag.txt"
-  if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
-    if [[ ! -f "${UTILS_PATH}/pygeos_tag.txt" ]]; then
-      echo "Error: ${UTILS_PATH}/pygeos_tag.txt not found."
-      exit 2
-    fi
-    PYGEOS_TAG=`cat ${UTILS_PATH}/pygeos_tag.txt`
-    echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG} from :${PYGEOS_TAG}..."
-    docker build --build-arg FROM_PYGEOS_TAG=${PYGEOS_TAG} -t $IMAGE_NAME:$IMAGE_TAG -f docker/Dockerfile.uilibs .
-    docker push $IMAGE_NAME:$IMAGE_TAG
-    "${UTILS_PATH}/pr-comment.sh" "UI Libs Image built: $IMAGE_NAME:$IMAGE_NAME"
+  if [[ -z "$1" ]]; then
+    IMAGE_NAME=$DEFAULT_IMAGE_NAME
+  else
+    IMAGE_NAME=$1
   fi
-  PrintPaddedTextRight "Using UI Libs Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
+  IMG_STAGE=jslibs
+  DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
+  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile pylibs)" "package-lock.json" "package.json"`
+  echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
+  if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
+    FROM_STAGE_TAG=`GetImgStageTag pylibs`
+    PrintPaddedTextRight "  Using pylibs Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
+    echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
+    #if debugging, can add arg --progress=plain to the docker build command
+    docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
+        -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
+    docker push $IMAGE_NAME:$IMAGE_TAG
+    "${UTILS_PATH}/pr-comment.sh" "JavaScript Libs Image built: $IMAGE_NAME:$IMAGE_NAME"
+  fi
+  PrintPaddedTextRight "Using JS Libs Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
 }
+
+####################
+# Determine the image tag for "code stage" image based on its requirements file(s).
+# Ensure the docker image tagged with the special tag exists; build if needed.
+# @param string $1 - the base image to use.
+function EnsureRpAppImage()
+{
+  if [[ -z "$1" ]]; then
+    IMAGE_NAME=$DEFAULT_IMAGE_NAME
+  else
+    IMAGE_NAME=$1
+  fi
+  IMG_STAGE=rpapp
+  DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
+  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "VERSION" "$(GetImgStageFile jslibs)"`
+  echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
+  if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
+    FROM_STAGE_TAG=`GetImgStageTag jslibs`
+    PrintPaddedTextRight "  Using jslibs Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
+    echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
+    #if debugging, can add arg --progress=plain to the docker build command
+    docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
+        -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
+    docker push $IMAGE_NAME:$IMAGE_TAG
+    "${UTILS_PATH}/pr-comment.sh" "RP App Image built: $IMAGE_NAME:$IMAGE_NAME"
+  fi
+  PrintPaddedTextRight "Using RP App Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
+}
+
+####################
+# Build the version for the given arg.
+# @param string $1 - the image name to build.
+# @param string $1 - which Dockerfile version to use (rp|engage|generic).
+# @param string $2 - the version tag to create.
+function BuildVersionForX()
+{
+  if [[ -z "$1" || "$1"=="default" ]]; then
+    IMAGE_NAME=$DEFAULT_IMAGE_NAME
+  else
+    IMAGE_NAME=$1
+  fi
+  IMG_TAG=$3
+  IMG_STAGE=$2
+  DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
+  IMAGE_TAG=${IMG_TAG}
+  echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
+  #always build, don't bother checking if it already exists.
+  #if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
+    FROM_STAGE_TAG=`GetImgStageTag rpapp`
+    PrintPaddedTextRight "  Using rpapp Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
+    echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
+    #if debugging, can add arg --progress=plain to the docker build command
+    docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
+        -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
+    docker push $IMAGE_NAME:$IMAGE_TAG
+    "${UTILS_PATH}/pr-comment.sh" "Image built: $IMAGE_NAME:$IMAGE_NAME"
+  #fi
+  PrintPaddedTextRight "Created Image" "$IMAGE_NAME:$IMAGE_TAG" ${COLOR_MSG_INFO}
+}
+
+####################
+# Build the version for generic Rapidpro.
+# @param string $1 - the version to tag.
+function BuildVersionForRp()
+{
+  BuildVersionForX "istresearch/rapidpro" rp $1
+}
+
+####################
+# Build the version for ourselves.
+# @param string $1 - the base image to use.
+# @param string $2 - the version to tag.
+function BuildVersionForEngage()
+{
+  BuildVersionForX default engage $1
+}
+
+####################
+# Build the version for generic use.
+# @param string $1 - the base image to use.
+# @param string $2 - the version to tag.
+function BuildVersionForGeneric()
+{
+  BuildVersionForX "istresearch/rapidpro" generic $1
+}
+
+
+

@@ -1,10 +1,11 @@
-FROM python:3.6-alpine as load-files
+ARG FROM_BASE_TAG
+FROM alpine as load-files
 
 COPY docker/geolibs.sh /opt/
 
 # ========================================================================
 
-FROM python:3.6-alpine
+FROM istresearch/p4-engage:${FROM_BASE_TAG} as base-stage
 
 COPY --from=load-files /opt /
 
@@ -19,5 +20,3 @@ RUN set -ex \
  && sh /geolibs.sh \
  && apk del .build-deps \
  && rm /geolibs.sh
-
-CMD ["python3"]

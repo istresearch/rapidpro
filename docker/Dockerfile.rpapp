@@ -1,0 +1,57 @@
+ARG FROM_STAGE_TAG
+ARG ARG_C_FORCE_ROOT=1
+ARG USER_PID=1717
+
+# ========================================================================
+
+FROM alpine as load-files
+
+WORKDIR /opt/code2use
+COPY ./antlr       antlr
+#COPY ./karma       karma
+COPY ./locale      locale
+COPY ./media       media
+COPY ./static      static
+COPY ./temba       temba
+COPY ./templates   templates
+COPY ./LICENSE     LICENSE
+COPY ./manage.py   manage.py
+COPY ./VERSION     VERSION
+
+# ========================================================================
+
+ARG ARG_C_FORCE_ROOT
+ARG FROM_STAGE_TAG
+FROM istresearch/p4-engage:${FROM_STAGE_TAG}
+
+# NOTE: we default force Celery to run as root; do we still wish to force that?
+ARG ARG_C_FORCE_ROOT
+ENV C_FORCE_ROOT=$ARG_C_FORCE_ROOT
+
+USER root
+# temp libs we only need for inital npm install
+RUN set -ex; apk add --update --no-cache --virtual .build-deps \
+	rsync \
+ && rm -rf /var/cache/apk/*
+
+USER engage
+WORKDIR /rapidpro
+
+COPY --from=load-files --chown=engage:engage /opt/code2use /opt/rp
+RUN rsync -a /opt/rp/ ./
+
+# cleanup
+USER root
+RUN apk del .build-deps && rm -R /opt/rp
+
+# runtime libs we need to keep around
+RUN set -ex; apk add --update --no-cache \
+	git \
+	libmagic \
+	libressl \
+	ncurses \
+	postgresql-client \
+ && rm -rf /var/cache/apk/*
+
+# needed for scripts like collectstatic
+RUN npm install -g less

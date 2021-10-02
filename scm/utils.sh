@@ -30,10 +30,8 @@ export SSH_ARGS="-q -o BatchMode=yes -o ConnectTimeout=5"
 export AUTOBUILD_DATETIME_STAMP=$(date +%Y%m%d-%H%M%S)
 
 # use CircleCI working directory, if defined, as REPO_PATH
-export REPO_PATH=$(realpath "${CIRCLE_WORKING_DIRECTORY/#\~/$HOME}")
-# if Repo path is not defined, use parent of parent of script
-if [[ -z ${REPO_PATH} ]]; then
-  export REPO_PATH="$(dirname -- "$(dirname -- "$(readlink -f -- "$0")")")"
+if [[ -n ${CIRCLE_WORKING_DIRECTORY} ]]; then
+  export REPO_PATH=$(realpath "${CIRCLE_WORKING_DIRECTORY/#\~/$HOME}")
 fi
 if [[ -z ${REPO_PATH} ]]; then
   export REPO_PATH="${PWD}"

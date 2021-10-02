@@ -1,0 +1,46 @@
+ARG USER_PID=1717
+
+#FROM alpine as load-files
+
+# ========================================================================
+
+# NOTE: alpine3.8
+FROM node:8.14.1-alpine
+
+# Colors! :D
+ENV COLOR_NONE=\033[0m \
+	COLOR_GREEN=\033[0;32m \
+	COLOR_RED=\033[0;31m \
+	COLOR_CYAN=\033[0;36m
+# Once colors have been defined, we can use them for specific things.
+ENV COLOR_MSG=$COLOR_CYAN
+
+# while doing the build, no interaction possible
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN set -ex; apk add --update --no-cache --virtual .build-deps \
+  g++ \
+  libgcc \
+  libstdc++ \
+  linux-headers \
+  make \
+ && rm -rf /var/cache/apk/*
+
+RUN npm install --quiet node-gyp -g
+
+# required runtime libs
+RUN set -ex; apk add --update --no-cache \
+  bash \
+  gcc \
+  nano \
+  python3 \
+  readline \
+ && rm -rf /var/cache/apk/*
+
+ARG USER_PID
+RUN addgroup engage; adduser -D -S -s /bin/false -u $USER_PID engage -g engage
+
+# cleanup
+RUN apk del .build-deps
+
+CMD ["python3"]
