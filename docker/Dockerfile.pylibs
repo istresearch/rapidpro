@@ -48,7 +48,7 @@ RUN addgroup engage; adduser -D -S -s /bin/false -u $USER_PID engage -g engage \
 
 WORKDIR /rapidpro
 
-COPY --from=load-files --chown=engage:engage /opt/code2use/* .
+COPY --from=load-files --chown=engage:engage /opt/code2use/* ./
 
 # required runtime libs
 RUN set -ex; apk -U add \
