@@ -74,4 +74,6 @@ RUN set -ex; apk -U add \
       | sort -u \
     )" \
  && apk --no-cache -U add $runDeps \
+	libpcre \
+	libxml2 \
  && echo "installed runtime pylibs"
