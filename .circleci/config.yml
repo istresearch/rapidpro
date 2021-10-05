@@ -20,10 +20,6 @@ jobs:
           command: |
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
       - run:
-          name: Ensure Base Image Exists, building if necessary
-          command: |
-            source scm/utils-engage.sh; EnsureBaseImage
-      - run:
           name: Ensure GEOS Libs Image Exists, building if necessary
           command: |
             source scm/utils-engage.sh; EnsureGeosImage

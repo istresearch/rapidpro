@@ -1,13 +1,7 @@
-ARG FROM_BASE_TAG
-FROM alpine as load-files
+# NOTE: alpine3.8
+FROM node:8.14.1-alpine
 
-COPY docker/geolibs.sh /opt/
-
-# ========================================================================
-
-FROM istresearch/p4-engage:${FROM_BASE_TAG} as base-stage
-
-COPY --from=load-files /opt /
+COPY docker/geolibs.sh /
 
 RUN set -ex \
  && apk add --no-cache --virtual .build-deps \

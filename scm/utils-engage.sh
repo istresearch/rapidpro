@@ -43,31 +43,6 @@ function GetImgStageTag()
 # Determine the image tag for Python3 & GEOS image based on its requirements file(s).
 # Ensure the docker image tagged with the special tag exists; build if needed.
 # @param string $1 - the base image to use.
-function EnsureBaseImage()
-{
-  if [[ -z "$1" ]]; then
-    IMAGE_NAME=$DEFAULT_IMAGE_NAME
-  else
-    IMAGE_NAME=$1
-  fi
-  IMG_STAGE=base
-  DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
-  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}"`
-  echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
-  if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
-    echo "Building Docker container $IMAGE_NAME:$IMAGE_TAG..."
-    #if debugging, can add arg --progress=plain to the docker build command
-    docker build -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
-    docker push $IMAGE_NAME:$IMAGE_TAG
-    "${UTILS_PATH}/pr-comment.sh" "Base Image built: $IMAGE_NAME:$IMAGE_NAME"
-  fi
-  PrintPaddedTextRight "Using Base Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
-}
-
-####################
-# Determine the image tag for Python3 & GEOS image based on its requirements file(s).
-# Ensure the docker image tagged with the special tag exists; build if needed.
-# @param string $1 - the base image to use.
 function EnsureGeosImage()
 {
   if [[ -z "$1" ]]; then
@@ -77,19 +52,17 @@ function EnsureGeosImage()
   fi
   IMG_STAGE=pygeos
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
-  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile base)"`
+  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}"`
   echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
-    BASE_TAG=`GetImgStageTag base`
-    PrintPaddedTextRight "  Using Base Tag" $BASE_TAG ${COLOR_MSG_INFO}
     echo "Building Docker container $IMAGE_NAME:$IMAGE_TAG..."
     #if debugging, can add arg --progress=plain to the docker build command
-    docker build --build-arg FROM_BASE_TAG=$BASE_TAG \
+    docker build \
         -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
     docker push $IMAGE_NAME:$IMAGE_TAG
-    "${UTILS_PATH}/pr-comment.sh" "osgeo.org GEO Libs Image built: $IMAGE_NAME:$IMAGE_NAME"
+    "${UTILS_PATH}/pr-comment.sh" "Base osgeo.org GEO Libs Image built: $IMAGE_NAME:$IMAGE_NAME"
   fi
-  PrintPaddedTextRight "Using osgeo.org GEO Libs Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
+  PrintPaddedTextRight "Using Base osgeo.org GEO Libs Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
 }
 
 ####################
@@ -105,48 +78,19 @@ function EnsurePyLibsImage()
   fi
   IMG_STAGE=pylibs
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
-  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile pygeos)" "pip-freeze.txt" "pip-add-reqs.txt"`
+  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile pygeos)" "pip-freeze.txt" "pip-add-reqs.txt" "package-lock.json" "package.json"`
   echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
     FROM_STAGE_TAG=`GetImgStageTag pygeos`
     PrintPaddedTextRight "  Using pygeos Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
-    #if debugging, can add arg --progress=plain to the docker build command
+    #if debugging, can add arg --progress=plain or --no-cache  to the docker build command
     docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
         -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
     docker push $IMAGE_NAME:$IMAGE_TAG
-    "${UTILS_PATH}/pr-comment.sh" "Python Libs Image built: $IMAGE_NAME:$IMAGE_NAME"
+    "${UTILS_PATH}/pr-comment.sh" "Python/NPM Libs Image built: $IMAGE_NAME:$IMAGE_NAME"
   fi
-  PrintPaddedTextRight "Using Python Libs Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
-}
-
-
-####################
-# Determine the image tag for Libs image based on its requirements file(s).
-# Ensure the docker image tagged with the special tag exists; build if needed.
-# @param string $1 - the base image to use.
-function EnsureJsLibsImage()
-{
-  if [[ -z "$1" ]]; then
-    IMAGE_NAME=$DEFAULT_IMAGE_NAME
-  else
-    IMAGE_NAME=$1
-  fi
-  IMG_STAGE=jslibs
-  DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
-  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile pylibs)" "package-lock.json" "package.json"`
-  echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
-  if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
-    FROM_STAGE_TAG=`GetImgStageTag pylibs`
-    PrintPaddedTextRight "  Using pylibs Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
-    echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
-    #if debugging, can add arg --progress=plain to the docker build command
-    docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
-        -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
-    docker push $IMAGE_NAME:$IMAGE_TAG
-    "${UTILS_PATH}/pr-comment.sh" "JavaScript Libs Image built: $IMAGE_NAME:$IMAGE_NAME"
-  fi
-  PrintPaddedTextRight "Using JS Libs Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
+  PrintPaddedTextRight "Using Python/NPM Libs Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
 }
 
 ####################
@@ -162,11 +106,11 @@ function EnsureRpAppImage()
   fi
   IMG_STAGE=rpapp
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
-  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "VERSION" "$(GetImgStageFile jslibs)"`
+  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "VERSION" "$(GetImgStageFile pylibs)"`
   echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
-    FROM_STAGE_TAG=`GetImgStageTag jslibs`
-    PrintPaddedTextRight "  Using jslibs Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
+    FROM_STAGE_TAG=`GetImgStageTag pylibs`
+    PrintPaddedTextRight "  Using pylibs Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
     #if debugging, can add arg --progress=plain to the docker build command
     docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
