@@ -13,7 +13,7 @@ jobs:
             ssh-keyscan -H github.com >> ~/.ssh/known_hosts
             chmod 600 ~/.ssh/known_hosts
       - setup_remote_docker:
-          version: 20.10.7
+          version: 20.10.8
           # Base GEOS image cannot build, force ver 20.10.7: https://discuss.circleci.com/t/unable-to-use-make/40552/4
       - run:
           name: Login to Docker
@@ -27,10 +27,6 @@ jobs:
           name: Ensure Python Libs Image Exists, building if necessary
           command: |
             source scm/utils-engage.sh; EnsurePyLibsImage
-      - run:
-          name: Ensure JavaScript/Node Libs Image Exists, building if necessary
-          command: |
-            source scm/utils-engage.sh; EnsureJsLibsImage
       - run:
           name: Ensure RpApp Image Exists, building if necessary
           command: |
