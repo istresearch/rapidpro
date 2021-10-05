@@ -64,9 +64,9 @@ RUN set -ex; apk -U add \
  && su-exec engage:engage ./pip-install.sh \
  && su-exec engage:engage npm install \
  && apk del .rp-build-deps \
- && echo "installed/built python and npm libs" \
+ && echo "installed/built python and npm libs"
 
- && runDeps="$( \
+RUN runDeps="$( \
     scanelf --needed --nobanner --recursive venv \
       | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
       | sort -u \
@@ -74,6 +74,6 @@ RUN set -ex; apk -U add \
       | sort -u \
     )" \
  && apk --no-cache -U add $runDeps \
-	libpcre \
+	pcre \
 	libxml2 \
  && echo "installed runtime pylibs"
