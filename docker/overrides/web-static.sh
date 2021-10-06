@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source venv/bin/activate
+source /venv/bin/activate
 
 if [[ -z $REDIS_URL ]]; then
   export REDIS_URL=redis://redis

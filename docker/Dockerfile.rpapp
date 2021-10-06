@@ -1,6 +1,16 @@
 ARG FROM_STAGE_TAG
+
 ARG ARG_C_FORCE_ROOT=1
+
 ARG USER_PID=1717
+
+ARG UWSGI_PORT=8000
+ARG UWSGI_NUM_WORKERS=16
+# uwsgi timeout is in seconds
+ARG UWSGI_TIMEOUT=45
+
+ARG RAPIDPRO_VERSION=v5.0.0
+ARG RAPIDPRO_REPO=istresearch/rapidpro
 
 # ========================================================================
 
@@ -8,7 +18,6 @@ FROM alpine as load-files
 
 WORKDIR /opt/code2use
 COPY ./antlr       antlr
-#COPY ./karma       karma
 COPY ./locale      locale
 COPY ./media       media
 COPY ./static      static
@@ -20,7 +29,6 @@ COPY ./VERSION     VERSION
 
 # ========================================================================
 
-ARG ARG_C_FORCE_ROOT
 ARG FROM_STAGE_TAG
 FROM istresearch/p4-engage:${FROM_STAGE_TAG}
 
@@ -28,14 +36,14 @@ FROM istresearch/p4-engage:${FROM_STAGE_TAG}
 ARG ARG_C_FORCE_ROOT
 ENV C_FORCE_ROOT=$ARG_C_FORCE_ROOT
 
+ARG RAPIDPRO_VERSION
+ARG RAPIDPRO_REPO
+ENV RAPIDPRO_VERSION=${RAPIDPRO_VERSION:-master} \
+    RAPIDPRO_REPO=${RAPIDPRO_REPO:-istresearch/rapidpro}
+
 USER root
 # runtime libs we need/want to keep around
-RUN set -ex; apk add --update --no-cache \
-	git \
-	libmagic \
-	libressl \
-	ncurses \
-	postgresql-client \
+RUN apk add --update --no-cache \
 	rsync \
  && rm -rf /var/cache/apk/*
 
@@ -49,5 +57,37 @@ RUN rsync -a /opt/rp/ ./
 USER root
 RUN rm -R /opt/rp
 
-# needed for scripts like collectstatic
-RUN npm install -g less
+ARG UWSGI_PORT
+ARG UWSGI_NUM_WORKERS
+ARG UWSGI_TIMEOUT
+ENV UWSGI_VIRTUALENV=/venv \
+    UWSGI_WSGI_FILE=temba/wsgi.py \
+    UWSGI_HTTP=:$UWSGI_PORT \
+    UWSGI_MASTER=1 \
+    UWSGI_WORKERS=$UWSGI_NUM_WORKERS \
+    UWSGI_HARAKIRI=$UWSGI_TIMEOUT
+EXPOSE $UWSGI_PORT
+
+# Enable HTTP 1.1 Keep Alive options for uWSGI (http-auto-chunked needed when ConditionalGetMiddleware not installed)
+# These options don't appear to be configurable via environment variables, so pass them in here instead
+ENV STARTUP_CMD="/venv/bin/uwsgi --http-auto-chunked --http-keepalive"
+
+ENV CELERY_CMD="/venv/bin/celery --beat --app=temba worker --loglevel=INFO --queues=celery,msgs,flows,handler"
+
+USER engage
+WORKDIR /rapidpro
+
+COPY --chown=engage:engage docker/overrides/urls.py                   temba/urls.py
+
+# 500.html needed to keep the missing template from causing an exception during error handling
+COPY --chown=engage:engage docker/overrides/500.html                  templates/500.html
+
+COPY --chown=engage:engage docker/overrides/init_db.sql               ./init_db.sql
+COPY --chown=engage:engage docker/overrides/clear-compressor-cache.py ./clear-compressor-cache.py
+COPY --chown=engage:engage docker/overrides/Procfile                  ./Procfile
+COPY --chown=engage:engage docker/overrides/startup.py                ./startup.py
+COPY --chown=engage:engage docker/overrides/db-init.sh                ./db-init.sh
+COPY --chown=engage:engage docker/overrides/web-static.sh             ./web-static.sh
+
+COPY --chown=engage:engage docker/overrides/startup.sh                /startup.sh
+CMD ["/startup.sh"]

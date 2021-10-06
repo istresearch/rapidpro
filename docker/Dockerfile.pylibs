@@ -44,7 +44,8 @@ ENV PIP_RETRIES=$ARG_PIP_RETRIES \
 
 ARG USER_PID
 RUN addgroup engage; adduser -D -S -s /bin/false -u $USER_PID engage -g engage \
- && mkdir -p /rapidpro; chown -R engage:engage /rapidpro
+ && mkdir -p /rapidpro; chown -R engage:engage /rapidpro \
+ && mkdir -p /venv; chown -R engage:engage /venv
 
 WORKDIR /rapidpro
 
@@ -57,7 +58,7 @@ RUN set -ex; apk -U add \
 	python3 \
 	su-exec \
  && echo "installed all runtime deps" \
- && npm install -g node-gyp \
+ && npm install -g node-gyp less \
  && echo "installed global runtime npm libs" \
 
  && ./rp-build-deps.sh \
@@ -66,14 +67,22 @@ RUN set -ex; apk -U add \
  && apk del .rp-build-deps \
  && echo "installed/built python and npm libs"
 
+# rather than also installing coffee to global area, just put it on PATH
+ENV PATH=/rapidpro/node_modules/coffeescript/bin:$PATH
+
 RUN runDeps="$( \
-    scanelf --needed --nobanner --recursive venv \
+    scanelf --needed --nobanner --recursive /venv \
       | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
       | sort -u \
       | xargs -r apk info --installed \
       | sort -u \
     )" \
  && apk --no-cache -U add $runDeps \
-	pcre \
+	git \
+	libmagic \
+	libressl \
 	libxml2 \
+	ncurses \
+	pcre \
+	postgresql-client \
  && echo "installed runtime pylibs"

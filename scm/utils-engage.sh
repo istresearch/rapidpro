@@ -145,6 +145,7 @@ function BuildVersionForX()
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
     #if debugging, can add arg --progress=plain to the docker build command
     docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
+        --build-arg VERSION_TAG=$IMG_TAG \
         -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
     docker push $IMAGE_NAME:$IMAGE_TAG
     "${UTILS_PATH}/pr-comment.sh" "Image built: $IMAGE_NAME:$IMAGE_NAME"

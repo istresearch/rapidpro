@@ -1,27 +1,10 @@
-ARG RAPIDPRO_VERSION=v5.0.0
-ARG RAPIDPRO_REPO=rapidpro/rapidpro
 ARG FROM_STAGE_TAG
+ARG VERSION_TAG
 
 # ========================================================================
 
 FROM istresearch/p4-engage:${FROM_STAGE_TAG}
 
-ARG RAPIDPRO_VERSION
-ARG RAPIDPRO_REPO
-ENV RAPIDPRO_VERSION=${RAPIDPRO_VERSION:-master}
-ENV RAPIDPRO_REPO=${RAPIDPRO_REPO:-istresearch/rapidpro}
-
-ENV UWSGI_VIRTUALENV=venv UWSGI_WSGI_FILE=temba/wsgi.py UWSGI_HTTP=:8000 UWSGI_MASTER=1 UWSGI_WORKERS=8 UWSGI_HARAKIRI=20
-# Enable HTTP 1.1 Keep Alive options for uWSGI (http-auto-chunked needed when ConditionalGetMiddleware not installed)
-# These options don't appear to be configurable via environment variables, so pass them in here instead
-ENV STARTUP_CMD="venv/bin/uwsgi --http-auto-chunked --http-keepalive"
-ENV CELERY_CMD="venv/bin/celery --beat --app=temba worker --loglevel=INFO --queues=celery,msgs,flows,handler"
-
-# must be same as UWSGI_HTTP defined above in UWSGI_VIRTUALENV
-EXPOSE 8000
-
-USER engage
-WORKDIR /rapidpro
 CMD ["/startup.sh"]
 
 LABEL org.label-schema.name="RapidPro" \
@@ -32,25 +15,14 @@ LABEL org.label-schema.name="RapidPro" \
       org.label-schema.version=$RAPIDPRO_VERSION \
       org.label-schema.schema-version="1.0"
 
+USER engage
+WORKDIR /rapidpro
+
 # apply branding
 COPY --chown=engage:engage docker/overrides/settings-rp.py            temba/settings.py
-
-COPY --chown=engage:engage docker/overrides/urls.py                   temba/urls.py
-
-# 500.html needed to keep the missing template from causing an exception during error handling
-COPY --chown=engage:engage docker/overrides/500.html                  templates/500.html
-
-COPY --chown=engage:engage docker/overrides/init_db.sql               ./init_db.sql
-COPY --chown=engage:engage docker/overrides/clear-compressor-cache.py ./clear-compressor-cache.py
-COPY --chown=engage:engage docker/overrides/Procfile                  ./Procfile
-COPY --chown=engage:engage docker/overrides/startup.py                ./startup.py
-COPY --chown=engage:engage docker/overrides/db-init.sh                ./db-init.sh
-COPY --chown=engage:engage docker/overrides/web-static.sh             ./web-static.sh
-
-COPY --chown=engage:engage docker/overrides/startup.sh                /startup.sh
 
 # compress static files
 RUN mkdir -p static/sitestatic \
  && cp -fr static/brands static/sitestatic/brands \
- && source venv/bin/activate; PATH=node_modules/coffeescript/bin:$PATH REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py collectstatic --noinput --no-post-process \
- && source venv/bin/activate; PATH=node_modules/coffeescript/bin:$PATH REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py compress --extension='.haml' --force -v0
+ && source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py collectstatic --noinput --no-post-process \
+ && source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py compress --extension='.haml' --force -v0

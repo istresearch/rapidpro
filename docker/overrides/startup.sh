@@ -1,7 +1,7 @@
 #!/bin/sh
 set -ex # fail on any error & print commands as they're run
 
-source venv/bin/activate
+source /venv/bin/activate
 
 echo 'MANAGEPY_COLLECTSTATIC?'; if [ "x$MANAGEPY_COLLECTSTATIC" = "xon" ]; then
 	mkdir -p /rapidpro/static/sitestatic

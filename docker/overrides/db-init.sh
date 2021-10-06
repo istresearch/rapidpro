@@ -2,7 +2,7 @@
 
 set -e # fail on any error & print commands as they're run
 
-source venv/bin/activate
+source /venv/bin/activate
 
 #------
 # ensure db server has needed functions/extensions
