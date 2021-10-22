@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+from django.utils.safestring import mark_safe
 from smartmin.views import (
     SmartCreateView,
     SmartCRUDL,
@@ -642,8 +643,8 @@ class MsgCRUDL(SmartCRUDL):
                     dl_url = reverse("assets.download", kwargs=dict(type="message_export", pk=export.pk))
                     messages.info(
                         self.request,
-                        _("Export complete, you can find it here: %s")
-                        % dl_url,
+                        mark_safe(_("Export complete, you can find it here: <a href=\"%s\">%s</a>")
+                                  % (dl_url, dl_url))
                     )
 
             messages.success(self.request, self.derive_success_message())

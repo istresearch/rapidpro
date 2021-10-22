@@ -18,7 +18,7 @@ class UpdateTelegramForm(UpdateChannelForm):
     class Meta(UpdateChannelForm.Meta):
         fields = "name", "address", "country", "alert_email", "tps"
         config_fields = ["forward_id",]
-        readonly = ("address","country")
+        readonly = ("address")
 
 class TelegramType(ChannelType):
     """
