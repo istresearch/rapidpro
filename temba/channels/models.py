@@ -961,14 +961,15 @@ class Channel(TembaModel):
 
         org.normalize_contact_tels()
 
-    def release(self, trigger_sync=True):
+    def release(self, trigger_sync=True, check_dependent_flows=True):
         """
         Releases this channel making it inactive
         """
-        # 4.0.10: we no longer want to deny removal of a channel based on flows.
-        #dependent_flows_count = self.dependent_flows.count()
-        #if dependent_flows_count > 0:
-        #    raise ValueError(f"Cannot delete Channel: {self.get_name()}, used by {dependent_flows_count} flows")
+
+        if check_dependent_flows:
+            dependent_flows_count = self.dependent_flows.count()
+            if dependent_flows_count > 0:
+                raise ValueError(f"Cannot delete Channel: {self.get_name()}, used by {dependent_flows_count} flows")
 
         channel_type = self.get_type()
 
