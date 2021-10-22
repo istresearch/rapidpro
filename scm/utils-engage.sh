@@ -60,7 +60,7 @@ function EnsureGeosImage()
     docker build \
         -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
     docker push $IMAGE_NAME:$IMAGE_TAG
-    "${UTILS_PATH}/pr-comment.sh" "Base osgeo.org GEO Libs Image built: $IMAGE_NAME:$IMAGE_NAME"
+    "${UTILS_PATH}/pr-comment.sh" "Base osgeo.org GEO Libs Image built: $IMAGE_NAME:$IMAGE_TAG"
   fi
   PrintPaddedTextRight "Using Base osgeo.org GEO Libs Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
 }
@@ -88,7 +88,7 @@ function EnsurePyLibsImage()
     docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
         -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
     docker push $IMAGE_NAME:$IMAGE_TAG
-    "${UTILS_PATH}/pr-comment.sh" "Python/NPM Libs Image built: $IMAGE_NAME:$IMAGE_NAME"
+    "${UTILS_PATH}/pr-comment.sh" "Python/NPM Libs Image built: $IMAGE_NAME:$IMAGE_TAG"
   fi
   PrintPaddedTextRight "Using Python/NPM Libs Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
 }
@@ -116,7 +116,7 @@ function EnsureRpAppImage()
     docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
         -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
     docker push $IMAGE_NAME:$IMAGE_TAG
-    "${UTILS_PATH}/pr-comment.sh" "RP App Image built: $IMAGE_NAME:$IMAGE_NAME"
+    "${UTILS_PATH}/pr-comment.sh" "RP App Image built: $IMAGE_NAME:$IMAGE_TAG"
   fi
   PrintPaddedTextRight "Using RP App Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
 }
@@ -148,7 +148,7 @@ function BuildVersionForX()
         --build-arg VERSION_TAG=$IMG_TAG \
         -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
     docker push $IMAGE_NAME:$IMAGE_TAG
-    "${UTILS_PATH}/pr-comment.sh" "Image built: $IMAGE_NAME:$IMAGE_NAME"
+    "${UTILS_PATH}/pr-comment.sh" "Image built: $IMAGE_NAME:$IMAGE_TAG"
   #fi
   PrintPaddedTextRight "Created Image" "$IMAGE_NAME:$IMAGE_TAG" ${COLOR_MSG_INFO}
 }
