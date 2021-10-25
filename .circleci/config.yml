@@ -43,6 +43,7 @@ jobs:
       - run:
           name: Ensure RpApp Image Exists, building if necessary
           command: |
+            VERSION_TAG=$(cat scm/version_tag.txt)
             source scm/utils-engage.sh; EnsureRpAppImage default "$VERSION_TAG"
       - run:
           name: Build "Default Branding" Image
