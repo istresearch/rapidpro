@@ -1,0 +1,28 @@
+ARG FROM_STAGE_TAG
+ARG VERSION_TAG
+
+# ========================================================================
+
+FROM istresearch/p4-engage:${FROM_STAGE_TAG}
+
+CMD ["/startup.sh"]
+
+LABEL org.label-schema.name="RapidPro" \
+      org.label-schema.description="RapidPro allows organizations to visually build scalable interactive messaging applications." \
+      org.label-schema.url="https://www.rapidpro.io/" \
+      org.label-schema.vcs-url="https://github.com/$RAPIDPRO_REPO" \
+      org.label-schema.vendor="Nyaruka, UNICEF, and individual contributors." \
+      org.label-schema.version=$RAPIDPRO_VERSION \
+      org.label-schema.schema-version="1.0"
+
+USER engage
+WORKDIR /rapidpro
+
+# apply branding
+COPY --chown=engage:engage docker/overrides/settings-rp.py            temba/settings.py
+
+# compress static files
+RUN mkdir -p static/sitestatic \
+ && cp -fr static/brands static/sitestatic/brands \
+ && source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py collectstatic --noinput --no-post-process \
+ && source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py compress --extension='.haml' --force -v0
