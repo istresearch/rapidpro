@@ -99,7 +99,7 @@ function EnsurePyLibsImage()
 # @param string $1 - the base image to use.
 function EnsureRpAppImage()
 {
-  if [[ -z "$1" || "$1"=="default" ]]; then
+  if [[ -z "$1" || "$1" == "default" ]]; then
     IMAGE_NAME=$DEFAULT_IMAGE_NAME
   else
     IMAGE_NAME=$1
@@ -125,7 +125,7 @@ function EnsureRpAppImage()
 # @param string $2 - the version tag to create.
 function BuildVersionForX()
 {
-  if [[ -z "$1" || "$1"=="default" ]]; then
+  if [[ -z "$1" || "$1" == "default" ]]; then
     IMAGE_NAME=$DEFAULT_IMAGE_NAME
   else
     IMAGE_NAME=$1
