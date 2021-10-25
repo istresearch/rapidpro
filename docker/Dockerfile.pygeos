@@ -1,0 +1,16 @@
+# NOTE: alpine3.8
+FROM node:8.14.1-alpine
+
+COPY docker/geolibs.sh /
+
+RUN set -ex \
+ && apk add --no-cache --virtual .build-deps \
+	  gcc \
+	  g++ \
+	  make \
+	  libc-dev \
+	  musl-dev \
+	  linux-headers \
+ && sh /geolibs.sh \
+ && apk del .build-deps \
+ && rm /geolibs.sh
