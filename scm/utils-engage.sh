@@ -99,26 +99,23 @@ function EnsurePyLibsImage()
 # @param string $1 - the base image to use.
 function EnsureRpAppImage()
 {
-  if [[ -z "$1" ]]; then
+  if [[ -z "$1" || "$1"=="default" ]]; then
     IMAGE_NAME=$DEFAULT_IMAGE_NAME
   else
     IMAGE_NAME=$1
   fi
   IMG_STAGE=rpapp
+  IMAGE_TAG=${IMG_STAGE}-$2
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
-  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "VERSION" "$(GetImgStageFile pylibs)"`
   echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
-  if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
-    FROM_STAGE_TAG=`GetImgStageTag pylibs`
-    PrintPaddedTextRight "  Using pylibs Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
-    echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
-    #if debugging, can add arg --progress=plain to the docker build command
-    docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
-        -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
-    docker push $IMAGE_NAME:$IMAGE_TAG
-    "${UTILS_PATH}/pr-comment.sh" "RP App Image built: $IMAGE_NAME:$IMAGE_TAG"
-  fi
-  PrintPaddedTextRight "Using RP App Image Tag" $IMAGE_TAG ${COLOR_MSG_INFO}
+  FROM_STAGE_TAG=`GetImgStageTag pylibs`
+  PrintPaddedTextRight "  Using pylibs Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
+  echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
+  #if debugging, can add arg --progress=plain to the docker build command
+  docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
+      -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
+  docker push $IMAGE_NAME:$IMAGE_TAG
+  "${UTILS_PATH}/pr-comment.sh" "RP App Image built: $IMAGE_NAME:$IMAGE_TAG"
 }
 
 ####################
