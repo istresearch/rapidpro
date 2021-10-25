@@ -58,7 +58,7 @@ jobs:
             if [[ $BRANCH == develop ]]; then
               IMAGE_NAME=istresearch/p4-engage
               IMAGE_TAG=ci-develop
-              docker tag ${IMAGE_NAME}:${$VERSION_TAG} ${IMAGE_NAME}:${IMAGE_TAG}
+              docker tag ${IMAGE_NAME}:${VERSION_TAG} ${IMAGE_NAME}:${IMAGE_TAG}
               docker push ${IMAGE_NAME}:${IMAGE_TAG}
             fi
       - run:
