@@ -112,7 +112,7 @@
   {% else %}
     current_label_id = 0;
   {% endif %}
-    $('.multiselect-select-all').on("click", function(){
+    $(document).on("click", '.multiselect-select-all', function(event) {
       if($(this).hasClass('checked')){
         $(this).removeClass('checked');
         $('tr.checked > td > div.object-row-checkbox').each(function(){
