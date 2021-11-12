@@ -28,10 +28,6 @@ jobs:
           command: |
             source scm/utils-engage.sh; EnsurePyLibsImage
       - run:
-          name: Ensure RpApp Image Exists, building if necessary
-          command: |
-            source scm/utils-engage.sh; EnsureRpAppImage
-      - run:
           name: Figure out tag to use
           command: |
             BRANCH=${CIRCLE_BRANCH#*/}
@@ -44,6 +40,11 @@ jobs:
               VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
             fi
             echo ${VERSION_TAG} > scm/version_tag.txt
+      - run:
+          name: Ensure RpApp Image Exists, building if necessary
+          command: |
+            VERSION_TAG=$(cat scm/version_tag.txt)
+            source scm/utils-engage.sh; EnsureRpAppImage default "$VERSION_TAG"
       - run:
           name: Build "Default Branding" Image
           command: |
@@ -58,7 +59,7 @@ jobs:
             if [[ $BRANCH == develop ]]; then
               IMAGE_NAME=istresearch/p4-engage
               IMAGE_TAG=ci-develop
-              docker tag ${IMAGE_NAME}:${$VERSION_TAG} ${IMAGE_NAME}:${IMAGE_TAG}
+              docker tag ${IMAGE_NAME}:${VERSION_TAG} ${IMAGE_NAME}:${IMAGE_TAG}
               docker push ${IMAGE_NAME}:${IMAGE_TAG}
             fi
       - run:

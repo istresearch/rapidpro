@@ -3,10 +3,13 @@ import resource
 from itertools import islice
 
 import iso8601
+from django.core.paginator import InvalidPage
+from django.http import Http404, QueryDict, HttpResponseRedirect
 from django_countries import countries
 
 from django.conf import settings
 from django.db import transaction
+from django.views.generic.list import MultipleObjectMixin, BaseListView
 
 DTONE_COUNTRY_NAMES = {"Democratic Republic of the Congo": "CD", "Ivory Coast": "CI", "United States": "US"}
 
@@ -205,3 +208,71 @@ def extract_constants(config, reverse=False):
         return {t[2]: t[0] for t in config}
     else:
         return {t[0]: t[2] for t in config}
+
+
+class MultipleObjectMixinExt(MultipleObjectMixin):
+
+    def paginate_queryset(self, queryset, page_size):
+        """Paginate the queryset, if needed."""
+        paginator = self.get_paginator(
+            queryset, page_size, orphans=self.get_paginate_orphans(),
+            allow_empty_first_page=self.get_allow_empty())
+        page_kwarg = self.page_kwarg
+        page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
+        try:
+            page_number = int(page)
+        except ValueError:
+            if page == 'last':
+                page_number = paginator.num_pages
+            else:
+                raise Http404(_("Page is not 'last', nor can it be converted to an int."))
+
+        changed = False
+        if page_number > paginator.num_pages:
+            page_number = paginator.num_pages
+            changed = True
+        try:
+            page = paginator.page(page_number)
+            if changed:
+                paginator.prev = page_number
+                return (paginator, page_number, page.object_list, page.has_other_pages())
+            return (paginator, page, page.object_list, page.has_other_pages())
+        except InvalidPage as e:
+            raise Http404(_('Invalid page (%(page_number)s): %(message)s') % {
+                'page_number': page_number,
+                'message': str(e)
+            })
+
+
+class BaseListViewExt(BaseListView):
+    def __init__(self, **kwargs):
+        super.__init__(**kwargs)
+
+    def get(self, request, *args, **kwargs):
+        self.object_list = self.get_queryset()
+        allow_empty = self.get_allow_empty()
+
+        if not allow_empty:
+            if self.get_paginate_by(self.object_list) is not None and hasattr(self.object_list, 'exists'):
+                is_empty = not self.object_list.exists()
+            else:
+                is_empty = not self.object_list
+            if is_empty:
+                raise Http404(_("Empty list and '%(class_name)s.allow_empty' is False.") % {
+                    'class_name': self.__class__.__name__,
+                })
+        context = self.get_context_data()
+        response = self.render_to_response(context)
+        if 'page' in self.request.GET and int(self.request.GET['page']) > context['paginator'].num_pages:
+            import copy
+            request_copy = copy.copy(self.request)
+            query_params = QueryDict(request_copy.META['QUERY_STRING']).copy()
+            query_params['page'] = context['paginator'].num_pages
+            request_copy.META['QUERY_STRING'] = query_params.urlencode()
+            response["REDIRECT"] = request_copy.get_full_path()
+        return response
+
+
+MultipleObjectMixin.paginate_queryset = MultipleObjectMixinExt.paginate_queryset
+BaseListView.get = BaseListViewExt.get
+

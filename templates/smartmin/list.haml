@@ -1,6 +1,50 @@
 -extends "smartmin/base.html"
 -load smartmin
 
+-block extra-style
+  :css
+    tr.multiselect-header{
+      border:0px solid;
+    }
+    .multiselect-header th a span.icon {
+      visibility: hidden;
+      text-decoration: none;
+      font-size: 14px;
+      margin-top: -1px;
+    }
+    .multiselect-header th a {
+      text-decoration: none;
+      font-weight:200;
+      color: #aaa;
+    }
+    .multiselect-header th:hover a span.icon {
+      visibility: visible;
+      font-size: 14px;
+    }
+    .multiselect-header th a span.icon.visible {
+      visibility: visible;
+    }
+    .multiselect-header th {
+      font-size:11px;
+      height:10px;
+      padding:0;
+      padding-top:10px;
+      padding-left:14px;
+      font-weight:200;
+      color: #aaa;
+      border:0px solid;
+      text-align:center;
+      white-space: nowrap;
+    }
+
+    .multiselect-header th div {
+       width: 14px;
+       padding-top: 4px;
+    }
+    .multiselect-header {
+      border: none !important;
+    }
+
 -block top-form
   - if view.search_fields and object_list
     - block search-form
@@ -23,6 +67,11 @@
         - block table
           .scroll-x
             %table{ class:'{% get_list_class object_list %} list-table table table-striped', cellspacing:'0'}
+              %tr.multiselect
+                %th{style: 'padding-left:0px'}
+                  %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox{style: 'padding-left: 5px'}
+                  %div{style: 'padding-top: 4px; width: 60px'}
+                    Select all
               %thead
                 %tr
                   - for field in fields
@@ -63,6 +112,19 @@
   {% else %}
     current_label_id = 0;
   {% endif %}
+    $(document).on("click", '.multiselect-select-all', function(event) {
+      if($(this).hasClass('checked')){
+        $(this).removeClass('checked');
+        $('tr.checked > td > div.object-row-checkbox').each(function(){
+          $(this).click();
+        });
+      }else{
+        $(this).addClass('checked');
+        $('tr:not(.checked) > td > div.object-row-checkbox').each(function(){
+          $(this).click();
+        });
+      }
+    });
 
 <script>
   $(document).ready(function(){
