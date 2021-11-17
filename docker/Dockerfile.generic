@@ -1,0 +1,31 @@
+ARG FROM_STAGE_TAG
+ARG VERSION_TAG
+
+# ========================================================================
+
+FROM istresearch/p4-engage:${FROM_STAGE_TAG}
+
+ARG VERSION_TAG
+LABEL org.label-schema.name="Engage" \
+      org.label-schema.description="Enabling Global Conversations." \
+      org.label-schema.version=$VERSION_TAG \
+      org.label-schema.schema-version="1.0"
+
+USER engage
+WORKDIR /rapidpro
+
+# apply branding
+COPY --chown=engage:engage docker/overrides/settings-generic.py       temba/settings.py
+COPY --chown=engage:engage docker/customizations/generic              /opt/rp
+RUN rsync -a /opt/rp/ ./
+
+# cleanup
+USER root
+RUN rm -R /opt/rp
+USER engage
+
+# compress static files
+RUN mkdir -p static/sitestatic \
+ && cp -fr static/brands static/sitestatic/brands \
+ && source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py collectstatic --noinput --no-post-process \
+ && source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py compress --extension='.haml' --force -v0

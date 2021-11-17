@@ -140,6 +140,11 @@
                           .glyph.icon-excel
 
               %table.list-table.flow-list.object-list.table.table-condensed{style: '{% if not org_perms.flows.flow_update %}margin-top:10px{% endif %}'}
+                %tr.multiselect-header
+                  %th{style: 'padding-left:0px'}
+                    %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox{style: 'padding-left: 5px'}
+                    %div
+                      Select all
                 %tbody
                   -for object in object_list
                     %tr.flow.object-row.select-row{ data-object-uuid: "{{object.uuid}}", data-object-id: "{{ object.id }}" }
@@ -195,7 +200,6 @@
   {{ block.super }}
 
   :javascript
-
     {% if org_perms.flows.flow_update %}
     function exportFlows(){
       var flowIds = getCheckedIds();
