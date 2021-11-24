@@ -111,6 +111,7 @@ LANGUAGES = (
     ("es", _("Spanish")),
     ("ru", _("Russian")),
 )
+
 DEFAULT_LANGUAGE = "en-us"
 
 SITE_ID = 1
@@ -221,6 +222,7 @@ MIDDLEWARE = (
     "temba.middleware.OrgMiddleware",
     "temba.middleware.LanguageMiddleware",
     "temba.middleware.TimezoneMiddleware",
+    "temba.middleware.SubdirMiddleware",
 )
 
 # security middleware configuration
@@ -359,6 +361,7 @@ PERMISSIONS = {
     "*": (
         "create",  # can create an object
         "read",  # can read an object, viewing it's details
+        "read_list",  # can read an object, viewing it's details
         "update",  # can update an object
         "delete",  # can delete an object,
         "list",  # can view a list of the objects
@@ -409,6 +412,7 @@ PERMISSIONS = {
         "edit",
         "edit_sub_org",
         "export",
+        "assign_user",
         "grant",
         "home",
         "import",
@@ -431,9 +435,14 @@ PERMISSIONS = {
         "sub_orgs",
         "surveyor",
         "transfer_credits",
+        "transfer_to_account",
         "trial",
         "twilio_account",
         "twilio_connect",
+        "bandwidth_account",
+        "bandwidth_connect",
+        "postmaster_connect",
+        "postmaster_account",
         "two_factor",
         "token",
     ),
@@ -491,6 +500,7 @@ PERMISSIONS = {
         "label",
         "outbox",
         "sent",
+        "test",
         "update",
     ),
     "msgs.broadcast": ("api", "detail", "schedule", "schedule_list", "schedule_read", "send"),
@@ -557,6 +567,9 @@ GROUP_PERMISSIONS = {
         "request_logs.httplog_ticketer",
     ),
     "Administrators": (
+        "apks.apk_create",
+        "apks.apk_list",
+        "apks.apk_update",
         "airtime.airtimetransfer_list",
         "airtime.airtimetransfer_read",
         "api.apitoken_refresh",
@@ -631,9 +644,14 @@ GROUP_PERMISSIONS = {
         "orgs.org_resthooks",
         "orgs.org_sub_orgs",
         "orgs.org_transfer_credits",
+        "orgs.org_transfer_to_account",
         "orgs.org_twilio_account",
         "orgs.org_twilio_connect",
         "orgs.org_two_factor",
+        "orgs.org_bandwidth_account",
+        "orgs.org_bandwidth_connect",
+        "orgs.org_postmaster_account",
+        "orgs.org_postmaster_connect",
         "orgs.org_token",
         "orgs.topup_list",
         "orgs.topup_read",
@@ -750,11 +768,12 @@ GROUP_PERMISSIONS = {
         "channels.channel_create",
         "channels.channel_create_bulk_sender",
         "channels.channel_create_caller",
-        "channels.channel_delete",
+        # "channels.channel_delete",
         "channels.channel_list",
         "channels.channel_read",
         "channels.channel_update",
         "channels.channelevent.*",
+        "channels.channel_read_list",
         "flows.flow.*",
         "flows.flowstart_api",
         "flows.flowstart_list",
@@ -819,6 +838,7 @@ GROUP_PERMISSIONS = {
         "orgs.topup_read",
         "channels.channel_list",
         "channels.channel_read",
+        "channels.channel_read_list",
         "channels.channelevent_calls",
         "flows.flow_activity",
         "flows.flow_activity_chart",
@@ -958,6 +978,7 @@ CELERYBEAT_SCHEDULE = {
     "trim-sync-events": {"task": "trim_sync_events_task", "schedule": crontab(hour=3, minute=0)},
     "trim-webhook-event": {"task": "trim_webhook_event_task", "schedule": crontab(hour=3, minute=0)},
     "update-org-activity": {"task": "update_org_activity_task", "schedule": crontab(hour=3, minute=5)},
+    #"update-postmaster-sync": {"task": "update_postmaster_sync_task", "schedule": timedelta(seconds=300)},
 }
 
 # Mapping of task name to task function path, used when CELERY_ALWAYS_EAGER is set to True
@@ -1083,6 +1104,8 @@ TICKETER_TYPES = [
 ]
 
 CHANNEL_TYPES = [
+    "temba.channels.types.postmaster.PostmasterType",
+    "temba.channels.types.bandwidth.BandwidthType",
     "temba.channels.types.arabiacell.ArabiaCellType",
     "temba.channels.types.whatsapp.WhatsAppType",
     "temba.channels.types.textit_whatsapp.TextItWhatsAppType",
@@ -1218,6 +1241,7 @@ IP_ADDRESSES = ("172.16.10.10", "162.16.10.20")
 MSG_FIELD_SIZE = 640  # used for broadcast text and message campaign events
 FLOW_START_PARAMS_SIZE = 256  # used for params passed to flow start API endpoint
 GLOBAL_VALUE_SIZE = 10_000  # max length of global values
+MAX_ORG_LABELS = int(os.environ.get("MAX_ORG_LABELS", 500))
 
 # -----------------------------------------------------------------------------------
 # Installs may choose how long to keep the channel logs in hours
@@ -1240,6 +1264,11 @@ EVENT_FIRE_TRIM_DAYS = 90
 FLOW_SESSION_TRIM_DAYS = 7
 
 # -----------------------------------------------------------------------------------
+# Installs can also choose how long to keep SyncEvents around. Default is 7 days.
+# -----------------------------------------------------------------------------------
+SYNC_EVENT_TRIM_DAYS = 7
+
+# -----------------------------------------------------------------------------------
 # Mailroom - disabled by default, but is where simulation happens
 # -----------------------------------------------------------------------------------
 MAILROOM_URL = None
@@ -1255,8 +1284,20 @@ MACHINE_HOSTNAME = socket.gethostname().split(".")[0]
 # ElasticSearch configuration (URL RFC-1738)
 ELASTICSEARCH_URL = os.environ.get("ELASTICSEARCH_URL", "http://localhost:9200")
 
-
 # Maximum active objects are org can have
 MAX_ACTIVE_CONTACTFIELDS_PER_ORG = 250
 MAX_ACTIVE_CONTACTGROUPS_PER_ORG = 250
 MAX_ACTIVE_GLOBALS_PER_ORG = 250
+
+PAGINATE_CHANNELS_COUNT = int(os.environ.get("PAGINATE_CHANNELS_COUNT", 25))
+
+POST_OFFICE_API_URL = os.environ.get('POST_OFFICE_API_URL', 'http://postoffice:8088/postoffice')
+POST_OFFICE_API_KEY = os.environ.get('POST_OFFICE_API_KEY', 'abc123')
+
+ASYNC_MESSAGE_EXPORT = os.environ.get('ASYNC_MESSAGE_EXPORT', 'on') == 'on'
+
+#Use CHAT_MODE_CHOICES to configure the chatmodes that are available to the Postmaster channel
+CHAT_MODE_CHOICES = (("WA", _("WhatsApp")), ("TG", _("Telegram")),  ("LN", _("LINE")), ("SIG", _("SIGNAL")),
+                     ("SMS", _("TEL")), ("VK", _("VK")), ("VB", _("VIBER")), ("TWTR", _("TWITTER")),
+                     ("KAKAO", _("KAKAO")), ("IMO", _("IMO")), ("IG", _("Instagram")), ("FB", _("Facebook")),
+                     ("MBX", _("Mobyx")), ("FBM", _("FBM")), ("EMAIL", _("Email")))

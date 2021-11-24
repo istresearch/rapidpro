@@ -58,6 +58,19 @@
   {% else %}
     current_label_id = 0;
   {% endif %}
+    $(document).on("click", '.multiselect-select-all', function(event) {
+      if($(this).hasClass('checked')){
+        $(this).removeClass('checked');
+        $('tr.checked > td > div.object-row-checkbox').each(function(){
+          $(this).click();
+        });
+      }else{
+        $(this).addClass('checked');
+        $('tr:not(.checked) > td > div.object-row-checkbox').each(function(){
+          $(this).click();
+        });
+      }
+    });
 
 <script>
   $(document).ready(function(){

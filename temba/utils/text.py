@@ -158,7 +158,6 @@ def random_string(length):
 def generate_token():
     return base64.b32encode(urandom(5)).decode("utf-8").lower()
 
-
 def decode_stream(f):
     """
     Detects the character encoding of the given byte stream and returns as text stream

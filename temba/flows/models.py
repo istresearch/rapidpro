@@ -111,7 +111,7 @@ class Flow(TembaModel):
         (TYPE_MESSAGE, _("Messaging")),
         (TYPE_VOICE, _("Phone Call")),
         (TYPE_BACKGROUND, _("Background")),
-        (TYPE_SURVEY, _("Surveyor")),
+        # (TYPE_SURVEY, _("Surveyor")), # P4-1483
     )
 
     GOFLOW_TYPES = {
@@ -171,6 +171,8 @@ class Flow(TembaModel):
     group_dependencies = models.ManyToManyField(ContactGroup, related_name="dependent_flows")
     label_dependencies = models.ManyToManyField(Label, related_name="dependent_flows")
     template_dependencies = models.ManyToManyField(Template, related_name="dependent_flows")
+    ticketer_dependencies = models.ManyToManyField(Ticketer, related_name="dependent_flows")
+
     ticketer_dependencies = models.ManyToManyField(Ticketer, related_name="dependent_flows")
 
     @classmethod

@@ -1024,7 +1024,7 @@ class Label(TembaModel, DependencyMixin):
     """
 
     MAX_NAME_LEN = 64
-    MAX_ORG_LABELS = 250
+    MAX_ORG_LABELS = settings.MAX_ORG_LABELS
     MAX_ORG_FOLDERS = 250
 
     TYPE_FOLDER = "F"
@@ -1140,9 +1140,6 @@ class Label(TembaModel, DependencyMixin):
         changed = set()
 
         for msg in msgs:
-            if msg.direction != INCOMING:
-                raise ValueError("Can only apply labels to incoming messages")
-
             # if we are adding the label and this message doesnt have it, add it
             if add:
                 if not msg.labels.filter(pk=self.pk):

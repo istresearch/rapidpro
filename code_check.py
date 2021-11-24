@@ -4,6 +4,7 @@ import argparse
 import subprocess
 
 import colorama
+import polib
 
 parser = argparse.ArgumentParser(description="Code checks")
 parser.add_argument("--skip-flake", action="store_true")
@@ -28,6 +29,39 @@ def cmd(line):
 
 def status(line):
     print(colorama.Fore.GREEN + f">>> {line}..." + colorama.Style.RESET_ALL)
+
+
+def update_po_files():
+    def get_current_msgids():
+        pot = polib.pofile("locale/en_US/LC_MESSAGES/django.po")
+        return {e.msgid for e in pot if not e.fuzzy and not e.obsolete}
+
+    cmd(f"git restore --staged --worktree locale")
+
+    # get the current set of msgids
+    saved_msgids = get_current_msgids()
+
+    # re-extract locale files from source code
+    ignore_paths = ("env/*", "fabric/*", "media/*", "sitestatic/*", "static/*", "node_modules/*")
+    ignore_args = " ".join([f'--ignore="{p}"' for p in ignore_paths])
+
+    cmd(f"python manage.py makemessages -a -e haml,html,txt,py --no-location --no-wrap {ignore_args}")
+
+    # get the new set of msgids
+    actual_msgids = get_current_msgids()
+
+    added_msgids = actual_msgids.difference(saved_msgids)
+    removed_msgids = saved_msgids.difference(actual_msgids)
+
+    if DEBUG:
+        for mid in added_msgids:
+            print(f"  + {repr(mid)}")
+        for mid in removed_msgids:
+            print(f"  - {repr(mid)}")
+
+    # if there are no actual changes to msgids, revert
+    if not added_msgids and not removed_msgids:
+        cmd(f"git restore locale")
 
 
 if __name__ == "__main__":

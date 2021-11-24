@@ -59,7 +59,7 @@ from temba.utils.fields import (
 from temba.utils.s3 import public_file_storage
 from temba.utils.text import slugify_with
 from temba.utils.uuid import uuid4
-from temba.utils.views import BulkActionMixin
+from temba.utils.views import BulkActionMixin, NonAtomicMixin
 
 from .models import (
     ExportFlowResultsTask,
@@ -90,6 +90,15 @@ EXPIRES_CHOICES = (
     (60 * 24 * 14, _("After 2 weeks")),
     (60 * 24 * 30, _("After 30 days")),
 )
+
+
+class OrgQuerysetMixin:
+    def derive_queryset(self, *args, **kwargs):
+        queryset = super().derive_queryset(*args, **kwargs)
+        if not self.request.user.is_authenticated:  # pragma: needs cover
+            return queryset.exclude(pk__gt=0)
+        else:
+            return queryset.filter(org=self.request.user.get_org())
 
 
 class BaseFlowForm(forms.ModelForm):
@@ -1052,6 +1061,7 @@ class FlowCRUDL(SmartCRUDL):
         def get_gear_links(self):
             links = []
             flow = self.object
+
             if (
                 flow.flow_type != Flow.TYPE_SURVEY
                 and self.has_org_perm("flows.flow_broadcast")
@@ -1115,6 +1125,17 @@ class FlowCRUDL(SmartCRUDL):
                     )
                 )
 
+            if self.has_org_perm("flows.flow_import_translation"):
+                links.append(
+                    dict(title=_("Import Translation"), href=reverse("flows.flow_import_translation", args=[flow.id]))
+                )
+
+            links.append(dict(divider=True)),
+
+            if self.has_org_perm("orgs.org_export"):
+                links.append(dict(title=_("Export Definition"), href=f"{reverse('orgs.org_export')}?flow={flow.id}"))
+            if self.has_org_perm("flows.flow_export_translation"):
+                links.append(dict(title=_("Export Translation"), js_class="export-translation", href="#"))
             if self.has_org_perm("flows.flow_import_translation"):
                 links.append(
                     dict(title=_("Import Translation"), href=reverse("flows.flow_import_translation", args=[flow.id]))
@@ -1487,7 +1508,7 @@ class FlowCRUDL(SmartCRUDL):
                     messages.info(
                         self.request,
                         _("We are preparing your export. We will e-mail you at %s when it is ready.")
-                        % self.request.user.username,
+                        % self.request.user.email,
                     )
 
                 else:
@@ -1799,6 +1820,91 @@ class FlowCRUDL(SmartCRUDL):
                     return JsonResponse(client.sim_resume(payload))
                 except mailroom.MailroomException:
                     return JsonResponse(dict(status="error", description="mailroom error"), status=500)
+
+    class Json(NonAtomicMixin, AllowOnlyActiveFlowMixin, OrgObjPermsMixin, SmartUpdateView):
+        slug_url_kwarg = "uuid"
+        success_message = ""
+
+        def get(self, request, *args, **kwargs):
+
+            flow = self.get_object()
+            flow.ensure_current_version()
+
+            # all the translation languages for our org
+            languages = [lang.as_json() for lang in flow.org.languages.all().order_by("orgs")]
+
+            # all countries we have a channel for, never fail here
+            try:
+                channel_countries = flow.org.get_channel_countries()
+            except Exception:  # pragma: needs cover
+                logger.error("Unable to get currency for channel countries.", exc_info=True)
+                channel_countries = []
+
+            # all the channels available for our org
+            channels = [
+                dict(uuid=chan.uuid, name=f"{chan.get_channel_type_display()}: {chan.name + (' (Last seen: ' + str(chan.last_seen.strftime('%Y-%m-%d %H:%M %Z)')) if chan.channel_type == 'PSM' else '')}")
+                for chan in flow.org.channels.filter(is_active=True)
+            ]
+            return JsonResponse(
+                dict(
+                    flow=flow.as_json(expand_contacts=True),
+                    languages=languages,
+                    channel_countries=channel_countries,
+                    channels=channels,
+                )
+            )
+
+        def post(self, request, *args, **kwargs):
+
+            # require update permissions
+            if not self.has_org_perm("flows.flow_update"):
+                return HttpResponseRedirect(reverse("flows.flow_json", args=[self.get_object().pk]))
+
+            # try to parse our body
+            json_string = force_text(request.body)
+
+            # if the last modified on this flow is more than a day ago, log that this flow as updated
+            if self.get_object().saved_on < timezone.now() - timedelta(hours=24):  # pragma: needs cover
+                analytics.track(self.request.user.username, "temba.flow_updated")
+
+            # try to save the our flow, if this fails, let's let that bubble up to our logger
+            json_dict = json.loads(json_string)
+            print(json.dumps(json_dict, indent=2))
+
+            try:
+                flow = self.get_object(self.get_queryset())
+                revision = flow.update(json_dict, user=self.request.user)
+                return JsonResponse(
+                    {
+                        "status": "success",
+                        "saved_on": json.encode_datetime(flow.saved_on, micros=True),
+                        "revision": revision.revision,
+                    },
+                    status=200,
+                )
+
+            except FlowValidationException:  # pragma: no cover
+                error = _("Your flow failed validation. Please refresh your browser.")
+            except FlowInvalidCycleException:
+                error = _("Your flow contains an invalid loop. Please refresh your browser.")
+            except FlowVersionConflictException:
+                error = _(
+                    "Your flow has been upgraded to the latest version. "
+                    "In order to continue editing, please refresh your browser."
+                )
+            except FlowUserConflictException as e:
+                error = (
+                    _(
+                        "%s is currently editing this Flow. "
+                        "Your changes will not be saved until you refresh your browser."
+                    )
+                    % e.other_user
+                )
+            except Exception:  # pragma: no cover
+                error = _("Your flow could not be saved. Please refresh your browser.")
+
+            return JsonResponse({"status": "failure", "description": error}, status=400)
+
 
     class Broadcast(ModalMixin, OrgObjPermsMixin, SmartUpdateView):
         class BroadcastForm(forms.ModelForm):

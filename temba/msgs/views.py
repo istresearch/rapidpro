@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+from django.utils.safestring import mark_safe
 from smartmin.views import (
     SmartCreateView,
     SmartCRUDL,
@@ -43,6 +44,12 @@ from temba.utils.views import BulkActionMixin, ComponentFormMixin
 
 from .models import INITIALIZING, QUEUED, Broadcast, ExportMessagesTask, Label, Msg, Schedule, SystemLabel
 from .tasks import export_messages_task
+
+import smartmin.widgets
+class DatePickerMedia:
+    js = ('{}js/bootstrap-datepicker.js'.format(settings.STATIC_URL),)
+    css = {'all': ('{}css/bootstrap-datepicker3.css'.format(settings.STATIC_URL),)}
+smartmin.widgets.DatePickerWidget.Media = DatePickerMedia
 
 
 class SendMessageForm(Form):
@@ -101,6 +108,10 @@ class SendMessageForm(Form):
         if org.is_flagged:
             raise ValidationError(
                 _("Sorry, your workspace is currently flagged. To enable sending messages, please contact support.")
+            )
+        if org.is_flagged:
+            raise ValidationError(
+                _("Sorry, your account is currently flagged. To enable sending messages, please contact support.")
             )
         return cleaned
 
@@ -570,21 +581,31 @@ class MsgCRUDL(SmartCRUDL):
                     end_date=end_date,
                 )
 
-                on_transaction_commit(lambda: export_messages_task.delay(export.id))
+                if settings.ASYNC_MESSAGE_EXPORT:
+                    on_transaction_commit(lambda: export_messages_task.delay(export.id))
 
-                if not getattr(settings, "CELERY_ALWAYS_EAGER", False):  # pragma: needs cover
-                    messages.info(
-                        self.request,
-                        _("We are preparing your export. We will e-mail you at %s when " "it is ready.")
-                        % self.request.user.username,
-                    )
+                    if not getattr(settings, "CELERY_ALWAYS_EAGER", False):  # pragma: needs cover
+                        messages.info(
+                            self.request,
+                            _("We are preparing your export. We will e-mail you at %s when " "it is ready.")
+                            % self.request.user.email,
+                        )
+
+                    else:
+                        dl_url = reverse("assets.download", kwargs=dict(type="message_export", pk=export.pk))
+                        messages.info(
+                            self.request,
+                            _("Export complete, you can find it here: %s (production users " "will get an email)")
+                            % dl_url,
+                        )
 
                 else:
+                    on_transaction_commit(lambda: export_messages_task.run(export.id))
                     dl_url = reverse("assets.download", kwargs=dict(type="message_export", pk=export.pk))
                     messages.info(
                         self.request,
-                        _("Export complete, you can find it here: %s (production users " "will get an email)")
-                        % dl_url,
+                        mark_safe(_("Export complete, you can find it here: <a href=\"%s\">%s</a>")
+                                  % (dl_url, dl_url))
                     )
 
             messages.success(self.request, self.derive_success_message())
@@ -678,6 +699,7 @@ class MsgCRUDL(SmartCRUDL):
         template_name = "msgs/msg_failed.haml"
         success_message = ""
         system_label = SystemLabel.TYPE_FAILED
+        actions = ["resend", "delete"]
         allow_export = True
         show_channel_logs = True
 

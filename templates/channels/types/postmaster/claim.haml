@@ -1,0 +1,124 @@
+-extends "channels/channel_claim_form.html"
+-load i18n
+
+-block title
+  .medium-help.float-left{class:"{{ view.channel_type.icon }}"}
+
+  %h2.font_normalize.header-margin
+    {{ title }}
+  %span
+    To register Postmaster, hit the SCAN QR Code button in the app.
+
+-block fields
+  -if po_qr and po_qr.qr_base64
+    %div{class:"pm-qr;"}
+      %img{ src:"data:png;base64, {{po_qr.qr_base64}}" }{style:"padding-left: 110px; padding-bottom: 20px"}
+      %div{style:"padding-left: 100px; padding-bottom: 20px"}
+        %div
+          %code
+            Claim Code: {{po_qr.data.claim_code}}
+        %div
+          %code
+            Server: {{po_qr.data.server}}
+        %div
+          %code
+            API Key: {{po_qr.data.api_key}}
+
+        %div{style: "margin-top: 30px;"}
+          %label.switch
+            %input#enable-multiple{type:"checkbox"}
+            %span.slider.round#enable-multiple-span
+          %label{for:"enable-multiple-span"}{style:"display: inline; vertical-align: -webkit-baseline-middle;"}
+            Add Multiple Devices
+
+-block form-buttons
+
+-block extra-script
+  {{ block.super }}
+
+  :javascript
+    $(function(){
+      $("#id_country").select2();
+    });
+
+    setInterval(
+    function pollUntilDone(url, interval, timeout) {
+      if($('#enable-multiple')[0].checked == false){
+        $.get('{% url "ext.api.v2.channel.status" %}.json?api_key={{po_qr.data.api_key}}', function(relayer_id) {
+          if (relayer_id && relayer_id.length > 0) {
+            window.location = '{% url "channels.channel_manage" %}?search=' + relayer_id;
+          }
+        });
+      }
+    }, 5000);
+
+-block extra-style
+  {{ block.super }}
+
+  :css
+    .pm-qr {
+      width: 500px !important;
+    }
+
+    /* The switch - the box around the slider */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 26px;
+    }
+
+    /* Hide default HTML checkbox */
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    /* The slider */
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      -webkit-transition: .4s;
+      transition: .4s;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      -webkit-transition: .4s;
+      transition: .4s;
+    }
+
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+
+    input:focus + .slider {
+      box-shadow: 0 0 1px #2196F3;
+    }
+
+    input:checked + .slider:before {
+      -webkit-transform: translateX(26px);
+      -ms-transform: translateX(26px);
+      transform: translateX(26px);
+    }
+
+    /* Rounded sliders */
+    .slider.round {
+      border-radius: 34px;
+    }
+
+    .slider.round:before {
+      border-radius: 50%;
+    }

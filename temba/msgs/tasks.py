@@ -20,6 +20,8 @@ from .models import (
     SystemLabelCount,
 )
 
+from .cto import export_cto_msgs
+
 logger = logging.getLogger(__name__)
 
 
@@ -146,3 +148,9 @@ def squash_msgcounts():
     SystemLabelCount.squash()
     LabelCount.squash()
     BroadcastMsgCount.squash()
+
+@nonoverlapping_task(track_started=True, name="export_cto_msgs", lock_timeout=3600)
+def export_cto_msgs_task():
+    logger.info("Starting export_cto_msgs task")
+    export_cto_msgs()
+    logger.info("Completed export_cto_msgs task")

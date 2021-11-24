@@ -78,7 +78,7 @@ class ChannelType(metaclass=ABCMeta):
     update_form = None
 
     max_length = -1
-    max_tps = None
+    max_tps = getattr(settings, "DEFAULT_TPS", 10)
     attachment_support = False
     free_sending = False
     quick_reply_text_size = 20
@@ -151,6 +151,11 @@ class ChannelType(metaclass=ABCMeta):
         """
         Called when a channel of this type has been created. Can be used to setup things like callbacks required by the
         channel.
+        """
+
+    def enable_flow_server(self, channel):
+        """
+        Called when an org is switched to being flow server enabled, noop in most cases
         """
 
     def deactivate(self, channel):
@@ -264,6 +269,11 @@ class Channel(TembaModel, DependencyMixin):
     CONFIG_AUTH_TOKEN = "auth_token"
     CONFIG_SECRET = "secret"
     CONFIG_CHANNEL_ID = "channel_id"
+    CONFIG_DEVICE_ID = "device_id"
+    CONFIG_DEVICE_NAME = "device_name"
+    CONFIG_CHAT_MODE = "chat_mode"
+    CONFIG_CLAIM_CODE = "claim_code"
+    CONFIG_ORG_ID = "org_id"
     CONFIG_CHANNEL_MID = "channel_mid"
     CONFIG_FCM_ID = "FCM_ID"
     CONFIG_MACROKIOSK_SENDER_ID = "macrokiosk_sender_id"
@@ -273,6 +283,7 @@ class Channel(TembaModel, DependencyMixin):
     CONFIG_ACCOUNT_SID = "account_sid"
     CONFIG_APPLICATION_SID = "application_sid"
     CONFIG_NUMBER_SID = "number_sid"
+    CONFIG_SENDER = "sender"
     CONFIG_MESSAGING_SERVICE_SID = "messaging_service_sid"
     CONFIG_MAX_CONCURRENT_EVENTS = "max_concurrent_events"
     CONFIG_ALLOW_INTERNATIONAL = "allow_international"
@@ -454,6 +465,7 @@ class Channel(TembaModel, DependencyMixin):
             address=address,
             config=config,
             role=role,
+            tps=getattr(settings, "DEFAULT", 10),
             schemes=schemes,
             created_by=user,
             modified_by=user,
@@ -821,12 +833,7 @@ class Channel(TembaModel, DependencyMixin):
         return self.sync_events.filter(created_on__gt=timezone.now() - timedelta(hours=1)).order_by("-created_on")
 
     def get_last_sync(self):
-        if not hasattr(self, "_last_sync"):
-            last_sync = self.sync_events.order_by("-created_on").first()
-
-            self._last_sync = last_sync
-
-        return self._last_sync
+        return self.last_sync
 
     def get_last_power(self):
         last = self.get_last_sync()
@@ -881,11 +888,14 @@ class Channel(TembaModel, DependencyMixin):
         if not self.country:  # pragma: needs cover
             self.country = countries.from_tel(phone)
 
-        self.alert_email = user.email
+        # NOTE: leaving alert_email field empty
+        #self.alert_email = user.email
         self.org = org
         self.is_active = True
         self.claim_code = None
         self.address = phone
+        # default channel name to phone number
+        self.name = phone
         self.save()
 
         org.normalize_contact_tels()
@@ -894,6 +904,11 @@ class Channel(TembaModel, DependencyMixin):
         """
         Releases this channel making it inactive
         """
+
+        if check_dependent_flows:
+            dependent_flows_count = self.dependent_flows.count()
+            if dependent_flows_count > 0:
+                raise ValueError(f"Cannot delete Channel: {self.get_name()}, used by {dependent_flows_count} flows")
 
         super().release(user)
 
@@ -1413,6 +1428,8 @@ class SyncEvent(SmartModel):
         sync_event.pending_messages = cmd.get("pending", cmd.get("pending_messages"))
         sync_event.retry_messages = cmd.get("retry", cmd.get("retry_messages"))
 
+        channel.last_sync = sync_event
+        channel.save()
         return sync_event
 
     def release(self):
@@ -1428,6 +1445,9 @@ class SyncEvent(SmartModel):
 
     @classmethod
     def trim(cls):
+        days_ago = timezone.now() - timedelta(days=settings.SYNC_EVENT_TRIM_DAYS)
+        for event in cls.objects.filter(created_on__lte=days_ago):
+            event.release()
         week_ago = timezone.now() - timedelta(days=7)
 
         channels_with_sync_events = (
@@ -1442,7 +1462,6 @@ class SyncEvent(SmartModel):
             ).order_by("-created_on")[1:]
             for event in sync_events:
                 event.release()
-
 
 @receiver(pre_save, sender=SyncEvent)
 def pre_save(sender, instance, **kwargs):

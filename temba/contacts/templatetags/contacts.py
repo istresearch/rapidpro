@@ -24,6 +24,20 @@ URN_SCHEME_ICONS = {
     URN.FCM_SCHEME: "icon-fcm",
     URN.FRESHCHAT_SCHEME: "icon-freshchat",
     URN.WHATSAPP_SCHEME: "icon-whatsapp",
+    URN.PM_WHATSAPP_SCHEME: "icon-whatsapp",
+    URN.PM_TELEGRAM_SCHEME: "icon-telegram",
+    URN.PM_SIGNAL_SCHEME: "icon-signal",
+    URN.PM_LINE_SCHEME: "icon-line",
+    URN.PM_VK_SCHEME: "icon-vk",
+    URN.PM_VIBER_SCHEME: "icon-viber",
+    URN.PM_TWITTER_SCHEME: "icon-twitter",
+    URN.PM_KAKAO_SCHEME: "icon-tembatoo-kakao",
+    URN.PM_IMO_SCHEME: "icon-tembatoo-imo",
+    URN.PM_FACEBOOK_SCHEME: "icon-facebook",
+    URN.PM_INSTAGRAM_SCHEME: "icon-tembatoo-instagram",
+    URN.PM_MOBYX_SCHEME: "icon-tembatoo-mobyx",
+    URN.PM_FBM_SCHEME: "icon-tembatoo-fbm",
+    URN.PM_EMAIL_SCHEME: "icon-envelop",
 }
 
 ACTIVITY_ICONS = {

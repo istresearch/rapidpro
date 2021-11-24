@@ -11,6 +11,9 @@ import phonenumbers
 import pytz
 import requests
 import twilio.base.exceptions
+from django.contrib.postgres.forms import JSONField
+from django.views.generic.base import View
+from django_countries.data import COUNTRIES
 from smartmin.views import (
     SmartCRUDL,
     SmartFormView,
@@ -64,6 +67,8 @@ ALL_COUNTRIES = countries.choices()
 def get_channel_read_url(channel):
     return reverse("channels.channel_read", args=[channel.uuid])
 
+def get_channel_read_url_list():
+    return reverse("channels.channel_read_list")
 
 def channel_status_processor(request):
     status = dict()
@@ -670,6 +675,9 @@ class BaseClaimNumberMixin(ClaimViewMixin):
 
 
 class UpdateChannelForm(forms.ModelForm):
+    tps = forms.IntegerField(label="Maximum Transactions per Second", required=False)
+    config = JSONField(required=False)
+
     def __init__(self, *args, **kwargs):
         self.object = kwargs["object"]
         del kwargs["object"]
@@ -693,7 +701,7 @@ class UpdateChannelForm(forms.ModelForm):
 
     class Meta:
         model = Channel
-        fields = "name", "alert_email"
+        fields = "name", "address", "country", "alert_email", "tps", "config"
         readonly = ()
         labels = {}
         helps = {}
@@ -703,6 +711,35 @@ class UpdateTelChannelForm(UpdateChannelForm):
     class Meta(UpdateChannelForm.Meta):
         helps = {"address": _("Phone number of this channel")}
 
+
+class PurgeOutbox(View):  # pragma: no cover
+
+    @csrf_exempt
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        courier_url = getattr(settings, "COURIER_URL", ())
+        response = ""
+        if courier_url is not None and len(courier_url) > 0 \
+                and 'channel_uuid' in kwargs and kwargs['channel_uuid'] is not None:
+            full_courier_url = "{}/purge/{}/{}".format(courier_url, kwargs['channel_type'], kwargs['channel_uuid'])
+            r = None
+            try:
+                r = requests.post(full_courier_url, headers={"Content-Type": "{}".format("application/json")})
+                response = "The courier service returned with status {}: {}".format(r.status_code,
+                                                                                    json.loads(r.content)['message'])
+            except ConnectionError as e:
+                response = "An unknown error has occured."
+        else:
+            if courier_url is None or len(courier_url) == 0:
+                response = "An error has occurred. Please check your courier URL configuration"
+            elif 'channel_uuid' not in kwargs or kwargs['channel_uuid'] is None:
+                response = "A valid channel ID must be provided"
+        return HttpResponse(response)
+
+    def post(self, request, *args, **kwargs):
+        return HttpResponse("ILLEGAL METHOD")
 
 class ChannelCRUDL(SmartCRUDL):
     model = Channel
@@ -1174,6 +1211,15 @@ class ChannelCRUDL(SmartCRUDL):
         def pre_save(self, obj):
             for field in self.form.config_fields:
                 obj.config[field] = self.form.cleaned_data[field]
+            if hasattr(obj, 'tps'):
+                max_tps = getattr(settings, "MAX_TPS", 50)
+                if obj.tps is None:
+                    obj.tps = getattr(settings, "DEFAULT_TPS", 10)
+
+                if obj.tps <= 0:
+                    obj.tps = getattr(settings, "DEFAULT_TPS", 10)
+                elif obj.tps > max_tps:
+                    obj.tps = max_tps
             return obj
 
         def post_save(self, obj):
@@ -1352,12 +1398,16 @@ class ChannelCRUDL(SmartCRUDL):
             context["configuration_urls"] = channel_type.get_configuration_urls(self.object)
             context["show_public_addresses"] = channel_type.show_public_addresses
 
+            if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR is not None:
+                context['subdir'] = settings.SUB_DIR.replace("/", "").replace("\\", "")
+
             return context
 
     class List(OrgPermsMixin, SmartListView):
         title = _("Channels")
         fields = ("name", "address", "last_seen")
         search_fields = ("name", "address", "org__created_by__email")
+        link_url = 'uuid@channels.channel_read'
 
         def lookup_field_link(self, context, field, obj):
             return reverse("channels.channel_read", args=[obj.uuid])
@@ -1369,6 +1419,9 @@ class ChannelCRUDL(SmartCRUDL):
             if not self.request.user.is_superuser:
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
+
+            if self.request.user.is_superuser and not self.request.GET.get("showall"):
+                queryset = queryset.filter(org__isnull=False)
 
             return queryset.filter(is_active=True)
 

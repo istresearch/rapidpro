@@ -1,6 +1,7 @@
 from smartmin.views import SmartCRUDL, SmartListView, SmartReadView, smart_url
 
 from django.shortcuts import get_object_or_404
+
 from django.urls import reverse
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _

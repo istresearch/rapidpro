@@ -52,6 +52,8 @@ function runActionOnObjectRows(action) {
         onSuccess: function (data, textStatus) {
             wireTableListeners();
         },
+        forceReload: true,
+        followRedirects: true
     });
 }
 

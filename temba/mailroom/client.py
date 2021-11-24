@@ -1,4 +1,5 @@
 import logging
+
 from typing import Dict, List, NamedTuple
 
 import requests
@@ -106,6 +107,11 @@ class MailroomClient:
         payload = {"flow": flow, "language": language}
 
         return self._request("flow/change_language", payload, encode_json=True)
+
+    def flow_change_language(self, flow, language):
+        payload = {"flow": flow, "language": language}
+
+        return self._request("flow/change_language", payload)
 
     def flow_clone(self, flow, dependency_mapping):
         payload = {"flow": flow, "dependency_mapping": dependency_mapping}

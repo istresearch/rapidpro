@@ -53,6 +53,7 @@ from temba.utils.fields import (
     TembaMultipleChoiceField,
 )
 from temba.utils.models import IDSliceQuerySet, patch_queryset_count
+
 from temba.utils.views import BulkActionMixin, ComponentFormMixin, NonAtomicMixin
 
 from .models import (
@@ -1291,11 +1292,6 @@ class ContactCRUDL(SmartCRUDL):
         success_url = "uuid@contacts.contact_read"
         success_message = ""
         submit_button_name = _("Save Changes")
-
-        def get_form_kwargs(self):
-            kwargs = super().get_form_kwargs()
-            kwargs["user"] = self.request.user
-            return kwargs
 
         def get_context_data(self, **kwargs):
             context = super().get_context_data(**kwargs)

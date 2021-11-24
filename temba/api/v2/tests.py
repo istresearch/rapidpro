@@ -3314,21 +3314,22 @@ class APITest(TembaTest):
 
         self.org.set_flow_languages(self.admin, ["eng", "fra"])
 
-        response = self.fetchJSON(url)
-        self.assertEqual(
-            response.json(),
-            {
-                "uuid": str(self.org.uuid),
-                "name": "Temba",
-                "country": "RW",
-                "languages": ["eng", "fra"],
-                "primary_language": "eng",
-                "timezone": "Africa/Kigali",
-                "date_style": "day_first",
-                "credits": {"used": 0, "remaining": 1000},
-                "anon": False,
-            },
-        )
+        for urn in ("/api/v2/org", "/api/v2/workspace"):
+            response = self.fetchJSON(url)
+            self.assertEqual(
+                response.json(),
+                {
+                    "uuid": str(self.org.uuid),
+                    "name": "Temba",
+                    "country": "RW",
+                    "languages": ["eng", "fra"],
+                    "primary_language": "eng",
+                    "timezone": "Africa/Kigali",
+                    "date_style": "day_first",
+                    "credits": {"used": 0, "remaining": 1000},
+                    "anon": False,
+                },
+            )
 
     def test_media(self):
         url = reverse("api.v2.media") + ".json"

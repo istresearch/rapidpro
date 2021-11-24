@@ -9,7 +9,7 @@
     }
 
 -block page-title
-  -trans "Campaigns"
+  -trans "Scenarios"
 
 -block title-icon
   .title-icon
@@ -28,9 +28,9 @@
             .flex.flex-col
               -if org_perms.flows.flow_create
                 .w-64.mr-5
-                  %temba-modax{ header:"Create Campaign", endpoint:"/campaign/create/" }
+                  %temba-modax{ header:"Create Scenario", endpoint:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/create/" }
                     .button-primary.block
-                      -trans "Create Campaign"
+                      -trans "Create Scenario"
               
               .lp-nav.upper
                 -for folder in folders

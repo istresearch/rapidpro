@@ -71,6 +71,12 @@ msgstr ""
 msgid "You do not have permission to access this file"
 msgstr ""
 
+msgid "Flow Event"
+msgstr ""
+
+msgid "Message Event"
+msgstr ""
+
 msgid "Minutes"
 msgstr ""
 
@@ -146,7 +152,7 @@ msgstr ""
 msgid "Name"
 msgstr ""
 
-msgid "Export"
+msgid "Skip"
 msgstr ""
 
 msgid "Add Event"
@@ -155,17 +161,38 @@ msgstr ""
 msgid "Edit"
 msgstr ""
 
-msgid "Update Campaign"
+msgid "Fired"
+msgstr ""
+
+msgid "Skipped"
+msgstr ""
+
+msgid "The event that will be fired"
+msgstr ""
+
+msgid "The contact that is scheduled to have an event run"
+msgstr ""
+
+msgid "When this event is scheduled to run"
+msgstr ""
+
+msgid "When this event actually fired, null if not yet fired"
+msgstr ""
+
+msgid "Whether the event is fired or skipped, null if not yet fired"
+msgstr ""
+
+msgid "Export"
 msgstr ""
 
 msgid "Service"
 msgstr ""
 
 msgid "Campaign archived"
-msgstr ""
+msgstr "Scenario archived"
 
 msgid "Campaign activated"
-msgstr ""
+msgstr "Scenario activated"
 
 msgid "Select the event type"
 msgstr ""
@@ -209,9 +236,6 @@ msgstr ""
 
 #, python-format
 msgid "Translation for '%(language)s' exceeds the %(limit)d character limit."
-msgstr ""
-
-msgid "Hi @contact.name! This is just a friendly reminder to apply your fertilizer."
 msgstr ""
 
 msgid "Default"
@@ -1108,10 +1132,10 @@ msgstr ""
 msgid "Token"
 msgstr ""
 
-msgid "The JioChat App ID"
+msgid "The Jiochat App ID"
 msgstr ""
 
-msgid "The JioChat App secret"
+msgid "The Jiochat App secret"
 msgstr ""
 
 #, python-format
@@ -1912,6 +1936,9 @@ msgstr ""
 msgid "Edit Channel"
 msgstr ""
 
+msgid "Edit"
+msgstr ""
+
 msgid "Disable Bulk Sending"
 msgstr ""
 
@@ -1964,10 +1991,7 @@ msgstr ""
 msgid "A connection to a Twilio account is required"
 msgstr ""
 
-msgid "A caller cannot be added for that number"
-msgstr ""
-
-msgid "A caller has already been added for that number"
+msgid "Sorry, a caller cannot be added for that number"
 msgstr ""
 
 msgid "Channels"
@@ -2072,7 +2096,7 @@ msgstr ""
 msgid "External identifier"
 msgstr ""
 
-msgid "JioChat identifier"
+msgid "Jiochat identifier"
 msgstr ""
 
 msgid "WeChat identifier"
@@ -2254,6 +2278,10 @@ msgstr ""
 msgid "{label} for this contact"
 msgstr ""
 
+#, python-brace-format
+msgid "{label} for this contact"
+msgstr ""
+
 msgid "Used by another contact"
 msgstr ""
 
@@ -2319,6 +2347,9 @@ msgid "Block"
 msgstr ""
 
 msgid "Contacts"
+msgstr ""
+
+msgid "Delete"
 msgstr ""
 
 msgid "Save as Group"
@@ -2480,6 +2511,12 @@ msgstr ""
 msgid "Failed"
 msgstr ""
 
+msgid "Sorry, an invalid flow has been detected. Good bye."
+msgstr ""
+
+msgid "Played contact recording"
+msgstr ""
+
 msgid "After 5 minutes"
 msgstr ""
 
@@ -2583,7 +2620,7 @@ msgstr ""
 msgid "For each login"
 msgstr ""
 
-msgid "Retry call if unable to connect"
+msgid "Retry call on busy/no answer"
 msgstr ""
 
 msgid "Retries call three times for the chosen interval"
@@ -2729,9 +2766,6 @@ msgstr ""
 msgid "These contacts will be added to the flow, sending the first message if appropriate."
 msgstr ""
 
-msgid "Recipients, enter contacts or groups"
-msgstr ""
-
 msgid "Restart Participants"
 msgstr ""
 
@@ -2815,10 +2849,10 @@ msgstr ""
 msgid "Manage Globals"
 msgstr ""
 
-msgid "All"
+msgid "Could not authenticate with your Twilio account. Check your token and try again."
 msgstr ""
 
-msgid "Unused"
+msgid "Verboice connection failed."
 msgstr ""
 
 msgid "After 1 minute"
@@ -3532,6 +3566,9 @@ msgstr ""
 msgid "Join %(name)s"
 msgstr ""
 
+msgid "Update all flows and campaigns"
+msgstr "Update all flows and scenarios"
+
 msgid "Sign in with your account to accept the invitation"
 msgstr ""
 
@@ -3678,7 +3715,7 @@ msgstr ""
 msgid "A short blurb about the video"
 msgstr ""
 
-msgid "Description"
+msgid "Description
 msgstr ""
 
 msgid "Vimeo ID"
@@ -4128,14 +4165,24 @@ msgstr ""
 msgid "Sync Logs"
 msgstr ""
 
-msgid "HTTP Logs"
+msgid "Data posted Log"
 msgstr ""
 
 msgid "No Data"
 msgstr ""
 
+msgid "Responses Log"
+msgstr ""
+
+msgid "No Response"
+msgstr ""
+
 #, python-format
-msgid "API v1 has been replaced by <a href=\"%(v2_url)s\">API v2</a>. Please migrate your applications accordingly."
+msgid ""
+"\n"
+"          API v1 has been replaced by <a href=\"%(v2_url)s\">API v2</a>. Please migrate your applications accordingly.\n"
+"\n"
+"        "
 msgstr ""
 
 msgid "Explorer"
@@ -4190,14 +4237,26 @@ msgid "Archives"
 msgstr ""
 
 #, python-format
-msgid "You have %(counter)s archive"
-msgid_plural "You have %(counter)s archives"
+msgid ""
+"\n"
+"    You have %(counter)s archive\n"
+"    "
+msgid_plural ""
+"\n"
+"    You have %(counter)s archives\n"
+"    "
 msgstr[0] ""
 msgstr[1] ""
 
 #, python-format
-msgid "containing %(counter)s record."
-msgid_plural "containing %(counter)s records."
+msgid ""
+"\n"
+"    containing %(counter)s record.\n"
+"    "
+msgid_plural ""
+"\n"
+"    containing %(counter)s records.\n"
+"    "
 msgstr[0] ""
 msgstr[1] ""
 
@@ -4216,17 +4275,26 @@ msgstr ""
 msgid "Period"
 msgstr ""
 
-msgid "No archives found. Archives are created after 90 days of inactivity for messages and flow runs. Check back later to see a list of all archives."
+msgid ""
+"\n"
+"      No archives found. Archives are created after 90 days of inactivity for messages and flow runs. Check back later to\n"
+"      see a list of all archives.\n"
+"\n"
+"\n"
+"    "
 msgstr ""
 
-msgid "Your download should start automatically. If it doesn't start in a few seconds, use the button below to download."
+msgid ""
+"\n"
+"        Your download should start automatically. If it doesn't start in a few seconds, use the button below to download.\n"
+"      "
 msgstr ""
 
 msgid "Download Now"
 msgstr ""
 
 msgid "Campaigns"
-msgstr ""
+msgstr "Scenarios"
 
 msgid "Create Campaign"
 msgstr ""
@@ -4241,10 +4309,13 @@ msgid "(Archived)"
 msgstr ""
 
 msgid "No group assigned to this campaign"
-msgstr ""
+msgstr "No group assigned to this scenario"
 
 msgid "No events in this campaign yet."
-msgstr ""
+msgstr "No events in this scenario yet."
+
+msgid "Update Campaign"
+msgstr "Update Scenario"
 
 msgid "You are about to delete this event. There is no way to undo this. Are you sure?"
 msgstr ""
@@ -4267,7 +4338,13 @@ msgstr ""
 msgid "Add Bulk Sender"
 msgstr ""
 
-msgid "Bulk senders typically can send a higher volume of messages and in some cases are even cheaper than local messaging rates. If you have an account with a bulk sender, you can use your local Android phone number to receive messages, and use a bulk sender for your outgoing messages."
+msgid ""
+"\n"
+"            Bulk senders typically can send a higher volume of messages and in some cases are even cheaper than\n"
+"            local messaging rates. If you have an account with a bulk sender, you can use your local Android phone\n"
+"            number to receive messages, and use a bulk sender for your outgoing messages.\n"
+"\n"
+"          "
 msgstr ""
 
 msgid "Connect Vonage"
@@ -4298,7 +4375,12 @@ msgstr ""
 msgid "Recommendations"
 msgstr ""
 
-msgid "We recommend using an Android phone with a local sim card for your country. This phone will send and receive messages for you. You will only need one phone per country depending on message volume. Don't worry! The people you are texting with can still use basic phones."
+msgid ""
+"\n"
+"            We recommend using an Android phone with a local sim card for your country. This phone\n"
+"            will send and receive messages for you. You will only need one phone per country depending on\n"
+"            message volume. Don't worry! The people you are texting with can still use basic phones.\n"
+"          "
 msgstr ""
 
 msgid "Social Network Channels"
@@ -4357,14 +4439,24 @@ msgid "Last synced"
 msgstr ""
 
 #, python-format
-msgid "%(last_sync)s ago"
+msgid ""
+"\n"
+"                  %(last_sync)s\n"
+"                  ago\n"
+"                "
 msgstr ""
 
 msgid "Not synced yet"
 msgstr ""
 
-msgid "unsent message"
-msgid_plural "unsent messages"
+msgid ""
+"\n"
+"                unsent message\n"
+"              "
+msgid_plural ""
+"\n"
+"                unsent messages\n"
+"              "
 msgstr[0] ""
 msgstr[1] ""
 
@@ -4435,17 +4527,30 @@ msgid "Cancel"
 msgstr ""
 
 #, python-format
-msgid "Found %(results_count)s call in last 90 days for <i>%(search)s</i>."
-msgid_plural "Found %(results_count)s calls in last 90 days for <i>%(search)s</i>."
+msgid ""
+"\n"
+"        Found %(results_count)s call in last 90 days for <i>%(search)s</i>.\n"
+"        "
+msgid_plural ""
+"\n"
+"          Found %(results_count)s calls in last 90 days for <i>%(search)s</i>.\n"
+"\n"
+"      "
 msgstr[0] ""
 msgstr[1] ""
 
 #, python-format
-msgid "Outgoing Call (%(duration)s seconds)"
+msgid ""
+"\n"
+"                Outgoing Call (%(duration)s seconds)\n"
+"              "
 msgstr ""
 
 #, python-format
-msgid "Incoming Call (%(duration)s seconds)"
+msgid ""
+"\n"
+"                Incoming Call (%(duration)s seconds)\n"
+"              "
 msgstr ""
 
 msgid "No Matching calls"
@@ -4494,14 +4599,24 @@ msgid "Change Alert Settings"
 msgstr ""
 
 #, python-format
-msgid "We've noticed that the Android phone for %(org_name)s has been connected back to internet and has been able to sync with the %(brand)s servers recently at"
+msgid ""
+"\n"
+"        We've noticed that the Android phone for %(org_name)s has been connected back to\n"
+"        internet and has been able to sync with the %(brand)s servers recently at \n"
+"      "
 msgstr ""
 
-msgid "This email is to announce that your android phone connection problem reported last time was resolved."
+msgid ""
+"\n"
+"        This email is to announce that your android phone connection problem reported last time was resolved.\n"
+"      "
 msgstr ""
 
 #, python-format
-msgid "You can check the current status of your %(channel_name)s by visiting its"
+msgid ""
+"\n"
+"        You can check the current status of your %(channel_name)s by visiting its\n"
+"      "
 msgstr ""
 
 msgid "status page."
@@ -4522,6 +4637,9 @@ msgid ""
 "We've noticed that the Android phone for %(org_name)s has been connected back to internet and has been able to sync with the %(brand)s servers recently at\n"
 msgstr ""
 
+msgid "This email is to announce that your android phone connection problem reported last time was resolved."
+msgstr ""
+
 #, python-format
 msgid ""
 "\n"
@@ -4529,17 +4647,27 @@ msgid ""
 msgstr ""
 
 #, python-format
-msgid "We've noticed that the Android phone for %(org_name)s hasn't contacted the %(brand)s servers since"
+msgid ""
+"\n"
+"        We've noticed that the Android phone for %(org_name)s hasn't contacted the %(brand)s servers since\n"
+"      "
 msgstr ""
 
 msgid "This is usually due to your phone being unable to connect to the internet."
 msgstr ""
 
-msgid "Please check on your phone to make sure it is connected to a WiFi network or cellular data. If problems persist you may want to try turning the phone off then back on."
+msgid ""
+"\n"
+"        Please check on your phone to make sure it is connected to a WiFi network or cellular data.\n"
+"        If problems persist you may want to try turning the phone off then back on.\n"
+"      "
 msgstr ""
 
 #, python-format
-msgid "You can check the current status of your %(channel.get_name)s by visiting its"
+msgid ""
+"\n"
+"        You can check the current status of your %(channel.get_name)s by visiting its\n"
+"      "
 msgstr ""
 
 #, python-format
@@ -4567,11 +4695,19 @@ msgid "Thanks,"
 msgstr ""
 
 #, python-format
-msgid "We've noticed that the Android phone for %(org_name)s is getting low on power and isn't plugged in. If it runs out of power then you will stop receiving messages for %(brand)s."
+msgid ""
+"\n"
+"        We've noticed that the Android phone for %(org_name)s is getting low on power and isn't plugged in.\n"
+"        If it runs out of power then you will stop receiving messages for %(brand)s.\n"
+"      "
 msgstr ""
 
 #, python-format
-msgid "Please check on your phone to make sure it is plugged into a reliable power source. The current power level is %(power_level)s%%, you will only receive this notification when the power drops below 25%%."
+msgid ""
+"\n"
+"        Please check on your phone to make sure it is plugged into a reliable power source.\n"
+"        The current power level is %(power_level)s%%, you will only receive this notification when the power drops below 25%%.\n"
+"      "
 msgstr ""
 
 #, python-format
@@ -4593,7 +4729,10 @@ msgid ""
 msgstr ""
 
 #, python-format
-msgid "We've noticed that the Android phone for %(org_name)s is now charging the battery."
+msgid ""
+"\n"
+"        We've noticed that the Android phone for %(org_name)s is now charging the battery.\n"
+"      "
 msgstr ""
 
 msgid "This email is to announce that your android phone battery low reported last time was resolved. Now the battery is charging."
@@ -4615,27 +4754,52 @@ msgid ""
 msgstr ""
 
 #, python-format
-msgid "We've noticed that the Android phone for %(org_name)s is having trouble sending text messages.  This might be a temporary problem due to your cellular network, or could be an indication that your phone is out of credit."
+msgid ""
+"\n"
+"        We've noticed that the Android phone for %(org_name)s is having trouble sending text messages.  This might be\n"
+"        a temporary problem due to your cellular network, or could be an indication that your phone is out of credit.\n"
+"      "
 msgstr ""
 
 #, python-format
-msgid "Please check on your phone to make sure it has sufficient credit and can send text messages.  If problems persist you may want to try turning the phone off then back on.  Currently your Android phone has <strong>%(unsent_count)s</strong> messages which haven't sent in over an hour."
+msgid ""
+"\n"
+"        Please check on your phone to make sure it has sufficient credit and can send text messages.  If problems persist\n"
+"        you may want to try turning the phone off then back on.  Currently your Android phone has <strong>%(unsent_count)s</strong>\n"
+"        messages which haven't sent in over an hour.\n"
+"      "
 msgstr ""
 
 #, python-format
-msgid "We've noticed that the %(channel_type)s for %(org_name)s is having trouble sending text messages.  This might be a temporary problem due to network communication to %(channel_type)s or may indicate a change in configuration which required your action."
+msgid ""
+"\n"
+"        We've noticed that the %(channel_type)s for %(org_name)s is having trouble sending text messages.  This might be\n"
+"        a temporary problem due to network communication to %(channel_type)s or may indicate a change in configuration which required your action.\n"
+"      "
 msgstr ""
 
 #, python-format
-msgid "Please check on your %(channel_type)s to make sure it can send text messages.  Currently your %(channel_type)s has <strong>%(unsent_count)s</strong> messages which haven't sent in over an hour."
+msgid ""
+"\n"
+"        Please check on your %(channel_type)s to make sure it can send text messages.  Currently your %(channel_type)s has <strong>%(unsent_count)s</strong>\n"
+"        messages which haven't sent in over an hour.\n"
+"      "
 msgstr ""
 
 #, python-format
-msgid "We've noticed that the %(channel_type)s for %(org_name)s is having trouble sending text messages.  This might be a temporary problem due to network communication to %(channel_type)s, or could be an indication that your %(channel_type)s is out of credit."
+msgid ""
+"\n"
+"        We've noticed that the %(channel_type)s for %(org_name)s is having trouble sending text messages.  This might be\n"
+"        a temporary problem due to network communication to %(channel_type)s, or could be an indication that your %(channel_type)s is out of credit.\n"
+"      "
 msgstr ""
 
 #, python-format
-msgid "Please check on your %(channel_type)s to make sure it has sufficient credit and can send text messages.  Currently your %(channel_type)s has <strong>%(unsent_count)s</strong> messages which haven't sent in over an hour."
+msgid ""
+"\n"
+"        Please check on your %(channel_type)s to make sure it has sufficient credit and can send text messages.  Currently your %(channel_type)s has <strong>%(unsent_count)s</strong>\n"
+"        messages which haven't sent in over an hour.\n"
+"      "
 msgstr ""
 
 #, python-format
@@ -4747,18 +4911,34 @@ msgid "To connect a <a href=\"http://clickatell.com\">Clickatell</a> number, fir
 msgstr ""
 
 #, python-format
-msgid "After connecting your service we will provide URLs for the endpoints for Clickatell to call when they want to push a message to %(brand)s."
+msgid ""
+"\n"
+"        After connecting your service we will provide URLs for the endpoints for Clickatell to call when they want\n"
+"        to push a message to %(brand)s.\n"
+"\n"
+"      "
 msgstr ""
 
 msgid "Your 360Dialog WhatsApp channel is now connected, you should be able to send and receive messages as normal."
 msgstr ""
 
 #, python-format
-msgid "You can connect your <a href=\"http://dmarkmobile.com/\">DMark Mobile</a> number to %(name)s using the fields below. You will first need to create a DMark Mobile account and receive a username and password from them to use below."
+msgid ""
+"\n"
+"        You can connect your <a href=\"http://dmarkmobile.com/\">DMark Mobile</a> number to %(name)s using the fields below. You\n"
+"        will first need to create a DMark Mobile account and receive a username and password from them to use below.\n"
+"\n"
+"      "
 msgstr ""
 
 #, python-format
-msgid "You can connect an external aggregator or messaging service to %(brand)s using our external API. You can specify parameters to substitute in the URL or body by using these variables:"
+msgid ""
+"\n"
+"        You can connect an external aggregator or messaging service to %(brand)s using our external API.\n"
+"\n"
+"        You can specify parameters to substitute in the URL or body by using these variables:\n"
+"\n"
+"      "
 msgstr ""
 
 msgid "the message of the text being sent"
@@ -4785,7 +4965,11 @@ msgstr ""
 msgid "An example that would substitute variables in the URL:"
 msgstr ""
 
-msgid "If using POST or PUT, you can specify the body of the request using the same variables."
+msgid ""
+"\n"
+"        If using POST or PUT, you can specify the body of the request using the same variables.\n"
+"\n"
+"      "
 msgstr ""
 
 #, python-format
@@ -4796,34 +4980,67 @@ msgstr ""
 msgid "After connecting your service we will provide URLs for the endpoints to call when you want to push a message to %(brand)s or notify %(brand)s of the delivery status of a message."
 msgstr ""
 
-msgid "To finish configuring your connection you'll need to set the following callback URLs on your service or aggregator."
+msgid ""
+"\n"
+"    To finish configuring your connection you'll need to set the following callback URLs on your service or aggregator.\n"
+"\n"
+"  "
 msgstr ""
 
-msgid "When we need to send an outgoing message it will make a"
+msgid ""
+"\n"
+"    When we need to send an outgoing message it will make a\n"
+"\n"
+"  "
 msgstr ""
 
-msgid "to this URL with the parameters 'text', 'to', 'from', 'channel' and 'id'"
+msgid ""
+"\n"
+"    to this URL with the parameters 'text', 'to', 'from', 'channel' and 'id'\n"
+"\n"
+"  "
 msgstr ""
 
 msgid "Example"
 msgstr ""
 
-msgid "When a new message is received by your service, it should notify us with a POST to the following URL, passing the following parameters: 'from' and 'text'. Callers can optionally also send a 'date' parameter in ISO-8601 (ex: 2012-04-23T18:25:43.511Z) format to specify the time the message was received."
+msgid ""
+"\n"
+"      When a new message is received by your service, it should notify us with a POST to the following URL, passing\n"
+"      the following parameters: 'from' and 'text'. Callers can optionally also send a 'date' parameter in ISO-8601\n"
+"      (ex: 2012-04-23T18:25:43.511Z) format to specify the time the message was received.\n"
+"    "
 msgstr ""
 
-msgid "When your service successfully sends a message, it should notify us with a POST to the following URL, passing the id of the message as the parameter 'id' (reporting sent messages is optional)"
+msgid ""
+"\n"
+"    When your service successfully sends a message, it should notify us with a POST to the following URL, passing\n"
+"    the id of the message as the parameter 'id' (reporting sent messages is optional)\n"
+"  "
 msgstr ""
 
-msgid "When your service successfully delivers a message, it should notify us with a POST to the following URL, passing the id of the message as the parameter 'id' (reporting deliveries is optional)"
+msgid ""
+"\n"
+"    When your service successfully delivers a message, it should notify us with a POST to the following URL, passing\n"
+"    the id of the message as the parameter 'id' (reporting deliveries is optional)\n"
+"  "
 msgstr ""
 
-msgid "If your service fails to send an outgoing message, it should notify us with a POST to the following URL, passing the id of the message as the parameter 'id' (reporting failed sends is optional)"
+msgid ""
+"\n"
+"    If your service fails to send an outgoing message, it should notify us with a POST to the following URL, passing\n"
+"    the id of the message as the parameter 'id' (reporting failed sends is optional)\n"
+"  "
 msgstr ""
 
 msgid "Contact Opt out/Stopped URL"
 msgstr ""
 
-msgid "If this channel provides a way for contacts to opt out and stop receiving messages, the service should notify us with a POST to the following URL, passing the phone number as the parameter \"from\""
+msgid ""
+"\n"
+"    If this channel provides a way for contacts to opt out and stop receiving messages,\n"
+"    the service should notify us with a POST to the following URL, passing the phone number as the parameter \"from\"\n"
+"  "
 msgstr ""
 
 #, python-format
@@ -5525,6 +5742,9 @@ msgstr ""
 msgid "Contact language"
 msgstr ""
 
+msgid "Campaign events:"
+msgstr "Scenario events:"
+
 msgid "Only valid <a href=\"https://en.wikipedia.org/wiki/ISO_639-3\" target=\"_new\">ISO639-3</a> codes supported."
 msgstr ""
 
@@ -5924,7 +6144,7 @@ msgid "flows"
 msgstr ""
 
 msgid "campaigns"
-msgstr ""
+msgstr "scenarios"
 
 msgid "triggers"
 msgstr ""
@@ -6000,7 +6220,7 @@ msgstr ""
 
 #, python-format
 msgid "%(count_comma)s recipient"
-msgid_plural "%(count_comma)s recipients"
+msgid_plural "%(count_comma)s recipients
 msgstr[0] ""
 msgstr[1] ""
 
@@ -6062,14 +6282,27 @@ msgid "No messages"
 msgstr ""
 
 #, python-format
-msgid "Found %(results_count)s message in last 90 days matching <i>%(search)s</i>."
-msgid_plural "Found %(results_count)s messages in last 90 days matching <i>%(search)s</i>."
+msgid ""
+"\n"
+"                      Found %(results_count)s message in last 90 days matching <i>%(search)s</i>.\n"
+"                      "
+msgid_plural ""
+"\n"
+"                        Found %(results_count)s messages in last 90 days matching <i>%(search)s</i>.\n"
+"                    "
 msgstr[0] ""
 msgstr[1] ""
 
 #, python-format
-msgid "%(results_count)s message since %(start_date)s."
-msgid_plural "%(results_count)s messages since %(start_date)s."
+msgid ""
+"\n"
+"                        %(results_count)s message since %(start_date)s.\n"
+"                        "
+msgid_plural ""
+"\n"
+"                          %(results_count)s messages since %(start_date)s.\n"
+"\n"
+"                      "
 msgstr[0] ""
 msgstr[1] ""
 
@@ -6191,9 +6424,9 @@ msgid ""
 "\n"
 "\n"
 "Hi %(customer)s,\n"
-"\n"
 msgstr ""
 
+#, python-format
 msgid ""
 "\n"
 "To resume your service please visit your workspace page to purchase a top up.\n"
@@ -6201,7 +6434,6 @@ msgstr ""
 
 msgid ""
 "\n"
-"To resume your service, please contact your account manager.\n"
 msgstr ""
 
 #, python-format
@@ -6219,7 +6451,6 @@ msgstr ""
 
 msgid ""
 "\n"
-"Messages will no longer be sent when your credits expire, to prevent an interruption in your service, please contact your account manager.\n"
 msgstr ""
 
 #, python-format
@@ -6237,7 +6468,6 @@ msgstr ""
 
 msgid ""
 "\n"
-"Messages will no longer be sent when your credits reach zero, to prevent an interruption in your service, please contact your account manager.\n"
 msgstr ""
 
 #, python-format
@@ -6335,7 +6565,6 @@ msgid ""
 "Credit Card: %(cc_type)s X%(cc_last4)s\n"
 "\n"
 msgstr ""
-
 #, python-format
 msgid ""
 "\n"
@@ -6495,6 +6724,10 @@ msgstr ""
 msgid "Your login is not associated with any workspace. Please contact your administrator to receive an invitation to a workspace."
 msgstr ""
 
+msgid "Flows and Campaigns"
+msgstr "Flows and Scenarios"
+
+
 #, python-format
 msgid "Responses to location questions must be in <b>%(country)s</b>."
 msgstr ""
@@ -6506,6 +6739,14 @@ msgid "Choose a country to enable location support in your flows."
 msgstr ""
 
 msgid "Add Credits"
+
+msgid "Workspace Settings"
+msgstr ""
+
+msgid "Import Flows and Campaigns"
+msgstr "Import Flows and Scenarios"
+
+msgid "If you have an export file with flows and or campaigns, select it below to import it into your workspace."
 msgstr ""
 
 msgid "You have"
@@ -6516,6 +6757,9 @@ msgstr ""
 
 msgid "You have used"
 msgstr ""
+
+msgid "Do not proceed unless you are willing to replace your existing flows and campaigns."
+msgstr "Do not proceed unless you are willing to replace your existing flows and scenarios."
 
 msgid "credits since signing up."
 msgstr ""
@@ -7351,6 +7595,27 @@ msgstr ""
 msgid "Create a message keyword that allows people to join a group."
 msgstr ""
 
+msgid "Mon"
+msgstr ""
+
+msgid "Tue"
+msgstr ""
+
+msgid "Wed"
+msgstr ""
+
+msgid "Thu"
+msgstr ""
+
+msgid "Fri"
+msgstr ""
+
+msgid "Sat"
+msgstr ""
+
+msgid "Sun"
+msgstr ""
+
 msgid "Start a flow in the future or on a schedule."
 msgstr ""
 
@@ -7360,7 +7625,7 @@ msgstr ""
 msgid "The keyword"
 msgstr ""
 
-msgid "A missed call"
+msgid "A missed call
 msgstr ""
 
 msgid "An uncaught message"

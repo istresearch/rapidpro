@@ -1,10 +1,10 @@
-# RapidPro 
+# Pulse Engage (IST Research Nyaruka/RapidPro Fork)
 
-[![Build Status](https://github.com/rapidpro/rapidpro/workflows/CI/badge.svg)](https://github.com/rapidpro/rapidpro/actions?query=workflow%3ACI) 
-[![codecov](https://codecov.io/gh/rapidpro/rapidpro/branch/main/graph/badge.svg)](https://codecov.io/gh/rapidpro/rapidpro)
+This repository is a fork of the RapidPro library used for developing additional functionality.
+# RapidPro [![Build Status](https://travis-ci.org/rapidpro/rapidpro.svg?branch=master)](https://travis-ci.org/rapidpro/rapidpro) [![codecov](https://codecov.io/gh/rapidpro/rapidpro/branch/master/graph/badge.svg)](https://codecov.io/gh/rapidpro/rapidpro)    
 
-RapidPro is a hosted service for visually building interactive messaging applications.
-To learn more, please visit the project site at http://rapidpro.github.io/rapidpro.
+### Version v5.0.0
+See [Pulse Engage Setup and Deployment](https://istresearch.atlassian.net/wiki/spaces/PULSE/pages/506069039/Pulse+Engage+RapidPro+Setup+and+Deployment) for instructions on building and deploying docker containers to remote servers.
 
 ### Stable Versions
 
@@ -52,9 +52,22 @@ version of these dependencies you need to run with it.
 
 ### Get Involved
 
-To run RapidPro for development, follow the Quick Start guide at http://rapidpro.github.io/rapidpro/docs/development.
+```
+docker pull rapidpro/rapidpro:master
+```
 
-### License
+If you are running RapidPro for the first time, please ensure the following variable is set for the rapidpro service:
+```
+- MANAGEPY_MIGRATE=on
+```
+
+It will allow the database to be initialized.
+
+To stand up a development instance, simply run:
+
+```
+./dc-rapidpro.dev.sh up --build -d
+```
 
 In late 2014, Nyaruka partnered with UNICEF to expand on the capabilities of TextIt and release the source code as 
 RapidPro under the Affero GPL (AGPL) license.
@@ -64,4 +77,5 @@ you make to the source code must be available to others. Note that unlike the GP
 made public even if you do not redistribute them. If you host a version of RapidPro, you must make the same source you 
 are hosting available for others.
 
+Any local changes will be picked up by the development instance. If, in any case, there are changes that do not appear in the development instance, ensure that the files are properly mounted in `rapidpro-compose.dev.yaml`
 The software is provided under AGPL-3.0. Contributions to this project are accepted under the same license.
