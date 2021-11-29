@@ -1,13 +1,13 @@
 from gettext import gettext as _
 
-from smartmin.views import SmartCreateView, SmartCRUDL, SmartDeleteView, SmartListView, SmartReadView, SmartUpdateView
+from smartmin.views import SmartCreateView, SmartCRUDL, SmartListView, SmartReadView, SmartUpdateView
 
 from django import forms
-from django.conf import settings
-from django.http import HttpResponseRedirect
 from django.urls import reverse
 
-from temba.orgs.views import ModalMixin, OrgObjPermsMixin, OrgPermsMixin
+from temba.orgs.models import Org
+from temba.orgs.views import DependencyDeleteModal, ModalMixin, OrgObjPermsMixin, OrgPermsMixin
+from temba.utils.fields import InputWidget
 
 from .models import Global
 
@@ -22,10 +22,10 @@ class CreateGlobalForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
-        if self.org.globals.filter(is_active=True).count() >= settings.MAX_ACTIVE_GLOBALS_PER_ORG:
+        org_active_globals_limit = self.org.get_limit(Org.LIMIT_GLOBALS)
+        if self.org.globals.filter(is_active=True).count() >= org_active_globals_limit:
             raise forms.ValidationError(
-                _("Cannot create a new global as limit is %(limit)s."),
-                params={"limit": settings.MAX_ACTIVE_GLOBALS_PER_ORG},
+                _("Cannot create a new global as limit is %(limit)s."), params={"limit": org_active_globals_limit}
             )
 
         return cleaned_data
@@ -49,6 +49,10 @@ class CreateGlobalForm(forms.ModelForm):
     class Meta:
         model = Global
         fields = ("name", "value")
+        widgets = {
+            "name": InputWidget(attrs={"name": _("Name"), "widget_only": False}),
+            "value": InputWidget(attrs={"name": _("Value"), "widget_only": False, "textarea": True}),
+        }
 
 
 class UpdateGlobalForm(forms.ModelForm):
@@ -61,6 +65,9 @@ class UpdateGlobalForm(forms.ModelForm):
     class Meta:
         model = Global
         fields = ("value",)
+        widgets = {
+            "value": InputWidget(attrs={"name": _("Value"), "widget_only": False, "textarea": True}),
+        }
 
 
 class GlobalCRUDL(SmartCRUDL):
@@ -86,13 +93,7 @@ class GlobalCRUDL(SmartCRUDL):
                 value=form.cleaned_data["value"],
             )
 
-            response = self.render_to_response(
-                self.get_context_data(
-                    form=form, success_url=self.get_success_url(), success_script=getattr(self, "success_script", None)
-                )
-            )
-            response["Temba-Success"] = self.get_success_url()
-            return response
+            return self.render_modal_response(form)
 
     class Update(ModalMixin, OrgObjPermsMixin, SmartUpdateView):
         form_class = UpdateGlobalForm
@@ -104,24 +105,10 @@ class GlobalCRUDL(SmartCRUDL):
             kwargs["org"] = self.derive_org()
             return kwargs
 
-    class Delete(OrgObjPermsMixin, SmartDeleteView):
+    class Delete(DependencyDeleteModal):
         cancel_url = "@globals.global_list"
-        redirect_url = "@globals.global_list"
+        success_url = "@globals.global_list"
         success_message = ""
-        http_method_names = ("get", "post")
-
-        def post(self, request, *args, **kwargs):
-            self.object = self.get_object()
-            self.pre_delete(self.object)
-            redirect_url = self.get_redirect_url()
-
-            # did it maybe change underneath us ???
-            if self.object.get_usage_count():
-                raise ValueError(f"Cannot remove a global {self.object.name} which is in use")
-
-            self.object.release()
-
-            return HttpResponseRedirect(redirect_url)
 
     class List(OrgPermsMixin, SmartListView):
         title = _("Manage Globals")

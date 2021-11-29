@@ -1,6 +1,9 @@
+from unittest.mock import patch
+
 from django.test.utils import override_settings
 from django.urls import reverse
 
+from temba.orgs.models import Org
 from temba.tests import CRUDLTestMixin, TembaTest
 
 from .models import Global
@@ -35,18 +38,15 @@ class GlobalTest(TembaTest):
         flow1.global_dependencies.add(global1, global2)
         flow2.global_dependencies.add(global1)
 
-        self.assertEqual(2, global1.get_usage_count())
-        self.assertEqual(1, global2.get_usage_count())
-
         with self.assertNumQueries(1):
             g1, g2, g3 = Global.annotate_usage(self.org.globals.order_by("id"))
-            self.assertEqual(2, g1.get_usage_count())
-            self.assertEqual(1, g2.get_usage_count())
-            self.assertEqual(0, g3.get_usage_count())
+            self.assertEqual(2, g1.usage_count)
+            self.assertEqual(1, g2.usage_count)
+            self.assertEqual(0, g3.usage_count)
 
-        global1.release()
-        global2.release()
-        global3.release()
+        global1.release(self.admin)
+        global2.release(self.admin)
+        global3.release(self.admin)
 
         self.assertEqual(0, Global.objects.count())
 
@@ -72,7 +72,8 @@ class GlobalTest(TembaTest):
     def test_is_valid_name(self):
         self.assertTrue(Global.is_valid_name("Age"))
         self.assertTrue(Global.is_valid_name("Age Now 2"))
-        self.assertFalse(Global.is_valid_name("Age_Now"))  # can't have punctuation
+        self.assertFalse(Global.is_valid_name("Age>Now"))  # can't have punctuation
+        self.assertTrue(Global.is_valid_name("API_KEY-2"))  # except underscores and hypens
         self.assertFalse(Global.is_valid_name("âge"))  # a-z only
 
 
@@ -105,6 +106,7 @@ class GlobalCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertListFetch(unused_url, allow_viewers=False, allow_editors=False, context_objects=[self.global2])
 
     @override_settings(MAX_ACTIVE_GLOBALS_PER_ORG=4)
+    @patch.object(Org, "LIMIT_DEFAULTS", dict(globals=4))
     def test_create(self):
         create_url = reverse("globals.global_create")
 
@@ -187,20 +189,26 @@ class GlobalCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual([self.flow], list(response.context["dep_flows"]))
 
     def test_delete(self):
-        delete_url = reverse("globals.global_delete", args=[self.global2.id])
+        delete_url = reverse("globals.global_delete", args=[self.global2.uuid])
+
+        # fetch delete modal
+        response = self.assertDeleteFetch(delete_url)
+        self.assertContains(response, "You are about to delete")
+
+        response = self.assertDeleteSubmit(delete_url, object_deleted=self.global2, success_status=200)
+        self.assertEqual("/global/", response["Temba-Success"])
+
+        # should see warning if global is being used
+        delete_url = reverse("globals.global_delete", args=[self.global1.uuid])
+
+        self.assertFalse(self.flow.has_issues)
 
         response = self.assertDeleteFetch(delete_url)
-        self.assertContains(response, "Are you sure you want to delete this global?")
+        self.assertContains(response, "is used by the following flows")
 
-        self.assertDeleteSubmit(delete_url, object_deleted=self.global2)
+        response = self.assertDeleteSubmit(delete_url, object_deleted=self.global1, success_status=200)
+        self.assertEqual("/global/", response["Temba-Success"])
 
-        # can't delete if global is being used
-        delete_url = reverse("globals.global_delete", args=[self.global1.id])
-
-        response = self.assertDeleteFetch(delete_url)
-        self.assertContains(response, "cannot be deleted because it is in use.")
-
-        with self.assertRaises(ValueError):
-            self.client.post(delete_url)
-
-        self.assertEqual(1, Global.objects.filter(id=self.global1.id).count())
+        self.flow.refresh_from_db()
+        self.assertTrue(self.flow.has_issues)
+        self.assertNotIn(self.global1, self.flow.global_dependencies.all())

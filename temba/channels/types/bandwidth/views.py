@@ -15,7 +15,6 @@ from temba.orgs.models import BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_APPLICATION_S
 from ...models import Channel
 from ...views import (
     ALL_COUNTRIES,
-    TWILIO_SEARCH_COUNTRIES,
     BaseClaimNumberMixin,
     ClaimViewMixin,
 )

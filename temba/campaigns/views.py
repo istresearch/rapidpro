@@ -10,57 +10,32 @@ from django.utils.translation import ugettext_lazy as _
 from temba.contacts.models import ContactField, ContactGroup
 from temba.flows.models import Flow
 from temba.msgs.models import Msg
-from temba.orgs.views import ModalMixin, OrgObjPermsMixin, OrgPermsMixin
-from temba.utils.fields import CompletionTextarea, InputWidget, SelectWidget
-from temba.utils.views import BaseActionForm
-from temba.values.constants import Value
+from temba.orgs.views import ModalMixin, OrgFilterMixin, OrgObjPermsMixin, OrgPermsMixin
+from temba.utils import languages
+from temba.utils.fields import CompletionTextarea, InputWidget, SelectWidget, TembaChoiceField
+from temba.utils.views import BulkActionMixin
 
-from .models import Campaign, CampaignEvent, EventFire
-
-
-class CampaignActionForm(BaseActionForm):
-    allowed_actions = (("archive", "Archive Scenarios"), ("restore", "Restore Scenarios"))
-
-    model = Campaign
-    has_is_active = True
-
-    class Meta:
-        fields = ("action", "objects")
+from .models import Campaign, CampaignEvent
 
 
-class CampaignActionMixin(SmartListView):
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
-
-    def post(self, request, *args, **kwargs):
-        user = self.request.user
-        form = CampaignActionForm(self.request.POST, org=user.get_org(), user=user)
-
-        if form.is_valid():
-            form.execute()
-
-        return self.get(request, *args, **kwargs)
-
-
-class UpdateCampaignForm(forms.ModelForm):
-    group = forms.ModelChoiceField(
+class CampaignForm(forms.ModelForm):
+    group = TembaChoiceField(
         queryset=ContactGroup.user_groups.none(),
         empty_label=None,
-        widget=SelectWidget(attrs={"placeholder": _("Select a group to base the campaign on"), "searchable": True}),
+        widget=SelectWidget(attrs={"placeholder": _("Select group"), "searchable": True}),
+        label=_("Group"),
+        help_text=_("Only contacts in this group will be included in this campaign's events."),
     )
 
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs["user"]
-        del kwargs["user"]
-
+    def __init__(self, user, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["group"].initial = self.instance.group
-        self.fields["group"].queryset = ContactGroup.get_user_groups(self.user.get_org(), ready_only=False)
+
+        self.fields["group"].queryset = ContactGroup.get_user_groups(user.get_org(), ready_only=False)
 
     class Meta:
         model = Campaign
         fields = ("name", "group")
-
+        labels = {"name": _("Name")}
         widgets = {"name": InputWidget()}
 
 
@@ -68,18 +43,10 @@ class CampaignCRUDL(SmartCRUDL):
     model = Campaign
     actions = ("create", "read", "update", "list", "archived", "archive", "activate")
 
-    class OrgMixin(OrgPermsMixin):
-        def derive_queryset(self, *args, **kwargs):
-            queryset = super().derive_queryset(*args, **kwargs)
-            if not self.request.user.is_authenticated:  # pragma: no cover
-                return queryset.exclude(pk__gt=0)
-            else:
-                return queryset.filter(org=self.request.user.get_org())
-
-    class Update(OrgMixin, ModalMixin, SmartUpdateView):
+    class Update(OrgObjPermsMixin, ModalMixin, SmartUpdateView):
         fields = ("name", "group")
         success_message = ""
-        form_class = UpdateCampaignForm
+        form_class = CampaignForm
 
         def pre_process(self, request, *args, **kwargs):
             campaign_id = kwargs.get("pk")
@@ -107,17 +74,15 @@ class CampaignCRUDL(SmartCRUDL):
 
             # if our group changed, create our new fires
             if new_group != previous_group:
-                EventFire.update_campaign_events(self.object)
+                self.object.recreate_events()
+                self.object.schedule_events_async()
 
-            response = self.render_to_response(
-                self.get_context_data(
-                    form=form, success_url=self.get_success_url(), success_script=getattr(self, "success_script", None)
-                )
-            )
-            response["Temba-Success"] = self.get_success_url()
-            return response
+            return self.render_modal_response(form)
 
     class Read(OrgObjPermsMixin, SmartReadView):
+        def derive_title(self):
+            return self.object.name
+
         def get_gear_links(self):
             links = []
 
@@ -186,27 +151,6 @@ class CampaignCRUDL(SmartCRUDL):
             return links
 
     class Create(OrgPermsMixin, ModalMixin, SmartCreateView):
-        class CampaignForm(forms.ModelForm):
-
-            group = forms.ModelChoiceField(
-                queryset=ContactGroup.user_groups.none(),
-                required=True,
-                empty_label=None,
-                widget=SelectWidget(
-                    attrs={"placeholder": _("Select a group to base the campaign on"), "searchable": True}
-                ),
-            )
-
-            def __init__(self, user, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self.fields["group"].queryset = ContactGroup.get_user_groups(user.get_org()).order_by("name")
-
-            class Meta:
-                model = Campaign
-                fields = ("name", "group")
-
-                widgets = {"name": InputWidget()}
-
         fields = ("name", "group")
         form_class = CampaignForm
         success_message = ""
@@ -222,7 +166,7 @@ class CampaignCRUDL(SmartCRUDL):
             kwargs["user"] = self.request.user
             return kwargs
 
-    class BaseList(CampaignActionMixin, OrgMixin, OrgPermsMixin, SmartListView):
+    class BaseList(OrgFilterMixin, OrgPermsMixin, BulkActionMixin, SmartListView):
         fields = ("name", "group")
         default_template = "campaigns/campaign_list.html"
         default_order = ("-modified_on",)
@@ -232,7 +176,6 @@ class CampaignCRUDL(SmartCRUDL):
             context["org_has_campaigns"] = Campaign.objects.filter(org=self.request.user.get_org()).count()
             context["folders"] = self.get_folders()
             context["request_url"] = self.request.path
-            context["actions"] = self.actions
             context["title"] = 'Scenarios'
             return context
 
@@ -257,7 +200,7 @@ class CampaignCRUDL(SmartCRUDL):
 
     class List(BaseList):
         fields = ("name", "group")
-        actions = ("archive",)
+        bulk_actions = ("archive",)
         search_fields = ("name__icontains", "group__name__icontains")
 
         def get_queryset(self, *args, **kwargs):
@@ -267,14 +210,14 @@ class CampaignCRUDL(SmartCRUDL):
 
     class Archived(BaseList):
         fields = ("name",)
-        actions = ("restore",)
+        bulk_actions = ("restore",)
 
         def get_queryset(self, *args, **kwargs):
             qs = super().get_queryset(*args, **kwargs)
             qs = qs.filter(is_active=True, is_archived=True)
             return qs
 
-    class Archive(OrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Archive(OrgFilterMixin, OrgPermsMixin, SmartUpdateView):
 
         fields = ()
         success_url = "id@campaigns.campaign_read"
@@ -284,7 +227,7 @@ class CampaignCRUDL(SmartCRUDL):
             obj.apply_action_archive(self.request.user, Campaign.objects.filter(id=obj.id))
             return obj
 
-    class Activate(OrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Activate(OrgFilterMixin, OrgPermsMixin, SmartUpdateView):
         fields = ()
         success_url = "id@campaigns.campaign_read"
         success_message = _("Campaign activated")
@@ -314,14 +257,16 @@ class CampaignEventForm(forms.ModelForm):
         widget=SelectWidget(attrs={"placeholder": _("Select a unit"), "widget_only": True}),
     )
 
-    flow_to_start = forms.ModelChoiceField(
+    flow_to_start = TembaChoiceField(
         queryset=Flow.objects.filter(is_active=True),
         required=False,
         empty_label=None,
-        widget=SelectWidget(attrs={"placeholder": _("Select a flow to start"), "widget_only": True}),
+        widget=SelectWidget(
+            attrs={"placeholder": _("Select a flow to start"), "widget_only": True, "searchable": True}
+        ),
     )
 
-    relative_to = forms.ModelChoiceField(
+    relative_to = TembaChoiceField(
         queryset=ContactField.all_fields.none(),
         required=False,
         empty_label=None,
@@ -346,13 +291,14 @@ class CampaignEventForm(forms.ModelForm):
             (CampaignEvent.MODE_SKIP, _("Skip this event")),
         ),
         required=False,
-        widget=SelectWidget(attrs={"placeholder": _("Flow starting rules"), "widget_only": True}),
+        widget=SelectWidget(attrs={"widget_only": True}),
     )
 
     message_start_mode = forms.ChoiceField(
         choices=(
             (CampaignEvent.MODE_INTERRUPT, _("Stop it and send the message")),
             (CampaignEvent.MODE_SKIP, _("Skip this message")),
+            (CampaignEvent.MODE_PASSIVE, _("Send the message")),
         ),
         required=False,
         widget=SelectWidget(attrs={"placeholder": _("Message sending rules"), "widget_only": True}),
@@ -381,7 +327,7 @@ class CampaignEventForm(forms.ModelForm):
         if self.data["event_type"] == CampaignEvent.TYPE_FLOW:
             if "flow_to_start" not in self.data or not self.data["flow_to_start"]:
                 raise ValidationError("Please select a flow")
-        return self.data["flow_to_start"]
+            return self.data["flow_to_start"]
 
     def pre_save(self, request, obj):
         org = self.user.get_org()
@@ -399,7 +345,7 @@ class CampaignEventForm(forms.ModelForm):
             if self.instance.id:
                 base_language = self.instance.flow.base_language
             else:
-                base_language = org.primary_language.iso_code if org.primary_language else "base"
+                base_language = org.flow_languages[0] if org.flow_languages else "base"
 
             translations = {}
             for language in self.languages:
@@ -430,7 +376,7 @@ class CampaignEventForm(forms.ModelForm):
 
         relative_to = self.fields["relative_to"]
         relative_to.queryset = ContactField.all_fields.filter(
-            org=org, is_active=True, value_type=Value.TYPE_DATETIME
+            org=org, is_active=True, value_type=ContactField.TYPE_DATETIME
         ).order_by("label")
 
         flow = self.fields["flow_to_start"]
@@ -446,16 +392,13 @@ class CampaignEventForm(forms.ModelForm):
         self.languages = []
 
         # add in all of our languages for message forms
-        languages = org.languages.all()
-
-        for language in languages:
-
+        for lang_code in org.flow_languages:
+            lang_name = languages.get_name(lang_code)
             insert = None
 
             # if it's our primary language, allow use to steal the 'base' message
-            if org.primary_language and org.primary_language.iso_code == language.iso_code:
-
-                initial = message.get(language.iso_code, "")
+            if org.flow_languages and org.flow_languages[0] == lang_code:
+                initial = message.get(lang_code, "")
 
                 if not initial:
                     initial = message.get("base", "")
@@ -463,9 +406,8 @@ class CampaignEventForm(forms.ModelForm):
                 # also, let's show it first
                 insert = 0
             else:
-
                 # otherwise, its just a normal language
-                initial = message.get(language.iso_code, "")
+                initial = message.get(lang_code, "")
 
             field = forms.CharField(
                 widget=CompletionTextarea(
@@ -477,12 +419,12 @@ class CampaignEventForm(forms.ModelForm):
                     }
                 ),
                 required=False,
-                label=language.name,
+                label=lang_name,
                 initial=initial,
             )
 
-            self.fields[language.iso_code] = field
-            field.language = dict(name=language.name, iso_code=language.iso_code)
+            self.fields[lang_code] = field
+            field.language = dict(name=lang_name, iso_code=lang_code)
 
             # see if we need to insert or append
             if insert is not None:
@@ -491,9 +433,7 @@ class CampaignEventForm(forms.ModelForm):
                 self.languages.append(field)
 
         # determine our base language if necessary
-        base_language = None
-        if not org.primary_language:
-            base_language = "base"
+        base_language = org.flow_languages[0] if org.flow_languages else "base"
 
         # if we are editing, always include the flow base language
         if self.instance.id:
@@ -502,7 +442,17 @@ class CampaignEventForm(forms.ModelForm):
         # add our default language, we'll insert it at the front of the list
         if base_language and base_language not in self.fields:
             field = forms.CharField(
-                widget=forms.Textarea, required=False, label=_("Default"), initial=message.get(base_language)
+                widget=CompletionTextarea(
+                    attrs={
+                        "placeholder": _(
+                            "Hi @contact.name! This is just a friendly reminder to apply your fertilizer."
+                        ),
+                        "widget_only": True,
+                    }
+                ),
+                required=False,
+                label=_("Default"),
+                initial=message.get(base_language),
             )
 
             self.fields[base_language] = field
@@ -564,10 +514,10 @@ class CampaignEventCRUDL(SmartCRUDL):
             if self.has_org_perm("campaigns.campaignevent_delete"):
                 links.append(
                     dict(
+                        id="event-delete",
                         title="Delete",
-                        delete=True,
-                        success_url=reverse("campaigns.campaign_read", args=[campaign_event.campaign.pk]),
                         href=reverse("campaigns.campaignevent_delete", args=[campaign_event.id]),
+                        modax=_("Delete Event"),
                     )
                 )
 
@@ -576,13 +526,15 @@ class CampaignEventCRUDL(SmartCRUDL):
     class Delete(ModalMixin, OrgObjPermsMixin, SmartDeleteView):
 
         default_template = "smartmin/delete_confirm.html"
+        submit_button_name = _("Delete")
+        fields = ("uuid",)
 
         def get_object_org(self):
             return self.get_object().campaign.org
 
         def post(self, request, *args, **kwargs):
             self.object = self.get_object()
-            self.object.release()
+            self.object.release(self.request.user)
 
             redirect_url = self.get_redirect_url()
             return HttpResponseRedirect(redirect_url)
@@ -632,11 +584,9 @@ class CampaignEventCRUDL(SmartCRUDL):
 
             fields = deepcopy(self.default_fields)
 
-            # add in all of our languages for message forms
+            # add in all of our flow languages
             org = self.request.user.get_org()
-
-            for language in org.languages.all():
-                fields.append(language.iso_code)
+            fields += org.flow_languages
 
             flow_language = self.object.flow.base_language
 
@@ -689,8 +639,8 @@ class CampaignEventCRUDL(SmartCRUDL):
                 or prev.flow != obj.flow
                 or prev.start_mode != obj.start_mode
             ):
-                obj = obj.deactivate_and_copy()
-                EventFire.create_eventfires_for_event(obj)
+                obj = obj.recreate()
+                obj.schedule_async()
 
             return obj
 
@@ -729,13 +679,12 @@ class CampaignEventCRUDL(SmartCRUDL):
 
             fields = deepcopy(self.default_fields)
 
-            # add in all of our languages for message forms
+            # add in all of our flow languages
             org = self.request.user.get_org()
 
-            for language in org.languages.all():
-                fields.append(language.iso_code)
-
-            if not org.primary_language:
+            if org.flow_languages:
+                fields += org.flow_languages
+            else:
                 fields.append("base")
 
             return fields
@@ -753,10 +702,13 @@ class CampaignEventCRUDL(SmartCRUDL):
             initial["unit"] = "D"
             initial["offset"] = "15"
             initial["direction"] = "A"
+            initial["event_type"] = "M"
+            initial["message_start_mode"] = "I"
+            initial["delivery_hour"] = "-1"
 
             # default to our first date field
             initial["relative_to"] = ContactField.all_fields.filter(
-                org=self.request.user.get_org(), is_active=True, value_type=Value.TYPE_DATETIME
+                org=self.request.user.get_org(), is_active=True, value_type=ContactField.TYPE_DATETIME
             ).first()
 
             return initial
@@ -764,7 +716,7 @@ class CampaignEventCRUDL(SmartCRUDL):
         def post_save(self, obj):
             obj = super().post_save(obj)
             obj.update_flow_name()
-            EventFire.create_eventfires_for_event(obj)
+            obj.schedule_async()
             return obj
 
         def pre_save(self, obj):

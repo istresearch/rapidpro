@@ -1,12 +1,11 @@
+import logging
 from datetime import timedelta
-
-from smartmin.csv_imports.models import ImportTask
 
 from django.utils import timezone
 
 from celery.task import task
 
-from temba.contacts.models import TEL_SCHEME, ContactURN, ExportContactsTask
+from temba.contacts.models import URN, ContactURN, ExportContactsTask
 from temba.contacts.tasks import export_contacts_task
 from temba.flows.models import ExportFlowResultsTask
 from temba.flows.tasks import export_flow_results_task
@@ -51,11 +50,10 @@ def normalize_contact_tels_task(org_id):
     org = Org.objects.get(id=org_id)
 
     # do we have an org-level country code? if so, try to normalize any numbers not starting with +
-    country_code = org.get_country_code()
-    if country_code:
-        urns = ContactURN.objects.filter(org=org, scheme=TEL_SCHEME).exclude(path__startswith="+").iterator()
+    if org.default_country_code:
+        urns = ContactURN.objects.filter(org=org, scheme=URN.TEL_SCHEME).exclude(path__startswith="+").iterator()
         for urn in urns:
-            urn.ensure_number_normalization(country_code)
+            urn.ensure_number_normalization(org.default_country_code)
 
 
 @nonoverlapping_task(track_started=True, name="squash_topupcredits", lock_key="squash_topupcredits", lock_timeout=7200)
@@ -67,12 +65,6 @@ def squash_topupcredits():
 def resume_failed_tasks():
     now = timezone.now()
     window = now - timedelta(hours=1)
-
-    import_tasks = ImportTask.objects.filter(modified_on__lte=window).exclude(
-        task_status__in=[ImportTask.SUCCESS, ImportTask.FAILURE]
-    )
-    for import_task in import_tasks:
-        import_task.start()
 
     contact_exports = ExportContactsTask.objects.filter(modified_on__lte=window).exclude(
         status__in=[ExportContactsTask.STATUS_COMPLETE, ExportContactsTask.STATUS_FAILED]
@@ -97,3 +89,28 @@ def resume_failed_tasks():
 def update_org_activity(now=None):
     now = now if now else timezone.now()
     OrgActivity.update_day(now)
+
+
+@nonoverlapping_task(
+    track_started=True, name="suspend_topup_orgs_task", lock_key="suspend_topup_orgs_task", lock_timeout=7200
+)
+def suspend_topup_orgs_task():
+    # for every org on a topup plan that isn't suspended, check they have credits, if not, suspend them
+    for org in Org.objects.filter(uses_topups=True, is_active=True, is_suspended=False):
+        if org.get_credits_remaining() <= 0:
+            org.clear_credit_cache()
+            if org.get_credits_remaining() <= 0:
+                org.is_suspended = True
+                org.plan_end = timezone.now()
+                org.save(update_fields=["is_suspended", "plan_end"])
+
+
+@nonoverlapping_task(track_started=True, name="delete_orgs_task", lock_key="delete_orgs_task", lock_timeout=7200)
+def delete_orgs_task():
+    # for each org that was released over 7 days ago, delete it for real
+    week_ago = timezone.now() - timedelta(days=Org.DELETE_DELAY_DAYS)
+    for org in Org.objects.filter(is_active=False, released_on__lt=week_ago, deleted_on=None):
+        try:
+            org.delete()
+        except Exception:  # pragma: no cover
+            logging.exception(f"exception while deleting {org.name}")

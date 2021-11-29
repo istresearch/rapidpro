@@ -1,14 +1,13 @@
 from twilio.base.exceptions import TwilioRestException
 
-from django.urls import reverse
+from django.conf.urls import url
 from django.utils.translation import ugettext_lazy as _
 
-from temba.channels.types.twilio.views import ClaimView
-from temba.channels.views import TWILIO_SUPPORTED_COUNTRIES_CONFIG
-from temba.contacts.models import TEL_SCHEME
+from temba.contacts.models import URN
 from temba.utils.timezones import timezone_to_country_code
 
-from ...models import Channel, ChannelType
+from ...models import ChannelType
+from .views import SUPPORTED_COUNTRIES, ClaimView, SearchView
 
 
 class TwilioType(ChannelType):
@@ -18,17 +17,18 @@ class TwilioType(ChannelType):
 
     code = "T"
     category = ChannelType.Category.PHONE
+    show_config_page = False
 
     courier_url = r"^t/(?P<uuid>[a-z0-9\-]+)/(?P<action>receive|status)$"
 
     name = "Twilio"
     icon = "icon-channel-twilio"
-    claim_blurb = _(
-        """Easily add a two way number you have configured with <a href="https://www.twilio.com/">Twilio</a> using their APIs."""
-    )
+    claim_blurb = _("Easily add a two way number you have configured with %(link)s using their APIs.") % {
+        "link": '<a href="https://www.twilio.com/">Twilio</a>'
+    }
     claim_view = ClaimView
 
-    schemes = [TEL_SCHEME]
+    schemes = [URN.TEL_SCHEME]
     max_length = 1600
 
     ivr_protocol = ChannelType.IVRProtocol.IVR_PROTOCOL_TWIML
@@ -48,7 +48,7 @@ class TwilioType(ChannelType):
     def is_recommended_to(self, user):
         org = user.get_org()
         countrycode = timezone_to_country_code(org.timezone)
-        return countrycode in TWILIO_SUPPORTED_COUNTRIES_CONFIG
+        return countrycode in SUPPORTED_COUNTRIES
 
     def enable_flow_server(self, channel):
         """
@@ -111,3 +111,6 @@ class TwilioType(ChannelType):
             # we swallow 20003 which means our twilio key is no longer valid
             if e.code != 20003:
                 raise e
+
+    def get_urls(self):
+        return [self.get_claim_url(), url(r"^search$", SearchView.as_view(), name="search")]

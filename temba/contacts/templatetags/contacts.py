@@ -1,93 +1,93 @@
 from django import template
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
 
 from temba.campaigns.models import EventFire
-from temba.contacts.models import (
-    EMAIL_SCHEME,
-    EXTERNAL_SCHEME,
-    FACEBOOK_SCHEME,
-    FCM_SCHEME,
-    FRESHCHAT_SCHEME,
-    LINE_SCHEME,
-    TEL_SCHEME,
-    TELEGRAM_SCHEME,
-    TWILIO_SCHEME,
-    TWITTER_SCHEME,
-    TWITTERID_SCHEME,
-    URN,
-    WHATSAPP_SCHEME,
-    ContactField,
-    ContactURN,
-    PM_WHATSAPP_SCHEME, PM_TELEGRAM_SCHEME, PM_SIGNAL_SCHEME, PM_LINE_SCHEME,
-    PM_VK_SCHEME, PM_VIBER_SCHEME, PM_TWITTER_SCHEME, PM_KAKAO_SCHEME, PM_IMO_SCHEME,
-    PM_FACEBOOK_SCHEME, PM_INSTAGRAM_SCHEME, PM_MOBYX_SCHEME, PM_FBM_SCHEME, PM_EMAIL_SCHEME)
+from temba.channels.models import ChannelEvent
+from temba.contacts.models import URN, ContactField, ContactURN
+from temba.flows.models import FlowRun
 from temba.ivr.models import IVRCall
-from temba.msgs.models import ERRORED, FAILED
+from temba.mailroom.events import Event
+from temba.msgs.models import DELIVERED, ERRORED, FAILED, IVR
 
 register = template.Library()
 
 URN_SCHEME_ICONS = {
-    TEL_SCHEME: "icon-mobile-2",
-    TWITTER_SCHEME: "icon-twitter",
-    TWITTERID_SCHEME: "icon-twitter",
-    TWILIO_SCHEME: "icon-twilio_original",
-    EMAIL_SCHEME: "icon-envelop",
-    FACEBOOK_SCHEME: "icon-facebook",
-    TELEGRAM_SCHEME: "icon-telegram",
-    LINE_SCHEME: "icon-line",
-    EXTERNAL_SCHEME: "icon-channel-external",
-    FCM_SCHEME: "icon-fcm",
-    FRESHCHAT_SCHEME: "icon-freshchat",
-    WHATSAPP_SCHEME: "icon-whatsapp",
-    PM_WHATSAPP_SCHEME: "icon-whatsapp",
-    PM_TELEGRAM_SCHEME: "icon-telegram",
-    PM_SIGNAL_SCHEME: "icon-signal",
-    PM_LINE_SCHEME: "icon-line",
-    PM_VK_SCHEME: "icon-vk",
-    PM_VIBER_SCHEME: "icon-viber",
-    PM_TWITTER_SCHEME: "icon-twitter",
-    PM_KAKAO_SCHEME: "icon-tembatoo-kakao",
-    PM_IMO_SCHEME: "icon-tembatoo-imo",
-    PM_FACEBOOK_SCHEME: "icon-facebook",
-    PM_INSTAGRAM_SCHEME: "icon-tembatoo-instagram",
-    PM_MOBYX_SCHEME: "icon-tembatoo-mobyx",
-    PM_FBM_SCHEME: "icon-tembatoo-fbm",
-    PM_EMAIL_SCHEME: "icon-envelop",
+    URN.TEL_SCHEME: "icon-phone",
+    URN.TWITTER_SCHEME: "icon-twitter",
+    URN.TWITTERID_SCHEME: "icon-twitter",
+    URN.TWILIO_SCHEME: "icon-twilio_original",
+    URN.EMAIL_SCHEME: "icon-envelop",
+    URN.FACEBOOK_SCHEME: "icon-facebook",
+    URN.TELEGRAM_SCHEME: "icon-telegram",
+    URN.LINE_SCHEME: "icon-line",
+    URN.EXTERNAL_SCHEME: "icon-channel-external",
+    URN.FCM_SCHEME: "icon-fcm",
+    URN.FRESHCHAT_SCHEME: "icon-freshchat",
+    URN.WHATSAPP_SCHEME: "icon-whatsapp",
+    URN.PM_WHATSAPP_SCHEME: "icon-whatsapp",
+    URN.PM_TELEGRAM_SCHEME: "icon-telegram",
+    URN.PM_SIGNAL_SCHEME: "icon-signal",
+    URN.PM_LINE_SCHEME: "icon-line",
+    URN.PM_VK_SCHEME: "icon-vk",
+    URN.PM_VIBER_SCHEME: "icon-viber",
+    URN.PM_TWITTER_SCHEME: "icon-twitter",
+    URN.PM_KAKAO_SCHEME: "icon-tembatoo-kakao",
+    URN.PM_IMO_SCHEME: "icon-tembatoo-imo",
+    URN.PM_FACEBOOK_SCHEME: "icon-facebook",
+    URN.PM_INSTAGRAM_SCHEME: "icon-tembatoo-instagram",
+    URN.PM_MOBYX_SCHEME: "icon-tembatoo-mobyx",
+    URN.PM_FBM_SCHEME: "icon-tembatoo-fbm",
+    URN.PM_EMAIL_SCHEME: "icon-envelop",
 }
 
 ACTIVITY_ICONS = {
-    "airtime_transferred": "icon-cash",
-    "call_started": "icon-phone",
-    "campaign_fired": "icon-clock",
-    "channel_event": "icon-power",
-    "channel_event:missed_incoming": "icon-call-incoming",
-    "channel_event:missed_outgoing": "icon-call-outgoing",
-    "contact_field_changed": "icon-pencil",
-    "contact_groups_changed": "icon-users",
-    "contact_language_changed": "icon-language",
-    "contact_name_changed": "icon-vcard",
-    "contact_urns_changed": "icon-address-book",
-    "email_created": "icon-envelop",
-    "email_sent": "icon-envelop",
-    "error": "icon-warning",
-    "failure": "icon-warning",
-    "flow_entered": "icon-tree-2",
-    "flow_exited:expired": "icon-clock",
-    "flow_exited:interrupted": "icon-cancel-circle",
-    "flow_exited:completed": "icon-checkmark",
-    "input_labels_added": "icon-tags",
-    "msg_created": "icon-bubble-right",
-    "msg_created:broadcast": "icon-bullhorn",
-    "msg_created:failed": "icon-bubble-notification",
-    "msg_created:delivered": "icon-bubble-check",
-    "msg_created:voice": "icon-call-outgoing",
-    "msg_received": "icon-bubble-user",
-    "msg_received:voice": "icon-call-incoming",
-    "run_result_changed": "icon-bars",
-    "session_started": "icon-new",
-    "ticket_opened": "icon-ticket",
-    "webhook_called": "icon-cloud-upload",
+    Event.TYPE_AIRTIME_TRANSFERRED: "icon-cash",
+    Event.TYPE_BROADCAST_CREATED: "icon-bullhorn",
+    Event.TYPE_CALL_STARTED: "icon-phone",
+    Event.TYPE_CAMPAIGN_FIRED: "icon-clock",
+    Event.TYPE_CHANNEL_EVENT: "icon-power",
+    Event.TYPE_CHANNEL_EVENT + ":missed_incoming": "icon-call-incoming",
+    Event.TYPE_CHANNEL_EVENT + ":missed_outgoing": "icon-call-outgoing",
+    Event.TYPE_CONTACT_FIELD_CHANGED: "icon-pencil",
+    Event.TYPE_CONTACT_GROUPS_CHANGED: "icon-users",
+    Event.TYPE_CONTACT_LANGUAGE_CHANGED: "icon-language",
+    Event.TYPE_CONTACT_NAME_CHANGED: "icon-contact",
+    Event.TYPE_CONTACT_URNS_CHANGED: "icon-address-book",
+    Event.TYPE_EMAIL_SENT: "icon-envelop",
+    Event.TYPE_ERROR: "icon-warning",
+    Event.TYPE_FAILURE: "icon-warning",
+    Event.TYPE_FLOW_ENTERED: "icon-flow",
+    Event.TYPE_FLOW_EXITED + ":expired": "icon-clock",
+    Event.TYPE_FLOW_EXITED + ":interrupted": "icon-cancel-circle",
+    Event.TYPE_FLOW_EXITED + ":completed": "icon-checkmark",
+    Event.TYPE_INPUT_LABELS_ADDED: "icon-tags",
+    Event.TYPE_IVR_CREATED: "icon-call-outgoing",
+    Event.TYPE_MSG_CREATED: "icon-bubble-right",
+    Event.TYPE_MSG_CREATED + ":failed": "icon-bubble-notification",
+    Event.TYPE_MSG_CREATED + ":delivered": "icon-bubble-check",
+    Event.TYPE_MSG_RECEIVED: "icon-bubble-user",
+    Event.TYPE_MSG_RECEIVED + ":voice": "icon-call-incoming",
+    Event.TYPE_RUN_RESULT_CHANGED: "icon-bars",
+    Event.TYPE_TICKET_ASSIGNED: "icon-ticket",
+    Event.TYPE_TICKET_REOPENED: "icon-ticket",
+    Event.TYPE_TICKET_OPENED: "icon-ticket",
+    Event.TYPE_TICKET_CLOSED: "icon-ticket",
+    Event.TYPE_TICKET_NOTE_ADDED: "icon-pencil",
+    Event.TYPE_WEBHOOK_CALLED: "icon-cloud-upload",
+}
+
+MSG_EVENTS = {Event.TYPE_MSG_CREATED, Event.TYPE_MSG_RECEIVED, Event.TYPE_IVR_CREATED, Event.TYPE_BROADCAST_CREATED}
+
+# events that are included in the summary view
+SUMMARY_EVENTS = {
+    Event.TYPE_CALL_STARTED,
+    Event.TYPE_CAMPAIGN_FIRED,
+    Event.TYPE_FLOW_ENTERED,
+    Event.TYPE_FLOW_EXITED,
+    Event.TYPE_BROADCAST_CREATED,
+    Event.TYPE_IVR_CREATED,
+    Event.TYPE_MSG_CREATED,
+    Event.TYPE_MSG_RECEIVED,
 }
 
 MISSING_VALUE = "--"
@@ -144,7 +144,7 @@ def urn(contact, org):
 
 
 @register.filter
-def format_contact(contact, org):
+def format_contact(contact, org):  # pragma: needs cover
     return contact.get_display(org=org)
 
 
@@ -154,103 +154,73 @@ def urn_icon(urn):
 
 
 @register.filter
-def history_icon(item):
-    event_type = item["type"]
-    obj = item.get("obj")
+def history_icon(event: dict) -> str:
+    event_type = event["type"]
     variant = None
 
-    if event_type == "msg_created":
-        if obj.broadcast and obj.broadcast.get_message_count() and obj.broadcast.get_message_count() > 1:
-            variant = "failed" if obj.status in ("E", "F") else "broadcast"
-        elif obj.msg_type == "V":
-            variant = "voice"
-        else:
-            if obj.status in ("F", "E"):
-                variant = "failed"
-            elif obj.status == "D":
-                variant = "delivered"
+    if event_type == Event.TYPE_MSG_CREATED:
+        if event["status"] in (ERRORED, FAILED):
+            variant = "failed"
+        elif event["status"] == DELIVERED:
+            variant = "delivered"
 
-    elif event_type == "msg_received":
-        if obj.msg_type == "V":
+    elif event_type == Event.TYPE_MSG_RECEIVED:
+        if event["msg_type"] == IVR:
             variant = "voice"
 
-    elif event_type == "flow_exited":
-        if obj.exit_type == "C":
-            variant = "completed"
-        elif obj.exit_type == "I":
+    elif event_type == Event.TYPE_FLOW_EXITED:
+        if event["status"] == FlowRun.STATUS_INTERRUPTED:
             variant = "interrupted"
-        else:
+        elif event["status"] == FlowRun.STATUS_EXPIRED:
             variant = "expired"
+        else:
+            variant = "completed"
 
-    elif event_type == "channel_event":
-        if obj.event_type == "mo_miss":
+    elif event_type == Event.TYPE_CHANNEL_EVENT:
+        if event["channel_event_type"] == ChannelEvent.TYPE_CALL_IN_MISSED:
             variant = "missed_incoming"
-        elif obj.event_type == "mt_miss":
+        elif event["channel_event_type"] == ChannelEvent.TYPE_CALL_OUT_MISSED:
             variant = "missed_outgoing"
 
     if variant:
-        glyph_name = ACTIVITY_ICONS[event_type + ":" + variant]
+        glyph_name = ACTIVITY_ICONS.get(event_type + ":" + variant)
     else:
-        glyph_name = ACTIVITY_ICONS[event_type]
+        glyph_name = ACTIVITY_ICONS.get(event_type)
 
     return mark_safe(f'<span class="glyph {glyph_name}"></span>')
 
 
 @register.filter
-def history_class(item):
-    obj = item.get("obj")
+def history_user(user: dict) -> str:
+    name = " ".join([user.get("first_name"), user.get("last_name")]).strip()
+    if not name:
+        name = user.get("email")
+    return name
+
+
+@register.filter
+def history_class(event: dict) -> str:
+    event_type = event["type"]
     classes = []
 
-    if item["type"] in ("msg_created", "msg_received"):
+    if event_type in MSG_EVENTS:
         classes.append("msg")
-        if obj.status in (ERRORED, FAILED):
+
+        if event.get("status") in (ERRORED, FAILED):
             classes.append("warning")
     else:
         classes.append("non-msg")
 
-        if item["type"] == "error" or item["type"] == "failure":
+        if event_type == Event.TYPE_ERROR or event_type == "failure":
             classes.append("warning")
-        elif item["type"] == "webhook_called" and not obj.is_success:
+        elif event_type == Event.TYPE_WEBHOOK_CALLED and event["status"] != "success":
             classes.append("warning")
-        elif item["type"] == "call_started" and obj.status == IVRCall.FAILED:
+        elif event_type == Event.TYPE_CALL_STARTED and event["status"] == IVRCall.FAILED:
             classes.append("warning")
-        elif item["type"] == "campaign_fired" and obj.fired_result == EventFire.RESULT_SKIPPED:
+        elif event_type == Event.TYPE_CAMPAIGN_FIRED and event["fired_result"] == EventFire.RESULT_SKIPPED:
             classes.append("skipped")
 
-    if item["type"] not in (
-        "call_started",
-        "campaign_fired",
-        "flow_entered",
-        "flow_exited",
-        "msg_created",
-        "msg_received",
-    ):
+    if event_type not in SUMMARY_EVENTS:
         classes.append("detail-event")
 
     return " ".join(classes)
-
-
-@register.filter
-def campaign_event_time(event):
-
-    unit = event.unit
-    if abs(event.offset) == 1:
-        if event.unit == "D":
-            unit = _("day")
-        elif event.unit == "M":
-            unit = _("minute")
-        elif event.unit == "H":
-            unit = _("hour")
-    else:
-        if event.unit == "D":
-            unit = _("days")
-        elif event.unit == "M":
-            unit = _("minutes")
-        elif event.unit == "H":
-            unit = _("hours")
-
-    direction = "after"
-    if event.offset < 0:
-        direction = "before"
-
-    return "%d %s %s %s" % (abs(event.offset), unit, direction, event.relative_to.label)

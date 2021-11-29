@@ -8,17 +8,19 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 
-from temba.contacts.models import WHATSAPP_SCHEME
+from temba.channels.types.twilio.views import SUPPORTED_COUNTRIES
+from temba.contacts.models import URN
 from temba.orgs.models import Org
+from temba.utils.fields import SelectWidget
 from temba.utils.uuid import uuid4
 
 from ...models import Channel
-from ...views import ALL_COUNTRIES, TWILIO_SUPPORTED_COUNTRIES, BaseClaimNumberMixin, ClaimViewMixin
+from ...views import ALL_COUNTRIES, BaseClaimNumberMixin, ClaimViewMixin
 
 
 class ClaimView(BaseClaimNumberMixin, SmartFormView):
     class Form(ClaimViewMixin.Form):
-        country = forms.ChoiceField(choices=ALL_COUNTRIES)
+        country = forms.ChoiceField(choices=ALL_COUNTRIES, widget=SelectWidget(attrs={"searchable": True}))
         phone_number = forms.CharField(help_text=_("The phone number being added"))
 
         def clean_phone_number(self):
@@ -38,10 +40,12 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         try:
             self.client = org.get_twilio_client()
             if not self.client:
-                return HttpResponseRedirect(reverse("orgs.org_twilio_connect"))
+                return HttpResponseRedirect(
+                    f'{reverse("orgs.org_twilio_connect")}?claim_type={self.channel_type.slug}'
+                )
             self.account = self.client.api.account.fetch()
         except TwilioRestException:
-            return HttpResponseRedirect(reverse("orgs.org_twilio_connect"))
+            return HttpResponseRedirect(f'{reverse("orgs.org_twilio_connect")}?claim_type={self.channel_type.slug}')
 
     def get_search_countries_tuple(self):
         return []
@@ -77,11 +81,11 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
 
         return numbers
 
-    def is_valid_country(self, country_code):
+    def is_valid_country(self, calling_code: int) -> bool:
         return True
 
-    def is_messaging_country(self, country):
-        return country in [c[0] for c in TWILIO_SUPPORTED_COUNTRIES]
+    def is_messaging_country(self, country_code: str) -> bool:
+        return country_code in SUPPORTED_COUNTRIES
 
     def claim_number(self, user, phone_number, country, role):
         org = user.get_org()
@@ -117,13 +121,13 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             org,
             user,
             country,
-            "TWA",
+            self.channel_type,
             name=phone,
             address=phone_number,
             role=role,
             config=config,
             uuid=channel_uuid,
-            schemes=[WHATSAPP_SCHEME],
+            schemes=[URN.WHATSAPP_SCHEME],
         )
 
         return channel

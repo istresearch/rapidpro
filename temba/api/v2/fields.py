@@ -7,6 +7,7 @@ from temba.channels.models import Channel
 from temba.contacts.models import URN, Contact, ContactField as ContactFieldModel, ContactGroup, ContactURN
 from temba.flows.models import Flow
 from temba.msgs.models import Label, Msg
+from temba.tickets.models import Ticket, Ticketer
 
 # default maximum number of items in a posted list or dict
 DEFAULT_MAX_LIST_ITEMS = 100
@@ -58,7 +59,7 @@ class TranslatableField(serializers.Field):
 
     def to_internal_value(self, data):
         org = self.context["org"]
-        base_language = org.primary_language.iso_code if org.primary_language else "base"
+        base_language = org.flow_languages[0] if org.flow_languages else "base"
 
         if isinstance(data, str):
             if len(data) > self.max_length:
@@ -108,7 +109,7 @@ class URNField(serializers.CharField):
             return str(obj)
 
     def to_internal_value(self, data):
-        country_code = self.context["org"].get_country_code()
+        country_code = self.context["org"].default_country_code
         return validate_urn(str(data), country_code=country_code)
 
 
@@ -146,7 +147,10 @@ class TembaModelField(serializers.RelatedField):
 
     def get_queryset(self):
         manager = getattr(self.model, self.model_manager)
-        return manager.filter(org=self.context["org"], is_active=True)
+        kwargs = {"org": self.context["org"]}
+        if hasattr(self.model, "is_active"):
+            kwargs["is_active"] = True
+        return manager.filter(**kwargs)
 
     def get_object(self, value):
         query = Q()
@@ -272,3 +276,11 @@ class MessageField(TembaModelField):
 
     def get_queryset(self):
         return self.model.objects.filter(org=self.context["org"]).exclude(visibility=Msg.VISIBILITY_DELETED)
+
+
+class TicketerField(TembaModelField):
+    model = Ticketer
+
+
+class TicketField(TembaModelField):
+    model = Ticket

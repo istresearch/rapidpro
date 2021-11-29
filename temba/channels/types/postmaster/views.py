@@ -17,7 +17,6 @@ from . import postoffice
 from ...models import Channel
 from ...views import (
     ALL_COUNTRIES,
-    TWILIO_SEARCH_COUNTRIES,
     BaseClaimNumberMixin,
     ClaimViewMixin,
 )
@@ -79,7 +78,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         if self.channel_type.code == self.code:
             return ["US"]
         else:
-            return TWILIO_SEARCH_COUNTRIES
+            return ALL_COUNTRIES
 
     def get_supported_countries_tuple(self):
         if self.channel_type.code == self.code:

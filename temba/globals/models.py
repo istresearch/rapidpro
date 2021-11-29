@@ -1,23 +1,24 @@
 import regex
 from smartmin.models import SmartModel
 
+from django.conf import settings
 from django.db import models
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.utils.translation import ugettext_lazy as _
 
-from temba.orgs.models import Org
+from temba.orgs.models import DependencyMixin, Org
 from temba.utils.text import unsnakify
 from temba.utils.uuid import uuid4
 
 
-class Global(SmartModel):
+class Global(SmartModel, DependencyMixin):
     """
     A global is a constant value that can be used in templates in flows and messages.
     """
 
     MAX_KEY_LEN = 36
     MAX_NAME_LEN = 36
-    MAX_VALUE_LEN = 640
+    MAX_VALUE_LEN = settings.GLOBAL_VALUE_SIZE
 
     uuid = models.UUIDField(default=uuid4)
 
@@ -58,21 +59,15 @@ class Global(SmartModel):
 
     @classmethod
     def is_valid_name(cls, name):
-        return regex.match(r"^[A-Za-z0-9\- ]+$", name, regex.V0) and len(name) <= cls.MAX_NAME_LEN
+        return regex.match(r"^[A-Za-z0-9_\- ]+$", name, regex.V0) and len(name) <= cls.MAX_NAME_LEN
 
     @classmethod
     def annotate_usage(cls, queryset):
-        return queryset.annotate(
-            usage_count=Count("dependent_flows", distinct=True, filter=Q(dependent_flows__is_active=True))
-        )
+        return queryset.annotate(usage_count=Count("dependent_flows", distinct=True))
 
-    def get_usage_count(self):
-        if hasattr(self, "usage_count"):
-            return self.usage_count
+    def release(self, user):
+        super().release(user)
 
-        return self.dependent_flows.count()
-
-    def release(self):
         self.delete()
 
     def __str__(self):

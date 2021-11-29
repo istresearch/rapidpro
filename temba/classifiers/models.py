@@ -8,6 +8,7 @@ from django.db import models
 from django.template import Engine
 from django.utils import timezone
 
+from temba.orgs.models import DependencyMixin, Org
 from temba.utils import on_transaction_commit
 from temba.utils.models import JSONField
 from temba.utils.uuid import uuid4
@@ -72,7 +73,7 @@ class ClassifierType(metaclass=ABCMeta):
         raise NotImplementedError("classifier types must implement get_intents")
 
 
-class Classifier(SmartModel):
+class Classifier(SmartModel, DependencyMixin):
     """
     A classifier represents a set of intents and entity extractors. Many providers call
     these "apps".
@@ -91,7 +92,7 @@ class Classifier(SmartModel):
     config = JSONField()
 
     # the org this classifier is part of
-    org = models.ForeignKey("orgs.Org", related_name="classifiers", on_delete=models.PROTECT)
+    org = models.ForeignKey(Org, related_name="classifiers", on_delete=models.PROTECT)
 
     @classmethod
     def create(cls, org, user, classifier_type, name, config, sync=True):
@@ -172,16 +173,15 @@ class Classifier(SmartModel):
 
         on_transaction_commit(lambda: sync_classifier_intents.delay(self.id))
 
-    def release(self):
-        dependent_flows_count = self.dependent_flows.count()
-        if dependent_flows_count > 0:
-            raise ValueError(f"Cannot delete Classifier: {self.name}, used by {dependent_flows_count} flows")
+    def release(self, user):
+        super().release(user)
 
         # delete our intents
         self.intents.all().delete()
 
         self.is_active = False
-        self.save(update_fields=["is_active"])
+        self.modified_by = user
+        self.save(update_fields=("is_active", "modified_by", "modified_on"))
 
     @classmethod
     def get_types(cls):
