@@ -19,7 +19,7 @@ class BandwidthType(ChannelType):
     courier_url = r"^bwd/(?P<uuid>[a-z0-9\-]+)/(?P<action>receive|status)$"
 
     name = "Bandwidth"
-    icon = "icon-channel-bandwidth"
+    icon = "icon-tembatoo-bandwidth"
     claim_blurb = _(
         """Easily add a two way number you have configured with <a href="https://www.bandwidth.com/">Bandwidth</a> using their APIs."""
     )

@@ -3311,12 +3311,12 @@ class OrgCRUDL(SmartCRUDL):
                 bwi_client = org.get_bandwidth_international_messaging_client()
                 if bwi_client:
                     formax.add_section("BWI", reverse("orgs.org_bandwidth_international_account"),
-                                       icon="icon-channel-bandwidth")
+                                       icon="icon-tembatoo-bandwidthh")
 
                 bwd_client = org.get_bandwidth_messaging_client()
                 if bwd_client:
                     formax.add_section("BWD", reverse("orgs.org_bandwidth_account"),
-                                       icon="icon-channel-bandwidth")
+                                       icon="icon-tembatoo-bandwidth")
 
             if self.has_org_perm("classifiers.classifier_read"):
                 classifiers = org.classifiers.filter(is_active=True).order_by("created_on")

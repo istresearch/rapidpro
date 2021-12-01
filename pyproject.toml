@@ -57,6 +57,9 @@ psycopg2-binary = "^2.8.6"
 python-intercom = "^3.1.0"
 packaging = "^20.9"
 requests-toolbelt = "^0.9.1"
+python-json-logger = "^0.1.8"
+bandwidth-sdk = "3.1.0"
+iris_sdk = {git = "https://github.com/bandwidthcom/python-bandwidth-iris"}
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"
