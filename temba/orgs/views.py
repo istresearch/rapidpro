@@ -2219,113 +2219,6 @@ class OrgCRUDL(SmartCRUDL):
             org_id = self.request.GET.get("org")
             return "%s?org=%s" % (reverse("orgs.org_manage_accounts_sub_org"), org_id)
 
-    class TwoFactor(InferOrgMixin, OrgPermsMixin, SmartFormView):
-        class TwoFactorForm(forms.Form):
-            token = forms.CharField(
-                label=_("Authentication Token"),
-                help_text=_("Enter the code from your authentication application"),
-                strip=True,
-                required=True,
-            )
-
-            def __init__(self, *args, **kwargs):
-                self.request = kwargs.pop("request")
-                self.user_cache = None
-                super().__init__(*args, **kwargs)
-
-            def clean_token(self):  # pragma: no cover
-                token = self.cleaned_data.get("token", None)
-                user_pk = self.request.user.pk
-                user = User.objects.get(pk=user_pk)
-                totp = pyotp.TOTP(user.get_settings().otp_secret)
-                token_valid = totp.verify(token, valid_window=2)
-                if not token_valid:
-                    raise forms.ValidationError(_("Invalid MFA token. Please try again."), code="invalid-token")
-                self.user_cache = user
-                return token
-
-        form_class = TwoFactorForm
-        fields = ("token",)
-        success_url = "@orgs.org_two_factor"
-        success_message = ""
-        submit_button_name = _("Activate")
-        title = _("Two Factor Authentication")
-
-        def get_form_kwargs(self):
-            kwargs = super().get_form_kwargs()
-            kwargs["request"] = self.request
-            return kwargs
-
-        def get(self, request, *args, **kwargs):
-            user = self.request.user
-            form = self.get_form()
-            secret = pyotp.random_base32()
-
-            user_settings = user.get_settings()
-            user_settings.otp_secret = secret
-            user_settings.save()
-            secret_url = self.get_secret_url()
-            return self.render_to_response(self.get_context_data(form=form, secret_url=secret_url))
-
-        def post(self, request, *args, **kwargs):
-            form = self.get_form()
-            if "disable_two_factor_auth" in request.POST:
-                self.disable_two_factor_auth()
-            if "get_backup_tokens" in request.POST:
-                tokens = self.get_backup_tokens()
-                data = {"tokens": tokens}
-                return JsonResponse(data)
-            elif "generate_backup_tokens" in request.POST:
-                tokens = self.generate_backup_tokens()
-                data = {"tokens": tokens}
-                return JsonResponse(data)
-            elif form.is_valid():
-                self.generate_backup_tokens()
-                user = self.request.user
-                user_settings = user.get_settings()
-                user_settings.two_factor_enabled = True
-                user_settings.save()
-            secret_url = self.get_secret_url()
-            return self.render_to_response(self.get_context_data(form=form, secret_url=secret_url))
-
-        def get_context_data(self, **kwargs):
-            context = super().get_context_data(**kwargs)
-            user = self.get_user()
-            user_settings = user.get_settings()
-            context["user_settings"] = user_settings
-            return context
-
-        def get_secret_url(self):
-            user = self.request.user
-            otp_secret = user.get_settings().otp_secret
-            if otp_secret:
-                secret_url = pyotp.TOTP(otp_secret).provisioning_uri(user.username, issuer_name="Rapidpro")
-            return secret_url
-
-        def disable_two_factor_auth(self):
-            self.delete_backup_tokens()
-            user = self.get_user()
-            user_settings = user.get_settings()
-            user_settings.two_factor_enabled = False
-            user_settings.save()
-
-        def generate_backup_tokens(self):
-            user = self.get_user()
-            self.delete_backup_tokens()
-            for backup in range(10):
-                BackupToken.objects.create(settings=user.get_settings(), created_by=user, modified_by=user)
-            tokens = [backup.token for backup in BackupToken.objects.filter(settings__user=user)]
-            return tokens
-
-        def get_backup_tokens(self):
-            user = self.get_user()
-            tokens = [backup.token for backup in BackupToken.objects.filter(settings__user=user)]
-            return tokens
-
-        def delete_backup_tokens(self):
-            user = self.get_user()
-            BackupToken.objects.filter(settings__user=user).delete()
-
     class Service(SmartFormView):
         class ServiceForm(forms.Form):
             organization = TembaChoiceField(queryset=Org.objects.all(), empty_label=None)
@@ -3086,7 +2979,7 @@ class OrgCRUDL(SmartCRUDL):
 
             return obj
 
-    class Resthooks(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Resthooks(ComponentFormMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
         class ResthookForm(forms.ModelForm):
             new_slug = forms.SlugField(
                 required=False,
@@ -3101,7 +2994,7 @@ class OrgCRUDL(SmartCRUDL):
                 field_mapping = []
 
                 for resthook in self.instance.get_resthooks():
-                    check_field = forms.BooleanField(required=False)
+                    check_field = forms.BooleanField(required=False, widget=CheckboxWidget())
                     field_name = "resthook_%d" % resthook.id
 
                     field_mapping.append((field_name, check_field))
@@ -3158,13 +3051,6 @@ class OrgCRUDL(SmartCRUDL):
         success_url = "@orgs.org_home"
         success_message = ""
 
-        def get_context_data(self, **kwargs):
-            from temba.api.models import WebHookResult
-
-            context = super().get_context_data(**kwargs)
-            context["failed_webhooks"] = WebHookResult.get_recent_errored(self.request.user.get_org()).exists()
-            return context
-
     class Prometheus(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
         class ToggleForm(forms.ModelForm):
             class Meta:
@@ -3220,6 +3106,7 @@ class OrgCRUDL(SmartCRUDL):
 
             if len(links) > 0:
                 links.append(dict(divider=True))
+
             if self.has_org_perm("orgs.org_export"):
                 links.append(dict(title=_("Export"), href=reverse("orgs.org_export")))
 
@@ -3269,16 +3156,6 @@ class OrgCRUDL(SmartCRUDL):
                     action="link",
                 )
 
-        def add_ticketer_section(self, formax, ticketer):
-
-            if self.has_org_perm("tickets.ticket_filter"):
-                formax.add_section(
-                    "tickets",
-                    reverse("tickets.ticket_filter", args=[ticketer.uuid]),
-                    icon=ticketer.get_type().icon,
-                    action="link",
-                )
-
         def derive_formax_sections(self, formax, context):
 
             # add the channel option if we have one
@@ -3295,11 +3172,10 @@ class OrgCRUDL(SmartCRUDL):
                     formax.add_section("plan", reverse("orgs.org_plan"), icon="icon-credit", action="summary")
 
             if self.has_org_perm("channels.channel_update"):
-                from temba.channels.views import get_channel_read_url_list
                 # get any channel thats not a delegate
                 channels = Channel.objects.filter(org=org, is_active=True, parent=None).order_by("-role")
-                if len(channels) > 0:
-                    formax.add_section("channels", get_channel_read_url_list(), icon="icon-box", action="")
+                for channel in channels:
+                    self.add_channel_section(formax, channel)
 
                 twilio_client = org.get_twilio_client()
                 if twilio_client:  # pragma: needs cover
@@ -3335,7 +3211,7 @@ class OrgCRUDL(SmartCRUDL):
                     formax.add_section(
                         "tickets",
                         reverse("tickets.ticketer_read", args=[ticketer.uuid]),
-                        icon=ticketer.get_type().icon,
+                        icon=ticketer.type.icon,
                     )
 
             if self.has_org_perm("orgs.org_profile"):
@@ -3351,24 +3227,6 @@ class OrgCRUDL(SmartCRUDL):
                         "two_factor", reverse("orgs.user_two_factor_enable"), icon="icon-two-factor", action="link"
                     )
 
-            if self.has_org_perm("orgs.org_two_factor"):
-                formax.add_section(
-                    "two_factor",
-                    reverse("orgs.org_two_factor"),
-                    icon="icon-two-factor",
-                    action="redirect",
-                    nobutton=True,
-                )
-
-            if self.has_org_perm("orgs.org_two_factor"):
-                formax.add_section(
-                    "two_factor",
-                    reverse("orgs.org_two_factor"),
-                    icon="icon-two-factor",
-                    action="redirect",
-                    nobutton=True,
-                )
-
             if self.has_org_perm("orgs.org_edit"):
                 formax.add_section("org", reverse("orgs.org_edit"), icon="icon-office")
 
@@ -3379,7 +3237,7 @@ class OrgCRUDL(SmartCRUDL):
             if self.has_org_perm("orgs.org_languages"):
                 formax.add_section("languages", reverse("orgs.org_languages"), icon="icon-language")
 
-            if self.has_org_perm("orgs.org_country"):
+            if self.has_org_perm("orgs.org_country") and org.get_branding().get("location_support"):
                 formax.add_section("country", reverse("orgs.org_country"), icon="icon-location2")
 
             if self.has_org_perm("orgs.org_smtp_server"):
@@ -3398,7 +3256,9 @@ class OrgCRUDL(SmartCRUDL):
 
             if self.has_org_perm("orgs.org_resthooks"):
                 formax.add_section(
-                    "resthooks", reverse("orgs.org_resthooks"), icon="icon-cloud-lightning", dependents="resthooks"
+                    "resthooks",
+                    reverse("orgs.org_resthooks"),
+                    icon="icon-cloud-lightning",
                 )
 
             # show globals and archives

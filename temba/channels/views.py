@@ -67,9 +67,6 @@ ALL_COUNTRIES = countries.choices()
 def get_channel_read_url(channel):
     return reverse("channels.channel_read", args=[channel.uuid])
 
-def get_channel_read_url_list():
-    return reverse("channels.channel_read_list")
-
 def channel_status_processor(request):
     status = dict()
     user = request.user
@@ -749,6 +746,7 @@ class ChannelCRUDL(SmartCRUDL):
         "claim_all",
         "update",
         "read",
+        "manage",
         "delete",
         "configuration",
         "bulk_sender_options",
@@ -1081,6 +1079,95 @@ class ChannelCRUDL(SmartCRUDL):
             message_stats_table.reverse()
             context["message_stats_table"] = message_stats_table
 
+            return context
+
+    class Manage(OrgPermsMixin, SmartListView):
+
+        def get_gear_links(self):
+            links = []
+
+            links.append(dict(title=_("Logout"), style="hidden", href=reverse("users.user_logout")))
+
+            if self.has_org_perm("channels.channel_claim"):
+                links.append(dict(title=_("Add Channel"), href=reverse("channels.channel_claim")))
+
+            if self.has_org_perm("classifiers.classifier_connect"):
+                links.append(dict(title=_("Add Classifier"), href=reverse("classifiers.classifier_connect")))
+
+            if self.has_org_perm("orgs.org_export"):
+                links.append(dict(title=_("Export"), href=reverse("orgs.org_export")))
+
+            if self.has_org_perm("orgs.org_import"):
+                links.append(dict(title=_("Import"), href=reverse("orgs.org_import")))
+
+            return links
+
+        def get_channel_log(self, obj):
+            return "Channel Log"
+
+        def get_settings(self, obj):
+            return "Settings"
+
+        def lookup_field_link(self, context, field, obj):
+            if field == 'channel_log':
+                return reverse('channels.channellog_list', args=[obj.uuid])
+            elif field == 'settings':
+                return reverse("channels.channel_configuration", args=[obj.uuid])
+            else:
+                return reverse('channels.channel_read', args=[obj.uuid])
+
+        paginate_by = settings.PAGINATE_CHANNELS_COUNT
+        title = _("Manage Channels")
+        permission = "orgs.org_manage_accounts"
+
+        def has_org_perm(self, permission):
+            if self.org:
+                return self.get_user().has_org_perm(self.org, permission)
+            return False
+
+        link_url = 'uuid@channels.channel_read'
+        link_fields = ("name", "uuid", "address", "channel_log", "settings")
+        field_config = {"channel_type": {"label": "Type"}, "uuid": {"label": "UUID"}}
+        fields = (
+        'name', 'channel_type', 'last_seen', 'uuid', 'address', 'country', 'device', 'channel_log', 'settings')
+
+        def get_queryset(self, **kwargs):
+            queryset = super().get_queryset(**kwargs)
+
+            # org users see channels for their org, superuser sees all
+            if not self.request.user.is_superuser:
+                org = self.request.user.get_org()
+                queryset = queryset.filter(org=org)
+            return queryset.filter(is_active=True).order_by("-created_on").prefetch_related("sync_events")
+
+        def pre_process(self, *args, **kwargs):
+            # superuser sees things as they are
+            if self.request.user.is_superuser:
+                return super().pre_process(*args, **kwargs)
+
+            return super().pre_process(*args, **kwargs)
+
+        def get_name(self, obj):
+            return obj.get_name()
+
+        def get_address(self, obj):
+            return obj.address if obj.address else _("Unknown")
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            # delayed sync event
+            sync_events = SyncEvent.objects.filter(channel__in=context['channel_list']).order_by("-created_on")
+            for channel in context['channel_list']:
+                if not (channel.created_on > timezone.now() - timedelta(hours=1)):
+                    if sync_events:
+                        for sync_event in sync_events:
+                            if sync_event.channel_id == channel.id:
+                                latest_sync_event = sync_events[0]
+                                interval = timezone.now() - latest_sync_event.created_on
+                                seconds = interval.seconds + interval.days * 24 * 3600
+                                channel.last_sync = latest_sync_event
+                                if seconds > 3600:
+                                    channel.delayed_sync_event = latest_sync_event
             return context
 
     class FacebookWhitelist(ComponentFormMixin, ModalMixin, OrgObjPermsMixin, SmartModelActionView):

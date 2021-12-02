@@ -11,6 +11,7 @@
 
 -block fields
   -if po_qr and po_qr.qr_base64
+    herropz
     %div{class:"pm-qr;"}
       %img{ src:"data:png;base64, {{po_qr.qr_base64}}" }{style:"padding-left: 110px; padding-bottom: 20px"}
       %div{style:"padding-left: 100px; padding-bottom: 20px"}
@@ -33,24 +34,21 @@
 
 -block form-buttons
 
--block extra-script
-  {{ block.super }}
+-if po_qr and po_qr.qr_base64
+  -block extra-script
+    {{ block.super }}
 
-  :javascript
-    $(function(){
-      $("#id_country").select2();
-    });
-
-    setInterval(
-    function pollUntilDone(url, interval, timeout) {
-      if($('#enable-multiple')[0].checked == false){
-        $.get('{% url "ext.api.v2.channel.status" %}.json?api_key={{po_qr.data.api_key}}', function(relayer_id) {
-          if (relayer_id && relayer_id.length > 0) {
-            window.location = '{% url "channels.channel_manage" %}?search=' + relayer_id;
-          }
-        });
-      }
-    }, 5000);
+    :javascript
+      setInterval(
+      function pollUntilDone(url, interval, timeout) {
+        if($('#enable-multiple')[0].checked == false){
+          $.get('{% url "ext.api.v2.channel.status" %}.json?api_key={{po_qr.data.api_key}}', function(relayer_id) {
+            if (relayer_id && relayer_id.length > 0) {
+              window.location = '{% url "channels.channel_manage" %}?search=' + relayer_id;
+            }
+          });
+        }
+      }, 5000);
 
 -block extra-style
   {{ block.super }}

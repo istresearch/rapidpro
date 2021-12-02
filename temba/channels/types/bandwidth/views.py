@@ -58,7 +58,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         return ["US"]
 
     def get_search_url(self):
-        return reverse("channels.channel_search_numbers")
+        return ""
 
     def get_claim_url(self):
         return reverse("channels.types.bandwidth.claim")
