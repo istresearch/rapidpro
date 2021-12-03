@@ -1091,15 +1091,6 @@ class ChannelCRUDL(SmartCRUDL):
             if self.has_org_perm("channels.channel_claim"):
                 links.append(dict(title=_("Add Channel"), href=reverse("channels.channel_claim")))
 
-            if self.has_org_perm("classifiers.classifier_connect"):
-                links.append(dict(title=_("Add Classifier"), href=reverse("classifiers.classifier_connect")))
-
-            if self.has_org_perm("orgs.org_export"):
-                links.append(dict(title=_("Export"), href=reverse("orgs.org_export")))
-
-            if self.has_org_perm("orgs.org_import"):
-                links.append(dict(title=_("Import"), href=reverse("orgs.org_import")))
-
             return links
 
         def get_channel_log(self, obj):
@@ -1130,6 +1121,8 @@ class ChannelCRUDL(SmartCRUDL):
         field_config = {"channel_type": {"label": "Type"}, "uuid": {"label": "UUID"}}
         fields = (
         'name', 'channel_type', 'last_seen', 'uuid', 'address', 'country', 'device', 'channel_log', 'settings')
+        search_fields = ("name__icontains", "channel_type__icontains", "last_seen__icontains", "uuid__icontains",
+                         "address__icontains", "country__icontains", "device__icontains")
 
         def get_queryset(self, **kwargs):
             queryset = super().get_queryset(**kwargs)
