@@ -12,7 +12,6 @@ ARG USER_PID=1717
 FROM istresearch/p4-engage:${FROM_STAGE_TAG} as load-files
 
 COPY pyproject.toml /opt/code2use/
-COPY custom-deps.toml /opt/code2use/
 COPY package*.json /opt/code2use/
 COPY poetry-install.sh /opt/code2use/
 COPY rp-build-deps.sh /opt/code2use/

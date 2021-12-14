@@ -78,7 +78,7 @@ function EnsurePyLibsImage()
   fi
   IMG_STAGE=pylibs
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
-  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile pygeos)" "poetry.lock" "pyproject.toml" "custom-deps.toml" "package-lock.json" "package.json"`
+  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile pygeos)" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json"`
   echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
     FROM_STAGE_TAG=`GetImgStageTag pygeos`
