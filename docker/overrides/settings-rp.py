@@ -32,8 +32,7 @@ MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
     INSTALLED_APPS +
-    tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(','))) +
-    ('raven.contrib.django.raven_compat',))
+    tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(','))))
 
 ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
 
@@ -57,11 +56,6 @@ if CACHES['default']['BACKEND'] == 'django_redis.cache.RedisCache':
     if 'OPTIONS' not in CACHES['default']:
         CACHES['default']['OPTIONS'] = {}
     CACHES['default']['OPTIONS']['CLIENT_CLASS'] = 'django_redis.client.DefaultClient'
-
-RAVEN_CONFIG = {
-    'dsn': env('RAVEN_DSN'),
-    'release': env('RAPIDPRO_VERSION'),
-}
 
 # -----------------------------------------------------------------------------------
 # Used when creating callbacks for Twilio, Nexmo etc..
