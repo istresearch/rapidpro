@@ -10,12 +10,10 @@ import dj_database_url
 import django_cache_url
 from datetime import datetime
 from django.utils.translation import ugettext_lazy as _
-from django.conf.urls import include, url
 from temba.settings_common import *  # noqa
-from django.urls import base
 
 AWS_QUERYSTRING_EXPIRE = '157784630'
-SUB_DIR = env('SUB_DIR', required=False) 
+SUB_DIR = env('SUB_DIR', required=False)
 COURIER_URL = env('COURIER_URL', 'http://localhost:8080')
 DEFAULT_TPS = env('DEFAULT_TPS', 10)    # Default Transactions Per Second for newly create Channels.
 MAX_TPS = env('MAX_TPS', 50)            # Max configurable Transactions Per Second for newly Created Channels and Updated Channels.
@@ -112,7 +110,7 @@ if AWS_STORAGE_BUCKET_NAME:
         DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 if not AWS_STATIC:
-    if SUB_DIR is not None:
+    if SUB_DIR is not None and len(SUB_DIR) > 0:
         STATIC_URL = '/' + SUB_DIR + '/sitestatic/'
     else:
         STATIC_URL = '/sitestatic/'
@@ -129,7 +127,7 @@ COMPRESS_URL = STATIC_URL
 COMPRESS_ROOT = STATIC_ROOT
 COMPRESS_CSS_HASHING_METHOD = 'content'
 COMPRESS_OFFLINE_MANIFEST = 'manifest-%s.json' % env('RAPIDPRO_VERSION', required=True)
- 
+
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
 MAGE_API_URL = env('MAGE_API_URL', 'http://localhost:8026/api/v1')
 SEND_MESSAGES = env('SEND_MESSAGES', 'off') == 'on'
@@ -144,6 +142,7 @@ FLOW_FROM_EMAIL = env('FLOW_FROM_EMAIL', "no-reply@temba.io")
 EMAIL_HOST = env('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', 'server@temba.io')
 EMAIL_PORT = int(env('EMAIL_PORT', 25))
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', 'server@temba.io')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', 'mypassword')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
@@ -155,7 +154,7 @@ try:
     BRANDING
 except NameError:
     BRANDING = {}
-    
+
 BRANDING['engage'] = {
     'logo_link': env('BRANDING_LOGO_LINK', '/{}/'.format(SUB_DIR) if SUB_DIR is not None else '/'),
     'slug': env('BRANDING_SLUG', 'pulse'),
@@ -186,7 +185,7 @@ BRANDING['engage'] = {
 
 DEFAULT_BRAND = 'engage'
 
-if 'SUB_DIR' in locals() and SUB_DIR is not None: 
+if 'SUB_DIR' in locals() and SUB_DIR is not None:
     BRANDING[DEFAULT_BRAND]["sub_dir"] = SUB_DIR
     LOGIN_URL = "/" + SUB_DIR + "/users/login/"
     LOGOUT_URL = "/" + SUB_DIR + "/users/logout/"
@@ -202,13 +201,13 @@ for brand in BRANDING.values():
 
 CHANNEL_TYPES = [
     "temba.channels.types.postmaster.PostmasterType",
+    "temba.channels.types.bandwidth_international.BandwidthInternationalType",
     "temba.channels.types.bandwidth.BandwidthType",
     "temba.channels.types.arabiacell.ArabiaCellType",
     "temba.channels.types.whatsapp.WhatsAppType",
     "temba.channels.types.twilio.TwilioType",
     "temba.channels.types.twilio_messaging_service.TwilioMessagingServiceType",
-    "temba.channels.types.twilio_whatsapp.TwilioWhatsappType",
-    "temba.channels.types.nexmo.NexmoType",
+    "temba.channels.types.vonage.VonageType",
     "temba.channels.types.africastalking.AfricasTalkingType",
     "temba.channels.types.blackmyna.BlackmynaType",
     "temba.channels.types.bongolive.BongoLiveType",
@@ -251,19 +250,16 @@ CHANNEL_TYPES = [
 # how many sequential contacts on import triggers suspension
 SEQUENTIAL_CONTACTS_THRESHOLD = env('SEQUENTIAL_CONTACTS_THRESHOLD', 5000)
 
-# Org search filters
-ORG_SEARCH_CONTEXT = env('ORG_SEARCH_CONTEXT', '').split(',')
-
 # -----------------------------------------------------------------------------------
 # Django-rest-framework configuration
 # -----------------------------------------------------------------------------------
 REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"] = {
-    "v2": str(env('DEFAULT_THROTTLE_RATE', 2500)) + "/hour",
-    "v2.contacts": str(env('CONTACTS_THROTTLE_RATE', 2500)) + "/hour",
-    "v2.messages": str(env('MESSAGES_THROTTLE_RATE', 2500)) + "/hour",
-    "v2.broadcasts": str(env('BROADCAST_THROTTLE_RATE', 36000)) + "/hour",
-    "v2.runs": str(env('RUNS_THROTTLE_RATE', 2500)) + "/hour",
-    "v2.api": str(env('API_THROTTLE_RATE', 2500)) + "/hour",
+    "v2": str(env('API_THROTTLE_RATE', 250000)) + "/hour",
+    "v2.contacts": str(env('API_THROTTLE_RATE', 250000)) + "/hour",
+    "v2.messages": str(env('API_THROTTLE_RATE', 250000)) + "/hour",
+    "v2.broadcasts": str(env('API_THROTTLE_RATE', 250000)) + "/hour",
+    "v2.runs": str(env('API_THROTTLE_RATE', 250000)) + "/hour",
+    "v2.api": str(env('API_THROTTLE_RATE', 250000)) + "/hour",
 }
 
 LOGGING = {
@@ -291,12 +287,3 @@ LOGGING = {
         "django.db.backends": {"level": "ERROR", "handlers": ["default"], "propagate": False},
     },
 }
-
-ORG_SEARCH_CONTEXT = []
-
-MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
-
-try:
-    from temba.local_settings import *  
-except ImportError:
-    pass
