@@ -59,7 +59,7 @@ RUN set -ex; apk -U add \
 	python3 \
 	su-exec \
 	python3-dev \
-	linux-headers
+	linux-headers \
 	gcc \
 	openssl-dev \
 	libxslt-dev \
