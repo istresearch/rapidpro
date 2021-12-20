@@ -86,7 +86,6 @@ RUN runDeps="$( \
  && apk --no-cache -U add $runDeps \
 	git \
 	libmagic \
-	libressl \
 	libxml2 \
 	ncurses \
 	pcre \
