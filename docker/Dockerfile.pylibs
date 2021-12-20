@@ -58,12 +58,6 @@ RUN set -ex; apk -U add \
 	nano \
 	python3 \
 	su-exec \
-	python3-dev \
-	linux-headers \
-	gcc \
-	openssl-dev \
-	libxslt-dev \
-	libffi-dev \
  && echo "installed all runtime deps" \
  && npm install -g node-gyp less \
  && echo "installed global runtime npm libs" \
@@ -86,6 +80,7 @@ RUN runDeps="$( \
  && apk --no-cache -U add $runDeps \
 	git \
 	libmagic \
+	libressl \
 	libxml2 \
 	ncurses \
 	pcre \
