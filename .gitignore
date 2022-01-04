@@ -45,7 +45,6 @@ media/test_orgs
 media/tmp
 media/attachments
 
-
 # External projects
 fabric
 fabconfig.py
@@ -124,5 +123,5 @@ ansible/site.retry
 # VS Code projects
 .vscode/
 
-# autoenv
-.direnv/
+# CircleCI artifacts
+scm/*_tag.txt
