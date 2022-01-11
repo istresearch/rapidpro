@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("orgs", "0084_org_deleted_on"),
-        ("tickets", "0004_squashed"),
+        ("tickets", "0003_auto_20200602_1522"),
     ]
 
     operations = [

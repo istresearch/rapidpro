@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("triggers", "0017_squashed"),
+        ("triggers", "0016_auto_20190816_1517"),
     ]
 
     operations = [

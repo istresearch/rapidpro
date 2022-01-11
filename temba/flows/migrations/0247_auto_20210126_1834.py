@@ -7,7 +7,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("flows", "0246_auto_20210119_1717"),
-        ("sql", "0002_squashed"),
+        ("sql", "0001_initial"),
     ]
 
     operations = [

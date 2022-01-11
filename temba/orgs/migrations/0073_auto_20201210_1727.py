@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
         ("msgs", "0145_auto_20210101_1559"),
-        ("orgs", "0072_squashed"),
+        ("orgs", "0071_orgactivity_plan_active_contact_count"),
     ]
 
     operations = [

@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("flows", "0244_squashed"),
+        ("flows", "0242_drop_run_timeout"),
     ]
 
     operations = [

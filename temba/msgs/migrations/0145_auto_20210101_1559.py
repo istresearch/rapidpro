@@ -53,8 +53,8 @@ DROP FUNCTION temba_insert_message_label_counts(_msg_id INT, _is_archived BOOLEA
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("msgs", "0144_squashed"),
-        ("sql", "0002_squashed"),
+        ("msgs", "0143_broadcast_raw_urns"),
+        ("sql", "0001_initial"),
     ]
 
     operations = [

@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("airtime", "0017_squashed"),
+        ("airtime", "0014_auto_20191023_1904"),
     ]
 
     operations = [

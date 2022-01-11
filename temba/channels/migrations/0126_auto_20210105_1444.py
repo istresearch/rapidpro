@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("channels", "0125_squashed"),
+        ("channels", "0123_merge_20200420_1534"),
     ]
 
     operations = [

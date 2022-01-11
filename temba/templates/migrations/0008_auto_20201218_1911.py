@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("templates", "0007_squashed"),
+        ("templates", "0006_templatetranslation_country"),
     ]
 
     operations = [

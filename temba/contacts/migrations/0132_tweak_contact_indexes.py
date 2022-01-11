@@ -7,7 +7,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("contacts", "0131_contactimport_group_name"),
-        ("sql", "0002_squashed"),
+        ("sql", "0001_initial"),
     ]
 
     operations = [

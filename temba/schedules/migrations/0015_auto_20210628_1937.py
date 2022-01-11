@@ -6,7 +6,8 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("schedules", "0014_squashed"),
+        ("orgs", "0071_orgactivity_plan_active_contact_count"),
+        ("schedules", "0013_fix_none_days"),
     ]
 
     operations = [
