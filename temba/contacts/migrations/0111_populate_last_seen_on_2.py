@@ -22,15 +22,20 @@ def s3_client():  # pragma: no cover
 def iter_records(archive):  # pragma: no cover
     s3 = s3_client()
     url_parts = urlparse(archive.url)
-    s3_obj = s3.get_object(Bucket=url_parts.netloc.split(".")[0], Key=url_parts.path[1:])
-    stream = gzip.GzipFile(fileobj=s3_obj["Body"])
+    try:
+        s3_obj = s3.get_object(Bucket=url_parts.netloc.split(".")[0], Key=url_parts.path[1:])
+        stream = gzip.GzipFile(fileobj=s3_obj["Body"])
 
-    while True:
-        line = stream.readline()
-        if not line:
-            break
+        while True:
+            line = stream.readline()
+            if not line:
+                break
 
-        yield json.loads(line.decode("utf-8"))
+            yield json.loads(line.decode("utf-8"))
+    except Exception:
+        pass
+
+
 
 
 def calculate_last_seen_from(org):  # pragma: no cover

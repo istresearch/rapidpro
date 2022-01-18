@@ -19,17 +19,17 @@ class Migration(migrations.Migration):
                 name="non_empty_scheme_and_path",
             ),
         ),
-        migrations.AddConstraint(
-            model_name="contacturn",
-            constraint=models.CheckConstraint(
-                check=models.Q(
-                    identity=django.db.models.functions.text.Concat(
-                        django.db.models.expressions.F("scheme"),
-                        django.db.models.expressions.Value(":"),
-                        django.db.models.expressions.F("path"),
-                    )
-                ),
-                name="identity_matches_scheme_and_path",
-            ),
-        ),
+        # migrations.AddConstraint(
+        #     model_name="contacturn",
+        #     constraint=models.CheckConstraint(
+        #         check=models.Q(
+        #             identity=django.db.models.functions.text.Concat(
+        #                 django.db.models.expressions.F("scheme"),
+        #                 django.db.models.expressions.Value(":"),
+        #                 django.db.models.expressions.F("path"),
+        #             )
+        #         ),
+        #         name="identity_matches_scheme_and_path",
+        #     ),
+        # ),
     ]
