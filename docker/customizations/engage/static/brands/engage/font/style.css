@@ -1,10 +1,10 @@
 @font-face {
 	font-family: 'engage';
-	src:url("fonts/engage.eot?-vr02l1");
-	src:url("fonts/engage.eot?#iefix-vr02l1") format('embedded-opentype'),
-		url("fonts/engage.woff?-vr02l1") format('woff'),
-		url("fonts/engage.ttf?-vr02l1") format('truetype'),
-		url("fonts/engage.svg?-vr02l1#engage") format('svg');
+	src:asset-url("fonts/engage.eot?-vr02l1");
+	src:asset-url("fonts/engage.eot?#iefix-vr02l1") format('embedded-opentype'),
+		asset-url("fonts/engage.woff?-vr02l1") format('woff'),
+		asset-url("fonts/engage.ttf?-vr02l1") format('truetype'),
+		asset-url("fonts/engage.svg?-vr02l1#engage") format('svg');
 	font-weight: normal;
 	font-style: normal;
 }

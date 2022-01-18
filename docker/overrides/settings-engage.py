@@ -142,7 +142,6 @@ FLOW_FROM_EMAIL = env('FLOW_FROM_EMAIL', "no-reply@temba.io")
 EMAIL_HOST = env('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', 'server@temba.io')
 EMAIL_PORT = int(env('EMAIL_PORT', 25))
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', 'server@temba.io')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', 'mypassword')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
@@ -161,7 +160,7 @@ BRANDING['engage'] = {
     'name': env('BRANDING_NAME', 'Pulse'),
     'org': env('BRANDING_ORG', 'IST'),
     'colors': dict([rule.split('=') for rule in env('BRANDING_COLORS', 'primary=#0c6596').split(';')]),
-    'styles': ['brands/rapidpro/font/style.css', 'brands/engage/less/style.less', ],
+    'styles': ['brands/engage/font/style.css', 'brands/engage/less/style.less', ],
     'welcome_topup': 1000,
     'email': env('BRANDING_EMAIL', 'pulse@istresearch.com'),
     'support_email': env('BRANDING_SUPPORT_EMAIL', 'pulse@istresearch.com'),
@@ -169,9 +168,9 @@ BRANDING['engage'] = {
     'api_link': env('BRANDING_API_LINK', 'https://api.rapidpro.io'),
     'docs_link': env('BRANDING_DOCS_LINK', 'http://docs.rapidpro.io'),
     'domain': HOSTNAME,
-    'favico': env('BRANDING_FAVICO', 'brands/engage/favicon.ico'),
-    'splash': env('BRANDING_SPLASH', 'brands/engage/splash.png'),
-    'logo': env('BRANDING_LOGO', 'brands/engage/logo.png'),
+    'favico': env('BRANDING_FAVICO', 'brands/engage/images/engage.ico'),
+    'splash': env('BRANDING_SPLASH', 'brands/engage/images/splash.png'),
+    'logo': env('BRANDING_LOGO', 'brands/engage/images/logo.png'),
     'allow_signups': env('BRANDING_ALLOW_SIGNUPS', True),
     "flow_types": ["M", "V", "S"],  # see Flow.TYPE_MESSAGE, Flow.TYPE_VOICE, Flow.TYPE_SURVEY
     'tiers': dict(import_flows=0, multi_user=0, multi_org=0),
