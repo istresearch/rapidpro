@@ -92,7 +92,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         return HttpResponseRedirect(self.get_success_url())
 
     def claim_number(self, user, phone_number, country, role):
-        analytics.track(user.username, "temba.channel_claim_bandwidth_international",
+        analytics.track(user, "temba.channel_claim_bandwidth_international",
                         properties=dict(address=phone_number))
         return None
 
@@ -114,7 +114,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             uuid=self.uuid
         )
 
-        analytics.track(user.username, "temba.channel_claim_bandwidth", properties=dict(number=phone_number))
+        analytics.track(user, "temba.channel_claim_bandwidth", properties=dict(number=phone_number))
 
         return channel
 

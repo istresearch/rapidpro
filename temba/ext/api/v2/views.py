@@ -90,8 +90,8 @@ class ExtChannelWriteSerializer(WriteSerializer):
                 if channel.config.get("chat_mode") == 'SMS':
                     prefix = ''
 
-                schemes = [getattr(Contacts,
-                                   '{}{}_SCHEME'.format(prefix, dict(type_from_code.claim_view.Form.CHAT_MODE_CHOICES)[channel.config.get("chat_mode")]).upper())]
+                scheme_to_check = '{}{}_SCHEME'.format(prefix, dict(type_from_code.claim_view.Form.CHAT_MODE_CHOICES)[channel.config.get("chat_mode")]).upper()
+                schemes = [getattr(Contacts.URN, scheme_to_check)]
 
                 channel.name = '{} [{}]'.format(data.get("device_name"), schemes[0])
                 channel.config["device_name"] = data.get("device_name")
@@ -264,9 +264,9 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
             }
             try:
                 if request.query_params.get("force_delete") is not None and request.query_params.get("force_delete").lower() in ["true", "1"]:
-                    channel.release(check_dependent_flows=False)
+                    channel.release(user=self.request.user, check_dependent_flows=False)
                 else:
-                    channel.release(check_dependent_flows=True)
+                    channel.release(user=self.request.user, check_dependent_flows=True)
             except Exception as e:
                 data["response"]["status"] = status.HTTP_400_BAD_REQUEST
                 data["response"]["errors"] = e.args

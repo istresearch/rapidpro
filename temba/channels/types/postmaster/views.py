@@ -120,7 +120,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         return HttpResponseRedirect(self.get_success_url())
 
     def claim_number(self, user, phone_number, country, role):
-        analytics.track(user.username, "temba.channel_claim_postmaster",
+        analytics.track(user, "temba.channel_claim_postmaster",
                         properties=dict(address=phone_number))
         return None
 
@@ -142,8 +142,9 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         if chat_mode == 'SMS':
             prefix = ''
 
-        schemes = [getattr(Contacts,
-                           '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[chat_mode]).upper())]
+        scheme_to_check = '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[chat_mode]).upper()
+
+        schemes = [getattr(Contacts.URN, scheme_to_check)]
         
         name_with_scheme = '{} [{}]'.format(device_name, schemes[0])
 
@@ -152,6 +153,6 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             uuid=self.uuid, schemes=schemes
         )
 
-        analytics.track(user.username, "temba.channel_claim_postmaster", properties=dict(number=device_id))
+        analytics.track(user, "temba.channel_claim_postmaster", properties=dict(number=device_id))
 
         return channel

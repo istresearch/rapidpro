@@ -1876,7 +1876,7 @@ class FlowCRUDL(SmartCRUDL):
 
             # if the last modified on this flow is more than a day ago, log that this flow as updated
             if self.get_object().saved_on < timezone.now() - timedelta(hours=24):  # pragma: needs cover
-                analytics.track(self.request.user.username, "temba.flow_updated")
+                analytics.track(self.request.user, "temba.flow_updated")
 
             # try to save the our flow, if this fails, let's let that bubble up to our logger
             json_dict = json.loads(json_string)
