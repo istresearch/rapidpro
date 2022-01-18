@@ -67,15 +67,21 @@ jobs:
           command: |
             VERSION_TAG=$(cat scm/version_tag.txt)
             source scm/utils-engage.sh; BuildVersionForGeneric "${VERSION_TAG}-generic"
+
+  deploy-dev-container:
+    docker:
+      - image: cimg/base:stable
+    steps:
       - run:
-          name: Deploy
+          name: Deploy To K8s
+          # VERSION_TAG=$(cat scm/version_tag.txt)
+          # --data build_parameters[DEPLOY_IMAGE]=$CIRCLE_PROJECT_USERNAME/p4-engage:${VERSION_TAG} \
           command: |
-            BRANCH=${CIRCLE_BRANCH#*/}
-            if [[ "$BRANCH" == "develop" ]] || [[ "$BRANCH" == "main" ]] || [[ "$BRANCH" == "master" ]]; then
-              curl --user ${CIRCLE_API_USER_TOKEN}: --data build_parameters[CIRCLE_JOB]=eks_deploy --data build_parameters[DEPLOY_PROJECT]=pulse-engage https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/develop
-            else
-              echo "Skipping deploy step"
-            fi
+            K8_URL=https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/develop
+            curl -XPOST --user "${CIRCLE_API_USER_TOKEN}:" \
+              --data build_parameters[CIRCLE_JOB]=eks_deploy \
+              --data build_parameters[DEPLOY_PROJECT]=pulse-engage \
+              $K8_URL          
 
 workflows:
   version: 2
@@ -86,3 +92,15 @@ workflows:
           filters:
             tags:
               ignore: /^test-.*/
+      - deploy-dev-container:
+          context: globalconfig
+          requires:
+            - build-containers
+          filters:
+            branches:
+              only:
+                - /^develop$/
+                - /^dev-.*/
+            tags:
+              only:
+                - /^deploy2dev$/

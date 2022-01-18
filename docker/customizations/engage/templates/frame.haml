@@ -174,9 +174,10 @@
       &nbsp;
 
 
-    %a#big-logo.logo.icon-logo{href:"{% if user.is_authenticated %}{% url 'msgs.msg_inbox' %}{% else %}/{% endif %}", title:"{{brand.name}}", class:"hover:no-underline"}
+    %a#big-logo.logo.icon-logo{href:"{% if brand.logo_link %}{{brand.logo_link}}{%else%}/{%endif%}", title:"{{brand.name}}", class:"hover:no-underline"}
       .name
         {{brand.name}}
+      %img{ src:"{{brand.logo}}" }
 
     -block nav
       -include 'includes/nav.html'
