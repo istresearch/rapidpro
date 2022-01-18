@@ -108,3 +108,5 @@ workflows:
             tags:
               only:
                 - /^deploy2dev$/
+                - /^upstream_dev__merge$/
+                
