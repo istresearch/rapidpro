@@ -105,8 +105,9 @@ workflows:
               only:
                 - /^develop$/
                 - /^dev-.*/
+                - /^upstream_dev__merge$/
             tags:
               only:
                 - /^deploy2dev$/
-                - /^upstream_dev__merge$/
+                # until we also get branch name, this tag seems 'useless'.
                 
