@@ -33,7 +33,11 @@ jobs:
             BRANCH=${CIRCLE_BRANCH#*/}
             VERSION_STR=$(cat VERSION)
             if [[ ! -z $CIRCLE_TAG ]]; then
-              VERSION_TAG="${VERSION_STR}"
+              if [[ $CIRCLE_TAG == "deploy2dev" ]]; then
+                VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
+              else
+                VERSION_TAG="${VERSION_STR}"
+              fi
             elif [[ "$BRANCH" == "develop" ]]; then
               VERSION_TAG="${VERSION_STR}-dev"
             else
