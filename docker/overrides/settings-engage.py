@@ -170,7 +170,7 @@ BRANDING['engage'] = {
     'domain': HOSTNAME,
     'favico': env('BRANDING_FAVICO', 'brands/engage/images/engage.ico'),
     'splash': env('BRANDING_SPLASH', 'brands/engage/images/splash.png'),
-    'logo': env('BRANDING_LOGO', 'brands/engage/images/logo.png'),
+    'logo': env('BRANDING_LOGO', 'brands/engage/images/logo.svg'),
     'allow_signups': env('BRANDING_ALLOW_SIGNUPS', True),
     "flow_types": ["M", "V", "S"],  # see Flow.TYPE_MESSAGE, Flow.TYPE_VOICE, Flow.TYPE_SURVEY
     'tiers': dict(import_flows=0, multi_user=0, multi_org=0),
