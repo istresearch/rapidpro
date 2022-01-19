@@ -3184,15 +3184,25 @@ class OrgCRUDL(SmartCRUDL):
                 vonage_client = org.get_vonage_client()
                 if vonage_client:  # pragma: needs cover
                     formax.add_section("vonage", reverse("orgs.org_vonage_account"), icon="icon-vonage")
-                bwi_client = org.get_bandwidth_international_messaging_client()
-                if bwi_client:
-                    formax.add_section("BWI", reverse("orgs.org_bandwidth_international_account"),
-                                       icon="icon-tembatoo-bandwidthh")
+                try:
+                    from temba.channels.types.bandwidth_international import BandwidthInternationalType
+                    if Channel.get_type_from_code(BandwidthInternationalType.code) is not None:
+                        bwi_client = org.get_bandwidth_international_messaging_client()
+                    if bwi_client:
+                        formax.add_section("BWI", reverse("orgs.org_bandwidth_international_account"),
+                                           icon="icon-tembatoo-bandwidth")
+                except ValueError:
+                    pass
 
-                bwd_client = org.get_bandwidth_messaging_client()
-                if bwd_client:
-                    formax.add_section("BWD", reverse("orgs.org_bandwidth_account"),
-                                       icon="icon-tembatoo-bandwidth")
+                try:
+                    from temba.channels.types.bandwidth import BandwidthType
+                    if Channel.get_type_from_code(BandwidthType.code) is not None:
+                        bwd_client = org.get_bandwidth_messaging_client()
+                    if bwd_client:
+                        formax.add_section("BWD", reverse("orgs.org_bandwidth_account"),
+                                           icon="icon-tembatoo-bandwidth")
+                except ValueError:
+                    pass
 
             if self.has_org_perm("classifiers.classifier_read"):
                 classifiers = org.classifiers.filter(is_active=True).order_by("created_on")
