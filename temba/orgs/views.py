@@ -3180,9 +3180,10 @@ class OrgCRUDL(SmartCRUDL):
 
             if self.has_org_perm("channels.channel_update"):
                 # get any channel thats not a delegate
-                channels = Channel.objects.filter(org=org, is_active=True, parent=None).order_by("-role")[:10]
-                for channel in channels:
-                    self.add_channel_section(formax, channel)
+                # channels = Channel.objects.filter(org=org, is_active=True, parent=None).order_by("-role")
+                # for channel in channels:
+                #     self.add_channel_section(formax, channel)
+                # Removed due to excess load time when channel count greater than 5
 
                 twilio_client = org.get_twilio_client()
                 if twilio_client:  # pragma: needs cover
