@@ -78,6 +78,12 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Avoid "Are you sure you want to connect?" to GitHub
+          command: |
+            mkdir -p ~/.ssh
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+            chmod 600 ~/.ssh/known_hosts
+      - run:
           name: Figure out tag to use
           command: |
             BRANCH=${CIRCLE_BRANCH#*/}
