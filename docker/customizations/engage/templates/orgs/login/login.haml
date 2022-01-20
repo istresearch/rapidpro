@@ -1,0 +1,92 @@
+-extends "orgs/login/login_base.haml"
+-load smartmin i18n
+
+-block login-title
+  -trans "Welcome Back"
+      
+-block login-content        
+  -blocktrans trimmed
+    Please sign in with your email address and password.
+
+  %form#login-form(method="POST" action="/users/login/")
+    -csrf_token
+    -for field, errors in form.errors.items
+      -if field == '__all__'
+        .alert-error.my-4
+          {{ errors }}
+
+    .mt-4
+      .input-container
+        %input(name='username' maxlength=254 placeholder='{{_("Email Address")|escapejs}}' class='textinput' value='{% if form.username.value%}{{form.username.v$
+
+    -if form.username.errors
+      .alert-error.mt-4
+        {{form.username.errors}}
+
+    .mt-4
+      .input-container
+        %input(name='password' type='password' placeholder='{{_("Password")|escapejs}}' class='textinput')
+
+    -if form.password.errors
+      .alert-error.mt-4
+        {{form.password.errors}}
+    .mt-2.text-right
+      %a(href="/user/forget/")
+        Forgot your password?
+
+    .mt-6
+      %input.button-primary(type="submit" value='{{_("Sign In")}}')
+
+  .mt-6
+    -blocktrans trimmed
+      Don't have an account yet?
+    %a(href="/org/signup")
+      -trans "Sign up"
+
+-block extra-style
+  :css
+    .input-container {
+        border-radius: var(--curvature-widget);
+        cursor: text;
+        background: var(--color-widget-bg);
+        border: 1px solid var(--color-widget-border);
+        transition: all ease-in-out 200ms;
+        display: flex;
+        flex-direction: row;
+        align-items: stretch;
+        box-shadow: var(--widget-box-shadow);
+        caret-color: var(--input-caret);
+    }
+
+    .input-container:focus-within {
+        border-color: var(--color-focus);
+        background: var(--color-widget-bg-focused);
+        box-shadow: var(--widget-box-shadow-focused);
+    }
+
+    .textinput {
+        padding: var(--temba-textinput-padding);
+        border: none;
+        flex: 1;
+        margin: 0;
+        background: none;
+        color: var(--color-widget-text);
+        font-family: var(--font-family);
+        font-size: var(--temba-textinput-font-size);
+        line-height: normal;
+        cursor: text;
+        resize: none;
+        font-weight: 300;
+        width: 100%;
+    }
+
+    .textinput:focus {
+        outline: none;
+        box-shadow: none;
+        cursor: text;
+    }
+
+    .textinput::placeholder {
+        color: var(--color-placeholder);
+        font-weight: 300;
+    }
