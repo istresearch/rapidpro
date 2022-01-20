@@ -17,7 +17,7 @@
 
     .mt-4
       .input-container
-        %input(name='username' maxlength=254 placeholder='{{_("Email Address")|escapejs}}' class='textinput' value='{% if form.username.value%}{{form.username.v$
+        %input(name='username' maxlength=254 placeholder='{{_("Email Address")|escapejs}}' class='textinput' value='{% if form.username.value%}{{form.username.value|escape}}{%endif%}')
 
     -if form.username.errors
       .alert-error.mt-4
