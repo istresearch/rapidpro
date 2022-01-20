@@ -1116,6 +1116,7 @@ class ChannelCRUDL(SmartCRUDL):
                 return self.get_user().has_org_perm(self.org, permission)
             return False
 
+        sort_field = "created_on"
         link_url = 'uuid@channels.channel_read'
         link_fields = ("name", "uuid", "address", "channel_log", "settings")
         field_config = {"channel_type": {"label": "Type"}, "uuid": {"label": "UUID"}}
@@ -1131,7 +1132,12 @@ class ChannelCRUDL(SmartCRUDL):
             if not self.request.user.is_superuser:
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
-            return queryset.filter(is_active=True).order_by("-created_on").prefetch_related("sync_events")
+
+            if 'sort_on' in self.request.GET:
+                if self.request.GET['sort_on'] in self.fields:
+                    self.sort_field = self.request.GET['sort_on']
+
+            return queryset.filter(is_active=True).order_by(self.sort_field).prefetch_related("sync_events")
 
         def pre_process(self, *args, **kwargs):
             # superuser sees things as they are
@@ -1161,6 +1167,7 @@ class ChannelCRUDL(SmartCRUDL):
                                 channel.last_sync = latest_sync_event
                                 if seconds > 3600:
                                     channel.delayed_sync_event = latest_sync_event
+            context['sort_field'] = self.sort_field
             return context
 
     class FacebookWhitelist(ComponentFormMixin, ModalMixin, OrgObjPermsMixin, SmartModelActionView):
