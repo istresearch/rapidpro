@@ -20,7 +20,7 @@ MAX_TPS = env('MAX_TPS', 50)            # Max configurable Transactions Per Seco
 
 MAX_ORG_LABELS = int(env('MAX_ORG_LABELS', 500))
 
-POST_OFFICE_QR_URL = env('POST_OFFICE_QR_URL', 'https://localhost:8088/postoffice/engage/claim')
+POST_OFFICE_QR_URL = env('POST_OFFICE_QR_URL', 'http://localhost:8088/postoffice/engage/claim')
 POST_OFFICE_API_KEY = env('POST_OFFICE_API_KEY', 'abc123')
 
 if SUB_DIR is not None and len(SUB_DIR) > 0:
@@ -55,12 +55,15 @@ if CACHES['default']['BACKEND'] == 'django_redis.cache.RedisCache':
         CACHES['default']['OPTIONS'] = {}
     CACHES['default']['OPTIONS']['CLIENT_CLASS'] = 'django_redis.client.DefaultClient'
 
+IS_PROD = env('IS_PROD', 'off') == 'on'
 # -----------------------------------------------------------------------------------
 # Used when creating callbacks for Twilio, Nexmo etc..
 # -----------------------------------------------------------------------------------
 HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
 TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
-
+if TEMBA_HOST.lower().startswith('https://') or IS_PROD:
+    from .security_settings import *  # noqa
+SECURE_PROXY_SSL_HEADER = (env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 INTERNAL_IPS = ('*',)
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')
 
@@ -145,9 +148,6 @@ EMAIL_PORT = int(env('EMAIL_PORT', 25))
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', 'mypassword')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
-SECURE_PROXY_SSL_HEADER = (
-    env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
-IS_PROD = env('IS_PROD', 'off') == 'on'
 
 try:
     BRANDING
@@ -286,3 +286,6 @@ LOGGING = {
         "django.db.backends": {"level": "ERROR", "handlers": ["default"], "propagate": False},
     },
 }
+
+# unset BWI key, causes exception if set and we no longer support it anyway
+BWI_KEY = None
