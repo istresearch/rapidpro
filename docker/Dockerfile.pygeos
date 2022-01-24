@@ -1,17 +1,15 @@
 FROM node:12.22-alpine3.14
 
-# Commented out geolibs due to it _not_ being utilized at all.
-#
-# COPY docker/geolibs.sh /
-# 
-# RUN set -ex \
-#  && apk add --no-cache --virtual .build-deps \
-# 	  gcc \
-# 	  g++ \
-# 	  make \
-# 	  libc-dev \
-# 	  musl-dev \
-# 	  linux-headers \
-#  && sh /geolibs.sh \
-#  && apk del .build-deps \
-#  && rm /geolibs.sh
+COPY docker/geolibs.sh /
+
+RUN set -ex \
+ && apk add --no-cache --virtual .build-deps \
+    gcc \
+    g++ \
+    make \
+    libc-dev \
+    musl-dev \
+    linux-headers \
+ && sh /geolibs.sh \
+ && apk del .build-deps \
+ && rm /geolibs.sh

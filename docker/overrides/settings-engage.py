@@ -29,16 +29,15 @@ if SUB_DIR is not None and len(SUB_DIR) > 0:
 MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
-    filter(lambda tup : tup != "django.contrib.gis", INSTALLED_APPS) +
+    tuple(filter(lambda tup : tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) +
     tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(','))))
 
 ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
 
 DEBUG = env('DJANGO_DEBUG', 'off') == 'on'
 
-# Commented out geolibs due to it _not_ being utilized at all.
-#GEOS_LIBRARY_PATH = '/usr/local/lib/libgeos_c.so'
-#GDAL_LIBRARY_PATH = '/usr/local/lib/libgdal.so'
+GEOS_LIBRARY_PATH = '/usr/local/lib/libgeos_c.so'
+GDAL_LIBRARY_PATH = '/usr/local/lib/libgdal.so'
 
 SECRET_KEY = env('SECRET_KEY', required=True)
 DATABASE_URL = env('DATABASE_URL', required=True)
