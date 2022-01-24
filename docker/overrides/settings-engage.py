@@ -29,7 +29,7 @@ if SUB_DIR is not None and len(SUB_DIR) > 0:
 MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
-    INSTALLED_APPS +
+    filter(lambda tup : tup != "django.contrib.gis", INSTALLED_APPS) +
     tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(','))))
 
 ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
