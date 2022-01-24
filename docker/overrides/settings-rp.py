@@ -62,12 +62,6 @@ HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
 TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
 if TEMBA_HOST.lower().startswith('https://') or IS_PROD:
     from .security_settings import *  # noqa
-    AUTH_PASSWORD_VALIDATORS = [
-        #{"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
-        {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
-        #{"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
-        #{"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
-    ]
 SECURE_PROXY_SSL_HEADER = (env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 INTERNAL_IPS = ('*',)
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')
