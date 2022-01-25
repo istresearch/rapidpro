@@ -53,6 +53,7 @@ class IDSliceQuerySet(models.query.RawQuerySet):
         else:
             super().__init__(f"""SELECT * FROM {model._meta.db_table} WHERE id < 0""", model)
 
+        self.model = model
         self.ids = ids
         self.total = total
         self.offset = offset
@@ -81,8 +82,28 @@ class IDSliceQuerySet(models.query.RawQuerySet):
         else:
             raise TypeError(f"__getitem__ index must be int, not {type(k)}")
 
+    def all(self):
+        return self
+
+    def none(self):
+        return IDSliceQuerySet(self.model, [], 0, 0)
+
     def count(self):
         return self.total
+
+    def filter(self, **kwargs):
+        ids = list(self.ids)
+
+        for k, v in kwargs.items():
+            if k == "pk":
+                ids = [i for i in ids if i == int(v)]
+            elif k == "pk__in":
+                v = {int(j) for j in v}  # django forms like passing around pks as strings
+                ids = [i for i in ids if i in v]
+            else:
+                raise ValueError(f"IDSliceQuerySet instances can only be filtered by pk, not {k}")
+
+        return IDSliceQuerySet(self.model, ids, offset=0, total=len(ids))
 
 
 def mapEStoDB(model, es_queryset, only_ids=False):  # pragma: no cover
@@ -198,8 +219,10 @@ class JSONAsTextField(CheckFieldDefaultMixin, models.Field):
                 raise ValueError("JSONAsTextField should be a dict or a list, got %s => %s" % (type(data), data))
             else:
                 return data
+        elif isinstance(value, (list, dict)):  # if db column has been converted to JSONB, use value directly
+            return value
         else:
-            raise ValueError('Unexpected type "%s" for JSONAsTextField' % (type(value),))  # pragma: no cover
+            raise ValueError('Unexpected type "%s" for JSONAsTextField' % (type(value),))
 
     def get_db_prep_value(self, value, *args, **kwargs):
         # if the value is falsy we will save is as null
@@ -212,7 +235,10 @@ class JSONAsTextField(CheckFieldDefaultMixin, models.Field):
         if type(value) not in (list, dict, OrderedDict):
             raise ValueError("JSONAsTextField should be a dict or a list, got %s => %s" % (type(value), value))
 
-        return json.dumps(value)
+        serialized = json.dumps(value)
+
+        # strip out unicode sequences which aren't valid in JSONB
+        return serialized.replace("\\u0000", "")
 
     def to_python(self, value):
         if isinstance(value, str):
@@ -254,7 +280,7 @@ class TembaModel(SmartModel):
 
 class RequireUpdateFieldsMixin(object):
     def save(self, *args, **kwargs):
-        if self.id and "update_fields" not in kwargs:
+        if self.id and "update_fields" not in kwargs and "force_insert" not in kwargs:
             raise ValueError("Updating without specifying update_fields is disabled for this model")
 
         super().save(*args, **kwargs)

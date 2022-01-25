@@ -1,6 +1,5 @@
 from django.urls import reverse
 
-from temba.channels.models import Channel
 from temba.msgs.models import Label
 from temba.tests import TembaTest
 
@@ -17,7 +16,7 @@ class DashboardTest(TembaTest):
     def create_activity(self):
 
         # and some message and call activity
-        joe = self.create_contact("Joe", number="+593979099111")
+        joe = self.create_contact("Joe", phone="+593979099111")
         self.create_outgoing_msg(joe, "Tea of coffee?")
         self.create_incoming_msg(joe, "Coffee")
         self.create_outgoing_msg(joe, "OK")
@@ -79,9 +78,9 @@ class DashboardTest(TembaTest):
         self.create_activity()
 
         types = ["T", "TT", "FB", "NX", "AT", "KN", "CK"]
-        michael = self.create_contact("Michael", twitter="mjackson")
+        michael = self.create_contact("Michael", urns=["twitter:mjackson"])
         for t in types:
-            channel = Channel.create(self.org, self.user, None, t, name=f"Test Channel {t}", address=f"{t}:1234")
+            channel = self.create_channel(t, f"Test Channel {t}", f"{t}:1234")
             self.create_outgoing_msg(michael, f"Message on {t}", channel=channel)
         response = self.client.get(url)
 

@@ -46,14 +46,14 @@ class TwilioTypeTest(TembaTest):
             mock_get_twilio_client.return_value = None
 
             response = self.client.get(claim_twilio)
-            self.assertRedirects(response, reverse("orgs.org_twilio_connect"))
+            self.assertRedirects(response, f'{reverse("orgs.org_twilio_connect")}?claim_type=twilio')
 
             mock_get_twilio_client.side_effect = TwilioRestException(
                 401, "http://twilio", msg="Authentication Failure", code=20003
             )
 
             response = self.client.get(claim_twilio)
-            self.assertRedirects(response, reverse("orgs.org_twilio_connect"))
+            self.assertRedirects(response, f'{reverse("orgs.org_twilio_connect")}?claim_type=twilio')
 
         with patch("temba.tests.twilio.MockTwilioClient.MockAccounts.get") as mock_get:
             mock_get.return_value = MockTwilioClient.MockAccount("Trial")
@@ -63,7 +63,7 @@ class TwilioTypeTest(TembaTest):
             self.assertTrue(response.context["account_trial"])
 
         with patch("temba.tests.twilio.MockTwilioClient.MockPhoneNumbers.list") as mock_search:
-            search_url = reverse("channels.channel_search_numbers")
+            search_url = reverse("channels.types.twilio.search")
 
             # try making empty request
             response = self.client.post(search_url, {})
@@ -71,26 +71,26 @@ class TwilioTypeTest(TembaTest):
 
             # try searching for US number
             mock_search.return_value = [MockTwilioClient.MockPhoneNumber("+12062345678")]
-            response = self.client.post(search_url, {"country": "US", "area_code": "206"})
+            response = self.client.post(search_url, {"country": "US", "pattern": "206"})
             self.assertEqual(response.json(), ["+1 206-234-5678", "+1 206-234-5678", "+1 206-234-5678"])
 
             # try searching without area code
-            response = self.client.post(search_url, {"country": "US", "area_code": ""})
+            response = self.client.post(search_url, {"country": "US", "pattern": ""})
             self.assertEqual(response.json(), ["+1 206-234-5678", "+1 206-234-5678", "+1 206-234-5678"])
 
             mock_search.return_value = []
-            response = self.client.post(search_url, {"country": "US", "area_code": ""})
+            response = self.client.post(search_url, {"country": "US", "pattern": ""})
             self.assertEqual(
                 response.json()["error"], "Sorry, no numbers found, please enter another area code and try again."
             )
 
             # try searching for non-US number
             mock_search.return_value = [MockTwilioClient.MockPhoneNumber("+442812345678")]
-            response = self.client.post(search_url, {"country": "GB", "area_code": "028"})
+            response = self.client.post(search_url, {"country": "GB", "pattern": "028"})
             self.assertEqual(response.json(), ["+44 28 1234 5678", "+44 28 1234 5678", "+44 28 1234 5678"])
 
             mock_search.return_value = []
-            response = self.client.post(search_url, {"country": "GB", "area_code": ""})
+            response = self.client.post(search_url, {"country": "GB", "pattern": ""})
             self.assertEqual(
                 response.json()["error"], "Sorry, no numbers found, please enter another pattern and try again."
             )
@@ -123,20 +123,26 @@ class TwilioTypeTest(TembaTest):
 
         # voice only number
         with patch("temba.tests.twilio.MockTwilioClient.MockPhoneNumbers.stream") as mock_numbers:
-            mock_numbers.return_value = iter([MockTwilioClient.MockPhoneNumber("+554139087835")])
+            mock_numbers.return_value = iter(
+                [MockTwilioClient.MockPhoneNumber("+554139087835", sms=False, voice=True)]
+            )
 
             with patch("temba.tests.twilio.MockTwilioClient.MockShortCodes.stream") as mock_short_codes:
                 mock_short_codes.return_value = iter([])
                 Channel.objects.all().delete()
 
                 with patch("temba.tests.twilio.MockTwilioClient.MockPhoneNumbers.get") as mock_numbers_get:
-                    mock_numbers_get.return_value = MockTwilioClient.MockPhoneNumber("+554139087835")
+                    mock_numbers_get.return_value = MockTwilioClient.MockPhoneNumber(
+                        "+554139087835", sms=False, voice=True
+                    )
 
                     response = self.client.get(claim_twilio)
                     self.assertContains(response, "+55 41 3908-7835")
 
                     # claim it
-                    mock_numbers.return_value = iter([MockTwilioClient.MockPhoneNumber("+554139087835")])
+                    mock_numbers.return_value = iter(
+                        [MockTwilioClient.MockPhoneNumber("+554139087835", sms=False, voice=True)]
+                    )
                     response = self.client.post(claim_twilio, dict(country="BR", phone_number="554139087835"))
                     self.assertRedirects(response, reverse("public.public_welcome") + "?success")
 
@@ -199,27 +205,26 @@ class TwilioTypeTest(TembaTest):
         twilio_channel.save()
         self.assertEqual("T", twilio_channel.channel_type)
 
-        with self.settings(IS_PROD=True):
-            with patch("temba.tests.twilio.MockTwilioClient.MockPhoneNumber.update") as mock_numbers:
-                # our twilio channel removal should fail on bad auth
-                mock_numbers.side_effect = TwilioRestException(
-                    401, "http://twilio", msg="Authentication Failure", code=20003
-                )
-                self.client.post(reverse("channels.channel_delete", args=[twilio_channel.pk]))
-                self.assertIsNotNone(self.org.channels.all().first())
+        with patch("temba.tests.twilio.MockTwilioClient.MockPhoneNumber.update") as mock_numbers:
+            # our twilio channel removal should fail on bad auth
+            mock_numbers.side_effect = TwilioRestException(
+                401, "http://twilio", msg="Authentication Failure", code=20003
+            )
+            self.client.post(reverse("channels.channel_delete", args=[twilio_channel.uuid]))
+            self.assertIsNotNone(self.org.channels.all().first())
 
-                # or other arbitrary twilio errors
-                mock_numbers.side_effect = TwilioRestException(400, "http://twilio", msg="Twilio Error", code=123)
-                self.client.post(reverse("channels.channel_delete", args=[twilio_channel.pk]))
-                self.assertIsNotNone(self.org.channels.all().first())
+            # or other arbitrary twilio errors
+            mock_numbers.side_effect = TwilioRestException(400, "http://twilio", msg="Twilio Error", code=123)
+            self.client.post(reverse("channels.channel_delete", args=[twilio_channel.uuid]))
+            self.assertIsNotNone(self.org.channels.all().first())
 
-                # now lets be successful
-                mock_numbers.side_effect = None
-                self.client.post(reverse("channels.channel_delete", args=[twilio_channel.pk]))
-                self.assertIsNone(self.org.channels.filter(is_active=True).first())
-                self.assertEqual(
-                    mock_numbers.call_args_list[-1][1], dict(voice_application_sid="", sms_application_sid="")
-                )
+            # now lets be successful
+            mock_numbers.side_effect = None
+            self.client.post(reverse("channels.channel_delete", args=[twilio_channel.uuid]))
+            self.assertIsNone(self.org.channels.filter(is_active=True).first())
+            self.assertEqual(
+                mock_numbers.call_args_list[-1][1], dict(voice_application_sid="", sms_application_sid="")
+            )
 
     def test_update(self):
         update_url = reverse("channels.channel_update", args=[self.channel.id])
@@ -227,8 +232,7 @@ class TwilioTypeTest(TembaTest):
         self.login(self.admin)
         response = self.client.get(update_url)
         self.assertEqual(
-            ["name", "address", "country", "alert_email", "allow_international", "loc"],
-            list(response.context["form"].fields.keys()),
+            ["name", "alert_email", "allow_international", "loc"], list(response.context["form"].fields.keys())
         )
 
     @patch("temba.orgs.models.TwilioClient", MockTwilioClient)
@@ -242,41 +246,12 @@ class TwilioTypeTest(TembaTest):
         twilio_channel.save()
 
         # mock an authentication failure during the release process
-        with self.settings(IS_PROD=True):
-            with patch("temba.tests.twilio.MockTwilioClient.MockPhoneNumbers.update") as mock_numbers:
-                mock_numbers.side_effect = TwilioRestException(
-                    401, "http://twilio", msg="Authentication Failure", code=20003
-                )
+        with patch("temba.tests.twilio.MockTwilioClient.MockPhoneNumbers.update") as mock_numbers:
+            mock_numbers.side_effect = TwilioRestException(
+                401, "http://twilio", msg="Authentication Failure", code=20003
+            )
 
-                # releasing shouldn't blow up on auth failures
-                twilio_channel.release()
-                twilio_channel.refresh_from_db()
-                self.assertFalse(twilio_channel.is_active)
-
-    @patch("temba.ivr.clients.TwilioClient", MockTwilioClient)
-    def test_enable_flow_server(self):
-        # make our channel of the twilio
-        self.org.connect_twilio("TEST_SID", "TEST_TOKEN", self.admin)
-        channel = self.org.channels.all().first()
-        channel.channel_type = "T"
-        channel.config["callback_domain"] = "temba.io"
-        channel.config["application_sid"] = "twilio_app_sid"
-        channel.save()
-
-        # mock an authentication failure during the release process
-        with patch("temba.tests.twilio.MockTwilioClient.MockApplication.update") as mock_application:
-            # doesn't support ivr, noop
-            ttype = channel.get_type()
-            ttype.enable_flow_server(channel)
-            self.assertEqual(mock_application.call_count, 0)
-
-            channel.role = Channel.ROLE_ANSWER
-            channel.save()
-
-            ttype.enable_flow_server(channel)
-
-            kwargs = mock_application.mock_calls[0][2]
-            self.assertEqual(kwargs["voice_method"], "POST")
-            self.assertEqual(kwargs["voice_url"], f"https://temba.io/mr/ivr/c/{channel.uuid}/incoming")
-            self.assertEqual(kwargs["status_callback_method"], "POST")
-            self.assertEqual(kwargs["status_callback"], f"https://temba.io/mr/ivr/c/{channel.uuid}/status")
+            # releasing shouldn't blow up on auth failures
+            twilio_channel.release(self.admin)
+            twilio_channel.refresh_from_db()
+            self.assertFalse(twilio_channel.is_active)

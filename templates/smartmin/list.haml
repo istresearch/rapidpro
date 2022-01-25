@@ -1,50 +1,6 @@
 -extends "smartmin/base.html"
 -load smartmin
 
--block extra-style
-  :css
-    tr.multiselect-header{
-      border:0px solid;
-    }
-    .multiselect-header th a span.icon {
-      visibility: hidden;
-      text-decoration: none;
-      font-size: 14px;
-      margin-top: -1px;
-    }
-    .multiselect-header th a {
-      text-decoration: none;
-      font-weight:200;
-      color: #aaa;
-    }
-    .multiselect-header th:hover a span.icon {
-      visibility: visible;
-      font-size: 14px;
-    }
-    .multiselect-header th a span.icon.visible {
-      visibility: visible;
-    }
-    .multiselect-header th {
-      font-size:11px;
-      height:10px;
-      padding:0;
-      padding-top:10px;
-      padding-left:14px;
-      font-weight:200;
-      color: #aaa;
-      border:0px solid;
-      text-align:center;
-      white-space: nowrap;
-    }
-
-    .multiselect-header th div {
-       width: 14px;
-       padding-top: 4px;
-    }
-    .multiselect-header {
-      border: none !important;
-    }
-
 -block top-form
   - if view.search_fields and object_list
     - block search-form
@@ -60,46 +16,36 @@
             %a.btn.btn-primary.pull-right{ href:"./create/" } Add
   {% block pjax %}
   #pjax
-    .row-fluid
-      .span12
-        - block pre-table
+    -block pre-table
+    -block table
+      %table.list.lined
+        %thead
+          %tr
+            -for field in fields
+              %th{ class:'header-{{field}} {% if view|field_orderable:field %}header {% if field == order %}{% if order_asc %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}', id:'header-{{field}}' }
+                {% get_label field %}
 
-        - block table
-          .scroll-x
-            %table{ class:'{% get_list_class object_list %} list-table table table-striped', cellspacing:'0'}
-              %tr.multiselect
-                %th{style: 'padding-left:0px'}
-                  %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox{style: 'padding-left: 5px'}
-                  %div{style: 'padding-top: 4px; width: 60px'}
-                    Select all
-              %thead
-                %tr
-                  - for field in fields
-                    %th{ class:'header-{{field}} {% if view|field_orderable:field %}header {% if field == order %}{% if order_asc %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}', id:'header-{{field}}' }
-                      {% get_label field %}
+          %tbody
+            - for obj in object_list
+              %tr{ class:'{% cycle "row2" "row1" %} {% if not obj.is_active and obj|is_smartobject %}inactive{% endif %}'}
+                -for field in fields
+                  %td{ class:'value-{{field}} {% get_class field obj %}{% if field in link_fields %} clickable{% endif %}'}
+                    - if field in link_fields
+                      <a {% if pjax %}data-pjax='{{ pjax }}'{% endif %} href="{% get_field_link field obj %}">{% get_value obj field %}</a>
+                    - else
+                      {% get_value obj field %}
 
-                %tbody
-                  - for obj in object_list
-                    %tr{ class:'{% cycle "row2" "row1" %} {% if not obj.is_active and obj|is_smartobject %}inactive{% endif %}'}
-                      -for field in fields
-                        %td{ class:'value-{{field}} {% get_class field obj %}{% if field in link_fields %} clickable{% endif %}'}
-                          - if field in link_fields
-                            <a {% if pjax %}data-pjax='{{ pjax }}'{% endif %} href="{% get_field_link field obj %}">{% get_value obj field %}</a>
-                          - else
-                            {% get_value obj field %}
+            -empty
+              %tr.empty_list
+                -for field in fields
+                  %td
 
-                  - empty
-                    %tr.empty_list
-                      - for field in fields
-                        %td
+    -block extra-rows
 
-          - block extra-rows
-
-        - block post-table
+  -block post-table
 
   {% block paginator %}
-  .row
-    - include "smartmin/sidebar_pagination.haml"
+    -include "includes/pagination.haml"
 
 {% endblock pjax %}
 {% endblock content %}
@@ -112,19 +58,10 @@
   {% else %}
     current_label_id = 0;
   {% endif %}
-    $(document).on("click", '.multiselect-select-all', function(event) {
-      if($(this).hasClass('checked')){
-        $(this).removeClass('checked');
-        $('tr.checked > td > div.object-row-checkbox').each(function(){
-          $(this).click();
-        });
-      }else{
-        $(this).addClass('checked');
-        $('tr:not(.checked) > td > div.object-row-checkbox').each(function(){
-          $(this).click();
-        });
-      }
-    });
+  $(document).on("click", '.multiselect-select-all', function(event) {
+    $(this).toggleClass('checked');
+    $('td temba-checkbox').each(function() { $($(this)[0].shadowRoot).children('temba-field').click();});
+  });
 
 <script>
   $(document).ready(function(){
@@ -144,3 +81,28 @@
 </script>
 
 {% endblock %}
+
+-block extra-style
+  {{block.super}}
+  :css
+    .page-content {
+      align-self: auto;
+      max-width: 100%;
+    }
+
+    .multiselect-select-all{
+      font-size: 16px !important;
+      padding-left: 5px;
+      margin-right: 8px;
+    }
+    .multiselect-select-all a {
+        margin-left: 5px;
+        margin-right: 5px;
+     }
+
+     div.multiselect-header {
+        padding-bottom: 0px !important;
+        padding-left: 0px !important;
+        display: inline;
+        vertical-align: sub;
+     }

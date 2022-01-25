@@ -6,9 +6,11 @@
 
       #menu {
         display: flex;
-        position: absolute;
-        top: 40px;
-        right: 20px;
+        flex-direction: row;
+        align-items: flex-end;
+        margin-top:-80px;
+        min-height:81px;
+        padding-bottom:15px;
 
         .submenu {
           display: flex;
@@ -52,7 +54,8 @@
           .icon-menu-4 {
             width: 15px;
             margin-left: 0px;
-            margin-right: 20px;
+            margin-right: 30px;
+            margin-top:-60px;
             font-size: 36px;
             color: var(--color-nav-unselected);
           }
@@ -77,12 +80,10 @@
 
           .title {
             font-size: 12px;
-            font-family: 'Helvetica Neue', sans-serif;
             letter-spacing: 0.05em;
             margin-top: 3px;
             font-weight: 400;
             color: var(--color-nav-unselected);
-
           }
 
           .circle {
@@ -131,6 +132,7 @@
   {% endlessblock %}
 
 #menu
+  .flex-grow
   -if org_perms.msgs.msg_inbox and not request.user.is_superuser
     %a{href:"{% url 'msgs.msg_inbox' %}", class:"{% active request 'inbox|outbox|broadcast|call|msg/filter|msg/flow|msg/archived|failed' %}"}
       .circle
@@ -141,21 +143,21 @@
   -if org_perms.contacts.contact_list and not request.user.is_superuser
     %a{href:"{% url 'contacts.contact_list' %}", class:"{% active request 'contact|imports' %}"}
       .circle
-        .icon-vcard
+        .icon-contact
       .title 
         -trans "contacts"
 
   -if org_perms.flows.flow_list and not request.user.is_superuser
     %a{href:"{% url 'flows.flow_list' %}", class:"{% active request '(?<!msg)/flow' %}"}
       .circle
-        .icon-tree-2.icon-3
+        .icon-flow.icon-3
       .title 
         -trans "flows"
 
   -if org_perms.campaigns.campaign_list and not request.user.is_superuser
     %a{href:"{% url 'campaigns.campaign_list' %}", class:"{% active request 'campaign' %}"}
       .circle
-        .icon-instant
+        .icon-campaign
       .title
         -trans "scenarios"
 
@@ -166,8 +168,8 @@
       .title
         -trans "triggers"
 
-  -if org_perms.tickets.ticket_open and not request.user.is_superuser and user_org and user_org.has_ticketer
-    %a{href:"{% url 'tickets.ticket_open' %}", class:"{% active request 'ticket' %}"}
+  -if org_perms.tickets.ticket_list and not request.user.is_superuser and user_org and user_org.has_ticketer
+    %a{href:"{% url 'tickets.ticket_list' %}", class:"{% active request 'ticket' %}"}
       .circle
         .icon-ticket
       .title
@@ -248,12 +250,11 @@
               .title
                 -trans "end"
           -else
-            %a{href:"{% url 'users.user_logout' %}"}
+            %a(href="{% url 'users.user_logout' %}?next=/users/login")
               .circle
                 .icon-exit
-              .title
-                -trans "logout"
-
+              .title.whitespace-nowrap
+                -trans "sign out"
   -else
     -block temba-login
 

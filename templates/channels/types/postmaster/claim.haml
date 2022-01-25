@@ -1,19 +1,16 @@
 -extends "channels/channel_claim_form.html"
--load i18n
+-load i18n compress temba
 
--block title
-  .medium-help.float-left{class:"{{ view.channel_type.icon }}"}
-
-  %h2.font_normalize.header-margin
-    {{ title }}
-  %span
+-block pre-form
+  -blocktrans trimmed with name=brand.name
     To register Postmaster, hit the SCAN QR Code button in the app.
 
 -block fields
   -if po_qr and po_qr.qr_base64
+
     %div{class:"pm-qr;"}
-      %img{ src:"data:png;base64, {{po_qr.qr_base64}}" }{style:"padding-left: 110px; padding-bottom: 20px"}
-      %div{style:"padding-left: 100px; padding-bottom: 20px"}
+      %img{ src:"data:png;base64, {{po_qr.qr_base64}}" }{style:"padding-left: 186px; padding-bottom: 20px"}
+      %div{style:"padding-left: 176px; padding-bottom: 20px"}
         %div
           %code
             Claim Code: {{po_qr.data.claim_code}}
@@ -31,26 +28,23 @@
           %label{for:"enable-multiple-span"}{style:"display: inline; vertical-align: -webkit-baseline-middle;"}
             Add Multiple Devices
 
--block form-buttons
+  -block form-buttons
 
--block extra-script
-  {{ block.super }}
+-if po_qr and po_qr.qr_base64
+  -block extra-script
+    {{ block.super }}
 
-  :javascript
-    $(function(){
-      $("#id_country").select2();
-    });
-
-    setInterval(
-    function pollUntilDone(url, interval, timeout) {
-      if($('#enable-multiple')[0].checked == false){
-        $.get('{% url "ext.api.v2.channel.status" %}.json?api_key={{po_qr.data.api_key}}', function(relayer_id) {
-          if (relayer_id && relayer_id.length > 0) {
-            window.location = '{% url "channels.channel_manage" %}?search=' + relayer_id;
-          }
-        });
-      }
-    }, 5000);
+    :javascript
+      setInterval(
+      function pollUntilDone(url, interval, timeout) {
+        if($('#enable-multiple')[0].checked == false){
+          $.get('{% url "ext.api.v2.channel.status" %}.json?api_key={{po_qr.data.api_key}}', function(relayer_id) {
+            if (relayer_id && relayer_id.length > 0) {
+              window.location = '{% url "channels.channel_manage" %}?search=' + relayer_id;
+            }
+          });
+        }
+      }, 5000);
 
 -block extra-style
   {{ block.super }}

@@ -1,4 +1,3 @@
-import time
 from datetime import datetime, timedelta
 
 import pytz
@@ -6,12 +5,10 @@ import pytz
 from django.urls import reverse
 from django.utils import timezone
 
-from temba.contacts.omnibox import omnibox_serialize
+from temba.contacts.search.omnibox import omnibox_serialize
 from temba.msgs.models import Broadcast
-from temba.tests import MigrationTest, TembaTest
-from temba.triggers.models import Trigger
-from temba.utils import json
-from temba.tests import TembaTest
+from temba.tests import CRUDLTestMixin, TembaTest
+from temba.utils.dates import datetime_to_str
 
 from .models import Schedule
 
@@ -32,7 +29,7 @@ def create_schedule(user, repeat_period, repeat_days=(), start_date=None):
 class ScheduleTest(TembaTest):
     def setUp(self):
         super().setUp()
-        self.joe = self.create_contact(name="Joe Blow", number="123")
+        self.joe = self.create_contact("Joe Blow", phone="123")
 
     def test_get_repeat_days_display(self):
         sched = Schedule.create_schedule(self.org, self.user, timezone.now(), Schedule.REPEAT_WEEKLY, "M")
@@ -227,7 +224,7 @@ class ScheduleTest(TembaTest):
 
             next_fire = sched.next_fire
             for next in tc["next"]:
-                next_fire = Schedule.get_next_fire(sched, next_fire)
+                next_fire = sched.calculate_next_fire(next_fire)
                 expected_next = tz.localize(next) if next else None
                 self.assertEqual(expected_next, next_fire, f"{label}: {expected_next} != {next_fire}")
 
@@ -236,16 +233,14 @@ class ScheduleTest(TembaTest):
     def test_schedule_ui(self):
         self.login(self.admin)
 
-        joe = self.create_contact("Joe Blow", "123")
-
         # test missing recipients
-        omnibox = omnibox_serialize(self.org, [], [], True)
+        omnibox = omnibox_serialize(self.org, [], [], json_encode=True)
         post_data = dict(text="message content", omnibox=omnibox, sender=self.channel.pk, schedule=True)
         response = self.client.post(reverse("msgs.broadcast_send"), post_data, follow=True)
         self.assertContains(response, "At least one recipient is required")
 
         # missing message
-        omnibox = omnibox_serialize(self.org, [], [self.joe], True)
+        omnibox = omnibox_serialize(self.org, [], [self.joe], json_encode=True)
         post_data = dict(text="", omnibox=omnibox, sender=self.channel.pk, schedule=True)
         response = self.client.post(reverse("msgs.broadcast_send"), post_data, follow=True)
         self.assertContains(response, "This field is required")
@@ -270,20 +265,20 @@ class ScheduleTest(TembaTest):
         broadcast = response.context["object"]
 
         # update our message
-        post_data = dict(message="An updated scheduled message", omnibox="c-%s" % joe.uuid)
+        omnibox = omnibox_serialize(self.org, [], [self.joe], json_encode=True)
+        post_data = dict(message="An updated scheduled message", omnibox=omnibox)
         self.client.post(reverse("msgs.broadcast_update", args=[broadcast.pk]), post_data)
         self.assertEqual(Broadcast.objects.get(id=broadcast.id).text, {"base": "An updated scheduled message"})
 
         start = datetime(2045, 9, 19, hour=10, minute=15, second=0, microsecond=0)
         start = pytz.utc.normalize(self.org.timezone.localize(start))
-        start_stamp = time.mktime(start.timetuple())
 
         # update the schedule
         post_data = dict(
             repeat_period=Schedule.REPEAT_WEEKLY,
             repeat_days_of_week="W",
             start="later",
-            start_datetime_value=start_stamp,
+            start_datetime=datetime_to_str(start, "%Y-%m-%d %H:%M", self.org.timezone),
         )
         response = self.client.post(reverse("schedules.schedule_update", args=[broadcast.schedule.pk]), post_data)
 
@@ -301,150 +296,12 @@ class ScheduleTest(TembaTest):
 
         self.assertIsNotNone(str(schedule))
 
-    def test_update(self):
-        self.login(self.admin)
-
-        # create a schedule broadcast
-        self.client.post(
-            reverse("msgs.broadcast_send"),
-            {
-                "text": "A scheduled message to Joe",
-                "omnibox": omnibox_serialize(self.org, [], [self.joe], True),
-                "sender": self.channel.id,
-                "schedule": True,
-            },
-        )
-
-        schedule = Broadcast.objects.get().schedule
-
-        update_url = reverse("schedules.schedule_update", args=[schedule.id])
-
-        # viewer can't access
-        self.login(self.user)
-        response = self.client.get(update_url)
-        self.assertLoginRedirect(response)
-
-        # editor can access
-        self.login(self.editor)
-        response = self.client.get(update_url)
-        self.assertEqual(response.status_code, 200)
-
-        # as can admin user
-        self.login(self.admin)
-        response = self.client.get(update_url)
-        self.assertEqual(response.status_code, 200)
-
-        now = timezone.now()
-        now_stamp = time.mktime(now.timetuple())
-
-        tommorrow = now + timedelta(days=1)
-        tommorrow_stamp = time.mktime(tommorrow.timetuple())
-
-        # user in other org can't make changes
-        self.login(self.admin2)
-        response = self.client.post(update_url, {"start": "never", "repeat_period": "D"})
-        self.assertLoginRedirect(response)
-
-        # check schedule is unchanged
-        schedule.refresh_from_db()
-        self.assertEqual("O", schedule.repeat_period)
-
-        self.login(self.admin)
-
-        # update to never start
-        response = self.client.post(update_url, {"start": "never", "repeat_period": "O"})
-        self.assertEqual(302, response.status_code)
-
-        schedule.refresh_from_db()
-        self.assertIsNone(schedule.next_fire)
-
-        self.client.post(update_url, {"start": "stop", "repeat_period": "O"})
-
-        schedule.refresh_from_db()
-        self.assertIsNone(schedule.next_fire)
-
-        response = self.client.post(
-            update_url, {"start": "now", "repeat_period": "O", "start_datetime_value": "%d" % now_stamp}
-        )
-        self.assertEqual(302, response.status_code)
-
-        schedule.refresh_from_db()
-        self.assertEqual(schedule.repeat_period, "O")
-        self.assertFalse(schedule.next_fire)
-
-        response = self.client.post(
-            update_url, {"repeat_period": "D", "start": "later", "start_datetime_value": "%d" % tommorrow_stamp}
-        )
-        self.assertEqual(302, response.status_code)
-
-        schedule.refresh_from_db()
-        self.assertEqual(schedule.repeat_period, "D")
-
-        response = self.client.post(
-            update_url, {"repeat_period": "D", "start": "later", "start_datetime_value": "%d" % tommorrow_stamp}
-        )
-        self.assertEqual(302, response.status_code)
-
-        schedule.refresh_from_db()
-        self.assertEqual(schedule.repeat_period, "D")
-
-        # can't omit repeat_days_of_week for weekly
-        response = self.client.post(
-            update_url,
-            {
-                "repeat_period": "W",
-                "start": "later",
-                "repeat_days_of_week": "",
-                "start_datetime_value": str(now_stamp),
-            },
-        )
-
-        self.assertFormError(response, "form", "__all__", "Must specify at least one day of the week")
-
-        schedule.refresh_from_db()
-        self.assertEqual(schedule.repeat_period, "D")  # unchanged
-        self.assertEqual(schedule.repeat_days_of_week, "")
-
-        # can't set repeat_days_of_week to invalid day
-        response = self.client.post(
-            update_url,
-            {
-                "repeat_period": "W",
-                "start": "later",
-                "repeat_days_of_week": "X",
-                "start_datetime_value": str(now_stamp),
-            },
-        )
-
-        self.assertFormError(response, "form", "repeat_days_of_week", "X is not a valid day of the week")
-
-        schedule.refresh_from_db()
-        self.assertEqual(schedule.repeat_period, "D")  # unchanged
-        self.assertEqual(schedule.repeat_days_of_week, "")
-
-        # can set to valid days
-        response = self.client.post(
-            update_url,
-            {
-                "repeat_period": "W",
-                "start": "later",
-                "repeat_days_of_week": "MF",
-                "start_datetime_value": str(now_stamp),
-            },
-        )
-
-        self.assertEqual(response.status_code, 302)
-
-        schedule.refresh_from_db()
-        self.assertEqual(schedule.repeat_period, "W")
-        self.assertEqual(schedule.repeat_days_of_week, "MF")
-
     def test_update_near_day_boundary(self):
         self.org.timezone = pytz.timezone("US/Eastern")
         self.org.save()
         tz = self.org.timezone
 
-        omnibox = omnibox_serialize(self.org, [], [self.joe], True)
+        omnibox = omnibox_serialize(self.org, [], [self.joe], json_encode=True)
 
         self.login(self.admin)
         post_data = dict(text="A scheduled message to Joe", omnibox=omnibox, sender=self.channel.pk, schedule=True)
@@ -463,7 +320,7 @@ class ScheduleTest(TembaTest):
         post_data = dict()
         post_data["repeat_period"] = "D"
         post_data["start"] = "later"
-        post_data["start_datetime_value"] = "%d" % time.mktime(start_date.timetuple())
+        post_data["start_datetime"] = (datetime_to_str(start_date, "%Y-%m-%d %H:%M", self.org.timezone),)
         self.client.post(update_url, post_data)
         sched = Schedule.objects.get(pk=sched.pk)
 
@@ -477,7 +334,7 @@ class ScheduleTest(TembaTest):
         post_data = dict()
         post_data["repeat_period"] = "D"
         post_data["start"] = "later"
-        post_data["start_datetime_value"] = "%d" % time.mktime(start_date.timetuple())
+        post_data["start_datetime"] = (datetime_to_str(start_date, "%Y-%m-%d %H:%M", self.org.timezone),)
         self.client.post(update_url, post_data)
         sched = Schedule.objects.get(pk=sched.pk)
 
@@ -485,27 +342,94 @@ class ScheduleTest(TembaTest):
         self.assertIn("04:45:00+00:00", str(sched.next_fire))
 
 
-class RemoveOrphansMigrationTest(MigrationTest):
-    app = "schedules"
-    migrate_from = "0006_initial"
-    migrate_to = "0007_remove_orphans"
+class ScheduleCRUDLTest(TembaTest, CRUDLTestMixin):
+    def test_update(self):
+        # create a scheduled broadcast
+        schedule = Schedule.create_blank_schedule(self.org, self.admin)
+        Broadcast.create(
+            self.org,
+            self.admin,
+            {"eng": "Hi"},
+            contacts=[self.create_contact("Jim", phone="1234")],
+            base_language="eng",
+            schedule=schedule,
+        )
+        update_url = reverse("schedules.schedule_update", args=[schedule.id])
 
-    def setUpBeforeMigration(self, apps):
-        contact1 = self.create_contact("Bob", twitter="bob")
-        favorites = self.get_flow("favorites")
-
-        # create schedule attached to a trigger
-        self.trigger = Trigger.create(
-            self.org, self.admin, Trigger.TYPE_SCHEDULE, flow=favorites, schedule=create_schedule(self.admin, "D")
+        self.assertUpdateFetch(
+            update_url,
+            allow_viewers=False,
+            allow_editors=True,
+            form_fields=["start_datetime", "repeat_period", "repeat_days_of_week"],
         )
 
-        # create schedule attached to a broadcast
-        self.broadcast = Broadcast.create(
-            self.org, self.admin, "hi there", contacts=[contact1], schedule=create_schedule(self.admin, "W")
+        def datepicker_fmt(d: datetime):
+            return datetime_to_str(d, "%Y-%m-%d %H:%M", self.org.timezone)
+
+        today = timezone.now().replace(second=0, microsecond=0)
+        yesterday = today - timedelta(days=1)
+        tomorrow = today + timedelta(days=1)
+
+        # update to start in past with no repeat
+        self.assertUpdateSubmit(update_url, {"start_datetime": datepicker_fmt(yesterday), "repeat_period": "O"})
+
+        schedule.refresh_from_db()
+        self.assertEqual("O", schedule.repeat_period)
+        self.assertIsNone(schedule.next_fire)
+
+        # update to start in future with no repeat
+        self.assertUpdateSubmit(update_url, {"start_datetime": datepicker_fmt(tomorrow), "repeat_period": "O"})
+
+        schedule.refresh_from_db()
+        self.assertEqual("O", schedule.repeat_period)
+        self.assertEqual(tomorrow, schedule.next_fire)
+
+        # update to start now with daily repeat
+        self.assertUpdateSubmit(update_url, {"start_datetime": datepicker_fmt(today), "repeat_period": "D"})
+
+        schedule.refresh_from_db()
+        self.assertEqual("D", schedule.repeat_period)
+        self.assertEqual(tomorrow, schedule.next_fire)
+
+        # try to submit weekly without specifying days of week
+        self.assertUpdateSubmit(
+            update_url,
+            {"start_datetime": datepicker_fmt(today), "repeat_period": "W"},
+            form_errors={"__all__": "Must specify at least one day of the week."},
+            object_unchanged=schedule,
         )
 
-        # create orphan schedule
-        create_schedule(self.admin, "M")
+        # try to submit weekly with an invalid day of the week (UI doesn't actually allow this)
+        self.assertUpdateSubmit(
+            update_url,
+            {"start_datetime": datepicker_fmt(today), "repeat_period": "W", "repeat_days_of_week": ["X"]},
+            form_errors={"repeat_days_of_week": "Select a valid choice. X is not one of the available choices."},
+            object_unchanged=schedule,
+        )
 
-    def test_merged(self):
-        self.assertEqual(Schedule.objects.count(), 2)
+        # update with valid days of the week
+        self.assertUpdateSubmit(
+            update_url,
+            {"start_datetime": datepicker_fmt(today), "repeat_period": "W", "repeat_days_of_week": ["M", "F"]},
+        )
+
+        schedule.refresh_from_db()
+        self.assertEqual("W", schedule.repeat_period)
+        self.assertEqual("MF", schedule.repeat_days_of_week)
+
+        # update to repeat monthly
+        self.assertUpdateSubmit(
+            update_url,
+            {"start_datetime": datepicker_fmt(today), "repeat_period": "M"},
+        )
+
+        schedule.refresh_from_db()
+        self.assertEqual("M", schedule.repeat_period)
+        self.assertIsNone(schedule.repeat_days_of_week)
+
+        # update with empty start date to signify unscheduling
+        self.assertUpdateSubmit(update_url, {"start_datetime": "", "repeat_period": "O"})
+
+        schedule.refresh_from_db()
+        self.assertEqual("O", schedule.repeat_period)
+        self.assertIsNone(schedule.next_fire)

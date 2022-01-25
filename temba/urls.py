@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls import include, url
 from django.conf.urls.static import static
 from django.contrib.auth.models import AnonymousUser, User
+from django.views.generic import RedirectView
 from django.views.i18n import JavaScriptCatalog
 
 from celery.signals import worker_process_init
@@ -44,11 +45,11 @@ urlpatterns = [
     url(r"^{}".format(VHOST_NAME), include("temba.triggers.urls")),
     url(r"^{}relayers/relayer/sync/(\d+)/$".format(VHOST_NAME), sync, {}, "sync"),
     url(r"^{}relayers/relayer/register/$".format(VHOST_NAME), register, {}, "register"),
+    url(r"^{}users/user/forget/".format(VHOST_NAME), RedirectView.as_view(pattern_name="orgs.user_forget", permanent=True)),
     url(r"^{}users/".format(VHOST_NAME), include("smartmin.users.urls")),
     url(r"^{}imports/".format(VHOST_NAME), include("smartmin.csv_imports.urls")),
     url(r"^{}assets/".format(VHOST_NAME), include("temba.assets.urls")),
-    url(r"^{}jsi18n/$".format(VHOST_NAME), JavaScriptCatalog.as_view(), js_info_dict,
-        name="django.views.i18n.javascript_catalog"),
+    url(r"^{}jsi18n/$".format(VHOST_NAME), JavaScriptCatalog.as_view(), js_info_dict, name="django.views.i18n.javascript_catalog"),
 ]
 
 if settings.DEBUG:
@@ -72,12 +73,9 @@ def track_user(self):  # pragma: no cover
     """
     Should the current user be tracked
     """
-    # don't track unless we are on production
-    if not settings.IS_PROD:
-        return False
 
     # nothing to report if they haven't logged in
-    if not self.is_authenticated or self.is_anonymous:
+    if not self.is_authenticated:
         return False
 
     return True

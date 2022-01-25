@@ -6,7 +6,7 @@ from smartmin.views import SmartFormView, SmartReadView
 from django import forms
 from django.conf import settings
 from django.contrib import messages
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import FileResponse, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.template.response import TemplateResponse
 from django.urls import reverse
 from django.utils import timezone, translation
@@ -18,7 +18,9 @@ from django.views.generic import View
 
 from temba.orgs.views import OrgPermsMixin
 from temba.utils import json
+from temba.utils.s3 import public_file_storage
 from temba.utils.text import random_string
+from temba.utils.views import ComponentFormMixin
 
 from ...models import Ticketer
 from ...views import BaseConnectView
@@ -107,14 +109,14 @@ class ConnectView(BaseConnectView):
             org=self.org,
             user=self.request.user,
             ticketer_type=ZendeskType.slug,
-            name=f"Zendesk ({subdomain})",
+            name=subdomain,
             config=config,
         )
 
         return HttpResponseRedirect(self.get_success_url())
 
 
-class ConfigureView(OrgPermsMixin, SmartReadView):
+class ConfigureView(ComponentFormMixin, OrgPermsMixin, SmartReadView):
     model = Ticketer
     fields = ()
     permission = "tickets.ticketer_configure"
@@ -127,8 +129,8 @@ class ConfigureView(OrgPermsMixin, SmartReadView):
 
     def get_gear_links(self):
         links = []
-        if self.has_org_perm("tickets.ticket_filter"):
-            links.append(dict(title=_("Tickets"), href=reverse("tickets.ticket_filter", args=[self.object.uuid])))
+        if self.has_org_perm("tickets.ticket_list"):
+            links.append(dict(title=_("Tickets"), href=reverse("tickets.ticket_list")))
         return links
 
     def get_context_data(self, **kwargs):
@@ -159,7 +161,7 @@ class ManifestView(View):
                 "id": domain,
                 "author": "Nyaruka",
                 "version": "v0.0.1",
-                "channelback_files": False,
+                "channelback_files": True,
                 "push_client_id": settings.ZENDESK_CLIENT_ID,
                 "urls": {
                     "admin_ui": f"https://{domain}{reverse('tickets.types.zendesk.admin_ui')}",
@@ -292,3 +294,19 @@ class AdminUIView(SmartFormView):
             "metadata": json.dumps({"ticketer": str(ticketer.uuid), "secret": secret}),
         }
         return TemplateResponse(request=self.request, template=self.return_template, context=context)
+
+
+class FileCallbackView(View):
+    """
+    When we use the Zendesk Push API to send attachments, we send relative URLs which Zendesk later POSTs to get the
+    file content.
+    """
+
+    @csrf_exempt
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        path = "attachments/" + kwargs["path"]
+        assert ".." not in kwargs["path"]
+        return FileResponse(public_file_storage.open(path))

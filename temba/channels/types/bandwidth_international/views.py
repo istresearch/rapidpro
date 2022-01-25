@@ -15,8 +15,7 @@ from ...models import Channel
 from ...views import (
     ALL_COUNTRIES,
     BaseClaimNumberMixin,
-    ClaimViewMixin,
-    TWILIO_SEARCH_COUNTRIES)
+    ClaimViewMixin)
 
 
 class ClaimView(BaseClaimNumberMixin, SmartFormView):
@@ -49,7 +48,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         self.client = None
 
     def get_search_countries_tuple(self):
-            return TWILIO_SEARCH_COUNTRIES
+            return ALL_COUNTRIES
 
     def get_supported_countries_tuple(self):
             return ALL_COUNTRIES
@@ -80,7 +79,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         return HttpResponseRedirect(self.get_success_url())
 
     def claim_number(self, user, phone_number, country, role):
-        analytics.track(user.username, "temba.channel_claim_bandwidth_international",
+        analytics.track(user, "temba.channel_claim_bandwidth_international",
                         properties=dict(bwi_sender=BWI_SENDER))
         return None
 

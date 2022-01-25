@@ -15,7 +15,6 @@ from temba.orgs.models import BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_APPLICATION_S
 from ...models import Channel
 from ...views import (
     ALL_COUNTRIES,
-    TWILIO_SEARCH_COUNTRIES,
     BaseClaimNumberMixin,
     ClaimViewMixin,
 )
@@ -59,7 +58,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         return ["US"]
 
     def get_search_url(self):
-        return reverse("channels.channel_search_numbers")
+        return ""
 
     def get_claim_url(self):
         return reverse("channels.types.bandwidth.claim")
@@ -93,7 +92,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         return HttpResponseRedirect(self.get_success_url())
 
     def claim_number(self, user, phone_number, country, role):
-        analytics.track(user.username, "temba.channel_claim_bandwidth_international",
+        analytics.track(user, "temba.channel_claim_bandwidth_international",
                         properties=dict(address=phone_number))
         return None
 
@@ -115,7 +114,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             uuid=self.uuid
         )
 
-        analytics.track(user.username, "temba.channel_claim_bandwidth", properties=dict(number=phone_number))
+        analytics.track(user, "temba.channel_claim_bandwidth", properties=dict(number=phone_number))
 
         return channel
 

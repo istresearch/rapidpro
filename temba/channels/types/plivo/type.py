@@ -1,11 +1,13 @@
 import requests
 
+from django.conf.urls import url
 from django.utils.translation import ugettext_lazy as _
 
 from temba.channels.models import Channel, ChannelType
-from temba.channels.types.plivo.views import ClaimView
-from temba.contacts.models import TEL_SCHEME
+from temba.contacts.models import URN
 from temba.utils.http import http_headers
+
+from .views import ClaimView, SearchView
 
 
 class PlivoType(ChannelType):
@@ -21,14 +23,14 @@ class PlivoType(ChannelType):
     name = "Plivo"
     icon = "icon-channel-plivo"
 
-    claim_blurb = _(
-        """Easily add a two way number you have configured with <a href="https://www.plivo.com/">Plivo</a> using their APIs."""
-    )
+    claim_blurb = _("Easily add a two way number you have configured with %(link)s using their APIs.") % {
+        "link": '<a href="https://www.plivo.com/">Plivo</a>'
+    }
     claim_view = ClaimView
 
     show_config_page = False
 
-    schemes = [TEL_SCHEME]
+    schemes = [URN.TEL_SCHEME]
     max_length = 1600
 
     def deactivate(self, channel):
@@ -39,3 +41,6 @@ class PlivoType(ChannelType):
             auth=(config[Channel.CONFIG_PLIVO_AUTH_ID], config[Channel.CONFIG_PLIVO_AUTH_TOKEN]),
             headers=http_headers(extra={"Content-Type": "application/json"}),
         )
+
+    def get_urls(self):
+        return [self.get_claim_url(), url(r"^search$", SearchView.as_view(), name="search")]

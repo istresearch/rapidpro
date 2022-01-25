@@ -11,6 +11,7 @@ from django.db import transaction
 from temba.api.models import APIPermission, SSLPermission
 from temba.api.support import InvalidQueryError
 from temba.contacts.models import URN
+from temba.utils import str_to_bool
 from temba.utils.views import NonAtomicMixin
 
 from .serializers import BulkActionFailure
@@ -86,11 +87,13 @@ class BaseAPIView(NonAtomicMixin, generics.GenericAPIView):
         return context
 
     def normalize_urn(self, value):
-        if self.request.user.get_org().is_anon:
+        org = self.request.user.get_org()
+
+        if org.is_anon:
             raise InvalidQueryError("URN lookups not allowed for anonymous organizations")
 
         try:
-            return URN.identity(URN.normalize(value))
+            return URN.identity(URN.normalize(value, country_code=org.default_country_code))
         except ValueError:
             raise InvalidQueryError("Invalid URN: %s" % value)
 
@@ -241,7 +244,7 @@ class DeleteAPIMixin(mixins.DestroyModelMixin):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def perform_destroy(self, instance):
-        instance.release()
+        instance.release(self.request.user)
 
 
 class CreatedOnCursorPagination(CursorPagination):
@@ -250,5 +253,10 @@ class CreatedOnCursorPagination(CursorPagination):
 
 
 class ModifiedOnCursorPagination(CursorPagination):
-    ordering = ("-modified_on", "-id")
+    def get_ordering(self, request, queryset, view):
+        if str_to_bool(request.GET.get("reverse")):
+            return "modified_on", "id"
+        else:
+            return "-modified_on", "-id"
+
     offset_cutoff = 1000000

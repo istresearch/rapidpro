@@ -1,6 +1,5 @@
 from unittest.mock import patch
 
-from django.test import override_settings
 from django.urls import reverse
 
 from temba.tests import MockResponse, TembaTest
@@ -31,9 +30,10 @@ class FacebookTypeTest(TembaTest):
 
         self.login(self.admin)
 
-        # check that claim page URL appears on claim list page
-        response = self.client.get(reverse("channels.channel_claim"))
-        self.assertContains(response, url)
+        # Switched to FBA
+        # # check that claim page URL appears on claim list page
+        # response = self.client.get(reverse("channels.channel_claim"))
+        # self.assertContains(response, url)
 
         # can fetch the claim page
         response = self.client.get(url)
@@ -57,24 +57,22 @@ class FacebookTypeTest(TembaTest):
         # should be on our configuration page displaying our secret
         self.assertContains(response, channel.config[Channel.CONFIG_SECRET])
 
-    @override_settings(IS_PROD=True)
     @patch("requests.delete")
     def test_release(self, mock_delete):
         mock_delete.return_value = MockResponse(200, json.dumps({"success": True}))
-        self.channel.release()
+        self.channel.release(self.admin)
 
         mock_delete.assert_called_once_with(
             "https://graph.facebook.com/v3.3/me/subscribed_apps", params={"access_token": "09876543"}
         )
 
-    @override_settings(IS_PROD=True)
     def test_new_conversation_triggers(self):
         flow = self.create_flow()
 
         with patch("requests.post") as mock_post:
             mock_post.return_value = MockResponse(200, json.dumps({"success": True}))
 
-            trigger = Trigger.create(self.org, self.admin, Trigger.TYPE_NEW_CONVERSATION, flow, self.channel)
+            trigger = Trigger.create(self.org, self.admin, Trigger.TYPE_NEW_CONVERSATION, flow, channel=self.channel)
 
             mock_post.assert_called_once_with(
                 "https://graph.facebook.com/v3.3/12345/thread_settings",

@@ -8,21 +8,18 @@ from __future__ import unicode_literals
 from getenv import env
 import dj_database_url
 import django_cache_url
-from datetime import datetime
 from django.utils.translation import ugettext_lazy as _
-from django.conf.urls import include, url
 from temba.settings_common import *  # noqa
-from django.urls import base
 
 AWS_QUERYSTRING_EXPIRE = '157784630'
-SUB_DIR = env('SUB_DIR', required=False) 
+SUB_DIR = env('SUB_DIR', required=False)
 COURIER_URL = env('COURIER_URL', 'http://localhost:8080')
 DEFAULT_TPS = env('DEFAULT_TPS', 10)    # Default Transactions Per Second for newly create Channels.
 MAX_TPS = env('MAX_TPS', 50)            # Max configurable Transactions Per Second for newly Created Channels and Updated Channels.
 
 MAX_ORG_LABELS = int(env('MAX_ORG_LABELS', 500))
 
-POST_OFFICE_QR_URL = env('POST_OFFICE_QR_URL', 'https://localhost:8088/postoffice/engage/claim')
+POST_OFFICE_QR_URL = env('POST_OFFICE_QR_URL', 'http://localhost:8088/postoffice/engage/claim')
 POST_OFFICE_API_KEY = env('POST_OFFICE_API_KEY', 'abc123')
 
 if SUB_DIR is not None and len(SUB_DIR) > 0:
@@ -31,9 +28,8 @@ if SUB_DIR is not None and len(SUB_DIR) > 0:
 MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
-    INSTALLED_APPS +
-    tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(','))) +
-    ('raven.contrib.django.raven_compat',))
+    tuple(filter(lambda tup : tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) +
+    tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(','))))
 
 ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
 
@@ -58,17 +54,15 @@ if CACHES['default']['BACKEND'] == 'django_redis.cache.RedisCache':
         CACHES['default']['OPTIONS'] = {}
     CACHES['default']['OPTIONS']['CLIENT_CLASS'] = 'django_redis.client.DefaultClient'
 
-RAVEN_CONFIG = {
-    'dsn': env('RAVEN_DSN'),
-    'release': env('RAPIDPRO_VERSION'),
-}
-
+IS_PROD = env('IS_PROD', 'off') == 'on'
 # -----------------------------------------------------------------------------------
 # Used when creating callbacks for Twilio, Nexmo etc..
 # -----------------------------------------------------------------------------------
 HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
 TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
-
+#if TEMBA_HOST.lower().startswith('https://') or IS_PROD:
+#    from .security_settings import *  # noqa
+SECURE_PROXY_SSL_HEADER = (env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 INTERNAL_IPS = ('*',)
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')
 
@@ -118,7 +112,7 @@ if AWS_STORAGE_BUCKET_NAME:
         DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
 if not AWS_STATIC:
-    if SUB_DIR is not None:
+    if SUB_DIR is not None and len(SUB_DIR) > 0:
         STATIC_URL = '/' + SUB_DIR + '/sitestatic/'
     else:
         STATIC_URL = '/sitestatic/'
@@ -135,7 +129,7 @@ COMPRESS_URL = STATIC_URL
 COMPRESS_ROOT = STATIC_ROOT
 COMPRESS_CSS_HASHING_METHOD = 'content'
 COMPRESS_OFFLINE_MANIFEST = 'manifest-%s.json' % env('RAPIDPRO_VERSION', required=True)
- 
+
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
 MAGE_API_URL = env('MAGE_API_URL', 'http://localhost:8026/api/v1')
 SEND_MESSAGES = env('SEND_MESSAGES', 'off') == 'on'
@@ -156,6 +150,11 @@ FLOW_FROM_EMAIL = env('FLOW_FROM_EMAIL', "no-reply@temba.io")
 SECURE_PROXY_SSL_HEADER = (
     env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 IS_PROD = env('IS_PROD', 'off') == 'on'
+
+try:
+    BRANDING
+except NameError:
+    BRANDING = {}
 
 BRANDING = {
     "rapidpro.io": {
@@ -186,7 +185,7 @@ BRANDING = {
 }
 DEFAULT_BRAND = "rapidpro.io"
 
-if 'SUB_DIR' in locals() and SUB_DIR is not None: 
+if 'SUB_DIR' in locals() and SUB_DIR is not None:
     BRANDING[DEFAULT_BRAND]["sub_dir"] = SUB_DIR
     LOGIN_URL = "/" + SUB_DIR + "/users/login/"
     LOGOUT_URL = "/" + SUB_DIR + "/users/logout/"
@@ -202,13 +201,13 @@ for brand in BRANDING.values():
 
 CHANNEL_TYPES = [
     "temba.channels.types.postmaster.PostmasterType",
+    "temba.channels.types.bandwidth_international.BandwidthInternationalType",
     "temba.channels.types.bandwidth.BandwidthType",
     "temba.channels.types.arabiacell.ArabiaCellType",
     "temba.channels.types.whatsapp.WhatsAppType",
     "temba.channels.types.twilio.TwilioType",
     "temba.channels.types.twilio_messaging_service.TwilioMessagingServiceType",
-    "temba.channels.types.twilio_whatsapp.TwilioWhatsappType",
-    "temba.channels.types.nexmo.NexmoType",
+    "temba.channels.types.vonage.VonageType",
     "temba.channels.types.africastalking.AfricasTalkingType",
     "temba.channels.types.blackmyna.BlackmynaType",
     "temba.channels.types.bongolive.BongoLiveType",
@@ -289,11 +288,5 @@ LOGGING = {
     },
 }
 
-ORG_SEARCH_CONTEXT = []
-
-MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
-
-try:
-    from temba.local_settings import *  
-except ImportError:
-    pass
+# unset BWI key, causes exception if set and we no longer support it anyway
+BWI_KEY = None

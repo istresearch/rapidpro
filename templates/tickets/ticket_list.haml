@@ -4,123 +4,187 @@
 -block page-title
   {{ title }}
 
--block content
-  #pjax
-    -block pjax
-      .row-fluid
-        .span3.sidebox
-          #sidebar-nav
-            %ul.nav.nav-list.level1
-              %li.nav-header
-                -trans "Tickets"
-                %li(class="{% if folder == 'open' %}active{% endif %}")
-                  %a(href="{% url 'tickets.ticket_open' %}")
-                    -trans "Open"
-                %li(class="{% if folder == 'closed' %}active{% endif %}")
-                  %a(href="{% url 'tickets.ticket_closed' %}")
-                    -trans "Closed"
-              %li.nav-header
-                -trans "Services"
-              -for t in ticketers
-                %li(class="{% if ticketer == t %}active{% endif %}")
-                  %a(href="{% url 'tickets.ticket_filter' t.uuid %}")
-                    {{ t.name }}
-        .span9
-          -block buttons
-            -block action-buttons
-              -if org_perms.tickets.ticket_update
-                .list-buttons-container
-                  .list-buttons
-                    -if 'close' in actions
-                      %span.btn-group
-                        %a.object-btn-close(href='#')
-                          %button.btn(data-toggle="tooltip" data-trigger="hover" data-delay="800" data-placement="top" data-original-title="{% trans 'Close' %}")
-                            .glyph.icon-box
-                    -if 'reopen' in actions
-                      %span.btn-group
-                        %a.object-btn-reopen(href='#')
-                          %button.btn(data-toggle="tooltip" data-trigger="hover" data-delay="800" data-placement="top" data-original-title="{% trans 'Reopen' %}")
-                            .glyph.icon-folder-open
-
-          %table.list-table.sms_list.object-list.table.table-condensed
-            %tbody
-              -for object in object_list
-                %tr.object-row.select-row.ticket(id="id-row-{{object.id}}" class="{% cycle row1 row2 %}" data-object-id="{{ object.id }}" data-contact-uuid="{{ object.contact.uuid }}")
-                  -if actions and org_perms.tickets.ticket_update
-                    %td.checkbox.object-row-checkbox
-                      .glyph.object-row-checkbox
-                  %td.ticket-contact
-                    %nobr
-                      {{ object.contact|short_name:user_org }}
-                  -if not ticketer
-                    %td.ticket-ticketer
-                      -if object.ticketer.is_active
-                        %a(href="{% url 'tickets.ticket_filter' object.ticketer.uuid %}")
-                          {{ object.ticketer.name }}
-                      -else
-                        %span.ticketer-inactive
-                          {{ object.ticketer.name }}
-                  %td.ticket-subject
-                    {{ object.subject }}
-                  %td.ticket-body
-                    {{ object.body }}
-                  -if not folder
-                    %td.ticket-status
-                      %span.label(class="status-{{object.status}}")
-                        {{ object.get_status_display }}
-                  %td.opened_on
-                    %span.time
-                      {% short_datetime object.opened_on %}
-
-              -empty
-                %tr.empty
-                  %td(colspan=5)
-                    -trans "No tickets."
-
-          -block paginator
-            -if object_list.count
-              .paginator
-                -include "smartmin/sidebar_pagination.haml"
-
-
--block extra-script
-  {{ block.super }}
-
-  :javascript
-    $('.select-row').live('mouseover', function(){
-      var contactPageUrl = '/contact/read/' + $(this).data('contact-uuid');
-
-      $(this).find('td').not('.checkbox').each(function(){
-        $(this).on('click', function() {
-          document.location.href = contactPageUrl;
-        });
-      });
-    });
-
+-block page-top
 
 -block extra-style
-  {{ block.super }}
+  {{block.super}}
 
   :css
-    td.opened_on {
-      text-align: right;
+
+    html {
+      --color-text-dark: #555;
     }
 
-    .ticketer-inactive {
-      color: #AAA;
+    temba-contact-chat {
+      transition: all 200ms ease-in-out;
+      transition-delay: 200ms;
     }
 
+    .empty {
+      position: absolute;
+      transition: all 200ms ease-in-out;
+      transition-delay: 200ms;
+      opacity: 0;
+      padding: 3px 40px;
+    }
 
--block extra-less
-  -compress css inline
-    {% lessblock %}
-      :plain
-        .label.status-O {
-          border: 1px solid @flat-mutedgreen - #333;
-          background-color: @flat-mutedgreen - #222;
+    .empty h2 {
+      font-size: 36px;
+      margin-top: 16px;
+    }
+
+    .popper {
+      font-size: 48px;
+      display: inline;
+    }
+
+    temba-select[name='ticket-folder'] {
+      margin-bottom: 0.5em;
+      margin-top: -1.3em;
+    }
+
+    .ticket-list {
+      flex-basis: 300px; 
+      flex-grow: 0; 
+      flex-shrink: 0;
+      transition: all 200ms ease-in;
+    }
+
+    @media only screen and (max-width: 850px) {
+      .ticket-list {
+        flex-basis: 200px; 
+      }
+
+    }
+
+    @media only screen and (max-width: 768px) {
+      .ticket-list {
+        flex-basis: 125px; 
+      }
+
+      .widget-container {
+        margin-top:16px !important;
+        padding-top:0px !important;
+        margin-bottom:-120px;
+        padding-bottom:120px;
+      }
+    }
+
+-block extra-script
+  {{block.super}}
+  :javascript
+    function handleContactChanged(event) {
+      var contact = event.target.getSelection();
+      var chat = document.querySelector("temba-contact-chat");
+      chat.contact = contact;
+    }
+    
+    function handleContactHistoryUpdated(event) {
+      // tell our list to refresh since we know things happened
+      var tickets = document.querySelector("temba-contacts");
+      tickets.refresh();
+    }
+
+    function handleTicketsRefreshed(event) {
+      var tickets = event.target;
+
+      // tell our chat to refresh since we know things are new in our list
+      var chat = document.querySelector("temba-contact-chat");
+      var empty = document.querySelector(".empty");
+      var folder = document.querySelector('temba-select[name="ticket-folder"]');
+
+      if (tickets.items.length > 0 || folder.value.value == "closed") {
+        chat.style.opacity = '1';
+        chat.refresh();
+        empty.style.opacity = '0';
+      } else {
+        chat.style.opacity = '0';
+        empty.style.opacity = '1';
+      }
+    }
+
+    var focusNext = null;
+
+    function handleFolderChanged(event) {
+      var contacts = document.querySelector("temba-contacts");
+      var chat = document.querySelector("temba-contact-chat");
+
+      // if we have auto selecting, don't clear the chat
+      if (!contacts.nextSelection) {
+        chat.contact = null;
+      }
+
+      var folder = event.target.values[0].value;
+      contacts.setEndpoint(`/ticket/folder/${folder}/`);
+    }
+
+    function handleTicketUpdated(event) {
+      var ticket = event.detail.ticket;
+      var folder = document.querySelector('temba-select[name="ticket-folder"]');
+      var contacts = document.querySelector("temba-contacts");
+
+      if (ticket.took) {
+        var selection = folder.value.value;
+        // go to our tickets if we aren't on a useable folder
+        if (selection != "open" && selection != "mine") {
+          focusNext = ticket.uuid;
+          folder.setSelection("mine");
+        } else {
+          contacts.refresh();
         }
-        .label.status-C {
-          border: 1px solid @flat-darkred - #111;
-          background-color: @flat-darkred;
-        }
-    {% endlessblock %}
+
+      } else if (ticket.status == "open") {
+        focusNext = ticket.uuid;
+        folder.setSelection("open");
+      } else {
+        contacts.refresh();
+      }
+    }
+
+-block temba-store
+  %temba-store(
+    completion="/mr/docs/{{ LANGUAGE_CODE }}/editor.json"
+    fields="/api/v2/fields.json"
+    globals="/api/v2/globals.json"
+    groups="/api/v2/groups.json")
+      
+-block page-container
+  .flex-col
+    .flex.widget-container(style="height:100vh;margin-top:-121px;padding-top:121px;margin-bottom:-100px;padding-bottom:100px;")
+      .ticket-list.flex.flex-col.m-4.mr-2.pt-4
+        %temba-select(name="ticket-folder" onchange="handleFolderChanged(event)")
+          -for folder in folders
+            %temba-option(name='{{ folder.name }}' value="{{ folder.slug }}" icon="{{ folder.icon }}")
+
+        .flex.flex-grow(style="max-height:100%;margin-bottom:-30px;padding-bottom:30px")
+          %temba-contacts(agent="{{request.user.pk}}" endpoint="{% url 'tickets.ticket_folder' folder='mine' %}" -temba-refreshed="handleTicketsRefreshed" onchange="handleContactChanged(event)")
+
+      .flex-grow.flex-col.h-full.py-4.pb-4.pr-4
+        .empty
+          -if has_tickets
+            %h2
+              .popper
+                🎉
+
+              -blocktrans trimmed
+                All done!
+            .mt-4
+              -blocktrans trimmed
+                Nice work, there aren't any more tickets here that need your attention.
+
+          -else
+            %h2
+              -blocktrans trimmed
+                Tickets
+
+            .mt-6
+              -blocktrans with name=brand.name trimmed
+                {{name}} Tickets makes it easy to chat directly with your contacts.
+
+            .mt-4
+              -blocktrans trimmed
+                Sometimes an automated chatbot isn't enough. When your contacts need to chat with a real person, you can use the
+                Open Ticket action to open a new ticket.
+                  
+                  
+        %temba-contact-chat(agent="{{request.user.pk}}" -temba-refreshed="handleContactHistoryUpdated" -temba-content-changed="handleTicketUpdated")
