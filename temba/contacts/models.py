@@ -86,6 +86,7 @@ class URN:
     PM_MOBYX_SCHEME = "pm_mobyx"
     PM_FBM_SCHEME = "pm_fbm"
     PM_EMAIL_SCHEME = "pm_email"
+    PM_ELEMENT_SCHEME = "pm_element"
 
     SCHEME_CHOICES = (
         (TEL_SCHEME, _("Phone number")),
@@ -119,6 +120,7 @@ class URN:
         (PM_VIBER_SCHEME, _("Postmaster Viber identifier")),
         (PM_VK_SCHEME, _("Postmaster VK identifier")),
         (PM_WHATSAPP_SCHEME, _("Postmaster WhatsApp identifier")),
+        (PM_ELEMENT_SCHEME, _("Postmaster Element identifier")),
     )
 
     VALID_SCHEMES = {s[0] for s in SCHEME_CHOICES}

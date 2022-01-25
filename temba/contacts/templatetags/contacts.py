@@ -38,6 +38,7 @@ URN_SCHEME_ICONS = {
     URN.PM_MOBYX_SCHEME: "icon-tembatoo-mobyx",
     URN.PM_FBM_SCHEME: "icon-tembatoo-fbm",
     URN.PM_EMAIL_SCHEME: "icon-envelop",
+    URN.PM_ELEMENT_SCHEME: "icon-tembatoo-ele",
 }
 
 ACTIVITY_ICONS = {
