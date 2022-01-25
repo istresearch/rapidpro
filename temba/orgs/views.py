@@ -994,6 +994,8 @@ class OrgCRUDL(SmartCRUDL):
         "surveyor",
         "transfer_credits",
         "smtp_server",
+        # extra endpoints
+        "assign_user",
     )
 
     class Import(NonAtomicMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
