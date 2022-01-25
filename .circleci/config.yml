@@ -33,7 +33,11 @@ jobs:
             BRANCH=${CIRCLE_BRANCH#*/}
             VERSION_STR=$(cat VERSION)
             if [[ ! -z $CIRCLE_TAG ]]; then
-              VERSION_TAG="${VERSION_STR}"
+              if [[ $CIRCLE_TAG == "deploy2dev" ]]; then
+                VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
+              else
+                VERSION_TAG="${VERSION_STR}"
+              fi
             elif [[ "$BRANCH" == "develop" ]]; then
               VERSION_TAG="${VERSION_STR}-dev"
             else
@@ -67,15 +71,45 @@ jobs:
           command: |
             VERSION_TAG=$(cat scm/version_tag.txt)
             source scm/utils-engage.sh; BuildVersionForGeneric "${VERSION_TAG}-generic"
+
+  deploy-dev-container:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
       - run:
-          name: Deploy
+          name: Avoid "Are you sure you want to connect?" to GitHub
+          command: |
+            mkdir -p ~/.ssh
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+            chmod 600 ~/.ssh/known_hosts
+      - run:
+          name: Figure out tag to use
           command: |
             BRANCH=${CIRCLE_BRANCH#*/}
-            if [[ "$BRANCH" == "develop" ]] || [[ "$BRANCH" == "main" ]] || [[ "$BRANCH" == "master" ]]; then
-              curl --user ${CIRCLE_API_USER_TOKEN}: --data build_parameters[CIRCLE_JOB]=eks_deploy --data build_parameters[DEPLOY_PROJECT]=pulse-engage https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/develop
+            VERSION_STR=$(cat VERSION)
+            if [[ ! -z $CIRCLE_TAG ]]; then
+              if [[ $CIRCLE_TAG == "deploy2dev" ]]; then
+                VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
+              else
+                VERSION_TAG="${VERSION_STR}"
+              fi
+            elif [[ "$BRANCH" == "develop" ]]; then
+              VERSION_TAG="${VERSION_STR}-dev"
             else
-              echo "Skipping deploy step"
+              VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
             fi
+            echo ${VERSION_TAG} > scm/version_tag.txt
+      - run:
+          name: Deploy To K8s
+          #    --data build_parameters[DEPLOY_IMAGE]=$CIRCLE_PROJECT_USERNAME/p4-engage:${VERSION_TAG} \
+          command: |
+            VERSION_TAG=$(cat scm/version_tag.txt)
+            K8_URL=https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/develop
+            curl -XPOST --user "${oCI_API_TOKEN}:" \
+              --data build_parameters[CIRCLE_JOB]=eks_deploy \
+              --data build_parameters[DEPLOY_PROJECT]=pulse-engage \
+              $K8_URL          
 
 workflows:
   version: 2
@@ -86,3 +120,17 @@ workflows:
           filters:
             tags:
               ignore: /^test-.*/
+      - deploy-dev-container:
+          context: globalconfig
+          requires:
+            - build-containers
+          filters:
+            branches:
+              only:
+                - /^develop$/
+                - /^dev-.*/
+                - /^upstream_dev__merge$/
+            tags:
+              only:
+                - /^deploy2dev$/
+                # until we also get branch name, this tag seems 'useless'.

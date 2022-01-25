@@ -46,6 +46,11 @@ a.logo {
   color: #fff;
   font-size: 85px;
   text-decoration: none;
+  img {
+    max-width: none;
+    width: 184px;
+    height: auto;
+  }
 }
 
 #header {
@@ -81,4 +86,9 @@ a.logo {
       font-variant-caps: all-small-caps;
     }
   }
+}
+
+/* fixed max width of 768px is silly wasted space */
+.page-content {
+  max-width: 90%;
 }

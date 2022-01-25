@@ -1,5 +1,6 @@
 import shutil
 from datetime import datetime
+from pathlib import Path
 
 import pytz
 import redis
@@ -8,21 +9,25 @@ from smartmin.tests import SmartminTest, SmartminTestMixin
 from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core import mail
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
 from django.utils import timezone
 
-from temba.channels.models import Channel, ChannelLog
-from temba.contacts.models import URN, Contact, ContactField, ContactGroup
-from temba.flows.models import Flow, FlowRevision, FlowRun, FlowSession, clear_flow_users
+from temba.archives.models import Archive
+from temba.channels.models import Channel, ChannelEvent, ChannelLog
+from temba.contacts.models import URN, Contact, ContactField, ContactGroup, ContactImport, ContactURN
+from temba.flows.models import Flow, FlowRun, FlowSession, clear_flow_users
 from temba.ivr.models import IVRCall
 from temba.locations.models import AdminBoundary, BoundaryAlias
 from temba.msgs.models import HANDLED, INBOX, INCOMING, OUTGOING, PENDING, SENT, Broadcast, Label, Msg
-from temba.orgs.models import Org
+from temba.orgs.models import Org, OrgRole
+from temba.tickets.models import Ticket, TicketEvent
 from temba.utils import json
 from temba.utils.uuid import UUID, uuid4
-from temba.values.constants import Value
+
+from .mailroom import create_contact_locally, decrement_credit, update_field_locally
 
 from .mailroom import update_field_locally, update_fields_locally
 
@@ -46,9 +51,10 @@ class TembaTestMixin:
 
         # create different user types
         self.non_org_user = self.create_user("NonOrg")
-        self.user = self.create_user("User", ("Viewers",))
-        self.editor = self.create_user("Editor")
         self.admin = self.create_user("Administrator")
+        self.editor = self.create_user("Editor")
+        self.user = self.create_user("User", ("Viewers",))
+        self.agent = self.create_user("Agent")
         self.surveyor = self.create_user("Surveyor")
         self.customer_support = self.create_user("support", ("Customer Support",))
 
@@ -70,6 +76,9 @@ class TembaTestMixin:
 
         self.admin.set_org(self.org)
         self.org.administrators.add(self.admin)
+
+        self.agent.set_org(self.org)
+        self.org.agents.add(self.agent)
 
         self.surveyor.set_org(self.org)
         self.org.surveyors.add(self.surveyor)
@@ -149,9 +158,17 @@ class TembaTestMixin:
         """
         shutil.rmtree("%s/%s" % (settings.MEDIA_ROOT, settings.STORAGE_ROOT_DIR), ignore_errors=True)
 
-    def import_file(self, filename, site="http://rapidpro.io", substitutions=None, legacy=False):
+    def login(self, user, update_last_auth_on: bool = True):
+        self.assertTrue(
+            self.client.login(username=user.username, password=user.username),
+            "Couldn't login as %(user)s:%(user)s" % dict(user=user.username),
+        )
+        if update_last_auth_on:
+            user.record_auth()
+
+    def import_file(self, filename, site="http://rapidpro.io", substitutions=None):
         data = self.get_import_json(filename, substitutions=substitutions)
-        self.org.import_app(data, self.admin, site=site, legacy=legacy)
+        self.org.import_app(data, self.admin, site=site)
 
     def get_import_json(self, filename, substitutions=None):
         handle = open("%s/test_flows/%s.json" % (settings.MEDIA_ROOT, filename), "r+")
@@ -165,13 +182,13 @@ class TembaTestMixin:
 
         return json.loads(data)
 
-    def get_flow(self, filename, substitutions=None, legacy=False):
+    def get_flow(self, filename, substitutions=None, name=None):
         now = timezone.now()
 
-        self.import_file(filename, substitutions=substitutions, legacy=legacy)
+        self.import_file(filename, substitutions=substitutions)
 
         imported_flows = Flow.objects.filter(org=self.org, saved_on__gt=now)
-        flow = imported_flows.order_by("id").last()
+        flow = imported_flows.filter(name=name).first() if name else imported_flows.order_by("id").last()
 
         assert flow, f"no flow imported from {filename}.json"
 
@@ -182,36 +199,23 @@ class TembaTestMixin:
         data = self.get_import_json(filename, substitutions=substitutions)
         return data["flows"][0]
 
-    def create_contact(self, name=None, number=None, twitter=None, urn=None, fields=None, **kwargs):
+    def create_contact(
+        self, name=None, *, language=None, phone=None, urns=None, fields=None, org=None, user=None, last_seen_on=None
+    ):
         """
-        Create a contact in the master test org
+        Create a new contact
         """
 
-        org = kwargs.pop("org", None) or self.org
-        user = kwargs.pop("user", None) or self.user
+        org = org or self.org
+        user = user or self.user
+        urns = [URN.from_tel(phone)] if phone else urns
 
-        urns = []
-        if number:
-            urns.append(URN.from_tel(number))
-        if twitter:
-            urns.append(URN.from_twitter(twitter))
-        if urn:
-            urns.append(urn)
-
-        assert name or urns, "contact should have a name or a contact"
-
-        kwargs["name"] = name
-        kwargs["urns"] = urns
-
-        contact = Contact.get_or_create_by_urns(org, user, **kwargs)
-
-        if fields:
-            update_fields_locally(user, contact, fields)
-
-        return contact
+        return create_contact_locally(
+            org, user, name, language, urns or [], fields or {}, group_uuids=[], last_seen_on=last_seen_on
+        )
 
     def create_group(self, name, contacts=(), query=None, org=None):
-        assert not (contacts and query), "can't provide contact list for a dynamic group"
+        assert not (contacts and query), "can't provide contact list for a smart group"
 
         if query:
             return ContactGroup.create_dynamic(org or self.org, self.user, name, query=query)
@@ -224,7 +228,7 @@ class TembaTestMixin:
     def create_label(self, name, org=None):
         return Label.get_or_create(org or self.org, self.user, name)
 
-    def create_field(self, key, label, value_type=Value.TYPE_TEXT, org=None):
+    def create_field(self, key, label, value_type=ContactField.TYPE_TEXT, org=None):
         return ContactField.user_fields.create(
             org=org or self.org,
             key=key,
@@ -277,15 +281,21 @@ class TembaTestMixin:
         channel=None,
         msg_type=INBOX,
         attachments=(),
+        quick_replies=(),
         status=SENT,
         created_on=None,
         sent_on=None,
         high_priority=False,
         response_to=None,
         surveyor=False,
+        next_attempt=None,
     ):
         if status == SENT and not sent_on:
             sent_on = timezone.now()
+
+        metadata = {}
+        if quick_replies:
+            metadata["quick_replies"] = quick_replies
 
         return self._create_msg(
             contact,
@@ -300,6 +310,8 @@ class TembaTestMixin:
             high_priority=high_priority,
             response_to=response_to,
             surveyor=surveyor,
+            metadata=metadata,
+            next_attempt=next_attempt,
         )
 
     def _create_msg(
@@ -319,6 +331,8 @@ class TembaTestMixin:
         response_to=None,
         surveyor=False,
         broadcast=None,
+        metadata=None,
+        next_attempt=None,
     ):
         assert not (surveyor and channel), "surveyor messages don't have channels"
         assert not channel or channel.org == contact.org, "channel belong to different org than contact"
@@ -338,7 +352,7 @@ class TembaTestMixin:
                 else:
                     channel = org.channels.filter(is_active=True, schemes__contains=[contact_urn.scheme]).first()
 
-            (topup_id, amount) = org.decrement_credit()
+            topup_id = decrement_credit(org)
 
         return Msg.objects.create(
             org=org,
@@ -358,10 +372,12 @@ class TembaTestMixin:
             created_on=created_on or timezone.now(),
             sent_on=sent_on,
             broadcast=broadcast,
+            metadata=metadata,
+            next_attempt=next_attempt,
         )
 
-    def create_broadcast(self, user, text, contacts=(), groups=(), response_to=None, msg_status=SENT):
-        bcast = Broadcast.create(self.org, user, text, contacts=contacts, groups=groups, status=SENT)
+    def create_broadcast(self, user, text, contacts=(), groups=(), response_to=None, msg_status=SENT, parent=None):
+        bcast = Broadcast.create(self.org, user, text, contacts=contacts, groups=groups, status=SENT, parent=parent)
 
         contacts = set(bcast.contacts.all())
         for group in bcast.groups.all():
@@ -384,42 +400,35 @@ class TembaTestMixin:
 
         return bcast
 
-    def create_flow(self, definition=None, **kwargs):
-        if "org" not in kwargs:
-            kwargs["org"] = self.org
-        if "user" not in kwargs:
-            kwargs["user"] = self.user
-        if "name" not in kwargs:
-            kwargs["name"] = "Color Flow"
+    def create_flow(self, name="Test Flow", *, flow_type=Flow.TYPE_MESSAGE, nodes=None, is_system=False, org=None):
+        org = org or self.org
+        flow = Flow.create(org, self.admin, name, flow_type=flow_type, is_system=is_system)
+        if not nodes:
+            nodes = [
+                {
+                    "uuid": "f3d5ccd0-fee0-4955-bcb7-21613f049eae",
+                    "actions": [
+                        {"uuid": "f661e3f0-5148-4397-92ef-925629ad444d", "type": "send_msg", "text": "Hey everybody!"}
+                    ],
+                    "exits": [{"uuid": "72a3f1da-bde1-4549-a986-d35809807be8"}],
+                }
+            ]
+        definition = {
+            "uuid": str(uuid4()),
+            "name": name,
+            "type": Flow.GOFLOW_TYPES[flow_type],
+            "revision": 1,
+            "spec_version": "13.1.0",
+            "expire_after_minutes": Flow.DEFAULT_EXPIRES_AFTER,
+            "language": "eng",
+            "nodes": nodes,
+        }
 
-        flow = Flow.create(**kwargs)
-        if not definition:
-            # if definition isn't provided, generate simple single message flow
-            node_uuid = str(uuid4())
-            definition = {
-                "version": "10",
-                "flow_type": "F",
-                "base_language": "eng",
-                "entry": node_uuid,
-                "action_sets": [
-                    {
-                        "uuid": node_uuid,
-                        "x": 0,
-                        "y": 0,
-                        "actions": [
-                            {"msg": {"eng": "Hey everybody!"}, "media": {}, "send_all": False, "type": "reply"}
-                        ],
-                        "destination": None,
-                    }
-                ],
-                "rule_sets": [],
-            }
-
-        flow.version_number = definition["version"]
+        flow.version_number = definition["spec_version"]
         flow.save()
 
-        json_flow = FlowRevision.migrate_definition(definition, flow, to_version=Flow.FINAL_LEGACY_VERSION)
-        flow.update(json_flow)
+        json_flow = Flow.migrate_definition(definition, flow)
+        flow.save_revision(self.admin, json_flow)
 
         return flow
 
@@ -462,11 +471,123 @@ class TembaTestMixin:
         )
         return call
 
-    def set_contact_field(self, contact, key, value, legacy_handle=False):
-        update_field_locally(self.admin, contact, key, value)
+    def create_archive(
+        self, archive_type, period, start_date, records=(), needs_deletion=False, rollup_of=(), s3=None, org=None
+    ):
+        archive_hash = uuid4().hex
+        bucket = "s3-bucket"
+        key = f"things/{archive_hash}.jsonl.gz"
+        if s3:
+            s3.put_jsonl(bucket, key, records)
 
-        if legacy_handle:
-            contact.handle_update(fields=[key])
+        archive = Archive.objects.create(
+            org=org or self.org,
+            archive_type=archive_type,
+            size=10,
+            hash=archive_hash,
+            url=f"http://{bucket}.aws.com/{key}",
+            record_count=len(records),
+            start_date=start_date,
+            period=period,
+            build_time=23425,
+            needs_deletion=needs_deletion,
+        )
+        if rollup_of:
+            Archive.objects.filter(id__in=[a.id for a in rollup_of]).update(rollup=archive)
+        return archive
+
+    def create_contact_import(self, path):
+        with open(path, "rb") as f:
+            mappings, num_records = ContactImport.try_to_parse(self.org, f, path)
+            return ContactImport.objects.create(
+                org=self.org,
+                original_filename=path,
+                file=SimpleUploadedFile(f.name, f.read()),
+                mappings=mappings,
+                num_records=num_records,
+                group_name=Path(path).stem.title(),
+                created_by=self.admin,
+                modified_by=self.admin,
+            )
+
+    def create_channel(
+        self,
+        channel_type: str,
+        name: str,
+        address: str,
+        role=None,
+        schemes=None,
+        country=None,
+        secret=None,
+        config=None,
+        org=None,
+    ):
+        channel_type = Channel.get_type_from_code(channel_type)
+
+        return Channel.objects.create(
+            org=org or self.org,
+            country=country,
+            channel_type=channel_type.code,
+            name=name,
+            address=address,
+            config=config or {},
+            role=role or Channel.DEFAULT_ROLE,
+            secret=secret,
+            schemes=schemes or channel_type.schemes,
+            created_by=self.admin,
+            modified_by=self.admin,
+        )
+
+    def create_channel_event(self, channel, urn, event_type, occurred_on=None, extra=None):
+        urn_obj = ContactURN.lookup(channel.org, urn, country_code=channel.country)
+        if urn_obj:
+            contact = urn_obj.contact
+        else:
+            contact = self.create_contact(urns=[urn])
+            urn_obj = contact.urns.get()
+
+        return ChannelEvent.objects.create(
+            org=channel.org,
+            channel=channel,
+            contact=contact,
+            contact_urn=urn_obj,
+            occurred_on=occurred_on or timezone.now(),
+            event_type=event_type,
+            extra=extra,
+        )
+
+    def create_ticket(
+        self, ticketer, contact, subject, body="", opened_on=None, opened_by=None, closed_on=None, closed_by=None
+    ):
+        if not opened_on:
+            opened_on = timezone.now()
+
+        ticket = Ticket.objects.create(
+            org=ticketer.org,
+            ticketer=ticketer,
+            contact=contact,
+            subject=subject,
+            body=body,
+            status=Ticket.STATUS_CLOSED if closed_on else Ticket.STATUS_OPEN,
+            opened_on=opened_on,
+            closed_on=closed_on,
+        )
+        TicketEvent.objects.create(
+            org=ticket.org, contact=contact, ticket=ticket, event_type=TicketEvent.TYPE_OPENED, created_by=opened_by
+        )
+        if closed_on:
+            TicketEvent.objects.create(
+                org=ticket.org,
+                contact=contact,
+                ticket=ticket,
+                event_type=TicketEvent.TYPE_CLOSED,
+                created_by=closed_by,
+            )
+
+        return ticket
+
+    def set_contact_field(self, contact, key, value):
+        update_field_locally(self.admin, contact, key, value)
 
     def bulk_release(self, objs, delete=False, user=None):
         for obj in objs:
@@ -519,6 +640,19 @@ class TembaTestMixin:
         for r, row in enumerate(rows):
             self.assertExcelRow(sheet, r, row, tz)
 
+    def assertPathValue(self, container: dict, path: str, expected, msg: str):
+        """
+        Asserts a value at a path in a container, e.g.
+          assertPathValue({"foo": "bar", "zed": 123}, "foo", "bar")
+          assertPathValue({"foo": {"bar": 123}}, "foo__bar", 123)
+        """
+        actual = container
+        for key in path.split("__"):
+            if key not in actual:
+                self.fail(self._formatMessage(msg, f"path {path} not found in {json.dumps(container)}"))
+            actual = actual[key]
+        self.assertEqual(actual, expected, self._formatMessage(msg, f"value mismatch at {path}"))
+
     def assertResponseError(self, response, field, message, status_code=400):
         self.assertEqual(status_code, response.status_code)
         body = response.json()
@@ -534,6 +668,11 @@ class TembaTest(TembaTestMixin, SmartminTest):
 
     def setUp(self):
         self.setUpOrgs()
+
+        # OrgRole.group is a cached property so get that cached before test starts to avoid query count differences
+        # when a test is first to request it and when it's not.
+        for role in OrgRole:
+            role.group  # noqa
 
     def tearDown(self):
         clear_flow_users()

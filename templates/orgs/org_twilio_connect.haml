@@ -1,22 +1,14 @@
 -extends "smartmin/form.html"
+-load i18n
 
--load compress temba
-
--block title-icon
-  .title-icon
-    %span.glyph.icon-channel-twilio
-
--block title-text
-  .title-text
-    %h1 Connect Twilio
+-block title
+  -trans "Connect Twilio"
 
 -block pre-form
-  .connect-help
-    %p
-      To connect your Twilio Account you will need to provide us your Twilio account SID and auth token.
-
-    %p
-      Both values can be found on your <a target="twilio" href="https://www.twilio.com/user/account/settings">Twilio account page</a>.
+  .mb-4
+    -blocktrans trimmed with settings_url='https://www.twilio.com/user/account/settings'
+      To connect your Twilio Account you will need to provide us your Twilio account SID and auth token. Both values can
+      be found on your <a target="twilio" href="{{ settings_url }}">Twilio account page</a>.
 
 -block extra-script
   {{block.super}}
@@ -24,18 +16,3 @@
     $(document).ready(function() {
       $("form.smartmin-form").attr('autocomplete', 'off');
     });
-
--block extra-less
-  -compress css inline
-    {% lessblock %}
-      :plain
-        .connect-help {
-          margin-bottom: 25px;
-          width: 600;
-        }
-
-        a:hover {
-          text-decoration: none;
-        }
-
-    {% endlessblock %}

@@ -3,7 +3,7 @@ from datetime import datetime
 import pytz
 import regex
 
-from temba.utils.dates import FULL_ISO8601_REGEX
+from temba.tests.dates import FULL_ISO8601_REGEX
 
 UUID4_REGEX = regex.compile(
     r"[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12}", regex.IGNORECASE
@@ -69,3 +69,12 @@ class Datetime(MatcherMixin, datetime):
 
     def __eq__(self, other):
         return isinstance(other, datetime)
+
+
+class Int(MatcherMixin, int):
+    """
+    Matches any int
+    """
+
+    def __eq__(self, other):
+        return isinstance(other, int)

@@ -3,15 +3,13 @@ import resource
 from itertools import islice
 
 import iso8601
+
 from django.core.paginator import InvalidPage
-from django.http import Http404, QueryDict, HttpResponseRedirect
-from django_countries import countries
+from django.http import Http404, QueryDict
 
 from django.conf import settings
 from django.db import transaction
 from django.views.generic.list import MultipleObjectMixin, BaseListView
-
-DTONE_COUNTRY_NAMES = {"Democratic Republic of the Congo": "CD", "Ivory Coast": "CI", "United States": "US"}
 
 
 def str_to_bool(text):
@@ -162,15 +160,6 @@ def print_max_mem_usage(msg=None):
     print("=" * 80)
     print(msg + locale.format("%d", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss, grouping=True))
     print("=" * 80)
-
-
-def get_country_code_by_name(name):
-    code = countries.by_name(name)
-
-    if not code:
-        code = DTONE_COUNTRY_NAMES.get(name, None)
-
-    return code if code else None
 
 
 def on_transaction_commit(func):

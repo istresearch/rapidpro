@@ -1,11 +1,21 @@
 from django.conf import settings
 
 
+def config(request):
+    return {
+        "COMPONENTS_DEV_MODE": getattr(settings, "COMPONENTS_DEV_MODE", False),
+        "EDITOR_DEV_MODE": getattr(settings, "EDITOR_DEV_MODE", False),
+    }
+
+
 def branding(request):
     """
     Stuff our branding into the context
     """
-    return dict(brand=request.branding)
+    if "vanilla" in request.GET:  # pragma: no cover
+        request.session["vanilla"] = request.GET.get("vanilla")
+
+    return dict(brand=request.branding, vanilla=request.session.get("vanilla", "0") == "1")
 
 
 def analytics(request):

@@ -1,6 +1,8 @@
 import logging
 from typing import List
 
+from typing import Dict, List, NamedTuple
+
 import requests
 
 from django.conf import settings
@@ -38,6 +40,18 @@ class FlowValidationException(MailroomException):
 
     def __str__(self):
         return self.message
+
+
+class ContactSpec(NamedTuple):
+    """
+    Describes a contact to be created
+    """
+
+    name: str
+    language: str
+    urns: List[str]
+    fields: Dict[str, str]
+    groups: List[str]
 
 
 class MailroomClient:
@@ -79,7 +93,7 @@ class MailroomClient:
         if not to_version:
             to_version = Flow.CURRENT_SPEC_VERSION
 
-        return self._request("flow/migrate", {"flow": definition, "to_version": to_version})
+        return self._request("flow/migrate", {"flow": definition, "to_version": to_version}, encode_json=True)
 
     def flow_inspect(self, org_id, flow):
         payload = {"flow": flow}
@@ -88,7 +102,17 @@ class MailroomClient:
         if not settings.TESTING:
             payload["org_id"] = org_id
 
-        return self._request("flow/inspect", payload)
+        return self._request("flow/inspect", payload, encode_json=True)
+
+    def flow_change_language(self, flow, language):
+        payload = {"flow": flow, "language": language}
+
+        return self._request("flow/change_language", payload, encode_json=True)
+
+    def flow_change_language(self, flow, language):
+        payload = {"flow": flow, "language": language}
+
+        return self._request("flow/change_language", payload)
 
     def flow_change_language(self, flow, language):
         payload = {"flow": flow, "language": language}
@@ -99,6 +123,11 @@ class MailroomClient:
         payload = {"flow": flow, "dependency_mapping": dependency_mapping}
 
         return self._request("flow/clone", payload)
+
+    def msg_resend(self, org_id, msg_ids):
+        payload = {"org_id": org_id, "msg_ids": msg_ids}
+
+        return self._request("msg/resend", payload)
 
     def po_export(self, org_id, flow_ids, language, exclude_arguments=False):
         payload = {
@@ -116,10 +145,19 @@ class MailroomClient:
         return self._request("po/import", payload, files={"po": po_data})
 
     def sim_start(self, payload):
-        return self._request("sim/start", payload)
+        return self._request("sim/start", payload, encode_json=True)
 
     def sim_resume(self, payload):
-        return self._request("sim/resume", payload)
+        return self._request("sim/resume", payload, encode_json=True)
+
+    def contact_create(self, org_id: int, user_id: int, contact: ContactSpec):
+        payload = {
+            "org_id": org_id,
+            "user_id": user_id,
+            "contact": contact._asdict(),
+        }
+
+        return self._request("contact/create", payload)
 
     def contact_modify(self, org_id, user_id, contact_ids, modifiers: List[Modifier]):
         payload = {
@@ -131,9 +169,24 @@ class MailroomClient:
 
         return self._request("contact/modify", payload)
 
-    def contact_search(self, org_id, group_uuid, query, sort, offset=0):
-        payload = {"org_id": org_id, "group_uuid": group_uuid, "query": query, "sort": sort, "offset": offset}
+    def contact_resolve(self, org_id: int, channel_id: int, urn: str):
+        payload = {
+            "org_id": org_id,
+            "channel_id": channel_id,
+            "urn": urn,
+        }
 
+        return self._request("contact/resolve", payload)
+
+    def contact_search(self, org_id, group_uuid, query, sort, offset=0, exclude_ids=()):
+        payload = {
+            "org_id": org_id,
+            "group_uuid": group_uuid,
+            "exclude_ids": exclude_ids,
+            "query": query,
+            "sort": sort,
+            "offset": offset,
+        }
         return self._request("contact/search", payload)
 
     def parse_query(self, org_id, query, group_uuid=""):
@@ -141,29 +194,51 @@ class MailroomClient:
 
         return self._request("contact/parse_query", payload)
 
-    def ticket_close(self, org_id, ticket_ids):
-        payload = {"org_id": org_id, "ticket_ids": ticket_ids}
+    def ticket_assign(self, org_id: int, user_id: int, ticket_ids: list, assignee_id: int, note: str):
+        payload = {
+            "org_id": org_id,
+            "user_id": user_id,
+            "ticket_ids": ticket_ids,
+            "assignee_id": assignee_id,
+            "note": note,
+        }
+
+        return self._request("ticket/assign", payload)
+
+    def ticket_note(self, org_id: int, user_id: int, ticket_ids: list, note: str):
+        payload = {"org_id": org_id, "user_id": user_id, "ticket_ids": ticket_ids, "note": note}
+
+        return self._request("ticket/note", payload)
+
+    def ticket_close(self, org_id, user_id, ticket_ids):
+        payload = {"org_id": org_id, "user_id": user_id, "ticket_ids": ticket_ids}
 
         return self._request("ticket/close", payload)
 
-    def ticket_reopen(self, org_id, ticket_ids):
-        payload = {"org_id": org_id, "ticket_ids": ticket_ids}
+    def ticket_reopen(self, org_id, user_id, ticket_ids):
+        payload = {"org_id": org_id, "user_id": user_id, "ticket_ids": ticket_ids}
 
         return self._request("ticket/reopen", payload)
 
-    def _request(self, endpoint, payload=None, files=None, post=True, returns_json=True):
+    def _request(self, endpoint, payload=None, files=None, post=True, encode_json=False, returns_json=True):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("=============== %s request ===============" % endpoint)
             logger.debug(json.dumps(payload, indent=2))
             logger.debug("=============== /%s request ===============" % endpoint)
 
+        headers = self.headers.copy()
         if files:
             kwargs = dict(data=payload, files=files)
+        elif encode_json:
+            # do the JSON encoding ourselves - required when the json is something we've loaded with our decoder
+            # which could contain non-standard types
+            headers["Content-Type"] = "application/json"
+            kwargs = dict(data=json.dumps(payload))
         else:
             kwargs = dict(json=payload)
 
         req_fn = requests.post if post else requests.get
-        response = req_fn("%s/mr/%s" % (self.base_url, endpoint), headers=self.headers, **kwargs)
+        response = req_fn("%s/mr/%s" % (self.base_url, endpoint), headers=headers, **kwargs)
 
         return_val = response.json() if returns_json else response.content
 

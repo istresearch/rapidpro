@@ -10,6 +10,7 @@
 }
 
 .icon-logo:before {
-  font-family: 'engage';
-  content: "\e900";
+	font-family: 'engage';
+	content: "\e900";
+	display: none;
 }

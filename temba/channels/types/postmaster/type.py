@@ -88,7 +88,7 @@ class PostmasterType(ChannelType):
     courier_url = r"^psms/(?P<uuid>[a-z0-9\-]+)/(?P<action>receive|status)$"
 
     name = "Postmaster"
-    icon = "icon-channel-postmaster"
+    icon = "icon-tembatoo-postmaster"
     claim_blurb = _(
         """Use Postmaster compatible android devices with Pulse Engage"""
     )
