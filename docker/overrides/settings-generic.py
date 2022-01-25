@@ -62,6 +62,7 @@ HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
 TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
 if TEMBA_HOST.lower().startswith('https://') or IS_PROD:
     from .security_settings import *  # noqa
+CSRF_COOKIE_SECURE = False
 SECURE_PROXY_SSL_HEADER = (env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 INTERNAL_IPS = ('*',)
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')
