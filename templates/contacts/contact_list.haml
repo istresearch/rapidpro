@@ -165,9 +165,14 @@
                 %table.list.object-list.lined.selectable
                   - if object_list
                     %thead
-                      %tr.contacts
+                      %tr.contacts.multiselect-header
                         -if org_perms.contacts.contact_update
                           %th
+                            %div{style: 'padding-top: 4px; width: 12px'}
+                              %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox
+                              %div.multiselect-header
+                                %span
+                                  Select all
                         %th
                         %th
                         -for field in contact_fields

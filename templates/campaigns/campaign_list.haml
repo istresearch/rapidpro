@@ -67,6 +67,15 @@
             %form#search-form.mb-4(method="get" action="{% url 'campaigns.campaign_list'%}")
               %temba-textinput(type='text' placeholder='{% trans "Search" %}' name="search" value="{{search}}")
             %table.list.lined.selectable
+              %thead
+                %tr
+                  -if org_perms.campaigns.campaign_update
+                    %th
+                      %div{style: 'padding-top: 4px; width: 12px'}
+                        %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox
+                        %div.multiselect-header
+                          %span
+                            Select all
               %tbody
                 -for obj in object_list
                   %tr.campaign.object-row.select-row{ data-object-id: "{{ obj.id }}", onrowclick:'gotoLink("{% url "campaigns.campaign_read" obj.id%}")'}
