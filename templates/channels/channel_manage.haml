@@ -85,7 +85,7 @@
             -# extra: sortable header clickies!
             %tr
               - for field in fields
-                %th{ class:'{% if field not in view.non_sort_fields %}header{% if field == view.sort_field %} {% if view.sort_order == "asc" %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}', id:'header-{{field}}' }
+                %th{ class:'{% if field not in view.non_sort_fields %}header{% if field == view.sort_field %} {% if not view.sort_order or view.sort_order == "asc" %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}', id:'header-{{field}}' }
                   - if field not in view.non_sort_fields
                     <a href="?sort_on={{field}}{% if field == view.sort_field %}&sort_order={% if view.sort_order == "desc" %}asc{% else %}desc{% endif %}{% endif %}{% if search is not null %}&search={{search}}{% endif %}">{% get_label field %}</a>
                   - else

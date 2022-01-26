@@ -1139,15 +1139,17 @@ class ChannelCRUDL(SmartCRUDL):
                 org = self.request.user.get_org()
                 queryset = queryset.filter(org=org)
 
+            theOrderByColumn = self.sort_field
             if 'sort_on' in self.request.GET:
-                sort_fld = self.request.GET.get('sort_on')
-                if sort_fld in self.fields and sort_fld not in self.non_sort_fields:
-                    sort_ord = self.request.GET.get("sort_order")
-                    self.sort_order = sort_ord if sort_ord in ('asc', 'desc') else None
-                    order_flag = '-' if sort_ord == 'desc' else ''
-                    self.sort_field = "{}{}".format(order_flag, sort_fld)
+                theSortField = self.request.GET.get('sort_on')
+                if theSortField in self.fields and theSortField not in self.non_sort_fields:
+                    self.sort_field = theSortField
+                    theSortOrder = self.request.GET.get("sort_order")
+                    self.sort_order = theSortOrder if theSortOrder in ('asc', 'desc') else None
+                    theSortOrderFlag = '-' if theSortOrder == 'desc' else ''
+                    theOrderByColumn = "{}{}".format(theSortOrderFlag, self.sort_field)
 
-            return queryset.filter(is_active=True).order_by(self.sort_field).prefetch_related("sync_events")
+            return queryset.filter(is_active=True).order_by(theOrderByColumn, 'name', 'address', 'uuid').prefetch_related("sync_events")
 
         def get_queryset_orig(self, **kwargs):
             queryset = super().get_queryset(**kwargs)
