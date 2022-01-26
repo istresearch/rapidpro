@@ -1126,6 +1126,7 @@ class ChannelCRUDL(SmartCRUDL):
                          "address__icontains", "country__icontains", "device__icontains")
 
         non_sort_fields = ('channel_log', 'settings')
+        sort_order = None
 
         def get_queryset(self, **kwargs):
             """
@@ -1139,10 +1140,12 @@ class ChannelCRUDL(SmartCRUDL):
                 queryset = queryset.filter(org=org)
 
             if 'sort_on' in self.request.GET:
-                sort_on = self.request.GET.get('sort_on')
-                if sort_on in self.fields and sort_on not in self.non_sort_fields:
-                    sort_order = "-" if self.request.GET.get("sort_order") == "order_desc" else ""
-                    self.sort_field = "{}{}".format(sort_order, sort_on)
+                sort_fld = self.request.GET.get('sort_on')
+                if sort_fld in self.fields and sort_fld not in self.non_sort_fields:
+                    sort_ord = self.request.GET.get("sort_order")
+                    self.sort_order = sort_ord if sort_ord in ('asc', 'desc') else None
+                    order_flag = '-' if sort_ord == 'desc' else ''
+                    self.sort_field = "{}{}".format(order_flag, sort_fld)
 
             return queryset.filter(is_active=True).order_by(self.sort_field).prefetch_related("sync_events")
 
