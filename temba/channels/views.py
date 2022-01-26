@@ -1125,7 +1125,33 @@ class ChannelCRUDL(SmartCRUDL):
         search_fields = ("name__icontains", "channel_type__icontains", "last_seen__icontains", "uuid__icontains",
                          "address__icontains", "country__icontains", "device__icontains")
 
+        non_sort_fields = ('channel_log', 'settings')
+        sort_order = None
+
         def get_queryset(self, **kwargs):
+            """
+            override to fix sort order bug (descending uses a leading "-" which fails "if in fields" check.
+            """
+            queryset = super().get_queryset(**kwargs)
+
+            # org users see channels for their org, superuser sees all
+            if not self.request.user.is_superuser:
+                org = self.request.user.get_org()
+                queryset = queryset.filter(org=org)
+
+            theOrderByColumn = self.sort_field
+            if 'sort_on' in self.request.GET:
+                theSortField = self.request.GET.get('sort_on')
+                if theSortField in self.fields and theSortField not in self.non_sort_fields:
+                    self.sort_field = theSortField
+                    theSortOrder = self.request.GET.get("sort_order")
+                    self.sort_order = theSortOrder if theSortOrder in ('asc', 'desc') else None
+                    theSortOrderFlag = '-' if theSortOrder == 'desc' else ''
+                    theOrderByColumn = "{}{}".format(theSortOrderFlag, self.sort_field)
+
+            return queryset.filter(is_active=True).order_by(theOrderByColumn, 'name', 'address', 'uuid').prefetch_related("sync_events")
+
+        def get_queryset_orig(self, **kwargs):
             queryset = super().get_queryset(**kwargs)
 
             # org users see channels for their org, superuser sees all
