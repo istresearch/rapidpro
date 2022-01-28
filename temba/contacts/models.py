@@ -88,6 +88,22 @@ class URN:
     PM_EMAIL_SCHEME = "pm_email"
     PM_ELEMENT_SCHEME = "pm_element"
 
+    PM_SCHEMES = ((PM_ELEMENT_SCHEME, _("Postmaster Element identifier")),
+                  (PM_EMAIL_SCHEME, _("Postmaster Email Identifier")),
+                  (PM_FACEBOOK_SCHEME, _("Postmaster Facebook Identifier")),
+                  (PM_IMO_SCHEME, _("Postmaster IMO Identifier")),
+                  (PM_INSTAGRAM_SCHEME, _("Postmaster Instagram Identifier")),
+                  (PM_KAKAO_SCHEME, _("Postmaster Kakao Identifier")),
+                  (PM_LINE_SCHEME, _("Postmaster Line identifier")),
+                  (PM_FBM_SCHEME, _("Postmaster Messenger Identifier")),
+                  (PM_MOBYX_SCHEME, _("Postmaster Mobyx identifier")),
+                  (PM_SIGNAL_SCHEME, _("Postmaster Signal identifier")),
+                  (PM_TELEGRAM_SCHEME, _("Postmaster Telegram identifier")),
+                  (PM_TWITTER_SCHEME, _("Postmaster Twitter identifier")),
+                  (PM_VIBER_SCHEME, _("Postmaster Viber identifier")),
+                  (PM_VK_SCHEME, _("Postmaster VK identifier")),
+                  (PM_WHATSAPP_SCHEME, _("Postmaster WhatsApp identifier")))
+
     SCHEME_CHOICES = (
         (TEL_SCHEME, _("Phone number")),
         (FACEBOOK_SCHEME, _("Facebook identifier")),
@@ -106,22 +122,7 @@ class URN:
         (VK_SCHEME, _("VK identifier")),
         (ROCKETCHAT_SCHEME, _("RocketChat identifier")),
         (DISCORD_SCHEME, _("Discord Identifier")),
-        (PM_FACEBOOK_SCHEME, _("Postmaster Facebook Identifier")),
-        (PM_EMAIL_SCHEME, _("Postmaster Email Identifier")),
-        (PM_IMO_SCHEME, _("Postmaster IMO Identifier")),
-        (PM_INSTAGRAM_SCHEME, _("Postmaster Instagram Identifier")),
-        (PM_KAKAO_SCHEME, _("Postmaster Kakao Identifier")),
-        (PM_LINE_SCHEME, _("Postmaster Line identifier")),
-        (PM_FBM_SCHEME, _("Postmaster Messenger Identifier")),
-        (PM_MOBYX_SCHEME, _("Postmaster Mobyx identifier")),
-        (PM_SIGNAL_SCHEME, _("Postmaster Signal identifier")),
-        (PM_TELEGRAM_SCHEME, _("Postmaster Telegram identifier")),
-        (PM_TWITTER_SCHEME, _("Postmaster Twitter identifier")),
-        (PM_VIBER_SCHEME, _("Postmaster Viber identifier")),
-        (PM_VK_SCHEME, _("Postmaster VK identifier")),
-        (PM_WHATSAPP_SCHEME, _("Postmaster WhatsApp identifier")),
-        (PM_ELEMENT_SCHEME, _("Postmaster Element identifier")),
-    )
+    ) + tuple([t[1] for t in sorted((lambda x: [[y[1].split(" ")[1], y] for y in x])(PM_SCHEMES))]) # Sort PM alphabetically
 
     VALID_SCHEMES = {s[0] for s in SCHEME_CHOICES}
 
