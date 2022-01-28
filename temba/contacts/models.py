@@ -88,21 +88,21 @@ class URN:
     PM_EMAIL_SCHEME = "pm_email"
     PM_ELEMENT_SCHEME = "pm_element"
 
-    PM_SCHEMES = ((PM_ELEMENT_SCHEME, _("Postmaster Element identifier")),
+    PM_SCHEMES = ((PM_ELEMENT_SCHEME, _("Postmaster Element Identifier")),
                   (PM_EMAIL_SCHEME, _("Postmaster Email Identifier")),
                   (PM_FACEBOOK_SCHEME, _("Postmaster Facebook Identifier")),
                   (PM_IMO_SCHEME, _("Postmaster IMO Identifier")),
                   (PM_INSTAGRAM_SCHEME, _("Postmaster Instagram Identifier")),
                   (PM_KAKAO_SCHEME, _("Postmaster Kakao Identifier")),
-                  (PM_LINE_SCHEME, _("Postmaster Line identifier")),
+                  (PM_LINE_SCHEME, _("Postmaster Line Identifier")),
                   (PM_FBM_SCHEME, _("Postmaster Messenger Identifier")),
-                  (PM_MOBYX_SCHEME, _("Postmaster Mobyx identifier")),
-                  (PM_SIGNAL_SCHEME, _("Postmaster Signal identifier")),
-                  (PM_TELEGRAM_SCHEME, _("Postmaster Telegram identifier")),
-                  (PM_TWITTER_SCHEME, _("Postmaster Twitter identifier")),
-                  (PM_VIBER_SCHEME, _("Postmaster Viber identifier")),
-                  (PM_VK_SCHEME, _("Postmaster VK identifier")),
-                  (PM_WHATSAPP_SCHEME, _("Postmaster WhatsApp identifier")))
+                  (PM_MOBYX_SCHEME, _("Postmaster Mobyx Identifier")),
+                  (PM_SIGNAL_SCHEME, _("Postmaster Signal Identifier")),
+                  (PM_TELEGRAM_SCHEME, _("Postmaster Telegram Identifier")),
+                  (PM_TWITTER_SCHEME, _("Postmaster Twitter Identifier")),
+                  (PM_VIBER_SCHEME, _("Postmaster Viber Identifier")),
+                  (PM_VK_SCHEME, _("Postmaster VK Identifier")),
+                  (PM_WHATSAPP_SCHEME, _("Postmaster WhatsApp Identifier")))
 
     SCHEME_CHOICES = (
         (TEL_SCHEME, _("Phone number")),
