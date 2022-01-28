@@ -105,14 +105,14 @@ class URN:
                   (PM_WHATSAPP_SCHEME, _("Postmaster WhatsApp Identifier")))
 
     SCHEME_CHOICES = (
-        (TEL_SCHEME, _("Phone number")),
+        (TEL_SCHEME, _("Phone Number")),
         (FACEBOOK_SCHEME, _("Facebook Identifier")),
-        (TWITTER_SCHEME, _("Twitter handle")),
+        (TWITTER_SCHEME, _("Twitter Handle")),
         (TWITTERID_SCHEME, _("Twitter ID")),
         (VIBER_SCHEME, _("Viber Identifier")),
         (LINE_SCHEME, _("LINE Identifier")),
         (TELEGRAM_SCHEME, _("Telegram Identifier")),
-        (EMAIL_SCHEME, _("Email address")),
+        (EMAIL_SCHEME, _("Email Address")),
         (EXTERNAL_SCHEME, _("External Identifier")),
         (JIOCHAT_SCHEME, _("JioChat Identifier")),
         (WECHAT_SCHEME, _("WeChat Identifier")),
