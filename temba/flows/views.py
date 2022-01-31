@@ -1130,28 +1130,6 @@ class FlowCRUDL(SmartCRUDL):
                     dict(title=_("Import Translation"), href=reverse("flows.flow_import_translation", args=[flow.id]))
                 )
 
-            links.append(dict(divider=True)),
-
-            if self.has_org_perm("orgs.org_export"):
-                links.append(dict(title=_("Export Definition"), href=f"{reverse('orgs.org_export')}?flow={flow.id}"))
-            if self.has_org_perm("flows.flow_export_translation"):
-                links.append(dict(title=_("Export Translation"), js_class="export-translation", href="#"))
-            if self.has_org_perm("flows.flow_import_translation"):
-                links.append(
-                    dict(title=_("Import Translation"), href=reverse("flows.flow_import_translation", args=[flow.id]))
-                )
-
-            links.append(dict(divider=True)),
-
-            if self.has_org_perm("orgs.org_export"):
-                links.append(dict(title=_("Export Definition"), href=f"{reverse('orgs.org_export')}?flow={flow.id}"))
-            if self.has_org_perm("flows.flow_export_translation"):
-                links.append(dict(title=_("Export Translation"), js_class="export-translation", href="#"))
-            if self.has_org_perm("flows.flow_import_translation"):
-                links.append(
-                    dict(title=_("Import Translation"), href=reverse("flows.flow_import_translation", args=[flow.id]))
-                )
-
             user = self.get_user()
             if user.is_superuser or user.is_staff:
                 links.append(
