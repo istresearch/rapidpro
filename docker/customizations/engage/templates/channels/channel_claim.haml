@@ -7,30 +7,25 @@
 -block content
   -blocktrans trimmed with name=brand.name
     To get started you need to add a channel to your workspace. A channel is a phone number or social network
-    account which {{ name }} can use to send and receive messages on your behalf. You can choose to use an
-    Android phone and your own cell phone plan, or we can connect you with a service provider in your country
-    directly.
+    account which the system can use to send and receive messages on your behalf.
 
   .channel-options.mt-8
-    .title
-      -trans "Recommendations"
-
-    .channel-options-recommended
-
-    -if recommended_channels
-      -for ch_type in recommended_channels
-        .card.link(href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}" onclick="goto(event, this)")
-          .relative
-            .text-base.absolute.text-gray-100.bg-icon(class="{{ ch_type.icon }}")
-
-          .flex.flex-col.mx-20.relative
-            .title
-              {{ch_type.name}}
-
-            .mt-2
-              {% include ch_type.get_claim_blurb %}
 
     .bg-gray-200.-mx-128.px-128.py-12.mt-16
+      .title.mb-4
+        -trans "Recommended"
+
+      -for ch_type in channel_types.PHONE
+        -if ch_type.code == "PSM"
+          .card.link(href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}" onclick="goto(event, this)")
+            .relative
+              .text-base.absolute.text-gray-100.bg-icon{class:"{{ ch_type.icon }}"}
+            .flex.flex-col.mx-20.relative
+              .title
+                {{ch_type.name}}
+              .mt-2
+                {% include ch_type.get_claim_blurb %}
+
       .title.mb-4
         -trans "Social Network Channels"
 
@@ -47,29 +42,16 @@
       .title.mb-4.mt-8
         -trans "SMS and Voice Channels"
 
-      -if recommended_channels
-        .card.link(href="{% url 'channels.types.android.claim' %}" onclick="goto(event, this)")
-          .relative
-            .text-base.absolute.text-gray-100.bg-icon.icon-channel-android
-          .flex.flex-col.mx-20.relative
-            .title
-              -trans "Android Phone"
-
-            .mt-2
-              -blocktrans trimmed
-                Works in any country and uses the cell phone plan
-                you already have. You just need an Android phone
-                to get started.
-
       -for ch_type in channel_types.PHONE
-        .card.link(href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}" onclick="goto(event, this)")
-          .relative
-            .text-base.absolute.text-gray-100.bg-icon{class:"{{ ch_type.icon }}"}
-          .flex.flex-col.mx-20.relative
-            .title
-              {{ch_type.name}}
-            .mt-2
-              {% include ch_type.get_claim_blurb %}
+        -if ch_type.code != "BWI"
+          .card.link(href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}" onclick="goto(event, this)")
+            .relative
+              .text-base.absolute.text-gray-100.bg-icon{class:"{{ ch_type.icon }}"}
+            .flex.flex-col.mx-20.relative
+              .title
+                {{ch_type.name}}
+              .mt-2
+                {% include ch_type.get_claim_blurb %}
 
 
       .title.mt-8
