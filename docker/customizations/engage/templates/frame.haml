@@ -7,7 +7,10 @@
   %head
     %title
       -block page-title
-        {{ brand.name }} - {{ brand.title }}
+        -if brand.title
+          {{ brand.name }} - {{ brand.title }}
+        -else
+          {{ brand.name }}
 
     %link{href:'{{STATIC_URL}}fonts/roboto/stylesheet.css', rel:'stylesheet', type:'text/css'}
     %link{href:'{{STATIC_URL}}brands/engage/images/engage.ico', rel:'shortcut icon', type:'image/png'}
@@ -102,7 +105,8 @@
         %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}fonts/tembatoo/style.css", media:'all'}
 
         %link{type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/temba-components.css"}
-        %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}fonts/tembatoo/style.css", media:'all'}
+        -# no reason to list this twice
+        -# %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}fonts/tembatoo/style.css", media:'all'}
 
       -compress css
 

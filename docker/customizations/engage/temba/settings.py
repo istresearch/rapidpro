@@ -158,6 +158,7 @@ BRANDING['engage'] = {
     'logo_link': env('BRANDING_LOGO_LINK', '/{}/'.format(SUB_DIR) if SUB_DIR is not None else '/'),
     'slug': env('BRANDING_SLUG', 'pulse'),
     'name': env('BRANDING_NAME', 'Pulse'),
+    'title': env('BRANDING_TITLE', 'Engage'),
     'org': env('BRANDING_ORG', 'IST'),
     'colors': dict([rule.split('=') for rule in env('BRANDING_COLORS', 'primary=#0c6596').split(';')]),
     'styles': ['brands/engage/font/style.css', 'brands/engage/less/style.less', 'fonts/style.css'],
