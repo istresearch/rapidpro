@@ -42,7 +42,7 @@
     <script src="{% url 'django.views.i18n.javascript_catalog' %}"></script>
     -compress js
       :javascript
-         var static_url = '{{STATIC_URL}}';
+        var static_url = '{{STATIC_URL}}';
 
       %script{src:"{{ STATIC_URL }}bower/toastr/toastr.js"}
       %script{src:"{{ STATIC_URL }}bower/bootstrap/js/bootstrap-modal.js"}
@@ -77,8 +77,15 @@
     -if not COMPONENTS_DEV_MODE
       -include "components-head.html"
 
+    -# Favicon works without the need to be explicit
+    -# -if brand.favico
+    -#   %link{type:"image/ico", rel:"shortcut icon", href:"{{ STATIC_URL }}{{ brand.favico }}"}
+    -# -else
+    -#   %link{type:"image/ico", rel:"shortcut icon", href:"{{ STATIC_URL }}images/favicon.ico"}
+
     -block styles
-      %link{rel:'stylesheet', href:'https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:200,300,400,500'}
+      -# do not want to use non-local fonts
+      -# %link{rel:'stylesheet', href:'https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:200,300,400,500'}
 
       -compress css
         %link{type:'text/css', rel:'stylesheet', href:'{{ STATIC_URL }}bower/bootstrap-css/css/bootstrap.css',  media:'all' }

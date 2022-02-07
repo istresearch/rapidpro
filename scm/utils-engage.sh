@@ -97,14 +97,14 @@ function EnsurePyLibsImage()
 # Determine the image tag for "code stage" image based on its requirements file(s).
 # Ensure the docker image tagged with the special tag exists; build if needed.
 # @param string $1 - the base image to use.
-function EnsureRpAppImage()
+function EnsurePyAppImage()
 {
   if [[ -z "$1" || "$1" == "default" ]]; then
     IMAGE_NAME=$DEFAULT_IMAGE_NAME
   else
     IMAGE_NAME=$1
   fi
-  IMG_STAGE=rpapp
+  IMG_STAGE=pyapp
   IMAGE_TAG=${IMG_STAGE}-$2
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
   echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
@@ -115,7 +115,7 @@ function EnsureRpAppImage()
   docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
       -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
   docker push $IMAGE_NAME:$IMAGE_TAG
-  "${UTILS_PATH}/pr-comment.sh" "RP App Image built: $IMAGE_NAME:$IMAGE_TAG"
+  "${UTILS_PATH}/pr-comment.sh" "Python App Image built: $IMAGE_NAME:$IMAGE_TAG"
 }
 
 ####################
@@ -137,8 +137,8 @@ function BuildVersionForX()
   echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
   #always build, don't bother checking if it already exists.
   #if ! DockerImageTagExists $IMAGE_NAME $IMAGE_TAG; then
-    FROM_STAGE_TAG=`GetImgStageTag rpapp`
-    PrintPaddedTextRight "  Using rpapp Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
+    FROM_STAGE_TAG=`GetImgStageTag pyapp`
+    PrintPaddedTextRight "  Using pyapp Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
     #if debugging, can add arg --progress=plain to the docker build command
     docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \

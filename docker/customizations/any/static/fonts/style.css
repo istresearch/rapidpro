@@ -1,0 +1,28 @@
+@font-face {
+    font-family: 'RobotoMono';
+    src: url('fonts/Roboto_Mono/static/RobotoMono-Regular.eot');
+    src: url('fonts/Roboto_Mono/static/RobotoMono-Regular?#iefix') format('embedded-opentype'),
+         url('fonts/Roboto_Mono/static/RobotoMono-Regular.woff2') format('woff2'),
+         url('fonts/Roboto_Mono/static/RobotoMono-Regular.woff') format('woff'),
+         url('fonts/Roboto_Mono/static/RobotoMono-Regular.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+}
+
+@supports (font-variation-settings: normal) {
+    @font-face {
+        font-family: 'RobotoMono';
+        src: url('fonts/Roboto_Mono/RobotoMono-Regular-VF.eot') format('eot supports variations'),
+             url('fonts/Roboto_Mono/RobotoMono-Regular-VF.eot') format('eot-variations');
+        src: url('fonts/Roboto_Mono/RobotoMono-Regular-VF.eot?#iefix') format('embedded-opentype supports variations'),
+	         url('fonts/Roboto_Mono/RobotoMono-Regular-VF.eot?#iefix') format('embedded-opentype-variations'),
+             url('fonts/Roboto_Mono/RobotoMono-Regular-VF.woff2') format('woff2 supports variations'),
+             url('fonts/Roboto_Mono/RobotoMono-Regular-VF.woff2') format('woff2-variations'),
+             url('fonts/Roboto_Mono/RobotoMono-Regular-VF.woff') format('woff supports variations'),
+             url('fonts/Roboto_Mono/RobotoMono-Regular-VF.woff') format('woff-variations'),
+             url('fonts/Roboto_Mono/RobotoMono-Regular-VF.ttf') format('truetype supports variations'),
+             url('fonts/Roboto_Mono/RobotoMono-Regular-VF.ttf') format('truetype-variations');
+        font-weight: 100 1000;
+        font-stretch: 25% 151%;
+    }
+}
