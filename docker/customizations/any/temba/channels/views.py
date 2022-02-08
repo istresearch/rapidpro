@@ -810,7 +810,7 @@ class ChannelCRUDL(SmartCRUDL):
                 links.append(
                     dict(
                         title="Purge Outbox",
-                        modax="Purge Outbox",
+                        as_btn="true",
                         href="_blank",
                         js_class="mi-purge-outbox",
                     )
@@ -823,6 +823,7 @@ class ChannelCRUDL(SmartCRUDL):
                         title=_("Edit"),
                         href=reverse("channels.channel_update", args=[self.object.id]),
                         modax=_("Edit Channel"),
+                        as_btn="true",
                     )
                 )
 

@@ -29,22 +29,25 @@
             .button-light{onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
               {{link.title}}
 
-      - else
-        -with link=gear_links|first
-          -if link.modax
-            .button-light{onclick:'javascript:showModax("{{link.id}}")', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
-              {{link.title}}
-                %span{class:'gear-flag'}
-                  {{link.flag}}
+      -else
+        -# instead of forcing only the first gear link as a button, check for "first or as_btn and not as_gear_item"
+        -for link in gear_links
+          -if forloop.first or link.as_btn
+            -if not link.as_gear_item
+              -if link.modax
+                .button-light{onclick:'javascript:showModax("{{link.id}}")', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+                  {{link.title}}
+                    %span{class:'gear-flag'}
+                      {{link.flag}}
 
-          -else
-            -if link.js_class
-              .button-light{class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
-                {{link.title}}
+              -else
+                -if link.js_class
+                  .button-light{class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+                    {{link.title}}
 
-            -else
-              .button-light{onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
-                {{link.title}}
+                -else
+                  .button-light{onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+                    {{link.title}}
 
         .btn-group.gear-menu.ml-3
           .button-light.p-icon.dropdown-toggle.text-center{ data-toggle:"dropdown" }
@@ -52,32 +55,33 @@
           %ul.dropdown-menu.label-menu.rounded-lg.border-none.px-4.py-3{'role':'menu', 'aria-labelledby':'dlabel'}
             -for link in gear_links
               -if not forloop.first
-                -if link.divider
-                  %li.separator.-mx-4.border-b.my-3.border-gray-200
-                -else
-                  %li.py-1
-                    -if link.ngClick
-                      .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', ng-click:'{{link.ngClick}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
-                        {{link.title}}
-                        .gear-flag
-                          {{link.flag}}
-                    -elif link.modax
-                      .hover-linked.font-normal{onclick:'javascript:showModax("{{link.id}}")', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
-                        {{link.title}}
-                        %span{class:'gear-flag'}
-                          {{link.flag}}
+                -if not link.as_btn
+                  -if link.divider
+                    %li.separator.-mx-4.border-b.my-3.border-gray-200
+                  -else
+                    %li.py-1
+                      -if link.ngClick
+                        .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', ng-click:'{{link.ngClick}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                          {{link.title}}
+                          .gear-flag
+                            {{link.flag}}
+                      -elif link.modax
+                        .hover-linked.font-normal{onclick:'javascript:showModax("{{link.id}}")', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                          {{link.title}}
+                          %span{class:'gear-flag'}
+                            {{link.flag}}
 
-                    -else
-                      -if link.js_class
-                        .hover-linked.font-normal{class:'{{ link|gear_link_classes }}', href:'{{link.href}}', data-success-url:'{{ link.success_url }}'}
-                          {{link.title}}
-                          %span{class:'gear-flag'}
-                            {{link.flag}}
                       -else
-                        .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
-                          {{link.title}}
-                          %span{class:'gear-flag'}
-                            {{link.flag}}
+                        -if link.js_class
+                          .hover-linked.font-normal{class:'{{ link|gear_link_classes }}', href:'{{link.href}}', data-success-url:'{{ link.success_url }}'}
+                            {{link.title}}
+                            %span{class:'gear-flag'}
+                              {{link.flag}}
+                        -else
+                          .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                            {{link.title}}
+                            %span{class:'gear-flag'}
+                              {{link.flag}}
 
 
       :javascript
