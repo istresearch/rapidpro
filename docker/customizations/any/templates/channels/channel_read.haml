@@ -47,7 +47,7 @@
         .flex.items-center.text-error
           .mr-1
             .icon-warning.text-error.text-lg.mt-1
-          .message             
+          .message
             -if delayed_sync_event
               .inline-block.ml-2
                 -if last_sync
@@ -91,7 +91,7 @@
 
   -with object.get_sender as sender and object.get_caller as caller
 
-    -if object.channel_type == 'A'      
+    -if object.channel_type == 'A'
       .device
         -if channel.name
           {{ channel.name }}
@@ -137,8 +137,8 @@
 
       -if channel.is_delegate_caller
         -trans "Voice calls"
-  
-    -if object.channel_type == 'A'      
+
+    -if object.channel_type == 'A'
       -if unsent_msgs_count
         .text-error
           {{unsent_msgs_count|intcomma}}
@@ -166,7 +166,7 @@
                 -for net in network_share
                   -if net.0 == last_sync.network_type
                     {{ net.1 }}%
-              
+
               .t-status.px-2
                 -trans "ON"
                 = last_sync.network_type
@@ -180,7 +180,7 @@
                   .mini-status.icon-battery-half
                 -else
                   .mini-status.icon-battery-full.rotate
-              
+
               .t-status
                 {{last_sync.power_level}}%
 
@@ -204,15 +204,15 @@
               %tr
                 %th
                   -trans "Messages"
-                
+
                 -if ivr_count
                   %th
                     -trans "IVR Messages"
                 %th
                   -trans "Recent Errors"
-                
+
             %tbody
-              
+
               %tr
                 %td
                   {{ msg_count|intcomma }}
@@ -312,11 +312,97 @@
               -else
                 &nbsp;&nbsp;{{ sync_event.network_type }}
 
+-block post-content
+  - if org_perms.channels.channel_delete
+    %temba-dialog#purge-confirmation.hide(
+        header='{{ _("Purge Outbox")|escapejs }}'
+        primaryButtonName='{{ _("Purge")|escapejs }}'
+        destructive='true'
+    )
+      .p-6.confirmation-body
+        %p
+          -trans "Purge all messages from the outbox?"
+        %p
+          -trans "Once the outbox is purged, it's messages will be gone forever. There is no way to undo this operation."
+
+    %temba-dialog#purge-success.hide(
+        header='{{ _("Purge Outbox")|escapejs }}'
+        primaryButtonName=''
+        cancelButtonName='Ok'
+    )
+      .p-6
+        -trans "Purge Successful"
+
+    %temba-dialog#purge-fail.hide(
+        header='{{ _("Purge Outbox")|escapejs }}'
+        primaryButtonName=''
+        cancelButtonName='Ok'
+        destructive='true'
+    )
+      .p-6.h3
+        -trans "An error has occured:"
+        %p.fail-msg
+          "Unknown error"
+
+-block extra-less
+  -compress css inline
+    {% lessblock %}
+      :plain
+        a.errored:hover {
+          color:@flat-darkred;
+        }
+
+        .title {
+          .channel-roles {
+            font-size:14px;
+            margin-top:0px;
+            padding:0px;
+            line-height:14px;
+          }
+        }
+    {% endlessblock %}
+
 -block extra-script
   {{ block.super }}
 
   -if start_date
     <script src="{{ STATIC_URL }}bower/highcharts/highcharts.js"></script>
+
+  :javascript
+    {% if org_perms.channels.channel_delete %}
+      window.addEventListener('DOMContentLoaded', function(e) {
+        var menuitemPurge = document.querySelector(".mi-purge-outbox");
+        var dlgPurge = document.querySelector("#purge-confirmation");
+
+        menuitemPurge.addEventListener("click", function(e) {
+          dlgPurge.classList.remove("hide");
+          dlgPurge.open = true;
+        });
+
+        dlgPurge.addEventListener("temba-button-clicked", function(e) {
+          if ( !e.detail.button.secondary ) {
+            doPurgeOutbox("{% url 'channels.purge_outbox' channel.channel_type channel.uuid %}");
+          }
+          dlgPurge.open = false;
+        });
+      });
+
+      var doPurgeOutbox = function( aUrl ) {
+        $.ajax({ type: "GET", url: aUrl,
+            success: function( data, textStatus, xhr ) {
+              var dlg = document.querySelector("#purge-success");
+              dlg.classList.remove("hide");
+              dlg.open = true;
+            },
+            error: function( req, status, error ) {
+              var dlg = document.querySelector("#purge-fail");
+              dlg.querySelector('.fail-msg', dlg).innerHTML = req.status + " " + error;
+              dlg.classList.remove("hide");
+              dlg.open = true;
+            }
+        });
+      };
+    {% endif %}
 
   :javascript
     {% if start_date %}
