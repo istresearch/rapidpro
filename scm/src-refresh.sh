@@ -39,7 +39,7 @@ if [ -d "$SRC" ]; then
     # if what is found is a directory and not a symlink
     if [[ -d "$item" && ! -L "$item" ]]; then
       echo "Refreshing webapp src: `basename ${item}`"
-      rsync -a "${item}" /rapidpro/
+      rsync -a "${item}" "/rapidpro/`basename ${item}`"
     fi
   done
 fi
