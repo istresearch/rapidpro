@@ -145,17 +145,17 @@
         var dlgQrCode = document.querySelector("#app-qr");
         var setupQrCode = document.querySelector("#setup-qr-code");
         var dl_link = '{{ pm_app_url }}';
+        if ( dl_link ) dlgQrCode.querySelector('.dlapp-url').innerHTML = dl_link;
 
         menuitemQrCode.addEventListener("click", function(e) {
-          setupQrCode.classList.add("obscureqr");
+          if ( setupQrCode ) setupQrCode.classList.add("obscureqr");
           dlgQrCode.classList.remove("hide");
           dlgQrCode.open = true;
         });
 
-        if ( dl_link ) dlgQrCode.querySelector('.dlapp-url').innerHTML = dl_link;
         dlgQrCode.addEventListener("temba-button-clicked", function(e) {
           dlgQrCode.open = false;
-          setupQrCode.classList.remove("obscureqr");
+          if ( setupQrCode ) setupQrCode.classList.remove("obscureqr");
         });
       });
 
