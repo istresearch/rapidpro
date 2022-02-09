@@ -339,10 +339,10 @@
         cancelButtonName='Ok'
         destructive='true'
     )
-      .p-6.h3
+      .p-6.important
         -trans "An error has occured:"
-        %p.fail-msg
-          "Unknown error"
+      %p.fail-msg
+        "Unknown error"
 
 -block extra-less
   -compress css inline
@@ -359,6 +359,10 @@
             padding:0px;
             line-height:14px;
           }
+        }
+
+        .p-6.important {
+          font-weight: bolder;
         }
     {% endlessblock %}
 
@@ -396,7 +400,7 @@
             },
             error: function( req, status, error ) {
               var dlg = document.querySelector("#purge-fail");
-              dlg.querySelector('.fail-msg', dlg).innerHTML = req.status + " " + error;
+              dlg.querySelector('.fail-msg').innerHTML = req.status + " " + error;
               dlg.classList.remove("hide");
               dlg.open = true;
             }
