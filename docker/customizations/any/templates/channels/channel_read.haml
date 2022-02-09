@@ -1,0 +1,515 @@
+-extends "smartmin/read.html"
+-load smartmin temba compress humanize channels i18n tz
+
+-block title
+  .flex.items-start.flex-col
+    .name
+      -if object.parent
+        {{ object.parent.name }}
+      -else
+        {{ object.name|default:object.get_address_display }}
+
+-block subtitle
+  -if object.get_channel_type_display != object.name
+    .flex.mt-2
+      .flex.flex-col
+        .channel_type
+          -if object.parent
+            {{ object.name }}
+          -else
+            {{ object.get_channel_type_display }}
+            -trans "Channel"
+
+  -if object.name
+    .text-gray-500.text-base
+      {{ object.get_address_display }}
+
+  -if object.get_country_display
+    .text-gray-500.text-base
+      {{ object.get_country_display }}
+
+  -with object.get_delegate_channels as delegates
+    -if delegates
+      .channel-roles.mt-3
+        -for channel in delegates
+          .lbl.linked(onclick="goto(event, this)" href="{% url 'channels.channel_read' channel.uuid %}")
+            .flex.items-center
+              .text-base{class:'{{ channel|channel_icon }}'}
+              .name.mx-1
+                -if channel.is_delegate_sender
+                  -trans "Bulk sending"
+
+                -if channel.is_delegate_caller
+                  -trans "Voice calls"
+
+    .my-4.text-base
+      -if delayed_sync_event or unsent_msgs_count
+        .flex.items-center.text-error
+          .mr-1
+            .icon-warning.text-error.text-lg.mt-1
+          .message
+            -if delayed_sync_event
+              .inline-block.ml-2
+                -if last_sync
+                  -trans "Last synced"
+                  -blocktrans trimmed with last_sync.created_on|timesince as last_sync
+                    {{ last_sync }} ago
+                -else
+                  -trans "Not synced yet"
+
+            -if unsent_msgs_count
+              .text-error.text-base.inline-block.ml-2(onclick="goto(event)" href="{% url 'msgs.msg_failed' %}")
+                = unsent_msgs_count|intcomma
+                {% blocktrans trimmed count unsent_msgs_count=unsent_msgs_count %}
+                  unsent message
+                {% plural %}
+                  unsent messages
+                {% endblocktrans %}
+
+      -else
+        -if object.channel_type == 'A'
+          -if last_sync
+            -trans "Last synced"
+            -blocktrans trimmed with last_sync.created_on|timesince as last_sync
+              {{ last_sync }} ago
+          -else
+            -trans "Not synced yet"
+        -else
+          -trans "Activated"
+          {{ object.created_on }}
+
+
+-block top-form
+
+-block read-buttons
+
+-block pre-fields
+
+-block fields
+
+-block summary
+
+  -with object.get_sender as sender and object.get_caller as caller
+
+    -if object.channel_type == 'A'
+      .device
+        -if channel.name
+          {{ channel.name }}
+          \-
+        {{ channel.device }}
+        -if channel.os
+          .inline-block
+            (v{{channel.os}})
+        %span.number
+          {{ channel.get_address_display }}
+
+      -if last_sync
+        -if delayed_syncevents
+          <span class='text-error'>
+        -else
+          <span>
+
+        -trans "Last synced"
+        -blocktrans trimmed with last_sync.created_on|timesince as last_sync
+          {{ last_sync }} ago
+        </span>
+      -else
+        -trans "Device has not synced yet"
+
+    -else
+      .device
+        {{ object.get_channel_type_display }} -
+        -if object.name
+          {{ object.name }}
+        -else
+          -trans "Number"
+          &nbsp;
+          {{ object.get_address_display }}
+
+      -trans "Activated"
+      {{ object.created_on }}
+
+    -for channel in object.get_delegate_channels
+      .ml-1(class='{{ channel|channel_icon }}')
+
+      -if channel.is_delegate_sender
+        -trans "Bulk sending"
+
+      -if channel.is_delegate_caller
+        -trans "Voice calls"
+
+    -if object.channel_type == 'A'
+      -if unsent_msgs_count
+        .text-error
+          {{unsent_msgs_count|intcomma}}
+          {% blocktrans trimmed count unsent_msgs_count=unsent_msgs_count %}
+            unsent message
+          {% plural %}
+            unsent messages
+          {% endblocktrans %}
+
+-block content
+  -block charts-zone
+    -if start_date
+      -if object.channel_type == 'A'
+
+        -if last_sync
+          .sync-summary.mb-4
+            .flex.text-gray-600
+              .i-status.w-12.py-1.px-2
+                -ifequal last_sync.network_type "WIFI"
+                  .icon-connection.-mt-1{style:"font-size: 16px"}
+                -else
+                  .icon-radio{style:"font-size: 16px"}
+
+              .perc
+                -for net in network_share
+                  -if net.0 == last_sync.network_type
+                    {{ net.1 }}%
+
+              .t-status.px-2
+                -trans "ON"
+                = last_sync.network_type
+
+
+            .flex.text-gray-600
+              .i-status.w-12.px-3
+                -if last_sync.power_level < 20
+                  .mini-status.icon-battery-empty
+                -elif last_sync.power_level >= 20 and last_sync.power_level <= 80
+                  .mini-status.icon-battery-half
+                -else
+                  .mini-status.icon-battery-full.rotate
+
+              .t-status
+                {{last_sync.power_level}}%
+
+              .plugged.px-2
+                -if last_sync.power_status == 'UNK'
+                  -trans "UNKNOWN"
+                -if last_sync.power_status == 'DIS'
+                  -trans "DISCHARGING"
+                -if last_sync.power_status == 'CHA'
+                  -trans "CHARGING"
+                -if last_sync.power_status == 'FUL'
+                  -trans "FULLY CHARGED"
+
+
+
+      -else
+
+        -if msg_count or ivr_count or channel.get_error_log_count
+          %table.list.lined
+            %thead
+              %tr
+                %th
+                  -trans "Messages"
+
+                -if ivr_count
+                  %th
+                    -trans "IVR Messages"
+                %th
+                  -trans "Recent Errors"
+
+            %tbody
+
+              %tr
+                %td
+                  {{ msg_count|intcomma }}
+
+                -if ivr_count
+                  %td
+                    {{ ivr_count|intcomma }}
+                %td
+                  {{ channel.get_error_log_count|intcomma }}
+
+      .card.pt-8
+        %div#channel-chart
+
+      -if ivr_count
+        .minutes-disclaimer
+          In many cases operators round up to the nearest minute for billing. Minutes shown here are only a usage guideline.
+
+      %table.list.lined
+        %thead
+          %tr
+            %th
+              -trans "Month"
+            %th
+              -trans "Incoming Text Messages"
+            %th
+              -trans "Outgoing Text Messages"
+            -if ivr_count
+              %th
+                -trans "Incoming IVR Messages"
+              %th
+                -trans "Outgoing IVR Messages"
+        %tbody
+          -for month_data in message_stats_table
+            %tr
+              %td
+                = month_data.month_start|utc|date:"F Y"
+              %td
+                = month_data.incoming_messages_count|intcomma
+              %td
+                = month_data.outgoing_messages_count|intcomma
+              -if ivr_count
+                %td
+                  = month_data.incoming_ivr_count|intcomma
+                %td
+                  = month_data.outgoing_ivr_count|intcomma
+
+  -if object.channel_type == 'A'
+    %table.list.lined.mt-4
+      %thead
+        %tr
+          %th
+            -trans "Synced on"
+          %th.align-center
+            -trans "Incoming"
+          %th.align-center
+            -trans "Outgoing"
+          %th.align-center
+            -trans "Pending"
+          %th.align-center
+            -trans "Retry"
+          %th.align-center
+            -trans "Battery"
+          %th.align-center
+            -trans "Network"
+      %tbody
+        - for sync_event in latest_sync_events
+          %tr
+            %td
+              = sync_event.created_on
+            %td.align-center
+              = sync_event.incoming_command_count
+            %td.align-center
+              = sync_event.outgoing_command_count
+            %td.align-center
+              = sync_event.pending_message_count
+            %td.align-center
+              = sync_event.retry_message_count
+            %td.align-center
+              -if sync_event.power_status == 'CHA'
+                .glyph.icon-battery-charging
+              -else
+                -if sync_event.power_level < 20
+                  .glyph.icon-battery-empty
+                -elif sync_event.power_level >= 20 and sync_event.power_level <= 80
+                  .glyph.icon-battery-half
+                -else
+                  .glyph.icon-battery-full
+
+              &nbsp;{{ sync_event.power_level }}%
+            %td.align-center
+              - if sync_event.network_type == 'WIFI'
+                .glyph.icon-connection
+              -else
+                .glyph.icon-radio
+              -if sync_event.network_type == 'NONE' or sync_event.network_type == 'UNKNOWN'
+                -trans "&nbsp;&nbsp;OTHER"
+              -else
+                &nbsp;&nbsp;{{ sync_event.network_type }}
+
+-block post-content
+  - if org_perms.channels.channel_delete
+    %temba-dialog#purge-confirmation.hide(
+        header='{{ _("Purge Outbox")|escapejs }}'
+        primaryButtonName='{{ _("Purge")|escapejs }}'
+        destructive='true'
+    )
+      .p-6.confirmation-body
+        %p
+          -trans "Purge all messages from the outbox?"
+        %p
+          -trans "Once the outbox is purged, it's messages will be gone forever. There is no way to undo this operation."
+
+    %temba-dialog#purge-success.hide(
+        header='{{ _("Purge Outbox")|escapejs }}'
+        primaryButtonName=''
+        cancelButtonName='Ok'
+    )
+      .p-6
+        -trans "Purge Successful"
+
+    %temba-dialog#purge-fail.hide(
+        header='{{ _("Purge Outbox")|escapejs }}'
+        primaryButtonName=''
+        cancelButtonName='Ok'
+    )
+      .p-6.important
+        -trans "An error has occured:"
+      %p.fail-msg
+        "Unknown error"
+
+-block extra-less
+  -compress css inline
+    {% lessblock %}
+      :plain
+        a.errored:hover {
+          color:@flat-darkred;
+        }
+
+        .title {
+          .channel-roles {
+            font-size:14px;
+            margin-top:0px;
+            padding:0px;
+            line-height:14px;
+          }
+        }
+
+        .p-6.important {
+          font-weight: bolder;
+        }
+    {% endlessblock %}
+
+-block extra-script
+  {{ block.super }}
+
+  -if start_date
+    <script src="{{ STATIC_URL }}bower/highcharts/highcharts.js"></script>
+
+  :javascript
+    {% if org_perms.channels.channel_delete %}
+      window.addEventListener('DOMContentLoaded', function(e) {
+        var menuitemPurge = document.querySelector(".mi-purge-outbox");
+        var dlgPurge = document.querySelector("#purge-confirmation");
+
+        menuitemPurge.addEventListener("click", function(e) {
+          dlgPurge.classList.remove("hide");
+          dlgPurge.open = true;
+        });
+
+        dlgPurge.addEventListener("temba-button-clicked", function(e) {
+          if ( !e.detail.button.secondary ) {
+            doPurgeOutbox("{% url 'channels.purge_outbox' channel.channel_type channel.uuid %}");
+          }
+          dlgPurge.open = false;
+        });
+      });
+
+      var doPurgeOutbox = function( aUrl ) {
+        $.ajax({ type: "GET", url: aUrl,
+            success: function( data, textStatus, xhr ) {
+              var dlg = document.querySelector("#purge-success");
+              dlg.classList.remove("hide");
+              dlg.open = true;
+            },
+            error: function( req, status, error ) {
+              var dlg = document.querySelector("#purge-fail");
+              dlg.querySelector('.fail-msg').innerHTML = req.status + " " + error;
+              dlg.classList.remove("hide");
+              dlg.open = true;
+            }
+        });
+      };
+    {% endif %}
+
+  :javascript
+    {% if start_date %}
+
+      $(function () {
+        var chart;
+        $(document).ready(function() {
+            chart = new Highcharts.Chart({
+                credits: {
+                    enabled: false
+                },
+                colors: ['#80b9fb',
+                        '#2980b9',
+                        '#CD76F0',
+                        '#8e44ad',
+                        '#633077'],
+                chart: {
+                    renderTo: 'channel-chart',
+                    zoomType: 'x',
+                    type: 'column'
+                },
+                title: {
+                    text: null
+                },
+                xAxis: {
+                    type: 'datetime',
+                    min: Date.UTC({{start_date|date:'Y'}}, {{start_date|date:'m'|add:-1}}, {{start_date|date:'d'}}),
+                    max: Date.UTC({{end_date|date:'Y'}}, {{end_date|date:'m'|add:-1}}, {{end_date|date:'d'}}),
+                    dateTimeLabelFormats:
+                    {
+                      millisecond: '%H:%M:%S.%L',
+                      second: '%H:%M:%S',
+                      minute: '%H:%M',
+                      hour: '%H:%M',
+                      day: '%b %e',
+                      week: '%e. %b',
+                      month: '%b \'%y',
+                      year: '%Y'
+                    },
+
+                },
+                yAxis: [{
+                    title: {
+                        text: '{{ _("Minutes")|escapejs }}'
+                    },
+                    opposite: false,
+                    min: 0,
+                    allowDecimals: false
+                    {% if not has_messages %}
+                    , max: 10
+                    {% endif %}
+                },{
+                    title: {
+                        text: '{{ _("Messages")|escapejs }}'
+                    },
+                    opposite: true,
+                    min: 0,
+                    allowDecimals: false
+                    {% if not has_messages %}
+                    , max: 10
+                    {% endif %}
+                }],
+                plotOptions: {
+                series: {
+                  pointPadding: .1,
+                  groupPadding: .1,
+                  stacking: 'normal'
+                }
+                },
+                tooltip: {
+                    formatter: function() {
+                            return '<b>'+ this.series.name + '</b>: ' + this.y +'<br/>'+
+                            Highcharts.dateFormat('%b %e, %Y', this.x);
+                    }
+                },
+                series: [
+                  {% for msg_stat in message_stats %}
+                  {
+                    yAxis:1,
+                    name: '{{msg_stat.name|safe}}',
+                    data: [
+                    {% for elt in msg_stat.data %}[Date.UTC({{elt.date|date:'Y'}}, {{elt.date|date:'m'|add:-1}}, {{elt.date|date:'d'}}), {{elt.count}}]{% if not forloop.last %},
+                    {% endif %}{% endfor %}
+                    ]
+                  }
+                  {% if not forloop.last %},{% endif %}
+                  {% empty %}
+                    {}
+                  {% endfor %}
+                  {% if ivr_count %}
+                  ,{
+                    type: 'spline',
+                    name: 'Minutes',
+                    yAxis:0,
+                    data: [
+                    {% for point in call_duration %}[Date.UTC({{point.date|date:'Y'}}, {{point.date|date:'m'|add:-1}}, {{point.date|date:'d'}}), Math.floor(100 * ({{point.duration}} / 60)) / 100]{% if not forloop.last %},
+                    {% endif %}{% endfor %}
+                    ]
+                  }
+
+                  {% endif %}
+                ]
+            });
+          });
+
+      });
+    {% endif %}

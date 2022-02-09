@@ -33,11 +33,7 @@ jobs:
             BRANCH=${CIRCLE_BRANCH#*/}
             VERSION_STR=$(cat VERSION)
             if [[ ! -z $CIRCLE_TAG ]]; then
-              if [[ $CIRCLE_TAG == "deploy2dev" ]]; then
-                VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
-              else
-                VERSION_TAG="${VERSION_STR}"
-              fi
+              VERSION_TAG="${VERSION_STR}"
             elif [[ "$BRANCH" == "develop" ]]; then
               VERSION_TAG="${VERSION_STR}-dev"
             else
@@ -45,10 +41,10 @@ jobs:
             fi
             echo ${VERSION_TAG} > scm/version_tag.txt
       - run:
-          name: Ensure RpApp Image Exists, building if necessary
+          name: Ensure PyApp Image Exists, building if necessary
           command: |
             VERSION_TAG=$(cat scm/version_tag.txt)
-            source scm/utils-engage.sh; EnsureRpAppImage default "$VERSION_TAG"
+            source scm/utils-engage.sh; EnsurePyAppImage default "$VERSION_TAG"
       - run:
           name: Build "Default Branding" Image
           command: |
@@ -89,11 +85,7 @@ jobs:
             BRANCH=${CIRCLE_BRANCH#*/}
             VERSION_STR=$(cat VERSION)
             if [[ ! -z $CIRCLE_TAG ]]; then
-              if [[ $CIRCLE_TAG == "deploy2dev" ]]; then
-                VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
-              else
-                VERSION_TAG="${VERSION_STR}"
-              fi
+              VERSION_TAG="${VERSION_STR}"
             elif [[ "$BRANCH" == "develop" ]]; then
               VERSION_TAG="${VERSION_STR}-dev"
             else
@@ -128,9 +120,4 @@ workflows:
             branches:
               only:
                 - /^develop$/
-                - /^dev-.*/
-                - /^upstream_dev__merge$/
-            tags:
-              only:
-                - /^deploy2dev$/
-                # until we also get branch name, this tag seems 'useless'.
+                - /^dev[-\/].*/
