@@ -76,6 +76,9 @@
                         %div.multiselect-header
                           %span
                             Select all
+                    %th
+                    %th
+                    %th
               %tbody
                 -for obj in object_list
                   %tr.campaign.object-row.select-row{ data-object-id: "{{ obj.id }}", onrowclick:'gotoLink("{% url "campaigns.campaign_read" obj.id%}")'}
