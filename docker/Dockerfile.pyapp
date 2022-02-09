@@ -46,15 +46,10 @@ RUN apk add --update --no-cache \
 	rsync \
  && rm -rf /var/cache/apk/*
 
-USER engage
 WORKDIR /rapidpro
 
 COPY --from=load-files --chown=engage:engage /opt/code2use /opt/rp
-RUN rsync -a /opt/rp/ ./
-
-# cleanup
-USER root
-RUN rm -R /opt/rp
+RUN rsync -a /opt/rp/ ./ && rm -R /opt/rp
 
 ARG UWSGI_PORT
 ARG UWSGI_NUM_WORKERS
@@ -73,20 +68,10 @@ ENV STARTUP_CMD="/venv/bin/uwsgi --http-auto-chunked --http-keepalive"
 
 ENV CELERY_CMD="/venv/bin/celery --beat --app=temba worker --loglevel=INFO --queues=celery,msgs,flows,handler"
 
-USER engage
-WORKDIR /rapidpro
+# apply branding/overrides
+COPY --chown=engage:engage docker/customizations/any /opt/rp
+RUN rsync -a /opt/rp/ ./ && rm -R /opt/rp
 
-COPY --chown=engage:engage docker/overrides/urls.py                   temba/urls.py
-
-# 500.html needed to keep the missing template from causing an exception during error handling
-COPY --chown=engage:engage docker/overrides/500.html                  templates/500.html
-
-COPY --chown=engage:engage docker/overrides/init_db.sql               ./init_db.sql
-COPY --chown=engage:engage docker/overrides/clear-compressor-cache.py ./clear-compressor-cache.py
-COPY --chown=engage:engage docker/overrides/Procfile                  ./Procfile
-COPY --chown=engage:engage docker/overrides/startup.py                ./startup.py
-COPY --chown=engage:engage docker/overrides/db-init.sh                ./db-init.sh
-COPY --chown=engage:engage docker/overrides/web-static.sh             ./web-static.sh
-
-COPY --chown=engage:engage docker/overrides/startup.sh                /startup.sh
+COPY --chown=engage:engage docker/customizations/startup.sh /startup.sh
 CMD ["/startup.sh"]
+USER engage

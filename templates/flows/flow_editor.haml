@@ -5,7 +5,8 @@
   {{ object.name }}
 
 -block extra-style
-  %link(rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500")
+  -# do not want to use non-local fonts
+  -# %link(rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:300,400,500")
 
   -for css in styles
     %link(rel="stylesheet" type="text/css" href="{{css}}")

@@ -1,16 +1,9 @@
-import importlib
-
-import regex
 from django.conf import settings
-from django.conf.urls import url
-from django.urls import path, include
+from django.conf.urls import include, url
 from django.conf.urls.static import static
 from django.contrib.auth.models import AnonymousUser, User
 from django.views.generic import RedirectView
 from django.views.i18n import JavaScriptCatalog
-from regex import escape
-
-from temba.triggers import views
 
 from celery.signals import worker_process_init
 
@@ -52,6 +45,7 @@ urlpatterns = [
     url(r"^{}".format(VHOST_NAME), include("temba.triggers.urls")),
     url(r"^{}relayers/relayer/sync/(\d+)/$".format(VHOST_NAME), sync, {}, "sync"),
     url(r"^{}relayers/relayer/register/$".format(VHOST_NAME), register, {}, "register"),
+    url(r"^{}users/user/forget/".format(VHOST_NAME), RedirectView.as_view(pattern_name="orgs.user_forget", permanent=True)),
     url(r"^{}users/".format(VHOST_NAME), include("smartmin.users.urls")),
     url(r"^{}imports/".format(VHOST_NAME), include("smartmin.csv_imports.urls")),
     url(r"^{}assets/".format(VHOST_NAME), include("temba.assets.urls")),
@@ -65,9 +59,10 @@ if len(VHOST_NAME) > 1:
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
+
 # import any additional urls
 for app in settings.APP_URLS:  # pragma: needs cover
-    importlib.import_module(app)
+    urlpatterns.append(url(r"^", include(app)))
 
 # initialize our analytics (the signal below will initialize each worker)
 init_analytics()
