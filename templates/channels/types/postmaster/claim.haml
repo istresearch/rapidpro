@@ -147,7 +147,7 @@
         var dl_link = '{{ pm_app_url }}';
 
         menuitemQrCode.addEventListener("click", function(e) {
-          setupQrCode.classList.add("obscureqr")
+          setupQrCode.classList.add("obscureqr");
           dlgQrCode.classList.remove("hide");
           dlgQrCode.open = true;
         });
@@ -155,7 +155,7 @@
         if ( dl_link ) dlgQrCode.querySelector('.dlapp-url').innerHTML = dl_link;
         dlgQrCode.addEventListener("temba-button-clicked", function(e) {
           dlgQrCode.open = false;
-          setupQrCode.classList.remove("obscureqr")
+          setupQrCode.classList.remove("obscureqr");
         });
       });
 
