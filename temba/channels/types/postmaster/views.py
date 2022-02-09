@@ -25,6 +25,9 @@ from ...views import (
 class ClaimView(BaseClaimNumberMixin, SmartFormView):
     code = "PSM"
     uuid = None
+    extra_links = None
+    pm_app_url = getattr(settings, "POST_MASTER_DL_URL", ())
+    pm_app_qrcode = getattr(settings, "POST_MASTER_DL_QRCODE", ())
 
     class Form(ClaimViewMixin.Form):
         CHAT_MODE_CHOICES = getattr(settings, "CHAT_MODE_CHOICES", ())
@@ -92,9 +95,32 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
     def get_claim_url(self):
         return reverse("channels.types.postmaster.claim")
 
+    def get_gear_links(self):
+        links = []
+
+        extra_links = self.extra_links
+        if extra_links:
+            for extra in extra_links:
+                links.append(dict(title=extra["name"], href=reverse(extra["link"], args=[self.object.uuid])))
+
+        if self.pm_app_qrcode:
+            links.append(
+                dict(
+                    title="Show App QR",
+                    modax="Postmaster App QR",
+                    as_btn="true",
+                    href="_blank",
+                    js_class="mi-pm-app-qr",
+                )
+            )
+
+        return links
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['po_qr'] = postoffice.fetch_qr_code(self.org)
+        context['pm_app_url'] = self.pm_app_url
+        context['pm_app_qrcode'] = self.pm_app_qrcode
         return context
 
     def get_success_url(self):

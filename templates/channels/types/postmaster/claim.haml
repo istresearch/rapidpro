@@ -9,7 +9,7 @@
   -if po_qr and po_qr.qr_base64
 
     %div{class:"pm-qr;"}
-      %img{ src:"data:png;base64, {{po_qr.qr_base64}}" }{style:"padding-left: 186px; padding-bottom: 20px"}
+      %img#setup-qr-code{src:"data:png;base64, {{po_qr.qr_base64}}" }{style:"padding-left: 186px; padding-bottom: 20px"}
       %div{style:"padding-left: 176px; padding-bottom: 20px"}
         %div
           %code
@@ -30,21 +30,18 @@
 
   -block form-buttons
 
--if po_qr and po_qr.qr_base64
-  -block extra-script
-    {{ block.super }}
-
-    :javascript
-      setInterval(
-      function pollUntilDone(url, interval, timeout) {
-        if($('#enable-multiple')[0].checked == false){
-          $.get('{% url "ext.api.v2.channel.status" %}.json?api_key={{po_qr.data.api_key}}', function(relayer_id) {
-            if (relayer_id && relayer_id.length > 0) {
-              window.location = '{% url "channels.channel_manage" %}?search=' + relayer_id;
-            }
-          });
-        }
-      }, 5000);
+-block post-content
+  -if pm_app_qrcode
+    %temba-dialog#app-qr.hide(
+        header='{{ _("Download Postmaster")|escapejs }}'
+        primaryButtonName=''
+        cancelButtonName='Ok'
+    )
+      .p-6.important
+        -trans "Scan the QR code with the phone to download the app or type in the link shown on the phone's browser."
+      %img#dlapp-qr-code{src:"{{ pm_app_qrcode }}" }
+      %p.p-6.dlapp-url
+        "replace me"
 
 -block extra-style
   {{ block.super }}
@@ -116,3 +113,63 @@
     .slider.round:before {
       border-radius: 50%;
     }
+
+    .obscureqr {
+      filter: blur(4px);
+    }
+
+    .p-6.important {
+      font-weight: bolder;
+    }
+
+    #dlapp-qr-code {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .dlapp-url {
+      text-align: center;
+      font-size: large;
+      font-family: RobotoMono;
+      padding-top: 0px;
+      padding-bottom: 0px;
+    }
+
+-block extra-script
+  {{ block.super }}
+
+  -if pm_app_qrcode
+    :javascript
+      window.addEventListener('DOMContentLoaded', function(e) {
+        var menuitemQrCode = document.querySelector(".mi-pm-app-qr");
+        var dlgQrCode = document.querySelector("#app-qr");
+        var setupQrCode = document.querySelector("#setup-qr-code");
+        var dl_link = '{{ pm_app_url }}';
+        if ( dl_link ) dlgQrCode.querySelector('.dlapp-url').innerHTML = dl_link;
+
+        menuitemQrCode.addEventListener("click", function(e) {
+          if ( setupQrCode ) setupQrCode.classList.add("obscureqr");
+          dlgQrCode.classList.remove("hide");
+          dlgQrCode.open = true;
+        });
+
+        dlgQrCode.addEventListener("temba-button-clicked", function(e) {
+          dlgQrCode.open = false;
+          if ( setupQrCode ) setupQrCode.classList.remove("obscureqr");
+        });
+      });
+
+  -if po_qr and po_qr.qr_base64
+    :javascript
+      setInterval(
+        function pollUntilDone(url, interval, timeout) {
+          if($('#enable-multiple')[0].checked == false){
+            $.get('{% url "ext.api.v2.channel.status" %}.json?api_key={{po_qr.data.api_key}}', function(relayer_id) {
+              if (relayer_id && relayer_id.length > 0) {
+                window.location = '{% url "channels.channel_manage" %}?search=' + relayer_id;
+              }
+            });
+          }
+        },
+        5000
+      );
