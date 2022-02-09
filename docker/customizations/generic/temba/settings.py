@@ -22,6 +22,11 @@ MAX_ORG_LABELS = int(env('MAX_ORG_LABELS', 500))
 POST_OFFICE_QR_URL = env('POST_OFFICE_QR_URL', 'http://localhost:8088/postoffice/engage/claim')
 POST_OFFICE_API_KEY = env('POST_OFFICE_API_KEY', 'abc123')
 
+POST_MASTER_DL_URL = env('POST_MASTER_DL_URL', required=False)
+POST_MASTER_DL_QRCODE = env('POST_MASTER_DL_QRCODE', required=False)
+if POST_MASTER_DL_QRCODE is not None and not POST_MASTER_DL_QRCODE.startsWith("data:"):
+    POST_MASTER_DL_QRCODE = "data:png;base64, " + POST_MASTER_DL_QRCODE
+
 if SUB_DIR is not None and len(SUB_DIR) > 0:
     MEDIA_URL = "{}{}".format(SUB_DIR, MEDIA_URL)
 
