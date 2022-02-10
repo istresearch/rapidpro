@@ -94,13 +94,13 @@ jobs:
             echo ${VERSION_TAG} > scm/version_tag.txt
       - run:
           name: Deploy To K8s
-          #    --data build_parameters[DEPLOY_IMAGE]=$CIRCLE_PROJECT_USERNAME/p4-engage:${VERSION_TAG} \
           command: |
             VERSION_TAG=$(cat scm/version_tag.txt)
             K8_URL=https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/develop
             curl -XPOST --user "${oCI_API_TOKEN}:" \
               --data build_parameters[CIRCLE_JOB]=eks_deploy \
               --data build_parameters[DEPLOY_PROJECT]=pulse-engage \
+              --data build_parameters[DEPLOY_IMAGE]=$CIRCLE_PROJECT_USERNAME/p4-engage:${VERSION_TAG} \
               $K8_URL          
 
 workflows:
