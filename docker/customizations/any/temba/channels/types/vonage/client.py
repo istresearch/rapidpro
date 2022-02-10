@@ -94,6 +94,18 @@ class VonageClient:
                             "http_method": "POST"
                         }
                     }
+                },
+                "voice": {
+                    "webhooks": {
+                        "answer_url": {
+                            "address": f"https://{domain}{inbound_url}",
+                            "http_method": "POST"
+                        },
+                        "event_url": {
+                            "address": f"https://{domain}{status_url}",
+                            "http_method": "POST"
+                        }
+                    }
                 }
             }
         })
