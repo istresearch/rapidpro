@@ -37,7 +37,7 @@
         primaryButtonName=''
         cancelButtonName='Ok'
     )
-      .p-6.important
+      #dlapp-msg.p-6
         -trans "Scan the QR code with the phone to download the app or type in the link shown on the phone's browser."
       %img#dlapp-qr-code{src:"{{ pm_app_qrcode }}" }
       %p.p-6.dlapp-url
@@ -118,8 +118,9 @@
       filter: blur(4px);
     }
 
-    .p-6.important {
+    #dlapp-msg {
       font-weight: bolder;
+      padding-bottom: 0;
     }
 
     #dlapp-qr-code {
@@ -132,7 +133,7 @@
       font-size: large;
       font-family: RobotoMono;
       padding-top: 0px;
-      padding-bottom: 0px;
+      padding-bottom: 8px;
     }
 
 -block extra-script

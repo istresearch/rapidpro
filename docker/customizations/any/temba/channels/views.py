@@ -811,7 +811,6 @@ class ChannelCRUDL(SmartCRUDL):
                     dict(
                         title="Purge Outbox",
                         as_btn="true",
-                        href="_blank",
                         js_class="mi-purge-outbox",
                     )
                 )
