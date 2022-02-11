@@ -162,36 +162,34 @@
 
   .flex.flex-col.h-full
     <!-- Header -->
+    #header.flex.flex-row.w-full
+      #logo-area.flex.flex-col
+        %a#big-logo.logo.icon-logo{href:"{% if brand.logo_link %}{{brand.logo_link}}{%else%}/{%endif%}", title:"{{brand.name}}", class:"hover:no-underline"}
+          .name
+            {{brand.name}}
+          %img{ src:"{{ STATIC_URL }}{{brand.logo}}" }
+        %span.version-str
+          {% if user.is_authenticated and brand.version %}{{brand.version}}{%else%}&nbsp;{%endif%}
 
-    -if user_org
-      .org-header.self-end
-        -if user_orgs|length > 1
-          .pull-right.toggle
-            .icon-menu-2
+      #menu-area.flex.flex-col
+        -if user_org
+          .org-header
+            -if user_orgs|length > 1
+              .pull-right.toggle
+                .icon-menu-2
 
-        .org
-          {{ user_org.name|truncatechars:30 }}
+            .org
+              {{ user_org.name|truncatechars:30 }}
 
-        .other-orgs.hide
-          -for org in user_orgs
-            -if org != user_org
-              .org
-                %a.posterize{href:'{% url "orgs.org_choose"%}?organization={{org.pk}}'}
-                  {{ org.name }}
+            .other-orgs.hide
+              -for org in user_orgs
+                -if org != user_org
+                  .org
+                    %a.posterize{href:'{% url "orgs.org_choose"%}?organization={{org.pk}}'}
+                      {{ org.name }}
 
-
-
-    #header
-      &nbsp;
-
-
-    %a#big-logo.logo.icon-logo{href:"{% if brand.logo_link %}{{brand.logo_link}}{%else%}/{%endif%}", title:"{{brand.name}}", class:"hover:no-underline"}
-      .name
-        {{brand.name}}
-      %img{ src:"{{ STATIC_URL }}{{brand.logo}}" }
-
-    -block nav
-      -include 'includes/nav.html'
+        -block nav
+          -include 'includes/nav.html'
 
 
     -if messages

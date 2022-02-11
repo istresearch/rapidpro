@@ -3,6 +3,7 @@
 body {
   font-weight: 300;
   line-height: 1.5;
+  max-width: 100vw;
 }
 
 .btn-group>.btn:last-child,
@@ -167,4 +168,55 @@ form.smartmin-form {
 .button-light:active {
   box-shadow: 0 1px rgba(0, 0, 0, 0.3);
   transform: translateY(2px);
+}
+
+/* HEADER now using Flex box for all its elements, unset some prior CSS hacks. */
+#header {
+  padding: unset;
+  height: unset;
+  background-color: #152c3f;
+  #logo-area {
+    margin-top: 1em;
+    margin-left: 2em;
+    margin-bottom: 0.5em;
+    .logo {
+      font-size: unset;
+      position: unset;
+      left: unset;
+      top: unset;
+      padding-left: unset;
+      padding-top: unset;
+      display: unset;
+      height: auto;
+      width: auto;
+    }
+
+    .version-str {
+      font: caption;
+      font-size: small;
+      letter-spacing: 0.05em;
+      margin-top: 3px;
+      color: var(--color-nav-unselected);
+      align-self: center;
+    }
+  }
+  #menu-area {
+    flex-grow: 1;
+    margin-right: 2em;
+    align-self: end;
+    .org-header {
+      align-self: end;
+      margin-top: unset;
+      margin-bottom: 0.5em;
+      margin-right: unset;
+    }
+    #menu {
+      min-height: unset;
+      margin-top: unset;
+      padding-bottom: 0.5em;
+      .more .icon-menu-4 {
+        margin-right: unset;
+      }
+    }
+  }
 }

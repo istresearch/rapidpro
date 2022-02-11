@@ -185,7 +185,8 @@ BRANDING['engage'] = {
     'description': _("Addressing the most urgent human security issues faced by the world’s vulnerable populations."),
     'credits': _("Copyright &copy; 2012-%s IST Research Corp, and others. All Rights Reserved." % (
         datetime.now().strftime('%Y')
-    ))
+    )),
+    'version': _("v%s" % env('VERSION', ''))
 }
 
 DEFAULT_BRAND = 'engage'
