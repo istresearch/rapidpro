@@ -158,9 +158,9 @@ version_str = None
 vtag = env('VERSION_TAG', '')
 vstr = env('VERSION_CI', '')
 if vtag and vstr and vtag.startswith('ci'):
-    version_str = "v%s (%s)".format(vstr, vtag)
+    version_str = "v{} ({})".format(vstr, vtag)
 elif vtag:
-    version_str = "v%s".format(vtag)
+    version_str = "v{}".format(vtag)
 
 try:
     BRANDING
