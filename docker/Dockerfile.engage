@@ -14,7 +14,7 @@ LABEL org.label-schema.name="Engage" \
       org.label-schema.version=$VERSION_TAG \
       org.label-schema.schema-version="1.0"
 
-ENV VERSION=$VERSION_TAG
+ENV VERSION_TAG=$VERSION_TAG
 
 # apply branding/overrides
 COPY --chown=engage:engage docker/customizations/engage /opt/rp

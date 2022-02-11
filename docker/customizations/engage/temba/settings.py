@@ -154,6 +154,14 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', 'mypassword')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
 
+version_str = None
+vtag = env('VERSION_TAG', '')
+vstr = env('VERSION_CI', '')
+if vtag and vstr and vtag.startswith('ci'):
+    version_str = "v%s (%s)".format(vstr, vtag)
+elif vtag:
+    version_str = "v%s".format(vtag)
+
 try:
     BRANDING
 except NameError:
@@ -186,7 +194,7 @@ BRANDING['engage'] = {
     'credits': _("Copyright &copy; 2012-%s IST Research Corp, and others. All Rights Reserved." % (
         datetime.now().strftime('%Y')
     )),
-    'version': _("v%s" % env('VERSION', ''))
+    'version': version_str
 }
 
 DEFAULT_BRAND = 'engage'
