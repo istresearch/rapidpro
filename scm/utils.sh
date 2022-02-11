@@ -527,7 +527,7 @@ function parseVersionInfo
   VER_INT="${VER_NUM//.}"
 
   if [[ ! -d "${WORKSPACE}/info" ]]; then
-    mkdir "${WORKSPACE}/info"
+    mkdir -p "${WORKSPACE}/info"
   fi
 
   VER_NUM_FILE="${WORKSPACE}/info/version_num.txt"
