@@ -809,9 +809,10 @@ class ChannelCRUDL(SmartCRUDL):
                 # append the Purge Outbox link as a button (requires modax="button text")
                 links.append(
                     dict(
+                        id="action-purge",
                         title="Purge Outbox",
                         as_btn="true",
-                        js_class="mi-purge-outbox",
+                        js_class="button-danger",
                     )
                 )
 

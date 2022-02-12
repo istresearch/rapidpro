@@ -175,6 +175,7 @@ BRANDING['engage'] = {
     'org': env('BRANDING_ORG', 'IST'),
     'colors': dict([rule.split('=') for rule in env('BRANDING_COLORS', 'primary=#0c6596').split(';')]),
     'styles': ['brands/engage/font/style.css', 'brands/engage/less/style.less', 'fonts/style.css'],
+    'final_style': 'brands/engage/less/engage.less',
     'welcome_topup': 1000,
     'email': env('BRANDING_EMAIL', 'pulse@istresearch.com'),
     'support_email': env('BRANDING_SUPPORT_EMAIL', 'pulse@istresearch.com'),

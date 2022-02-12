@@ -130,6 +130,8 @@
       -compress css
         %link{rel:"stylesheet", href:"{{ STATIC_URL }}css/tailwind.css", type:"text/css"}
         %link{rel:"stylesheet", href:"{{ STATIC_URL }}less/refresh.less", type:"text/less"}
+        -if brand.final_style
+          %link{rel:"stylesheet", href:"{{ STATIC_URL }}{{brand.final_style}}", type:"text/less"}
 
       -block extra-less
       -block extra-style
@@ -174,14 +176,14 @@
       #menu-area.flex.flex-col
         -if user_org
           .org-header
-            -if user_orgs|length > 1
-              .pull-right.toggle
-                .icon-menu-2
+            .flex.flex-row
+              #org-name.org
+                {{ user_org.name }}
+              -if user_orgs|length > 1
+                #btn-org-list.pull-right.toggle
+                  .icon-menu-2
 
-            .org
-              {{ user_org.name|truncatechars:30 }}
-
-            .other-orgs.hide
+            #org-list.other-orgs.hide
               -for org in user_orgs
                 -if org != user_org
                   .org
@@ -334,7 +336,7 @@
 
         $(".btn").tooltip();
 
-        $('.org-header > .toggle').live('click', function(evt) {
+        $('#btn-org-list').live('click', function(evt) {
           evt.stopPropagation();
           var header = $('.org-header');
           if (header.hasClass('expanded')) {
@@ -344,7 +346,7 @@
           }
         });
 
-        $('.org-header').live('click', function(evt) {
+        $('#org-name').live('click', function(evt) {
           url = '{% url "orgs.org_home" %}';
           evt.stopPropagation();
           if (evt.ctrlKey || evt.metaKey){

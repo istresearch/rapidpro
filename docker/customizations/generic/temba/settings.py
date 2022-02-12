@@ -24,7 +24,7 @@ POST_OFFICE_API_KEY = env('POST_OFFICE_API_KEY', 'abc123')
 
 POST_MASTER_DL_URL = env('POST_MASTER_DL_URL', required=False)
 POST_MASTER_DL_QRCODE = env('POST_MASTER_DL_QRCODE', required=False)
-if POST_MASTER_DL_QRCODE is not None and not POST_MASTER_DL_QRCODE.startsWith("data:"):
+if POST_MASTER_DL_QRCODE is not None and not POST_MASTER_DL_QRCODE.startswith("data:"):
     POST_MASTER_DL_QRCODE = "data:png;base64, " + POST_MASTER_DL_QRCODE
 
 if SUB_DIR is not None and len(SUB_DIR) > 0:
@@ -161,13 +161,14 @@ try:
 except NameError:
     BRANDING = {}
 
-BRANDING['generic'] = {
+BRANDING['engage'] = {
     'logo_link': env('BRANDING_LOGO_LINK', '/{}/'.format(SUB_DIR) if SUB_DIR is not None else '/'),
     'slug': env('BRANDING_SLUG', 'engage'),
     'name': env('BRANDING_NAME', 'Engage'),
-    'org': env('BRANDING_ORG', 'IST'),
+    'org': env('BRANDING_ORG', 'Global Comms'),
     'colors': dict([rule.split('=') for rule in env('BRANDING_COLORS', 'primary=#0c6596').split(';')]),
-    'styles': ['brands/rapidpro/font/style.css', 'brands/generic/less/style.less', 'fonts/style.css'],
+    'styles': ['brands/engage/font/style.css', 'brands/engage/less/style.less', 'fonts/style.css'],
+    'final_style': 'brands/engage/less/engage.less',
     'welcome_topup': 1000,
     'email': env('BRANDING_EMAIL', 'email@localhost.localdomain'),
     'support_email': env('BRANDING_SUPPORT_EMAIL', 'email@localhost.localdomain'),
@@ -175,9 +176,9 @@ BRANDING['generic'] = {
     'api_link': env('BRANDING_API_LINK', 'https://api.localhost.localdomain'),
     'docs_link': env('BRANDING_DOCS_LINK', 'http://docs.localhost.localdomain'),
     'domain': HOSTNAME,
-    'favico': env('BRANDING_FAVICO', 'brands/generic/favicon.ico'),
-    'splash': env('BRANDING_SPLASH', 'brands/generic/splash.png'),
-    'logo': env('BRANDING_LOGO', 'brands/generic/logo.png'),
+    'favico': env('BRANDING_FAVICO', 'brands/engage/images/engage.ico'),
+    'splash': env('BRANDING_SPLASH', 'brands/engage/images/splash.png'),
+    'logo': env('BRANDING_LOGO', 'brands/engage/images/logo.png'),
     'allow_signups': env('BRANDING_ALLOW_SIGNUPS', True),
     "flow_types": ["M", "V", "S"],  # see Flow.TYPE_MESSAGE, Flow.TYPE_VOICE, Flow.TYPE_SURVEY
     'tiers': dict(import_flows=0, multi_user=0, multi_org=0),
@@ -187,7 +188,7 @@ BRANDING['generic'] = {
     'credits': _("")
 }
 
-DEFAULT_BRAND = 'generic'
+DEFAULT_BRAND = 'engage'
 
 if 'SUB_DIR' in locals() and SUB_DIR is not None:
     BRANDING[DEFAULT_BRAND]["sub_dir"] = SUB_DIR

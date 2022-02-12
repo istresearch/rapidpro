@@ -26,8 +26,12 @@
                 {{link.flag}}
 
           -else
-            .button-light{onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
-              {{link.title}}
+            -if link.id
+              .button-light{id:'{{link.id}}', onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}' }
+                {{link.title}}
+            -else
+              .button-light{onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}' }
+                {{link.title}}
 
       -else
         -# instead of forcing only the first gear link as a button, check for "first or as_btn and not as_gear_item"
@@ -42,12 +46,20 @@
 
               -else
                 -if link.js_class
-                  .button-light{class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
-                    {{link.title}}
+                  -if link.id
+                    .button-light{id:'{{link.id}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+                      {{link.title}}
+                  -else
+                    .button-light{class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+                      {{link.title}}
 
                 -else
-                  .button-light{onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
-                    {{link.title}}
+                  -if link.id
+                    .button-light{id:'{{link.id}}', onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+                      {{link.title}}
+                  -else
+                    .button-light{onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+                      {{link.title}}
 
         .btn-group.gear-menu.ml-3
           .button-light.p-icon.dropdown-toggle.text-center{ data-toggle:"dropdown" }
