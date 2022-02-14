@@ -360,10 +360,6 @@
           }
         }
 
-        .mi-purge-outbox {
-          background: var(--color-button-destructive);
-          color: var(--color-button-destructive-text);
-        }
         .p-6.important {
           font-weight: bolder;
         }
@@ -378,7 +374,7 @@
   :javascript
     {% if org_perms.channels.channel_delete %}
       window.addEventListener('DOMContentLoaded', function(e) {
-        var menuitemPurge = document.querySelector(".mi-purge-outbox");
+        var menuitemPurge = document.querySelector("#action-purge");
         var dlgPurge = document.querySelector("#purge-confirmation");
 
         menuitemPurge.addEventListener("click", function(e) {

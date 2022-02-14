@@ -453,3 +453,195 @@ function CalcFileArgsMD5()
     echo `cat $@ | md5sum - | awk '{ print $1 }'`
   fi
 }
+
+####################
+# Concatenate the args with a dot, "."; e.g. $(buildVersionNum 3 1 4)="3.1.4".
+function buildVersionNum
+{
+  VERSION_NUM=""
+  for var in "$@"; do
+    if [[ -n $var ]]; then
+      VERSION_NUM="${VERSION_NUM}.$var"
+    fi
+  done
+  echo "${VERSION_NUM:1}"
+}
+
+####################
+# Timestamp based version num tructaed to 10 min mark so it stays within
+# 2 billion INT range until year 2100. 80 years should be sufficient scale.
+function createVersionNumFrom10minTs
+{
+    VER_BUILD=$(date +%H%M)
+    # Round to nearest 10 minutes, else resulting number is near MAX_INT on Android.
+    echo $(buildVersionNum "$(date +%y)" "$(date +%m)" "$(date +%d)" "${VER_BUILD:0:3}")
+}
+
+####################
+# Parse the branch name or the tag to determine version number, if possible.
+# usage: VERSION_NUM=$(parseVersionNumFromBranchNameOrTag)
+function parseVersionNumFromBranchNameOrTag
+{
+  if [[ ${BRANCH_NAME} =~ (release|staging)-v([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)\.{0,1}([[:digit:]]*)$ ]] || \
+     [[ ${CIRCLE_TAG} =~ (v|beta)([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)\.{0,1}([[:digit:]]*)$ ]]
+  then
+    echo $(buildVersionNum "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}" "${BASH_REMATCH[5]}")
+  fi
+}
+
+####################
+# Parse the branch name or the tag to determine version kind.
+# Possible values are 'dev' | 'beta' | 'gold'.
+# usage: VERSION_KIND=$(parseVersionKindFromBranchNameOrTag)
+function parseVersionKindFromBranchNameOrTag
+{
+  VER_KIND="dev"
+  if [[ ${BRANCH_NAME} =~ (release|staging)-v([[:digit:]]\.)+ ]]; then
+    local theVerKindHint=
+    if [[ -z ${BASH_REMATCH[1]} ]]; then
+      if [[ ${CIRCLE_TAG} =~ (v|beta)([[:digit:]]\.)+ ]]; then
+        theVerKindHint=${BASH_REMATCH[1]};
+      fi
+    else
+      theVerKindHint=${BASH_REMATCH[1]};
+    fi
+    if [[ $theVerKindHint == "release" || $theVerKindHint == "v" ]]; then
+      VER_KIND="gold"
+    elif [[ $theVerKindHint == "staging" || $theVerKindHint == "beta" ]]; then
+      VER_KIND="beta"
+    fi
+  fi
+  echo $VER_KIND
+}
+
+####################
+# Read version info or parse it from branch/tag to determine version info.
+# usage: VERSION_STRING=$(parseVersionInfo)
+# @ENV VERSION_NUM - sets this ENV, e.g. 21.02.29.152 or 3.1.4
+# @ENV VERSION_INT - sets this ENV as datetime to nearest 10min, e.g. 210229152
+# @ENV VERSION_KIND - sets this ENV, e.g. beta
+# @ENV VERSION_STR - sets this ENV, e.g. 3.1.4-beta
+function parseVersionInfo
+{
+  VER_NUM=$(createVersionNumFrom10minTs)
+  VER_INT="${VER_NUM//.}"
+
+  if [[ ! -d "${WORKSPACE}/info" ]]; then
+    mkdir -p "${WORKSPACE}/info"
+  fi
+
+  VER_NUM_FILE="${WORKSPACE}/info/version_num.txt"
+  if [[ -f "$VER_NUM_FILE" ]]; then
+    export VERSION_NUM=$(cat "$VER_NUM_FILE")
+  else
+    export VERSION_NUM=$(parseVersionNumFromBranchNameOrTag)
+    if [[ -z ${VERSION_NUM} ]]; then
+      export VERSION_NUM=${VER_NUM}
+    fi
+    echo "${VERSION_NUM}" > "$VER_NUM_FILE"
+  fi
+
+  VER_INT_FILE="${WORKSPACE}/info/version_int.txt"
+  if [[ -f "$VER_INT_FILE" ]]; then
+    export VERSION_INT=$(cat "$VER_INT_FILE")
+  else
+    export VERSION_INT=${VER_INT}
+    echo "${VERSION_INT}" > "$VER_INT_FILE"
+  fi
+
+  VER_KIND_FILE="${WORKSPACE}/info/version_kind.txt"
+  if [[ -f "$VER_KIND_FILE" ]]; then
+    export VERSION_KIND=$(cat "$VER_KIND_FILE")
+  else
+    export VERSION_KIND=$(parseVersionKindFromBranchNameOrTag)
+    echo "${VERSION_KIND}" > "$VER_KIND_FILE"
+  fi
+
+  VER_STR_FILE="${WORKSPACE}/info/version_str.txt"
+  if [[ -f "$VER_STR_FILE" ]]; then
+    export VERSION_STR=$(cat "$VER_STR_FILE")
+  else
+    VER_SUFFIX=""
+    if [[ ${VERSION_KIND} != "gold" ]]; then
+      VER_SUFFIX="-${VERSION_KIND}"
+    fi
+    export VERSION_STR="${VERSION_NUM}${VER_SUFFIX}"
+    echo "${VERSION_STR}" > "$VER_STR_FILE"
+  fi
+
+  echo "${VERSION_STR}"
+}
+
+####################
+# Retrieve the read/parsed version string.
+# usage: VERSION_STRING=`getVersionStr`
+# may also set these ENV vars:
+# @ENV VERSION_NUM - sets this ENV after parsing version number.
+# @ENV VERSION_INT - sents this ENV to YYMMDDHHM integer.
+# @ENV VERSION_KIND - sets this ENV after parsing version kind.
+# @ENV VERSION_STR - sets this ENV after parsing version info.
+function getVersionStr
+{
+  if [[ -z ${VERSION_STR} ]]; then
+    parseVersionInfo
+  else
+    echo "${VERSION_STR}"
+  fi
+}
+
+####################
+# Upload a given file to a path in repo.istresearch.com.
+# @param string $1 - the file to upload.
+# @param string $2 - the filepath of the destination.
+# @ENV REPO_HOST - the repo host to use; default used in case it is empty.
+function setupRepoSSH
+{
+  if [[ -z "${REPO_HOST}" ]]; then
+    REPO_HOST=infra.dev.istresearch.com
+  fi
+  REPO_SSH_USER="$(id -u -n)"
+  export SCP_SSH="${REPO_SSH_USER}@${REPO_HOST}"
+  #export SCP_OPT="ProxyJump $ANSIBLE_EXECUTOR_USER@$ANSIBLE_EXECUTOR_HOST"
+  if [[ ! -d ~/.ssh ]]; then
+    mkdir ~/.ssh
+  fi
+  ssh-keyscan -H $ANSIBLE_EXECUTOR_HOST >> ~/.ssh/known_hosts
+  ssh $ANSIBLE_EXECUTOR_USER@$ANSIBLE_EXECUTOR_HOST "ssh-keyscan -H ${REPO_HOST}" >> ~/.ssh/known_hosts
+  chmod 600 ~/.ssh/known_hosts
+  export SCP_PROGRESS_FILE=/tmp/scp-progress-${AUTOBUILD_DATETIME_STAMP}.log
+}
+
+####################
+# Upload a given file to a path in repo.istresearch.com.
+# @param string $1 - the file to upload.
+# @param string $2 - the filepath of the destination.
+# @param 0 or 1 $3 - boolean: 1 means DO NOT overwrite destination if already exists.
+function uploadFileToRepo
+{
+  if [[ -z ${SCP_SSH} ]]; then
+    setupRepoSSH
+  fi
+  LOCAL_SRC_FILE="$1"
+  REMOTE_DST_FILE="$2"
+  if [ -f "${LOCAL_SRC_FILE}" ]; then
+    if [[ "$3" == "1" && -n $(SpotCheckRemoteFile ${SCP_SSH} ${REMOTE_DST_FILE}) ]]; then
+      PrintPaddedTextRight "${REMOTE_DST_FILE} already uploaded" "SKIPPED" "1;31"
+      continue
+    fi
+    local src=$(basename "${LOCAL_SRC_FILE}")
+    local dst=$(basename "${REMOTE_DST_FILE}")
+    local x="${src} => ${dst}"
+    echo "Uploading ${x}..."
+    trap "rm ${SCP_PROGRESS_FILE}" EXIT
+    scp -o "ProxyJump $ANSIBLE_EXECUTOR_USER@$ANSIBLE_EXECUTOR_HOST" "${LOCAL_SRC_FILE}" "${SCP_SSH}:${REMOTE_DST_FILE}" >> "${SCP_PROGRESS_FILE}"
+    if [ $? -eq 0 ]; then
+      PrintPaddedTextRight "${flavor} file upload [${x}]" "OK" ${COLOR_MSG_INFO}
+    else
+      PrintPaddedTextRight "${flavor} file upload [${x}]" "FAILED" ${COLOR_MSG_WARNING}
+      exit 2
+    fi
+  else
+    echo -e "${COLOR_MSG_WARNING}Local file ${LOCAL_SRC_FILE} not found.${COLOR_NONE}"
+    exit 1
+  fi
+}

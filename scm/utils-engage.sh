@@ -111,8 +111,14 @@ function EnsurePyAppImage()
   FROM_STAGE_TAG=`GetImgStageTag pylibs`
   PrintPaddedTextRight "  Using pylibs Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
   echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
+
+  set -x
+  getVersionStr
+  VERSION_CI=${VERSION_STR}
+
   #if debugging, can add arg --progress=plain to the docker build command
   docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
+      --build-arg VERSION_CI=$VERSION_CI \
       -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
   docker push $IMAGE_NAME:$IMAGE_TAG
   "${UTILS_PATH}/pr-comment.sh" "Python App Image built: $IMAGE_NAME:$IMAGE_TAG"

@@ -154,6 +154,14 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', 'mypassword')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
 
+version_str = None
+vtag = env('VERSION_TAG', '')
+vstr = env('VERSION_CI', '')
+if vtag and vstr and vtag.startswith('ci'):
+    version_str = "v{} ({})".format(vstr, vtag)
+elif vtag:
+    version_str = "v{}".format(vtag)
+
 try:
     BRANDING
 except NameError:
@@ -167,6 +175,7 @@ BRANDING['engage'] = {
     'org': env('BRANDING_ORG', 'IST'),
     'colors': dict([rule.split('=') for rule in env('BRANDING_COLORS', 'primary=#0c6596').split(';')]),
     'styles': ['brands/engage/font/style.css', 'brands/engage/less/style.less', 'fonts/style.css'],
+    'final_style': 'brands/engage/less/engage.less',
     'welcome_topup': 1000,
     'email': env('BRANDING_EMAIL', 'pulse@istresearch.com'),
     'support_email': env('BRANDING_SUPPORT_EMAIL', 'pulse@istresearch.com'),
@@ -185,7 +194,8 @@ BRANDING['engage'] = {
     'description': _("Addressing the most urgent human security issues faced by the world’s vulnerable populations."),
     'credits': _("Copyright &copy; 2012-%s IST Research Corp, and others. All Rights Reserved." % (
         datetime.now().strftime('%Y')
-    ))
+    )),
+    'version': version_str
 }
 
 DEFAULT_BRAND = 'engage'
