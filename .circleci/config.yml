@@ -110,6 +110,8 @@ workflows:
       - build-containers:
           context: globalconfig
           filters:
+            branches:
+              ignore: /^rel\/.*/
             tags:
               ignore: /^test-.*/
       - deploy-dev-container:
