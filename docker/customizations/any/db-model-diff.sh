@@ -12,8 +12,5 @@ trap "rm $HOME/.pgpass" EXIT
 set -x
 
 #------
-# initialize/update the db schema
-echo "Updating db schema..."
-# migrate must be called to create initial db schema
-python manage.py migrate
-echo "Finished updating db schema."
+echo "Verify code models vs db schema..."
+python manage.py makemigrations

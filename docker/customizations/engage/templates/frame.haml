@@ -130,6 +130,8 @@
       -compress css
         %link{rel:"stylesheet", href:"{{ STATIC_URL }}css/tailwind.css", type:"text/css"}
         %link{rel:"stylesheet", href:"{{ STATIC_URL }}less/refresh.less", type:"text/less"}
+        -if brand.final_style
+          %link{rel:"stylesheet", href:"{{ STATIC_URL }}{{brand.final_style}}", type:"text/less"}
 
       -block extra-less
       -block extra-style
@@ -162,36 +164,34 @@
 
   .flex.flex-col.h-full
     <!-- Header -->
+    #header.flex.flex-row.w-full
+      #logo-area.flex.flex-col
+        %a#big-logo.logo.icon-logo{href:"{% if brand.logo_link %}{{brand.logo_link}}{%else%}/{%endif%}", title:"{{brand.name}}", class:"hover:no-underline"}
+          .name
+            {{brand.name}}
+          %img{ src:"{{ STATIC_URL }}{{brand.logo}}" }
+        %span.version-str
+          {% if user.is_authenticated and brand.version %}{{brand.version}}{%else%}&nbsp;{%endif%}
 
-    -if user_org
-      .org-header.self-end
-        -if user_orgs|length > 1
-          .pull-right.toggle
-            .icon-menu-2
+      #menu-area.flex.flex-col
+        -if user_org
+          .org-header
+            .flex.flex-row
+              #org-name.org
+                {{ user_org.name }}
+              -if user_orgs|length > 1
+                #btn-org-list.pull-right.toggle
+                  .icon-menu-2
 
-        .org
-          {{ user_org.name|truncatechars:30 }}
+            #org-list.other-orgs.hide
+              -for org in user_orgs
+                -if org != user_org
+                  .org
+                    %a.posterize{href:'{% url "orgs.org_choose"%}?organization={{org.pk}}'}
+                      {{ org.name }}
 
-        .other-orgs.hide
-          -for org in user_orgs
-            -if org != user_org
-              .org
-                %a.posterize{href:'{% url "orgs.org_choose"%}?organization={{org.pk}}'}
-                  {{ org.name }}
-
-
-
-    #header
-      &nbsp;
-
-
-    %a#big-logo.logo.icon-logo{href:"{% if brand.logo_link %}{{brand.logo_link}}{%else%}/{%endif%}", title:"{{brand.name}}", class:"hover:no-underline"}
-      .name
-        {{brand.name}}
-      %img{ src:"{{ STATIC_URL }}{{brand.logo}}" }
-
-    -block nav
-      -include 'includes/nav.html'
+        -block nav
+          -include 'includes/nav.html'
 
 
     -if messages
@@ -336,7 +336,7 @@
 
         $(".btn").tooltip();
 
-        $('.org-header > .toggle').live('click', function(evt) {
+        $('#btn-org-list').live('click', function(evt) {
           evt.stopPropagation();
           var header = $('.org-header');
           if (header.hasClass('expanded')) {
@@ -346,7 +346,7 @@
           }
         });
 
-        $('.org-header').live('click', function(evt) {
+        $('#org-name').live('click', function(evt) {
           url = '{% url "orgs.org_home" %}';
           evt.stopPropagation();
           if (evt.ctrlKey || evt.metaKey){

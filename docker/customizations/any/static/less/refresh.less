@@ -3,6 +3,7 @@
 body {
   font-weight: 300;
   line-height: 1.5;
+  max-width: 100vw;
 }
 
 .btn-group>.btn:last-child,
@@ -152,19 +153,4 @@ form.smartmin-form {
   .title {
     margin-bottom: 0px;
   }
-}
-
-/* Button simulate "press" */
-/*    Step 1 of 2: at rest button with shadow */
-.button-light {
-  background: azure;
-  margin: 1px 4px 6px;
-  -webkit-box-shadow: 2px 3px 0px rgba(0, 0, 0, 0.3);
-  -moz-box-shadow: 2px 3px 0px rgba(0, 0, 0, 0.3);
-  box-shadow: 2px 3px 0px rgba(0, 0, 0, 0.3);
-}
-/*    Step 2 of 2: btn click no shadow with offset */
-.button-light:active {
-  box-shadow: 0 1px rgba(0, 0, 0, 0.3);
-  transform: translateY(2px);
 }
