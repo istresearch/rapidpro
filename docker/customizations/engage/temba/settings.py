@@ -265,6 +265,9 @@ CHANNEL_TYPES = [
 # how many sequential contacts on import triggers suspension
 SEQUENTIAL_CONTACTS_THRESHOLD = env('SEQUENTIAL_CONTACTS_THRESHOLD', 5000)
 
+# Org search filters
+ORG_SEARCH_CONTEXT = env('ORG_SEARCH_CONTEXT', '').split(',')
+
 # -----------------------------------------------------------------------------------
 # Django-rest-framework configuration
 # -----------------------------------------------------------------------------------
@@ -302,6 +305,10 @@ LOGGING = {
         "django.db.backends": {"level": "ERROR", "handlers": ["default"], "propagate": False},
     },
 }
+
+ORG_SEARCH_CONTEXT = []
+
+MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
 
 # unset BWI key, causes exception if set and we no longer support it anyway
 BWI_KEY = None
