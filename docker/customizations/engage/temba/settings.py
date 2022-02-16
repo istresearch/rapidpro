@@ -265,6 +265,9 @@ CHANNEL_TYPES = [
 # how many sequential contacts on import triggers suspension
 SEQUENTIAL_CONTACTS_THRESHOLD = env('SEQUENTIAL_CONTACTS_THRESHOLD', 5000)
 
+# Org search filters
+ORG_SEARCH_CONTEXT = env('ORG_SEARCH_CONTEXT', '').split(',')
+
 # -----------------------------------------------------------------------------------
 # Django-rest-framework configuration
 # -----------------------------------------------------------------------------------
@@ -303,5 +306,17 @@ LOGGING = {
     },
 }
 
+ORG_SEARCH_CONTEXT = []
+
+MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
+
 # unset BWI key, causes exception if set and we no longer support it anyway
 BWI_KEY = None
+# above didn't seem to work, so set ENV var to "" for now, debug later.
+
+# set of ISO-639-3 codes of languages to allow in addition to all ISO-639-1 languages
+if env('NON_ISO6391_LANGUAGES_ALLOWED', None) is not None:
+    NON_ISO6391_LANGUAGES = tuple(filter(None, env('NON_ISO6391_LANGUAGES_ALLOWED', None).split(',')))
+else:
+    NON_ISO6391_LANGUAGES = None
+# setting the above ^ to None means all are allowed.

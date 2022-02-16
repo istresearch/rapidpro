@@ -111,7 +111,10 @@ workflows:
           context: globalconfig
           filters:
             branches:
-              ignore: /^rel\/.*/
+              ignore:
+                - /^rel\/.*/
+                - /^master$/
+                - /^main$/
             tags:
               ignore: /^test-.*/
       - deploy-dev-container:
