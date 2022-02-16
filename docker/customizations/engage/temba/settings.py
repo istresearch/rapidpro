@@ -315,5 +315,8 @@ BWI_KEY = None
 # above didn't seem to work, so set ENV var to "" for now, debug later.
 
 # set of ISO-639-3 codes of languages to allow in addition to all ISO-639-1 languages
-NON_ISO6391_LANGUAGES = None
+if env('NON_ISO6391_LANGUAGES_ALLOWED', None) is not None:
+    NON_ISO6391_LANGUAGES = tuple(filter(None, env('NON_ISO6391_LANGUAGES_ALLOWED', None).split(',')))
+else:
+    NON_ISO6391_LANGUAGES = None
 # setting the above ^ to None means all are allowed.
