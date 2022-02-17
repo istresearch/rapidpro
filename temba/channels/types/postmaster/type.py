@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from temba.channels.types.postmaster.views import ClaimView
+from temba.contacts.models import URN
 
 from .. import TYPES
 
@@ -71,7 +72,7 @@ class UpdatePostmasterForm(UpdateChannelForm):
             pm_chat_mode = 'SMS'
             prefix = ''
 
-        schemes = [getattr(Contacts,
+        schemes = [getattr(URN,
                            '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[pm_chat_mode]).upper())]
         self.object.schemes = schemes
         return super().save(commit=commit)
