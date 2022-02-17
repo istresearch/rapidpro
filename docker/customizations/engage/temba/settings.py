@@ -28,9 +28,6 @@ POST_MASTER_DL_QRCODE = env('POST_MASTER_DL_QRCODE', required=False)
 if POST_MASTER_DL_QRCODE is not None and not POST_MASTER_DL_QRCODE.startswith("data:"):
     POST_MASTER_DL_QRCODE = "data:png;base64, {}".format(POST_MASTER_DL_QRCODE)
 
-if SUB_DIR is not None and len(SUB_DIR) > 0:
-    MEDIA_URL = "{}{}".format(SUB_DIR, MEDIA_URL)
-
 MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
@@ -75,19 +72,35 @@ ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')
 LOGGING['root']['level'] = env('DJANGO_LOG_LEVEL', 'INFO')
 
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', '')
-AWS_BUCKET_DOMAIN = env('AWS_BUCKET_DOMAIN', AWS_STORAGE_BUCKET_NAME + '.s3.amazonaws.com')
-CDN_DOMAIN_NAME = env('CDN_DOMAIN_NAME', '')
-AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
-AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
-AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', '')
+AWS_S3_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
+AWS_S3_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
+AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', None)
 AWS_SIGNED_URL_DURATION = int(env('AWS_SIGNED_URL_DURATION', '1800'))
 AWS_DEFAULT_ACL = env('AWS_DEFAULT_ACL', '')
 AWS_LOCATION = env('AWS_LOCATION', '')
 AWS_STATIC = env('AWS_STATIC', bool(AWS_STORAGE_BUCKET_NAME))
 AWS_MEDIA = env('AWS_MEDIA', bool(AWS_STORAGE_BUCKET_NAME))
-STORAGE_URL = "https://"+AWS_BUCKET_DOMAIN
+AWS_S3_USE_SSL = bool(env('AWS_S3_USE_SSL', True))
+AWS_S3_HTTP_SCHEME = "https" if AWS_S3_USE_SSL else "http"
+AWS_S3_VERIFY = env('AWS_S3_VERIFY', False)
 
 if AWS_STORAGE_BUCKET_NAME:
+    theRegion = f".{AWS_S3_REGION_NAME}" if AWS_S3_REGION_NAME is not None and AWS_S3_REGION_NAME != 'us-east-1' else ''
+    # useful to override for local dev and hosts file entries
+    #  e.g. 127.0.0.1    s3.dev.nostromo.box
+    #       127.0.0.1    s3.us-gov-west-1.dev.nostromo.box
+    theBaseDomain = env('AWS_BASE_DOMAIN', 'amazonaws.com')
+    # useful for local dev ngnix proxies, eg. 'location ^~ /s3/ {'
+    thePathPrefix = env('AWS_S3_PATH_PREFIX', '') # DO NOT START WITH A SLASH, eg. 's3/'
+
+    AWS_S3_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN_NAME', f"s3{theRegion}.{theBaseDomain}")
+    AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', f"{AWS_S3_HTTP_SCHEME}://{AWS_S3_DOMAIN}/{thePathPrefix}")
+    if AWS_S3_ENDPOINT_URL is not None and not AWS_S3_ENDPOINT_URL.endswith('/'):
+        AWS_S3_ENDPOINT_URL = AWS_S3_ENDPOINT_URL + '/'
+    # since we set AWS_S3_ENDPOINT_URL, it is recommended to ensure AWS_S3_REGION_NAME is not None
+    if AWS_S3_REGION_NAME is None:
+        AWS_S3_REGION_NAME = 'us-east-1'
+
     # Tell django-storages that when coming up with the URL for an item in S3 storage, keep
     # it simple - just use this domain plus the path. (If this isn't set, things get complicated).
     # This controls how the `static` template tag from `staticfiles` gets expanded, if you're using it.
@@ -96,26 +109,24 @@ if AWS_STORAGE_BUCKET_NAME:
     # django-storages. Use our own setting for the domain instead, which is unknown to
     # django-storages.
 
-    if CDN_DOMAIN_NAME:
-        AWS_S3_DOMAIN = CDN_DOMAIN_NAME
-    else:
-        AWS_S3_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
-
     if AWS_STATIC:
         # This is used by the `static` template tag from `static`, if you're using that. Or if anything else
         # refers directly to STATIC_URL. So it's safest to always set it.
-        STATIC_URL = "https://%s/" % AWS_S3_DOMAIN
+        STATIC_URL = AWS_S3_ENDPOINT_URL
 
         # Tell the staticfiles app to use S3Boto storage when writing the collected static files (when
         # you run `collectstatic`).
         STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
         COMPRESS_STORAGE = STATICFILES_STORAGE
 
     if AWS_MEDIA:
-        MEDIA_URL = "https://s3.amazonaws.com/%s/media/" % (AWS_STORAGE_BUCKET_NAME)
-
         DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+        # dev needs may require an internal docker endpoint for storage_url vs media_url
+        STORAGE_URL = AWS_S3_ENDPOINT_URL
+        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}{AWS_STORAGE_BUCKET_NAME}/media/"
+
+if not AWS_MEDIA and SUB_DIR is not None and len(SUB_DIR) > 0:
+    MEDIA_URL = "{}{}".format(SUB_DIR, MEDIA_URL)
 
 if not AWS_STATIC:
     if SUB_DIR is not None and len(SUB_DIR) > 0:

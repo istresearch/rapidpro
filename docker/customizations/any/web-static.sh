@@ -20,10 +20,10 @@ echo 'Clearing compressor cache...'
 python clear-compressor-cache.py
 echo 'Finished clearing compressor cache.'
 
-echo 'Compressing static website files...'
-python manage.py compress --extension=".haml" --force -v0
-echo 'Finished compressing static website files.'
-
 echo 'Collecting compressed static website files...'
 python manage.py collectstatic --noinput --no-post-process
 echo 'Finished collecting compressed static website files.'
+
+echo 'Compressing static website files...'
+python manage.py compress --extension=".haml" --force -v0
+echo 'Finished compressing static website files.'
