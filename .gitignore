@@ -125,3 +125,5 @@ ansible/site.retry
 
 # CircleCI artifacts
 scm/*_tag.txt
+
+_v*/
