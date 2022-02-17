@@ -74,7 +74,7 @@ LOGGING['root']['level'] = env('DJANGO_LOG_LEVEL', 'INFO')
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', '')
 AWS_S3_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
 AWS_S3_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
-AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', None)
+AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', 'us-east-1')
 AWS_SIGNED_URL_DURATION = int(env('AWS_SIGNED_URL_DURATION', '1800'))
 AWS_DEFAULT_ACL = env('AWS_DEFAULT_ACL', '')
 AWS_LOCATION = env('AWS_LOCATION', '')
@@ -85,7 +85,7 @@ AWS_S3_HTTP_SCHEME = "https" if AWS_S3_USE_SSL else "http"
 AWS_S3_VERIFY = env('AWS_S3_VERIFY', False)
 
 if AWS_STORAGE_BUCKET_NAME:
-    theRegion = f".{AWS_S3_REGION_NAME}" if AWS_S3_REGION_NAME is not None and AWS_S3_REGION_NAME != 'us-east-1' else ''
+    theRegion = f".{AWS_S3_REGION_NAME}" if AWS_S3_REGION_NAME is not None else ''
     # useful to override for local dev and hosts file entries
     #  e.g. 127.0.0.1    s3.dev.nostromo.box
     #       127.0.0.1    s3.us-gov-west-1.dev.nostromo.box
@@ -97,9 +97,6 @@ if AWS_STORAGE_BUCKET_NAME:
     AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', f"{AWS_S3_HTTP_SCHEME}://{AWS_S3_DOMAIN}/{thePathPrefix}")
     if AWS_S3_ENDPOINT_URL is not None and not AWS_S3_ENDPOINT_URL.endswith('/'):
         AWS_S3_ENDPOINT_URL = AWS_S3_ENDPOINT_URL + '/'
-    # since we set AWS_S3_ENDPOINT_URL, it is recommended to ensure AWS_S3_REGION_NAME is not None
-    if AWS_S3_REGION_NAME is None:
-        AWS_S3_REGION_NAME = 'us-east-1'
 
     # Tell django-storages that when coming up with the URL for an item in S3 storage, keep
     # it simple - just use this domain plus the path. (If this isn't set, things get complicated).
