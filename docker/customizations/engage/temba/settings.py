@@ -86,6 +86,8 @@ AWS_S3_VERIFY = env('AWS_S3_VERIFY', False)
 
 if AWS_STORAGE_BUCKET_NAME:
     theRegion = f".{AWS_S3_REGION_NAME}" if AWS_S3_REGION_NAME is not None else ''
+    # middleware still expects us-east-1 in special domain format with bucket leading the subdomain (legacy format).
+    theUsEast1Bucket = f"{AWS_STORAGE_BUCKET_NAME}." if AWS_STORAGE_BUCKET_NAME == 'us-east-1' else ''
     # useful to override for local dev and hosts file entries
     #  e.g. 127.0.0.1    s3.dev.nostromo.box
     #       127.0.0.1    s3.us-gov-west-1.dev.nostromo.box
@@ -93,7 +95,7 @@ if AWS_STORAGE_BUCKET_NAME:
     # useful for local dev ngnix proxies, eg. 'location ^~ /s3/ {'
     thePathPrefix = env('AWS_S3_PATH_PREFIX', '') # DO NOT START WITH A SLASH, eg. 's3/'
 
-    AWS_S3_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN_NAME', f"s3{theRegion}.{theBaseDomain}")
+    AWS_S3_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN_NAME', f"{theUsEast1Bucket}s3{theRegion}.{theBaseDomain}")
     AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', f"{AWS_S3_HTTP_SCHEME}://{AWS_S3_DOMAIN}/{thePathPrefix}")
     if AWS_S3_ENDPOINT_URL is not None and not AWS_S3_ENDPOINT_URL.endswith('/'):
         AWS_S3_ENDPOINT_URL = AWS_S3_ENDPOINT_URL + '/'
