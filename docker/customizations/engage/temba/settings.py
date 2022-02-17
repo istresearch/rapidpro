@@ -122,7 +122,7 @@ if AWS_STORAGE_BUCKET_NAME:
     if AWS_MEDIA:
         DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
         # dev needs may require an internal docker endpoint for storage_url vs media_url
-        STORAGE_URL = AWS_S3_ENDPOINT_URL[-1] # Storage URL shouldn't end with trailing slash
+        STORAGE_URL = AWS_S3_ENDPOINT_URL[:-1] # Storage URL shouldn't end with trailing slash
         MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}{AWS_STORAGE_BUCKET_NAME}/media/"
 
 if not AWS_MEDIA and SUB_DIR is not None and len(SUB_DIR) > 0:
