@@ -83,22 +83,38 @@ AWS_MEDIA = env('AWS_MEDIA', bool(AWS_STORAGE_BUCKET_NAME))
 AWS_S3_USE_SSL = bool(env('AWS_S3_USE_SSL', True))
 AWS_S3_HTTP_SCHEME = "https" if AWS_S3_USE_SSL else "http"
 AWS_S3_VERIFY = env('AWS_S3_VERIFY', False)
+AWS_S3_CUSTOM_DOMAIN_NAME = env('AWS_S3_CUSTOM_DOMAIN_NAME', None)
+AWS_S3_CUSTOM_URL = env('AWS_S3_CUSTOM_URL', None)
 
 if AWS_STORAGE_BUCKET_NAME:
-    theRegion = f".{AWS_S3_REGION_NAME}" if AWS_S3_REGION_NAME is not None else ''
-    # middleware still expects us-east-1 in special domain format with bucket leading the subdomain (legacy format).
-    theUsEast1Bucket = f"{AWS_STORAGE_BUCKET_NAME}." if AWS_STORAGE_BUCKET_NAME == 'us-east-1' else ''
-    # useful to override for local dev and hosts file entries
-    #  e.g. 127.0.0.1    s3.dev.nostromo.box
-    #       127.0.0.1    s3.us-gov-west-1.dev.nostromo.box
-    theBaseDomain = env('AWS_BASE_DOMAIN', 'amazonaws.com')
-    # useful for local dev ngnix proxies, eg. 'location ^~ /s3/ {'
-    thePathPrefix = env('AWS_S3_PATH_PREFIX', '') # DO NOT START WITH A SLASH, eg. 's3/'
 
-    AWS_S3_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN_NAME', f"{theUsEast1Bucket}s3{theRegion}.{theBaseDomain}")
-    AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', f"{AWS_S3_HTTP_SCHEME}://{AWS_S3_DOMAIN}/{thePathPrefix}")
-    if AWS_S3_ENDPOINT_URL is not None and not AWS_S3_ENDPOINT_URL.endswith('/'):
-        AWS_S3_ENDPOINT_URL = AWS_S3_ENDPOINT_URL + '/'
+    if AWS_S3_CUSTOM_DOMAIN_NAME:
+        AWS_S3_CUSTOM_DOMAIN = AWS_S3_CUSTOM_DOMAIN_NAME
+        AWS_S3_DOMAIN = AWS_S3_CUSTOM_DOMAIN_NAME
+    else:
+        theRegion = f".{AWS_S3_REGION_NAME}" if AWS_S3_REGION_NAME is not None and AWS_STORAGE_BUCKET_NAME != 'us-east-1' else ''
+        # middleware still expects us-east-1 in special domain format with bucket leading the subdomain (legacy format).
+        theUsEast1BucketDomainSegment = f"{AWS_STORAGE_BUCKET_NAME}." if AWS_STORAGE_BUCKET_NAME == 'us-east-1' else ''
+        # useful to override for local dev and hosts file entries
+        #  e.g. 127.0.0.1    s3.dev.nostromo.box
+        #       127.0.0.1    s3.us-gov-west-1.dev.nostromo.box
+        theBaseDomain = env('AWS_BASE_DOMAIN', 'amazonaws.com')
+        # useful for local dev ngnix proxies, eg. 'location ^~ /s3/ {'
+        thePathPrefix = env('AWS_S3_PATH_PREFIX', '') # DO NOT START WITH A SLASH, eg. 's3/'
+        AWS_S3_DOMAIN = f"{theUsEast1BucketDomainSegment}s3{theRegion}.{theBaseDomain}"
+
+    if AWS_S3_CUSTOM_URL:
+        #TODO FUTURE, IF NEEDED: if there's replacements in string, do them
+        AWS_S3_ENDPOINT_URL = AWS_S3_CUSTOM_URL
+        AWS_S3_URL = AWS_S3_ENDPOINT_URL
+    else:
+        # middleware still expects us-east-1 in special domain format with bucket leading the subdomain (legacy format).
+        theBucketPathSegment = f"{AWS_STORAGE_BUCKET_NAME}" if AWS_STORAGE_BUCKET_NAME != 'us-east-1' else ''
+        AWS_S3_URL = f"{AWS_S3_HTTP_SCHEME}://{AWS_S3_DOMAIN}/{thePathPrefix}{theBucketPathSegment}"
+
+    # explicity remove any trailing slash
+    if AWS_S3_URL.endswith('/'):
+        AWS_S3_URL = AWS_S3_URL[:-1]
 
     # Tell django-storages that when coming up with the URL for an item in S3 storage, keep
     # it simple - just use this domain plus the path. (If this isn't set, things get complicated).
@@ -111,7 +127,7 @@ if AWS_STORAGE_BUCKET_NAME:
     if AWS_STATIC:
         # This is used by the `static` template tag from `static`, if you're using that. Or if anything else
         # refers directly to STATIC_URL. So it's safest to always set it.
-        STATIC_URL = AWS_S3_ENDPOINT_URL
+        STATIC_URL = AWS_S3_URL
 
         # Tell the staticfiles app to use S3Boto storage when writing the collected static files (when
         # you run `collectstatic`).
@@ -120,12 +136,11 @@ if AWS_STORAGE_BUCKET_NAME:
 
     if AWS_MEDIA:
         DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-        # dev needs may require an internal docker endpoint for storage_url vs media_url
-        STORAGE_URL = AWS_S3_ENDPOINT_URL[:-1] # Storage URL shouldn't end with trailing slash
-        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}{AWS_STORAGE_BUCKET_NAME}/media/"
+        STORAGE_URL = AWS_S3_URL
+        MEDIA_URL = f"{AWS_S3_URL}/media/"
 
 if not AWS_MEDIA and SUB_DIR is not None and len(SUB_DIR) > 0:
-    MEDIA_URL = "{}{}".format(SUB_DIR, MEDIA_URL)
+    MEDIA_URL = f"{SUB_DIR}{MEDIA_URL}"
 
 if not AWS_STATIC:
     if SUB_DIR is not None and len(SUB_DIR) > 0:
