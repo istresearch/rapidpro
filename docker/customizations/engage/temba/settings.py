@@ -12,7 +12,6 @@ from datetime import datetime
 from django.utils.translation import ugettext_lazy as _
 from temba.settings_common import *  # noqa
 
-AWS_QUERYSTRING_EXPIRE = '157784630'
 SUB_DIR = env('SUB_DIR', required=False)
 COURIER_URL = env('COURIER_URL', 'http://localhost:8080')
 DEFAULT_TPS = env('DEFAULT_TPS', 10)    # Default Transactions Per Second for newly create Channels.
@@ -75,9 +74,11 @@ AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', '')
 AWS_S3_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
 AWS_S3_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
 AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', 'us-east-1')
+IS_AWS_S3_REGION_DEFAULT = bool(AWS_S3_REGION_NAME == 'us-east-1')
 AWS_SIGNED_URL_DURATION = int(env('AWS_SIGNED_URL_DURATION', '1800'))
 AWS_DEFAULT_ACL = env('AWS_DEFAULT_ACL', '')
 AWS_LOCATION = env('AWS_LOCATION', '')
+AWS_QUERYSTRING_EXPIRE = '157784630' #unsure why this is hardcoded as a string
 AWS_STATIC = env('AWS_STATIC', bool(AWS_STORAGE_BUCKET_NAME))
 AWS_MEDIA = env('AWS_MEDIA', bool(AWS_STORAGE_BUCKET_NAME))
 AWS_S3_USE_SSL = bool(env('AWS_S3_USE_SSL', True))
@@ -88,29 +89,29 @@ AWS_S3_CUSTOM_URL = env('AWS_S3_CUSTOM_URL', None)
 
 if AWS_STORAGE_BUCKET_NAME:
 
-    if AWS_S3_CUSTOM_DOMAIN_NAME:
-        AWS_S3_CUSTOM_DOMAIN = AWS_S3_CUSTOM_DOMAIN_NAME
-        AWS_S3_DOMAIN = AWS_S3_CUSTOM_DOMAIN_NAME
-    else:
-        theRegion = f".{AWS_S3_REGION_NAME}" if AWS_S3_REGION_NAME is not None and AWS_STORAGE_BUCKET_NAME != 'us-east-1' else ''
-        # middleware still expects us-east-1 in special domain format with bucket leading the subdomain (legacy format).
-        theUsEast1BucketDomainSegment = f"{AWS_STORAGE_BUCKET_NAME}." if AWS_STORAGE_BUCKET_NAME == 'us-east-1' else ''
-        # useful to override for local dev and hosts file entries
-        #  e.g. 127.0.0.1    s3.dev.nostromo.box
-        #       127.0.0.1    s3.us-gov-west-1.dev.nostromo.box
-        theBaseDomain = env('AWS_BASE_DOMAIN', 'amazonaws.com')
-        # useful for local dev ngnix proxies, eg. 'location ^~ /s3/ {'
-        thePathPrefix = env('AWS_S3_PATH_PREFIX', '') # DO NOT START WITH A SLASH, eg. 's3/'
-        AWS_S3_DOMAIN = f"{theUsEast1BucketDomainSegment}s3{theRegion}.{theBaseDomain}"
-
     if AWS_S3_CUSTOM_URL:
         #TODO FUTURE, IF NEEDED: if there's replacements in string, do them
         AWS_S3_ENDPOINT_URL = AWS_S3_CUSTOM_URL
         AWS_S3_URL = AWS_S3_ENDPOINT_URL
     else:
+        if AWS_S3_CUSTOM_DOMAIN_NAME:
+            AWS_S3_CUSTOM_DOMAIN = AWS_S3_CUSTOM_DOMAIN_NAME
+            AWS_S3_DOMAIN = AWS_S3_CUSTOM_DOMAIN_NAME
+        else:
+            theRegionDomainSegment = f".{AWS_S3_REGION_NAME}" if not IS_AWS_S3_REGION_DEFAULT else ''
+            # middleware still expects us-east-1 in special domain format with bucket leading the subdomain (legacy format).
+            theDefaultRegionDomainSegment = f"{AWS_STORAGE_BUCKET_NAME}." if IS_AWS_S3_REGION_DEFAULT else ''
+            # useful to override for local dev and hosts file entries
+            #  e.g. 127.0.0.1    s3.dev.nostromo.box
+            #       127.0.0.1    s3.us-gov-west-1.dev.nostromo.box
+            theBaseDomain = env('AWS_BASE_DOMAIN', 'amazonaws.com')
+            # useful for local dev ngnix proxies, eg. 'location ^~ /s3/ {'
+            thePathPrefix = env('AWS_S3_PATH_PREFIX', '') # MUST START WITH A SLASH, eg. '/s3'
+            AWS_S3_DOMAIN = f"{theDefaultRegionDomainSegment}s3{theRegionDomainSegment}.{theBaseDomain}{thePathPrefix}"
+
         # middleware still expects us-east-1 in special domain format with bucket leading the subdomain (legacy format).
-        theBucketPathSegment = f"{AWS_STORAGE_BUCKET_NAME}" if AWS_STORAGE_BUCKET_NAME != 'us-east-1' else ''
-        AWS_S3_URL = f"{AWS_S3_HTTP_SCHEME}://{AWS_S3_DOMAIN}/{thePathPrefix}{theBucketPathSegment}"
+        theBucketPathSegment = f"/{AWS_STORAGE_BUCKET_NAME}" if not IS_AWS_S3_REGION_DEFAULT else ''
+        AWS_S3_URL = f"{AWS_S3_HTTP_SCHEME}://{AWS_S3_DOMAIN}{theBucketPathSegment}"
 
     # explicity remove any trailing slash
     if AWS_S3_URL.endswith('/'):
