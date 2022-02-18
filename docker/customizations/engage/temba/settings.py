@@ -146,6 +146,8 @@ if not AWS_MEDIA and SUB_DIR is not None and len(SUB_DIR) > 0:
 if not AWS_STATIC:
     if SUB_DIR is not None and len(SUB_DIR) > 0:
         STATIC_URL = '/' + SUB_DIR + '/sitestatic/'
+
+    # @see whitenoise middleware usage: https://whitenoise.evans.io/en/stable/django.html
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     # insert just after security middleware (which is at idx 0)
     MIDDLEWARE = MIDDLEWARE[:1] + ('whitenoise.middleware.WhiteNoiseMiddleware',) + MIDDLEWARE[1:]
