@@ -140,8 +140,10 @@ if AWS_STORAGE_BUCKET_NAME:
         STORAGE_URL = AWS_S3_URL
         MEDIA_URL = f"{AWS_S3_URL}/media/"
 
-if not AWS_MEDIA and SUB_DIR is not None and len(SUB_DIR) > 0:
-    MEDIA_URL = f"{SUB_DIR}{MEDIA_URL}"
+if not AWS_MEDIA:
+    if SUB_DIR is not None and len(SUB_DIR) > 0:
+        MEDIA_URL = f"{SUB_DIR}{MEDIA_URL}"
+    STORAGE_URL = MEDIA_URL[:-1]
 
 if not AWS_STATIC:
     if SUB_DIR is not None and len(SUB_DIR) > 0:
@@ -151,6 +153,7 @@ if not AWS_STATIC:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
     # insert just after security middleware (which is at idx 0)
     MIDDLEWARE = MIDDLEWARE[:1] + ('whitenoise.middleware.WhiteNoiseMiddleware',) + MIDDLEWARE[1:]
+    WHITENOISE_MANIFEST_STRICT = False
 
 COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'on') == 'on'
 COMPRESS_OFFLINE = False
