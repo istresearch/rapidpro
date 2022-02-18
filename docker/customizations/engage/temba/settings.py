@@ -146,10 +146,9 @@ if not AWS_MEDIA and SUB_DIR is not None and len(SUB_DIR) > 0:
 if not AWS_STATIC:
     if SUB_DIR is not None and len(SUB_DIR) > 0:
         STATIC_URL = '/' + SUB_DIR + '/sitestatic/'
-    else:
-        STATIC_URL = '/sitestatic/'
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    MIDDLEWARE = list(MIDDLEWARE) + ['whitenoise.middleware.WhiteNoiseMiddleware']
+    # insert just after security middleware (which is at idx 0)
+    MIDDLEWARE = MIDDLEWARE[:1] + ('whitenoise.middleware.WhiteNoiseMiddleware',) + MIDDLEWARE[1:]
 
 COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'on') == 'on'
 COMPRESS_OFFLINE = False
@@ -199,6 +198,8 @@ BRANDING['engage'] = {
     'name': env('BRANDING_NAME', 'Pulse'),
     'title': env('BRANDING_TITLE', 'Engage'),
     'org': env('BRANDING_ORG', 'IST'),
+    'meta_desc': 'Pulse Engage',
+    'meta_author': 'IST Research Corp',
     'colors': dict([rule.split('=') for rule in env('BRANDING_COLORS', 'primary=#0c6596').split(';')]),
     'styles': ['brands/engage/font/style.css', 'brands/engage/less/style.less', 'fonts/style.css'],
     'final_style': 'brands/engage/less/engage.less',

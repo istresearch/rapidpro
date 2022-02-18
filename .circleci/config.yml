@@ -50,7 +50,10 @@ jobs:
           name: Build "Default Branding" Image
           command: |
             VERSION_TAG=$(cat scm/version_tag.txt)
-            source scm/utils-engage.sh; BuildVersionForRp "$VERSION_TAG"
+            # only build this if constructing a tag version
+            if [[ ! -z $CIRCLE_TAG ]]; then
+              source scm/utils-engage.sh; BuildVersionForRp "$VERSION_TAG"
+            fi
       - run:
           name: Build "Engage Branding" Image
           command: |
@@ -67,7 +70,10 @@ jobs:
           name: Build "Generic Branding" Image
           command: |
             VERSION_TAG=$(cat scm/version_tag.txt)
-            source scm/utils-engage.sh; BuildVersionForGeneric "${VERSION_TAG}-generic"
+            # only build this if constructing a tag version
+            if [[ ! -z $CIRCLE_TAG ]]; then
+              source scm/utils-engage.sh; BuildVersionForGeneric "${VERSION_TAG}-generic"
+            fi
 
   deploy-dev-container:
     docker:
