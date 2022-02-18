@@ -150,7 +150,7 @@ if not AWS_STATIC:
         STATIC_URL = '/' + SUB_DIR + '/sitestatic/'
 
     # @see whitenoise middleware usage: https://whitenoise.evans.io/en/stable/django.html
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    STATICFILES_STORAGE = 'temba.storage.WhiteNoiseStaticFilesStorage'
     # insert just after security middleware (which is at idx 0)
     MIDDLEWARE = MIDDLEWARE[:1] + ('whitenoise.middleware.WhiteNoiseMiddleware',) + MIDDLEWARE[1:]
     WHITENOISE_MANIFEST_STRICT = False

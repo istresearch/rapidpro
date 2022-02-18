@@ -127,3 +127,5 @@ ansible/site.retry
 scm/*_tag.txt
 
 _v*/
+
+workspace/info/
