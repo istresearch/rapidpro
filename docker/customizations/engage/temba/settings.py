@@ -154,17 +154,16 @@ if not AWS_STATIC:
     # insert just after security middleware (which is at idx 0)
     MIDDLEWARE = MIDDLEWARE[:1] + ('whitenoise.middleware.WhiteNoiseMiddleware',) + MIDDLEWARE[1:]
     WHITENOISE_MANIFEST_STRICT = False
+    COMPRESS_OFFLINE = True
+    COMPRESS_OFFLINE_MANIFEST = f"manifest-{env('VERSION_CI', '1-dev')[:-4]}.json"
 
-COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'on') == 'on'
-COMPRESS_OFFLINE = False
-
+COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'off') == 'on'
 COMPRESS_URL = STATIC_URL
 # Use MEDIA_ROOT rather than STATIC_ROOT because it already exists and is
 # writable on the server. It's also the directory where other cached files
 # (e.g., translations) are stored
 COMPRESS_ROOT = STATIC_ROOT
 COMPRESS_CSS_HASHING_METHOD = 'content'
-COMPRESS_OFFLINE_MANIFEST = 'manifest-%s.json' % env('RAPIDPRO_VERSION', required=True)
 
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
 MAGE_API_URL = env('MAGE_API_URL', 'http://localhost:8026/api/v1')

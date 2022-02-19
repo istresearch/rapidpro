@@ -115,6 +115,7 @@ function EnsurePyAppImage()
   set -x
   getVersionStr
   VERSION_CI=${VERSION_STR}
+  set +x
 
   #if debugging, can add arg --progress=plain to the docker build command
   docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \

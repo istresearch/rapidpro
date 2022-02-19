@@ -320,26 +320,31 @@
 
         $(".btn").tooltip();
 
-        $('#btn-org-list').live('click', function(evt) {
-          evt.stopPropagation();
-          var header = $('.org-header');
-          if (header.hasClass('expanded')) {
-            header.removeClass('expanded');
-          } else {
-            header.addClass('expanded');
-          }
-        });
+        var theOrgListBtn = $('#btn-org-list');
+        if ( theOrgListBtn ) {
+          theOrgListBtn.on('click', function(evt) {
+            evt.stopPropagation();
+            var header = $('.org-header');
+            if (header.hasClass('expanded')) {
+              header.removeClass('expanded');
+            } else {
+              header.addClass('expanded');
+            }
+          });
+        }
 
-        $('#org-name').live('click', function(evt) {
-          url = '{% url "orgs.org_home" %}';
-          evt.stopPropagation();
-          if (evt.ctrlKey || evt.metaKey){
-            window.open(url,'_blank')
-          } else {
-            window.location = url;
-          }
-
-        });
+        var theOrgNameArea = $('#org-name');
+        if ( theOrgNameArea ) {
+          theOrgNameArea.on('click', function(evt) {
+            var theUrl = '{% url "orgs.org_home" %}';
+            evt.stopPropagation();
+            if (evt.ctrlKey || evt.metaKey){
+              window.open(theUrl,'_blank')
+            } else {
+              window.location = theUrl;
+            }
+          });
+        }
 
         $('#menu .more').hoverIntent({
           over:function() {
@@ -368,9 +373,7 @@
           handlePosterize(ele);
         });
 
-
       });
 {% endblock body %}
-
 
 </html>

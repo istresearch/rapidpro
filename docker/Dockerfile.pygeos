@@ -1,4 +1,5 @@
-FROM node:12.22-alpine3.14
+# Require an image that easily supports Python 3.6
+FROM node:10.23-alpine3.9
 
 COPY docker/geolibs.sh /
 
