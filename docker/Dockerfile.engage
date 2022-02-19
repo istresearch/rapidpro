@@ -25,5 +25,6 @@ USER engage
 
 # compress static files
 RUN source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py collectstatic --noinput \
+ && echo "Collected, compressing..." \
  && source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 python manage.py compress --extension='.haml' --force -v0 \
- && mv sitestatic/manifest.json sitestatic/manifest-${VERSION_CI%-*}.json
+ && echo "Done"

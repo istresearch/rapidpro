@@ -118,7 +118,7 @@ function EnsurePyAppImage()
   set +x
 
   #if debugging, can add arg --progress=plain to the docker build command
-  docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
+  docker build --no-cache --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
       --build-arg VERSION_CI=$VERSION_CI \
       -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
   docker push $IMAGE_NAME:$IMAGE_TAG
@@ -148,7 +148,7 @@ function BuildVersionForX()
     PrintPaddedTextRight "  Using pyapp Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
     #if debugging, can add arg --progress=plain to the docker build command
-    docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
+    docker build --no-cache --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
         --build-arg VERSION_TAG=$IMG_TAG \
         -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
     docker push $IMAGE_NAME:$IMAGE_TAG
