@@ -115,6 +115,7 @@ function EnsurePyAppImage()
   set -x
   getVersionStr
   VERSION_CI=${VERSION_STR}
+  echo $VERSION_CI > "${UTILS_PATH}/version_ci_tag.txt"
   set +x
 
   #if debugging, can add arg --progress=plain to the docker build command
@@ -172,6 +173,10 @@ function BuildVersionForRp()
 function BuildVersionForEngage()
 {
   BuildVersionForX default engage $1
+  IMAGE_NAME=$DEFAULT_IMAGE_NAME
+  VERSION_CI_TAG=`GetImgStageTag version_ci`
+  docker tag $IMAGE_NAME:$1 $IMAGE_NAME:$VERSION_CI_TAG
+  docker push $IMAGE_NAME:$VERSION_CI_TAG
 }
 
 ####################
