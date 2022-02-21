@@ -165,8 +165,9 @@ COMPRESS_OFFLINE_MANIFEST = f"manifest-{env('VERSION_CI', '1-dev')[:-4]}.json"
 # If COMPRESS_OFFLINE is False, compressor will look in COMPRESS_STORAGE for
 # previously processed results, but if not found, will create them on the fly
 # and save them to use again.
-COMPRESS_OFFLINE = True if len(sys.argv)>1 and sys.argv[1] == 'compress' else False
+#COMPRESS_OFFLINE = True if len(sys.argv)>1 and sys.argv[1] == 'compress' else False
 #COMPRESS_OFFLINE = False
+COMPRESS_OFFLINE = True
 
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
 MAGE_API_URL = env('MAGE_API_URL', 'http://localhost:8026/api/v1')
