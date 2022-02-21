@@ -132,11 +132,11 @@ body {
     display:inline-block;
     width: 100%;
   }
+}
 
-  /* refresh uses ::before to add unicode char and font */
-  /* just display bkg-img for pm-only icons */
-  [class^="icon-"] .pm-icon,
-  [class*=" icon-"] .pm-icon {
-    background-image: inherit;
-  }
+/* refresh uses ::before to add unicode char and font */
+/* just display bkg-img for pm-only icons */
+[class^="icon-"]:not(.pm-icon),
+[class*=" icon-"]:not(.pm-icon) {
+  background-image: none;
 }

@@ -155,19 +155,20 @@ if not AWS_STATIC:
     MIDDLEWARE = MIDDLEWARE[:1] + ('whitenoise.middleware.WhiteNoiseMiddleware',) + MIDDLEWARE[1:]
     WHITENOISE_MANIFEST_STRICT = False
 
-COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'on') == 'on'
-COMPRESS_URL = STATIC_URL
 STATIC_ROOT = os.path.join(PROJECT_DIR, "../sitestatic/")
-COMPRESS_ROOT = STATIC_ROOT
-#COMPRESS_STORAGE = STATICFILES_STORAGE
-COMPRESS_CSS_HASHING_METHOD = 'content'
+
+COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'on') == 'on'
+if COMPRESS_ENABLED:
+    COMPRESS_URL = STATIC_URL
+    COMPRESS_ROOT = STATIC_ROOT
+    #COMPRESS_STORAGE = STATICFILES_STORAGE
+
 COMPRESS_OFFLINE_MANIFEST = f"manifest-{env('VERSION_CI', '1-dev')[:-4]}.json"
 # If COMPRESS_OFFLINE is False, compressor will look in COMPRESS_STORAGE for
 # previously processed results, but if not found, will create them on the fly
 # and save them to use again.
-#COMPRESS_OFFLINE = True if len(sys.argv)>1 and sys.argv[1] == 'compress' else False
 #COMPRESS_OFFLINE = False
-COMPRESS_OFFLINE = True
+COMPRESS_OFFLINE = COMPRESS_ENABLED
 
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
 MAGE_API_URL = env('MAGE_API_URL', 'http://localhost:8026/api/v1')
