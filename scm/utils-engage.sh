@@ -177,6 +177,7 @@ function BuildVersionForEngage()
   VERSION_CI_TAG=`GetImgStageTag version_ci`
   docker tag $IMAGE_NAME:$1 $IMAGE_NAME:$VERSION_CI_TAG
   docker push $IMAGE_NAME:$VERSION_CI_TAG
+  PrintPaddedTextRight "Created Image" "$IMAGE_NAME:${VERSION_CI_TAG}" ${COLOR_MSG_INFO}
 }
 
 ####################
