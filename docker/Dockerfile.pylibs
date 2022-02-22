@@ -43,8 +43,10 @@ ENV PIP_RETRIES=$ARG_PIP_RETRIES \
     PIP_EXTRA_INDEX_URL=$ARG_PIP_EXTRA_INDEX_URL \
     LIBRARY_PATH=/lib:/usr/lib
 
+USER root
+
 ARG USER_PID
-RUN addgroup engage; adduser -D -S -s /bin/false -u $USER_PID engage -g engage \
+RUN grp=engage; usr=engage && addgroup -S $grp && adduser -u $USER_PID -S $usr -G $grp \
  && mkdir -p /rapidpro; chown -R engage:engage /rapidpro \
  && mkdir -p /venv; chown -R engage:engage /venv
 

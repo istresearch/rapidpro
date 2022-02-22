@@ -115,9 +115,11 @@ function EnsurePyAppImage()
   set -x
   getVersionStr
   VERSION_CI=${VERSION_STR}
+  echo $VERSION_CI > "${UTILS_PATH}/version_ci_tag.txt"
+  set +x
 
   #if debugging, can add arg --progress=plain to the docker build command
-  docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
+  docker build --no-cache --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
       --build-arg VERSION_CI=$VERSION_CI \
       -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
   docker push $IMAGE_NAME:$IMAGE_TAG
@@ -147,7 +149,7 @@ function BuildVersionForX()
     PrintPaddedTextRight "  Using pyapp Tag" $FROM_STAGE_TAG ${COLOR_MSG_INFO}
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
     #if debugging, can add arg --progress=plain to the docker build command
-    docker build --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
+    docker build --no-cache --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
         --build-arg VERSION_TAG=$IMG_TAG \
         -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
     docker push $IMAGE_NAME:$IMAGE_TAG
@@ -171,6 +173,11 @@ function BuildVersionForRp()
 function BuildVersionForEngage()
 {
   BuildVersionForX default engage $1
+  IMAGE_NAME=$DEFAULT_IMAGE_NAME
+  VERSION_CI_TAG=`GetImgStageTag version_ci`
+  docker tag $IMAGE_NAME:$1 $IMAGE_NAME:$VERSION_CI_TAG
+  docker push $IMAGE_NAME:$VERSION_CI_TAG
+  PrintPaddedTextRight "Created Image" "$IMAGE_NAME:${VERSION_CI_TAG}" ${COLOR_MSG_INFO}
 }
 
 ####################

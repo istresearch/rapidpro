@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE HTML>
 -load humanize i18n smartmin sms compress
 
@@ -12,68 +13,51 @@
         -else
           {{ brand.name }}
 
-    %link{href:'{{STATIC_URL}}fonts/roboto/stylesheet.css', rel:'stylesheet', type:'text/css'}
-    %link{href:'{{STATIC_URL}}brands/engage/images/engage.ico', rel:'shortcut icon', type:'image/png'}
+    %link{href:"{% static 'fonts/roboto/stylesheet.css' %}", rel:'stylesheet', type:'text/css'}
+    %link{href:"{% static 'brands/engage/images/engage.ico' %}", rel:'shortcut icon', type:'image/png'}
     %meta{charset:"utf-8"}
     %meta{name:"viewport", content:"width=device-width, initial-scale=1.0"}
-    %meta{name:"description", content:"{% block page-description %}Pulse Engage{% endblock %}"}
-    %meta{name:"author", content:"IST Research Corp"}
+    %meta{name:"description", content:"{% block page-description %}{{ brand.meta_desc }}{% endblock %}"}
+    %meta{name:"author", content:"{{ brand.meta_author }}"}
     %meta{http-equiv:"X-UA-Compatible", content:"IE=10"}
-
-    :javascript
-
-      window.supportEmail = '{{brand.support_email}}';
-      window.subdir = '{{brand.sub_dir}}';
-      function conditionalLoad(local, remote) {
-        if (local != null && (window.location.hostname == "localhost" || remote == null)) {
-          loadResource("{{ STATIC_URL }}" + local);
-        } else if (remote != null) {
-          loadResource(remote);
-        }
-      }
-
-      function loadResource(src) {
-        (function() { document.write(unescape('%3Cscript src="' + src + '"%3E%3C/script%3E')); })();
-      }
-
-    // ==== JQUERY ====
-    :javascript
-      conditionalLoad('bower/jquery/jquery.js', null);
-      conditionalLoad('bower/jquery-migrate/jquery-migrate.min.js', null);
 
     -# this view make it possible to process translations from javascript land
     <script src="{% url 'django.views.i18n.javascript_catalog' %}"></script>
     -compress js
       :javascript
-        var static_url = '{{STATIC_URL}}';
+        window.supportEmail = "{{ brand.support_email }}";
+        window.subdir = "{{ brand.sub_dir }}";
+        var static_url = "{{ STATIC_URL }}";
 
-      %script{src:"{{ STATIC_URL }}bower/toastr/toastr.js"}
-      %script{src:"{{ STATIC_URL }}bower/bootstrap/js/bootstrap-modal.js"}
-      %script{src:"{{ STATIC_URL }}bower/bootstrap/js/bootstrap-dropdown.js"}
-      %script{src:"{{ STATIC_URL }}bower/bootstrap/js/bootstrap-tooltip.js"}
-      %script{src:"{{ STATIC_URL }}bower/bootstrap/js/bootstrap-tab.js"}
-      %script{src:"{{ STATIC_URL }}bower/intercooler-js/src/intercooler.js"}
-      %script{src:"{{ STATIC_URL }}bower/moment/moment.js"}
-      %script{src:"{{ STATIC_URL }}bower/moment-timezone/builds/moment-timezone-with-data.js"}
-      %script{src:"{{ STATIC_URL }}bower/featherlight/src/featherlight.js"}
-      %script{src:"{{ STATIC_URL }}bower/video.js/dist/video.js"}
-      %script{src:"{{ STATIC_URL }}bower/videojs-vjsdownload/dist/videojs-vjsdownload.js"}
-      %script{src:"{{ STATIC_URL }}bower/xregexp/xregexp-all.js"}
+      %script{src:"{% static 'bower/jquery/jquery.min.js' %}"}
+      %script{src:"{% static 'bower/jquery-migrate/jquery-migrate.min.js' %}"}
+      %script{src:"{% static 'bower/toastr/toastr.js' %}"}
+      %script{src:"{% static 'bower/bootstrap/js/bootstrap-modal.js' %}"}
+      %script{src:"{% static 'bower/bootstrap/js/bootstrap-dropdown.js' %}"}
+      %script{src:"{% static 'bower/bootstrap/js/bootstrap-tooltip.js' %}"}
+      %script{src:"{% static 'bower/bootstrap/js/bootstrap-tab.js' %}"}
+      %script{src:"{% static 'bower/intercooler-js/src/intercooler.js' %}"}
+      %script{src:"{% static 'bower/moment/moment.js' %}"}
+      %script{src:"{% static 'bower/moment-timezone/builds/moment-timezone-with-data.js' %}"}
+      %script{src:"{% static 'bower/featherlight/src/featherlight.js' %}"}
+      %script{src:"{% static 'bower/video.js/dist/video.js' %}"}
+      %script{src:"{% static 'bower/videojs-vjsdownload/dist/videojs-vjsdownload.js' %}"}
+      %script{src:"{% static 'bower/xregexp/xregexp-all.js' %}"}
 
       // expanded nav dropdown
-      %script{src:"{{ STATIC_URL }}bower/jquery-hoverintent/jquery.hoverIntent.js"}
+      %script{src:"{% static 'bower/jquery-hoverintent/jquery.hoverIntent.js' %}"}
 
       // Non-bower packages
-      %script{src:"{{ STATIC_URL }}lib/uuid.js"}
-      %script{src:"{{ STATIC_URL }}lib/bootstrap-limit.js"}
+      %script{src:"{% static 'lib/uuid.js' %}"}
+      %script{src:"{% static 'lib/bootstrap-limit.js' %}"}
 
       -if not debug and not testing
-        %script{src:"{{ STATIC_URL }}lib/raven.min.js"}
+        %script{src:"{% static 'lib/raven.min.js' %}"}
 
     -compress js
-      %script{src:"{{ STATIC_URL }}js/temba.js"}
-      %script{src:"{{ STATIC_URL }}js/labels.js"}
-      %script{src:"{{ STATIC_URL }}js/formax.js"}
+      %script{src:"{% static 'js/temba.js' %}"}
+      %script{src:"{% static 'js/labels.js' %}"}
+      %script{src:"{% static 'js/formax.js' %}"}
 
     -include "includes/frame_top.html"
 
@@ -82,31 +66,31 @@
 
     -# Favicon works without the need to be explicit
     -# -if brand.favico
-    -#   %link{type:"image/ico", rel:"shortcut icon", href:"{{ STATIC_URL }}{{ brand.favico }}"}
+    -#   %link{type:"image/ico", rel:"shortcut icon", href:"{% static brand.favico %}"}
     -# -else
-    -#   %link{type:"image/ico", rel:"shortcut icon", href:"{{ STATIC_URL }}images/favicon.ico"}
+    -#   %link{type:"image/ico", rel:"shortcut icon", href:"{% static 'images/favicon.ico' %}"}
 
     -block styles
       -# do not want to use non-local fonts
       -# %link{rel:'stylesheet', href:'https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:200,300,400,500'}
 
       -compress css
-        %link{type:'text/css', rel:'stylesheet', href:'{{ STATIC_URL }}bower/bootstrap-css/css/bootstrap.css',  media:'all' }
+        %link{type:'text/css', rel:'stylesheet', href:"{% static 'bower/bootstrap-css/css/bootstrap.css' %}",  media:'all' }
 
       -compress css
-        %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}bower/toastr/toastr.css", media:'all'}
-        %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}bower/featherlight/src/featherlight.css", media:'all'}
-        %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}bower/video.js/dist/video-js.css", media:'all'}
-        %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}bower/videojs-vjsdownload/dist/videojs-vjsdownload.css", media:'all'}
+        %link{type:'text/css', rel:'stylesheet', href:"{% static 'bower/toastr/toastr.css' %}", media:'all'}
+        %link{type:'text/css', rel:'stylesheet', href:"{% static 'bower/featherlight/src/featherlight.css' %}", media:'all'}
+        %link{type:'text/css', rel:'stylesheet', href:"{% static 'bower/video.js/dist/video-js.css' %}", media:'all'}
+        %link{type:'text/css', rel:'stylesheet', href:"{% static 'bower/videojs-vjsdownload/dist/videojs-vjsdownload.css' %}", media:'all'}
 
       -compress css
-        %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}fonts/icons/style.css", media:'all'}
-        %link{type:'text/less', rel:'stylesheet', href:'{{STATIC_URL}}less/print.less', media:'print'}
-        %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}fonts/tembatoo/style.css", media:'all'}
+        %link{type:'text/css', rel:'stylesheet', href:"{% static 'fonts/icons/style.css' %}", media:'all'}
+        %link{type:'text/less', rel:'stylesheet', href:"{% static 'less/print.less' %}", media:'print'}
+        %link{type:'text/css', rel:'stylesheet', href:"{% static 'fonts/tembatoo/style.css' %}", media:'all'}
 
-        %link{type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/temba-components.css"}
+        %link{type:"text/css", rel:"stylesheet", href:"{% static 'css/temba-components.css' %}"}
         -# no reason to list this twice
-        -# %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}fonts/tembatoo/style.css", media:'all'}
+        -# %link{type:'text/css', rel:'stylesheet', href:"{% static 'fonts/tembatoo/style.css' %}", media:'all'}
 
       -compress css
 
@@ -123,15 +107,15 @@
         // any additional brand styling such as fonts, etc
         -for style in brand.styles
           -if 'less' in style
-            %link{type:'text/less', rel:'stylesheet', href:'{{STATIC_URL}}{{style}}', media:'all'}
+            %link{type:'text/less', rel:'stylesheet', href:"{% static style %}", media:'all'}
           -else
-            %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}{{style}}", media:'all'}
+            %link{type:'text/css', rel:'stylesheet', href:"{% static style %}", media:'all'}
 
       -compress css
-        %link{rel:"stylesheet", href:"{{ STATIC_URL }}css/tailwind.css", type:"text/css"}
-        %link{rel:"stylesheet", href:"{{ STATIC_URL }}less/refresh.less", type:"text/less"}
+        %link{rel:"stylesheet", href:"{% static 'css/tailwind.css' %}", type:"text/css"}
+        %link{rel:"stylesheet", href:"{% static 'less/refresh.less' %}", type:"text/less"}
         -if brand.final_style
-          %link{rel:"stylesheet", href:"{{ STATIC_URL }}{{brand.final_style}}", type:"text/less"}
+          %link{rel:"stylesheet", href:"{% static brand.final_style %}", type:"text/less"}
 
       -block extra-less
       -block extra-style
@@ -169,7 +153,7 @@
         %a#big-logo.logo.icon-logo{href:"{% if brand.logo_link %}{{brand.logo_link}}{%else%}/{%endif%}", title:"{{brand.name}}", class:"hover:no-underline"}
           .name
             {{brand.name}}
-          %img{ src:"{{ STATIC_URL }}{{brand.logo}}" }
+          %img{ src:"{% static brand.logo %}" }
         %span.version-str
           {% if user.is_authenticated and brand.version %}{{brand.version}}{%else%}&nbsp;{%endif%}
 
@@ -322,7 +306,7 @@
 
     -block extra-script
 
-    <script type="text/javascript" src="{{ STATIC_URL }}js/libs/jquery.url.js"></script>
+    <script type="text/javascript" src="{% static 'js/libs/jquery.url.js' %}"></script>
 
     <form id="posterizer" method="post">
       {% csrf_token %}
@@ -336,26 +320,31 @@
 
         $(".btn").tooltip();
 
-        $('#btn-org-list').live('click', function(evt) {
-          evt.stopPropagation();
-          var header = $('.org-header');
-          if (header.hasClass('expanded')) {
-            header.removeClass('expanded');
-          } else {
-            header.addClass('expanded');
-          }
-        });
+        var theOrgListBtn = $('#btn-org-list');
+        if ( theOrgListBtn ) {
+          theOrgListBtn.on('click', function(evt) {
+            evt.stopPropagation();
+            var header = $('.org-header');
+            if (header.hasClass('expanded')) {
+              header.removeClass('expanded');
+            } else {
+              header.addClass('expanded');
+            }
+          });
+        }
 
-        $('#org-name').live('click', function(evt) {
-          url = '{% url "orgs.org_home" %}';
-          evt.stopPropagation();
-          if (evt.ctrlKey || evt.metaKey){
-            window.open(url,'_blank')
-          } else {
-            window.location = url;
-          }
-
-        });
+        var theOrgNameArea = $('#org-name');
+        if ( theOrgNameArea ) {
+          theOrgNameArea.on('click', function(evt) {
+            var theUrl = '{% url "orgs.org_home" %}';
+            evt.stopPropagation();
+            if (evt.ctrlKey || evt.metaKey){
+              window.open(theUrl,'_blank')
+            } else {
+              window.location = theUrl;
+            }
+          });
+        }
 
         $('#menu .more').hoverIntent({
           over:function() {
@@ -384,9 +373,7 @@
           handlePosterize(ele);
         });
 
-
       });
 {% endblock body %}
-
 
 </html>
