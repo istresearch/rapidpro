@@ -20,13 +20,10 @@
 # Required: mount docker/customizations/<brand> to /opt/dev/brand
 # - /DevCode/rapidpro/docker/customizations/engage:/opt/dev/brand
 #
-# Once you have your volume mounts added, you just need to run
-# two commands to refresh your docker container to use your newly
-# modified code. First, execute this script in the container:
-#
-# $ docker-compose exec engage /opt/dev/src-refresh.sh
-#
-# then restart the container itself, e.g.
+# Once you have your volume mounts added, you just need to restart
+# the container itself whenever you want update your browser view.
+# The restart script will copy over the "any" and "brand" flavor
+# code as well as re-collect the static files for you. e.g.
 #
 # $ docker-compose restart engage
 #
