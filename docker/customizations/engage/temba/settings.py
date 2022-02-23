@@ -12,7 +12,6 @@ from datetime import datetime
 from django.utils.translation import ugettext_lazy as _
 from temba.settings_common import *  # noqa
 
-AWS_QUERYSTRING_EXPIRE = '157784630'
 SUB_DIR = env('SUB_DIR', required=False)
 COURIER_URL = env('COURIER_URL', 'http://localhost:8080')
 DEFAULT_TPS = env('DEFAULT_TPS', 10)    # Default Transactions Per Second for newly create Channels.
@@ -27,9 +26,6 @@ POST_MASTER_DL_URL = env('POST_MASTER_DL_URL', required=False)
 POST_MASTER_DL_QRCODE = env('POST_MASTER_DL_QRCODE', required=False)
 if POST_MASTER_DL_QRCODE is not None and not POST_MASTER_DL_QRCODE.startswith("data:"):
     POST_MASTER_DL_QRCODE = "data:png;base64, {}".format(POST_MASTER_DL_QRCODE)
-
-if SUB_DIR is not None and len(SUB_DIR) > 0:
-    MEDIA_URL = "{}{}".format(SUB_DIR, MEDIA_URL)
 
 MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
@@ -75,19 +71,52 @@ ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')
 LOGGING['root']['level'] = env('DJANGO_LOG_LEVEL', 'INFO')
 
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', '')
-AWS_BUCKET_DOMAIN = env('AWS_BUCKET_DOMAIN', AWS_STORAGE_BUCKET_NAME + '.s3.amazonaws.com')
-CDN_DOMAIN_NAME = env('CDN_DOMAIN_NAME', '')
-AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
-AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
-AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', '')
+AWS_S3_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
+AWS_S3_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
+AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', 'us-east-1')
+IS_AWS_S3_REGION_DEFAULT = bool(AWS_S3_REGION_NAME == 'us-east-1')
 AWS_SIGNED_URL_DURATION = int(env('AWS_SIGNED_URL_DURATION', '1800'))
 AWS_DEFAULT_ACL = env('AWS_DEFAULT_ACL', '')
 AWS_LOCATION = env('AWS_LOCATION', '')
-AWS_STATIC = env('AWS_STATIC', bool(AWS_STORAGE_BUCKET_NAME))
-AWS_MEDIA = env('AWS_MEDIA', bool(AWS_STORAGE_BUCKET_NAME))
-STORAGE_URL = "https://"+AWS_BUCKET_DOMAIN
+AWS_QUERYSTRING_EXPIRE = '157784630' #unsure why this is hardcoded as a string
+AWS_STATIC = bool(AWS_STORAGE_BUCKET_NAME) and env('AWS_STATIC', False)
+AWS_MEDIA = bool(AWS_STORAGE_BUCKET_NAME) and env('AWS_MEDIA', True)
+AWS_S3_USE_SSL = bool(env('AWS_S3_USE_SSL', True))
+AWS_S3_HTTP_SCHEME = "https" if AWS_S3_USE_SSL else "http"
+AWS_S3_VERIFY = env('AWS_S3_VERIFY', False)
+AWS_S3_CUSTOM_DOMAIN_NAME = env('AWS_S3_CUSTOM_DOMAIN_NAME', None)
+AWS_S3_CUSTOM_URL = env('AWS_S3_CUSTOM_URL', None)
 
 if AWS_STORAGE_BUCKET_NAME:
+
+    if AWS_S3_CUSTOM_URL:
+        #TODO FUTURE, IF NEEDED: if there's replacements in string, do them
+        AWS_S3_ENDPOINT_URL = AWS_S3_CUSTOM_URL
+        AWS_S3_URL = AWS_S3_ENDPOINT_URL
+    else:
+        if AWS_S3_CUSTOM_DOMAIN_NAME:
+            AWS_S3_CUSTOM_DOMAIN = AWS_S3_CUSTOM_DOMAIN_NAME
+            AWS_S3_DOMAIN = AWS_S3_CUSTOM_DOMAIN_NAME
+        else:
+            theRegionDomainSegment = f".{AWS_S3_REGION_NAME}" if not IS_AWS_S3_REGION_DEFAULT else ''
+            # middleware still expects us-east-1 in special domain format with bucket leading the subdomain (legacy format).
+            theDefaultRegionDomainSegment = f"{AWS_STORAGE_BUCKET_NAME}." if IS_AWS_S3_REGION_DEFAULT else ''
+            # useful to override for local dev and hosts file entries
+            #  e.g. 127.0.0.1    s3.dev.nostromo.box
+            #       127.0.0.1    s3.us-gov-west-1.dev.nostromo.box
+            theBaseDomain = env('AWS_BASE_DOMAIN', 'amazonaws.com')
+            # useful for local dev ngnix proxies, eg. 'location ^~ /s3/ {'
+            thePathPrefix = env('AWS_S3_PATH_PREFIX', '') # MUST START WITH A SLASH, eg. '/s3'
+            AWS_S3_DOMAIN = f"{theDefaultRegionDomainSegment}s3{theRegionDomainSegment}.{theBaseDomain}{thePathPrefix}"
+
+        # middleware still expects us-east-1 in special domain format with bucket leading the subdomain (legacy format).
+        theBucketPathSegment = f"/{AWS_STORAGE_BUCKET_NAME}" if not IS_AWS_S3_REGION_DEFAULT else ''
+        AWS_S3_URL = f"{AWS_S3_HTTP_SCHEME}://{AWS_S3_DOMAIN}{theBucketPathSegment}"
+
+    # explicity remove any trailing slash
+    if AWS_S3_URL.endswith('/'):
+        AWS_S3_URL = AWS_S3_URL[:-1]
+
     # Tell django-storages that when coming up with the URL for an item in S3 storage, keep
     # it simple - just use this domain plus the path. (If this isn't set, things get complicated).
     # This controls how the `static` template tag from `staticfiles` gets expanded, if you're using it.
@@ -96,45 +125,50 @@ if AWS_STORAGE_BUCKET_NAME:
     # django-storages. Use our own setting for the domain instead, which is unknown to
     # django-storages.
 
-    if CDN_DOMAIN_NAME:
-        AWS_S3_DOMAIN = CDN_DOMAIN_NAME
-    else:
-        AWS_S3_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
-
     if AWS_STATIC:
         # This is used by the `static` template tag from `static`, if you're using that. Or if anything else
         # refers directly to STATIC_URL. So it's safest to always set it.
-        STATIC_URL = "https://%s/" % AWS_S3_DOMAIN
+        STATIC_URL = AWS_S3_URL
 
         # Tell the staticfiles app to use S3Boto storage when writing the collected static files (when
         # you run `collectstatic`).
         STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
         COMPRESS_STORAGE = STATICFILES_STORAGE
 
     if AWS_MEDIA:
-        MEDIA_URL = "https://s3.amazonaws.com/%s/media/" % (AWS_STORAGE_BUCKET_NAME)
-
         DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+        STORAGE_URL = AWS_S3_URL
+        MEDIA_URL = f"{AWS_S3_URL}/media/"
+
+if not AWS_MEDIA:
+    if SUB_DIR is not None and len(SUB_DIR) > 0:
+        MEDIA_URL = f"{SUB_DIR}{MEDIA_URL}"
+    STORAGE_URL = MEDIA_URL[:-1]
 
 if not AWS_STATIC:
     if SUB_DIR is not None and len(SUB_DIR) > 0:
         STATIC_URL = '/' + SUB_DIR + '/sitestatic/'
-    else:
-        STATIC_URL = '/sitestatic/'
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    MIDDLEWARE = list(MIDDLEWARE) + ['whitenoise.middleware.WhiteNoiseMiddleware']
+
+    # @see whitenoise middleware usage: https://whitenoise.evans.io/en/stable/django.html
+    STATICFILES_STORAGE = 'temba.storage.WhiteNoiseStaticFilesStorage'
+    # insert just after security middleware (which is at idx 0)
+    MIDDLEWARE = MIDDLEWARE[:1] + ('whitenoise.middleware.WhiteNoiseMiddleware',) + MIDDLEWARE[1:]
+    WHITENOISE_MANIFEST_STRICT = False
+
+STATIC_ROOT = os.path.join(PROJECT_DIR, "../sitestatic/")
 
 COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'on') == 'on'
-COMPRESS_OFFLINE = False
+if COMPRESS_ENABLED:
+    COMPRESS_URL = STATIC_URL
+    COMPRESS_ROOT = STATIC_ROOT
+    #COMPRESS_STORAGE = STATICFILES_STORAGE
 
-COMPRESS_URL = STATIC_URL
-# Use MEDIA_ROOT rather than STATIC_ROOT because it already exists and is
-# writable on the server. It's also the directory where other cached files
-# (e.g., translations) are stored
-COMPRESS_ROOT = STATIC_ROOT
-COMPRESS_CSS_HASHING_METHOD = 'content'
-COMPRESS_OFFLINE_MANIFEST = 'manifest-%s.json' % env('RAPIDPRO_VERSION', required=True)
+COMPRESS_OFFLINE_MANIFEST = f"manifest-{env('VERSION_CI', '1-dev')[:-4]}.json"
+# If COMPRESS_OFFLINE is False, compressor will look in COMPRESS_STORAGE for
+# previously processed results, but if not found, will create them on the fly
+# and save them to use again.
+#COMPRESS_OFFLINE = False
+COMPRESS_OFFLINE = COMPRESS_ENABLED
 
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
 MAGE_API_URL = env('MAGE_API_URL', 'http://localhost:8026/api/v1')
@@ -173,6 +207,8 @@ BRANDING['engage'] = {
     'name': env('BRANDING_NAME', 'Pulse'),
     'title': env('BRANDING_TITLE', 'Engage'),
     'org': env('BRANDING_ORG', 'IST'),
+    'meta_desc': 'Pulse Engage',
+    'meta_author': 'IST Research Corp',
     'colors': dict([rule.split('=') for rule in env('BRANDING_COLORS', 'primary=#0c6596').split(';')]),
     'styles': ['brands/engage/font/style.css', 'brands/engage/less/style.less', 'fonts/style.css'],
     'final_style': 'brands/engage/less/engage.less',

@@ -78,6 +78,7 @@ body {
       margin-top: 3px;
       color: var(--color-nav-unselected);
       align-self: center;
+      user-select: text;
     }
   }
   #menu-area {
@@ -131,4 +132,11 @@ body {
     display:inline-block;
     width: 100%;
   }
+}
+
+/* refresh uses ::before to add unicode char and font */
+/* just display bkg-img for pm-only icons */
+[class^="icon-"]:not(.pm-icon),
+[class*=" icon-"]:not(.pm-icon) {
+  background-image: none;
 }

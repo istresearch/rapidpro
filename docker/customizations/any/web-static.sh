@@ -16,14 +16,13 @@ PATH=node_modules/coffeescript/bin:$PATH
 
 set -ex # fail on any error & print commands as they're run
 
-echo 'Clearing compressor cache...'
+echo 'Clearing static cache...'
 python clear-compressor-cache.py
-echo 'Finished clearing compressor cache.'
-
-echo 'Compressing static website files...'
-python manage.py compress --extension=".haml" --force -v0
-echo 'Finished compressing static website files.'
+echo 'Finished clearing static cache.'
 
 echo 'Collecting compressed static website files...'
-python manage.py collectstatic --noinput --no-post-process
-echo 'Finished collecting compressed static website files.'
+python manage.py collectstatic --noinput --settings=temba.settings_collect_static
+
+echo 'Compressing static website files...'
+python manage.py compress --extension=".haml" --force -v0 --settings=temba.settings_compress_static
+echo 'Finished compressing static website files.'

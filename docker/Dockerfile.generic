@@ -14,6 +14,7 @@ LABEL org.label-schema.name="Engage" \
 WORKDIR /rapidpro
 
 # apply branding/overrides
+COPY --chown=engage:engage docker/customizations/any /opt/rp
 COPY --chown=engage:engage docker/customizations/generic /opt/rp
 USER root
 RUN rsync -a /opt/rp/ ./ && rm -R /opt/rp
