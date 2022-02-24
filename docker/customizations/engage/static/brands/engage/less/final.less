@@ -2,12 +2,9 @@
  styles layered over site as "last loaded" so will be authoritative
  ********************************************************************/
 
-#splash {
-  margin-top: unset;
-}
-.org-header .org {
-  padding: unset;
-}
-#site-logo {
-  max-width: unset;
-}
+/* import engage vars, then define our overrides, if any. */
+@import-once "engage-vars";
+@main-bkgd-color: #152c3f;
+
+/* import engage css, then define ours, if any. */
+@import-once "engage";

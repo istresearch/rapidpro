@@ -1,0 +1,20 @@
+/********************************************************************
+ styles layered over site as "last loaded" so will be authoritative
+ ********************************************************************/
+
+/* import engage vars, then define our overrides, if any. */
+@import "engage-vars";
+@color-primary: red;
+
+/* import engage css, then define ours, if any. */
+@import "engage";
+
+#splash {
+  margin-top: unset;
+}
+.org-header .org {
+  padding: unset;
+}
+#site-logo {
+  max-width: unset;
+}

@@ -1,0 +1,53 @@
+/* Engage colors */
+
+/* https://css-tricks.com/css-variables-calc-rgb-enforcing-high-contrast-colors/ */
+:root {
+  --primary-red: 0x23;
+  --primary-green: 0x42;
+  --primary-blue: 0x63;
+  --primary-color: rgb(var(--primary-red), var(--primary-green), var(--primary-blue));
+  --primary-contrast: calc( ( ( (
+      (var(--primary-red) * 299) +
+      (var(--primary-green) * 587) +
+      (var(--primary-blue) * 114)
+  ) / 1000 ) - 128 ) * -1000 );
+
+  --secondary-red: 0xF5;
+  --secondary-green: 0xF7;
+  --secondary-blue: 0xFA;
+  --secondary-color: rgb(var(--secondary-red), var(--secondary-green), var(--secondary-blue));
+  --secondary-contrast: calc( ( ( (
+      (var(--secondary-red) * 299) +
+      (var(--secondary-green) * 587) +
+      (var(--secondary-blue) * 114)
+  ) / 1000 ) - 128 ) * -1000 );
+}
+@color-primary: rgb(var(--primary-red), var(--primary-green), var(--primary-blue));
+@color-secondary: rgb(var(--secondary-red), var(--secondary-green), var(--secondary-blue));
+
+/* blue gradient (dark to light) */
+@color2-1: #0279ad;
+@color2-2: #0e9dd3;
+@color2-3: #aed9e9;
+@color2-4: #e2f3fa;
+@color2-5: #f1f9fd;
+
+/* grey gradient (dark to light) */
+@color3-1: #302e30;
+@color3-2: #555555;
+@color3-3: #747474;
+@color3-4: #aaaaaa;
+@color3-5: #e0e0e0;
+@color3-6: #fafafa;
+@color3-7: #ffffff;
+
+@color-links: @color-primary;
+
+/* hovering and selection */
+@color-hovered: @color-secondary;
+@color-hovered-font: @color-links;
+@color-selected: @color-secondary;
+@color-selected-font: @color-links;
+@color-formax-hovered: @color-links;
+
+@color-button-primary: #386995;

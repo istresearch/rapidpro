@@ -2,14 +2,12 @@
 from __future__ import unicode_literals
 
 # -----------------------------------------------------------------------------------
-# RapidPro settings file for the docker setup
+# Engage settings file
 # -----------------------------------------------------------------------------------
 
 from getenv import env
 import dj_database_url
 import django_cache_url
-from datetime import datetime
-from django.utils.translation import ugettext_lazy as _
 from temba.settings_common import *  # noqa
 
 SUB_DIR = env('SUB_DIR', required=False)
@@ -188,67 +186,22 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', 'mypassword')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
 
-version_str = None
-vtag = env('VERSION_TAG', '')
-vstr = env('VERSION_CI', '')
-if vtag and vstr and vtag.startswith('ci'):
-    version_str = "v{} ({})".format(vstr, vtag)
-elif vtag:
-    version_str = "v{}".format(vtag)
-
-try:
-    BRANDING
-except NameError:
-    BRANDING = {}
-
-BRANDING['engage'] = {
-    'logo_link': env('BRANDING_LOGO_LINK', '/{}/'.format(SUB_DIR) if SUB_DIR is not None else '/'),
-    'slug': env('BRANDING_SLUG', 'pulse'),
-    'name': env('BRANDING_NAME', 'Pulse'),
-    'title': env('BRANDING_TITLE', 'Engage'),
-    'org': env('BRANDING_ORG', 'IST'),
-    'meta_desc': 'Pulse Engage',
-    'meta_author': 'IST Research Corp',
-    'colors': dict([rule.split('=') for rule in env('BRANDING_COLORS', 'primary=#0c6596').split(';')]),
-    'styles': ['brands/engage/font/style.css', 'brands/engage/less/style.less', 'fonts/style.css'],
-    'final_style': 'brands/engage/less/engage.less',
-    'welcome_topup': 1000,
-    'email': env('BRANDING_EMAIL', 'pulse@istresearch.com'),
-    'support_email': env('BRANDING_SUPPORT_EMAIL', 'pulse@istresearch.com'),
-    'link': env('BRANDING_LINK', 'https://istresearch.com'),
-    'api_link': env('BRANDING_API_LINK', 'https://api.rapidpro.io'),
-    'docs_link': env('BRANDING_DOCS_LINK', 'http://docs.rapidpro.io'),
-    'domain': HOSTNAME,
-    'favico': env('BRANDING_FAVICO', 'brands/engage/images/engage.ico'),
-    'splash': env('BRANDING_SPLASH', 'brands/engage/images/splash.png'),
-    'logo': env('BRANDING_LOGO', 'brands/engage/images/logo.svg'),
-    'allow_signups': env('BRANDING_ALLOW_SIGNUPS', True),
-    "flow_types": ["M", "V", "S"],  # see Flow.TYPE_MESSAGE, Flow.TYPE_VOICE, Flow.TYPE_SURVEY
-    'tiers': dict(import_flows=0, multi_user=0, multi_org=0),
-    'bundles': [],
-    'welcome_packs': [dict(size=5000, name="Demo Account"), dict(size=100000, name="UNICEF Account")],
-    'description': _("Addressing the most urgent human security issues faced by the world’s vulnerable populations."),
-    'credits': _("Copyright &copy; 2012-%s IST Research Corp, and others. All Rights Reserved." % (
-        datetime.now().strftime('%Y')
-    )),
-    'version': version_str
-}
-
-DEFAULT_BRAND = 'engage'
+BRANDING["rapidpro.io"].update({
+    "logo_link": env('BRANDING_LOGO_LINK', '/{}/'.format(SUB_DIR) if SUB_DIR is not None else '/'),
+    "styles": ['fonts/style.css', ],
+    "domain": HOSTNAME,
+    "allow_signups": env('BRANDING_ALLOW_SIGNUPS', True),
+    "tiers": dict(import_flows=0, multi_user=0, multi_org=0),
+    "version": None,
+})
+DEFAULT_BRAND_OBJ = BRANDING["rapidpro.io"]
 
 if 'SUB_DIR' in locals() and SUB_DIR is not None:
-    BRANDING[DEFAULT_BRAND]["sub_dir"] = SUB_DIR
-    LOGIN_URL = "/" + SUB_DIR + "/users/login/"
-    LOGOUT_URL = "/" + SUB_DIR + "/users/logout/"
-    LOGIN_REDIRECT_URL = "/" + SUB_DIR + "/org/choose/"
-    LOGOUT_REDIRECT_URL = "/" + SUB_DIR + "/"
-
-# build up our offline compression context based on available brands
-COMPRESS_OFFLINE_CONTEXT = []
-for brand in BRANDING.values():
-    context = dict(STATIC_URL=STATIC_URL, base_template='frame.html', debug=False, testing=False)
-    context['brand'] = dict(slug=brand['slug'], styles=brand['styles'])
-    COMPRESS_OFFLINE_CONTEXT.append(context)
+    DEFAULT_BRAND_OBJ.update({"sub_dir": SUB_DIR})
+    LOGIN_URL = f"/{SUB_DIR}/users/login/"
+    LOGOUT_URL = f"/{SUB_DIR}/users/logout/"
+    LOGIN_REDIRECT_URL = f"/{SUB_DIR}/org/choose/"
+    LOGOUT_REDIRECT_URL = f"/{SUB_DIR}/"
 
 CHANNEL_TYPES = [
     "temba.channels.types.postmaster.PostmasterType",
