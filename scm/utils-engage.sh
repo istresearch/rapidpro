@@ -186,7 +186,12 @@ function BuildVersionForEngage()
 # @param string $2 - the version to tag.
 function BuildVersionForGeneric()
 {
-  BuildVersionForX "istresearch/rapidpro" generic $1
+  IMAGE_NAME="istresearch/rapidpro"
+  BuildVersionForX $IMAGE_NAME generic $1
+  VERSION_CI_TAG=`GetImgStageTag version_ci`
+  docker tag $IMAGE_NAME:$1 $IMAGE_NAME:$VERSION_CI_TAG
+  docker push $IMAGE_NAME:$VERSION_CI_TAG
+  PrintPaddedTextRight "Created Image" "$IMAGE_NAME:${VERSION_CI_TAG}" ${COLOR_MSG_INFO}
 }
 
 
