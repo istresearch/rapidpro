@@ -57,5 +57,8 @@ fi
 
 # re-collect all the sitestatic assets
 echo "Refreshing static files"
+if [[ $CLEAR_SITESTATIC == "1" ]]; then
+  rm -R /rapidpro/sitestatic/*
+fi
 source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 \
-    python manage.py collectstatic --noinput --settings=temba.settings_collect_static
+    python manage.py collectstatic --no-input --settings=temba.settings_collect_static

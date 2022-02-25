@@ -86,34 +86,26 @@
       -compress css
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'fonts/icons/style.css' %}", media:'all'}
         %link{type:'text/less', rel:'stylesheet', href:"{% static 'less/print.less' %}", media:'print'}
+        %link{type:"text/css", rel:"stylesheet", href:"{% static 'css/temba-components.css' %}"}
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'fonts/tembatoo/style.css' %}", media:'all'}
 
-        %link{type:"text/css", rel:"stylesheet", href:"{% static 'css/temba-components.css' %}"}
-        -# no reason to list this twice
-        -# %link{type:'text/css', rel:'stylesheet', href:"{% static 'fonts/tembatoo/style.css' %}", media:'all'}
-
       -compress css
-
         {% lessblock %}
           :plain
             @import "style.less";
-
             // any brand styling tweaks
             @import (optional, reference) "../brands/style.less";
             @import (optional) "../brands/{{brand.slug}}/less/style.less";
-
         {% endlessblock %}
 
         // any additional brand styling such as fonts, etc
         -for style in brand.styles
-          -if 'less' in style
-            %link{type:'text/less', rel:'stylesheet', href:"{% static style %}", media:'all'}
-          -else
-            %link{type:'text/css', rel:'stylesheet', href:"{% static style %}", media:'all'}
+          %link{type:"text/{%if 'less' in style%}less{%else%}css{%endif%}", rel:'stylesheet', href:"{% static style %}", media:'all'}
 
       -compress css
         %link{rel:"stylesheet", href:"{% static 'css/tailwind.css' %}", type:"text/css"}
         %link{rel:"stylesheet", href:"{% static 'less/refresh.less' %}", type:"text/less"}
+
         -if brand.final_style
           %link{rel:"stylesheet", href:"{% static brand.final_style %}", type:"text/less"}
 

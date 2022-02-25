@@ -2,28 +2,31 @@
 
 /* https://css-tricks.com/css-variables-calc-rgb-enforcing-high-contrast-colors/ */
 :root {
-  --primary-red: 0x23;
-  --primary-green: 0x42;
-  --primary-blue: 0x63;
-  --primary-color: rgb(var(--primary-red), var(--primary-green), var(--primary-blue));
+  --primary-color: #2687CA; //or rgb(35 135 202) or hsl(205, 68%, 47%)
+  --primary-red: 35;
+  --primary-green: 135;
+  --primary-blue: 202;
   --primary-contrast: calc( ( ( (
-      (var(--primary-red) * 299) +
-      (var(--primary-green) * 587) +
-      (var(--primary-blue) * 114)
+  (var(--primary-red) * 299) +
+  (var(--primary-green) * 587) +
+  (var(--primary-blue) * 114)
   ) / 1000 ) - 128 ) * -1000 );
 
-  --secondary-red: 0xF5;
-  --secondary-green: 0xF7;
-  --secondary-blue: 0xFA;
-  --secondary-color: rgb(var(--secondary-red), var(--secondary-green), var(--secondary-blue));
+  --secondary-color: #F5F7FA; //or rgb(245, 247, 250) or hsl(216, 33%, 97%)
+  --secondary-red: 245;
+  --secondary-green: 247;
+  --secondary-blue: 250;
   --secondary-contrast: calc( ( ( (
-      (var(--secondary-red) * 299) +
-      (var(--secondary-green) * 587) +
-      (var(--secondary-blue) * 114)
+  (var(--secondary-red) * 299) +
+  (var(--secondary-green) * 587) +
+  (var(--secondary-blue) * 114)
   ) / 1000 ) - 128 ) * -1000 );
+
+  --header-bg: var(--primary-color);
+  --orgname-bkgd: hsl(205, 68%, 17%);
 }
-@color-primary: rgb(var(--primary-red), var(--primary-green), var(--primary-blue));
-@color-secondary: rgb(var(--secondary-red), var(--secondary-green), var(--secondary-blue));
+@color-primary: var(--primary-rgb);
+@color-secondary: var(--secondary-rgb);
 
 /* blue gradient (dark to light) */
 @color2-1: #0279ad;

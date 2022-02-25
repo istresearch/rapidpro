@@ -166,7 +166,7 @@ COMPRESS_OFFLINE_MANIFEST = f"manifest-{env('VERSION_CI', '1-dev')[:-4]}.json"
 # previously processed results, but if not found, will create them on the fly
 # and save them to use again.
 #COMPRESS_OFFLINE = False
-COMPRESS_OFFLINE = COMPRESS_ENABLED
+COMPRESS_OFFLINE = COMPRESS_ENABLED and (env('DEV_STATIC', 'off') != 'on')
 
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
 MAGE_API_URL = env('MAGE_API_URL', 'http://localhost:8026/api/v1')
