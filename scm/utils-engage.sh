@@ -140,6 +140,11 @@ function BuildVersionForX()
   fi
   IMG_TAG=$3
   IMG_STAGE=$2
+  if [[ -z "$4" ]]; then
+    VER_TAG=$IMG_TAG
+  else
+    VER_TAG=$4
+  fi
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
   IMAGE_TAG=${IMG_TAG}
   echo $IMAGE_TAG > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
@@ -150,7 +155,7 @@ function BuildVersionForX()
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}..."
     #if debugging, can add arg --progress=plain to the docker build command
     docker build --no-cache --build-arg FROM_STAGE_TAG=$FROM_STAGE_TAG \
-        --build-arg VERSION_TAG=$IMG_TAG \
+        --build-arg VERSION_TAG=$VER_TAG \
         -t $IMAGE_NAME:$IMAGE_TAG -f ${DOCKERFILE2USE} .
     docker push $IMAGE_NAME:$IMAGE_TAG
     "${UTILS_PATH}/pr-comment.sh" "Image built: $IMAGE_NAME:$IMAGE_TAG"
@@ -187,11 +192,12 @@ function BuildVersionForEngage()
 function BuildVersionForGeneric()
 {
   IMAGE_NAME="istresearch/rapidpro"
-  BuildVersionForX $IMAGE_NAME generic $1
-  VERSION_CI_TAG=`GetImgStageTag version_ci`
-  docker tag $IMAGE_NAME:$1 $IMAGE_NAME:$VERSION_CI_TAG
-  docker push $IMAGE_NAME:$VERSION_CI_TAG
-  PrintPaddedTextRight "Created Image" "$IMAGE_NAME:${VERSION_CI_TAG}" ${COLOR_MSG_INFO}
+  VERSION_CI=`GetImgStageTag version_ci`
+  VER_TAG=${VERSION_CI%-*}
+  BuildVersionForX $IMAGE_NAME generic $1 $VER_TAG
+  docker tag $IMAGE_NAME:$1 $IMAGE_NAME:$VER_TAG
+  docker push $IMAGE_NAME:$VER_TAG
+  PrintPaddedTextRight "Created Image" "$IMAGE_NAME:${VER_TAG}" ${COLOR_MSG_INFO}
 }
 
 
