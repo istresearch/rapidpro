@@ -5,16 +5,15 @@ ARG VERSION_TAG
 
 FROM istresearch/p4-engage:${FROM_STAGE_TAG}
 
-ARG VERSION_TAG=${VERSION_CI%-*}
+RUN export VERSION_TAG="${VERSION_CI%-*}"
+ENV VERSION_CI=
+
 LABEL org.label-schema.name="Engage" \
       org.label-schema.description="Enabling Global Conversations." \
       org.label-schema.version=$VERSION_TAG \
       org.label-schema.schema-version="1.0"
 
 WORKDIR /rapidpro
-
-ENV VERSION_TAG=$VERSION_TAG
-ENV VERSION_CI=
 
 # apply branding/overrides
 COPY --chown=engage:engage docker/customizations/any /opt/rp
