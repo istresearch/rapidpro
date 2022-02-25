@@ -5,7 +5,7 @@ ARG VERSION_TAG
 
 FROM istresearch/p4-engage:${FROM_STAGE_TAG}
 
-ARG VERSION_TAG=${VERSION_CI:0:-4}
+ARG VERSION_TAG=${VERSION_CI%-*}
 LABEL org.label-schema.name="Engage" \
       org.label-schema.description="Enabling Global Conversations." \
       org.label-schema.version=$VERSION_TAG \
