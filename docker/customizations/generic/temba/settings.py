@@ -16,6 +16,11 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', 'mypassword')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
 
+version_str = None
+vtag = env('VERSION_TAG', '')
+if vtag:
+    version_str = "v{}".format(vtag)
+
 DEFAULT_BRAND = "engage"
 DEFAULT_BRAND_OBJ.update({
     'slug': env('BRANDING_SLUG', 'engage'),
@@ -38,5 +43,6 @@ DEFAULT_BRAND_OBJ.update({
     'welcome_packs': [dict(size=5000, name="Demo Account"),],
     'description': _("Enabling Global Conversations"),
     'credits': "",
+    'version': version_str,
 })
 BRANDING[DEFAULT_BRAND] = DEFAULT_BRAND_OBJ
