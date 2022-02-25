@@ -1,0 +1,45 @@
+/********************************************************************
+ styles layered over site as "last loaded" so will be authoritative
+ ********************************************************************/
+
+/* import engage vars, then define our overrides, if any. */
+@import "engage-vars";
+
+/* https://css-tricks.com/css-variables-calc-rgb-enforcing-high-contrast-colors/ */
+:root {
+  --primary-color: #234263; //or rgb(35, 66, 99) or hsl(211, 48%, 26%)
+  --primary-red: 21;
+  --primary-green: 44;
+  --primary-blue: 63;
+  --primary-contrast: calc( ( ( (
+      (var(--primary-red) * 299) +
+      (var(--primary-green) * 587) +
+      (var(--primary-blue) * 114)
+  ) / 1000 ) - 128 ) * -1000 );
+
+  --secondary-color: #F5F7FA; //or rgb(245, 247, 250) or hsl(216, 33%, 97%)
+  --secondary-red: 245;
+  --secondary-green: 247;
+  --secondary-blue: 250;
+  --secondary-contrast: calc( ( ( (
+      (var(--secondary-red) * 299) +
+      (var(--secondary-green) * 587) +
+      (var(--secondary-blue) * 114)
+  ) / 1000 ) - 128 ) * -1000 );
+
+  --header-bg: var(--primary-color);
+  --orgname-bkgd: hsl(207, 50%, 46%);
+}
+
+/* import engage css, then define ours, if any. */
+@import "engage";
+
+#splash {
+  margin-top: unset;
+}
+.org-header .org {
+  padding: unset;
+}
+#site-logo {
+  max-width: unset;
+}
