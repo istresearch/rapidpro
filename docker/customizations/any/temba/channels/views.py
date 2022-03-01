@@ -1120,7 +1120,7 @@ class ChannelCRUDL(SmartCRUDL):
 
         paginate_by = settings.PAGINATE_CHANNELS_COUNT
         title = _("Manage Channels")
-        permission = "orgs.org_manage_accounts"
+        permission = "channels.channel_claim"
 
         def has_org_perm(self, permission):
             if self.org:
