@@ -451,6 +451,11 @@ class Channel(TembaModel, DependencyMixin):
         if config is None:
             config = {}
 
+        # P4-3462
+        from temba.contacts.models import URN
+        if URN.TEL_SCHEME in schemes:
+            config[Channel.CONFIG_ALLOW_INTERNATIONAL] = True
+
         create_args = dict(
             org=org,
             country=country,
