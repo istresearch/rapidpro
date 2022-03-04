@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from django.utils.translation import ugettext_lazy as _
 
-from engage.settings_engage import * # noqa
+from temba.settings_engage import * # noqa
 
 
 EMAIL_HOST = env('EMAIL_HOST', 'smtp.gmail.com')
