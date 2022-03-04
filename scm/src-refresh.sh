@@ -55,10 +55,12 @@ if [ -d "$SRC" ]; then
   rsync -a "${SRC}/" /rapidpro/
 fi
 
-# re-collect all the sitestatic assets
-echo "Refreshing static files"
-if [[ $CLEAR_SITESTATIC == "1" ]]; then
-  rm -R /rapidpro/sitestatic/*
+if [[ $DEV_CODE_ONLY != "1" ]]; then
+  # re-collect all the sitestatic assets
+  echo "Refreshing static files"
+  if [[ $CLEAR_SITESTATIC == "1" ]]; then
+    rm -R /rapidpro/sitestatic/*
+  fi
+  source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 \
+      python manage.py collectstatic --no-input --settings=temba.settings_collect_static
 fi
-source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 \
-    python manage.py collectstatic --no-input --settings=temba.settings_collect_static

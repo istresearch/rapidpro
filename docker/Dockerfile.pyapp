@@ -19,6 +19,7 @@ ARG VERSION_CI
 FROM alpine as load-files
 
 WORKDIR /opt/code2use
+COPY ./engage      engage
 COPY ./locale      locale
 COPY ./media       media
 COPY ./static      static

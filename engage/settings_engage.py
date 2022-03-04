@@ -28,8 +28,14 @@ if POST_MASTER_DL_QRCODE is not None and not POST_MASTER_DL_QRCODE.startswith("d
 MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
-    tuple(filter(lambda tup : tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) +
-    tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(','))))
+    tuple(filter(lambda tup : tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
+    'engage.channels',
+    ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
+)
+
+TEMPLATES[0]['DIRS'].append(
+    os.path.join(PROJECT_DIR, "../engage/hamls"),
+)
 
 ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
 
@@ -65,8 +71,6 @@ TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
 SECURE_PROXY_SSL_HEADER = (env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 INTERNAL_IPS = ('*',)
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')
-
-LOGGING['root']['level'] = env('DJANGO_LOG_LEVEL', 'INFO')
 
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', '')
 AWS_S3_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
@@ -148,7 +152,7 @@ if not AWS_STATIC:
         STATIC_URL = '/' + SUB_DIR + '/sitestatic/'
 
     # @see whitenoise middleware usage: https://whitenoise.evans.io/en/stable/django.html
-    STATICFILES_STORAGE = 'temba.storage.WhiteNoiseStaticFilesStorage'
+    STATICFILES_STORAGE = 'engage.storage.WhiteNoiseStaticFilesStorage'
     # insert just after security middleware (which is at idx 0)
     MIDDLEWARE = MIDDLEWARE[:1] + ('whitenoise.middleware.WhiteNoiseMiddleware',) + MIDDLEWARE[1:]
     WHITENOISE_MANIFEST_STRICT = False
@@ -283,17 +287,19 @@ LOGGING = {
         'default': {
             'level':'DEBUG',
             'class':'logging.StreamHandler',
+            'stream': sys.stdout,
             'formatter': 'json'
         },
     },
     "loggers": {
-        'django': {'handlers': ['default'],'level': 'INFO'},
+        'django': {'handlers': ['default'], 'level': 'INFO', "propagate": False},
         '': {'handlers': ['default'], 'level': 'INFO'},
         "pycountry": {"level": "ERROR", "handlers": ["default"], "propagate": False},
         "django.security.DisallowedHost": {"handlers": ["default"], "propagate": False},
         "django.db.backends": {"level": "ERROR", "handlers": ["default"], "propagate": False},
     },
 }
+LOGGING['root']['level'] = env('LOG_LEVEL', env('DJANGO_LOG_LEVEL', 'INFO'))
 
 ORG_SEARCH_CONTEXT = []
 

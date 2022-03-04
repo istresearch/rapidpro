@@ -21,8 +21,8 @@ python clear-compressor-cache.py
 echo 'Finished clearing static cache.'
 
 echo 'Collecting compressed static website files...'
-python manage.py collectstatic --noinput --settings=temba.settings_collect_static
+python manage.py collectstatic --noinput --settings=engage.settings_collect_static
 
 echo 'Compressing static website files...'
-python manage.py compress --extension=".haml" --force -v0 --settings=temba.settings_compress_static
+python manage.py compress --extension=".haml" --force -v0 --settings=engage.settings_compress_static
 echo 'Finished compressing static website files.'
