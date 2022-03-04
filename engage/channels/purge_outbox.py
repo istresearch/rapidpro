@@ -2,10 +2,7 @@ import logging
 import requests
 
 from django.http import HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-
-from rest_framework.views import APIView, View
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import View
 
 from temba import settings
 from temba.orgs.views import OrgPermsMixin
