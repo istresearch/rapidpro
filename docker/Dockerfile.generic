@@ -23,8 +23,8 @@ USER engage
 # compress static files
 RUN echo "Collecting static files into one location..." \
  && source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 \
-    python manage.py collectstatic --noinput --settings=temba.settings_collect_static \
+    python manage.py collectstatic --noinput --settings=engage.settings_collect_static \
  && echo "Collected, compressing..." \
  && source /venv/bin/activate; REDIS_URL=redis://redis DATABASE_URL=postgres://bla SECRET_KEY=123 \
-    python manage.py compress --extension='.haml' --force -v0 --settings=temba.settings_compress_static \
+    python manage.py compress --extension='.haml' --force -v0 --settings=engage.settings_compress_static \
  && echo "Done"
