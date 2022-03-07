@@ -284,8 +284,7 @@ LOGGING = {
     "root": {"level": "WARNING", "handlers": ["default"]},
     'formatters': {
         'json': {
-            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
-            'format': '%(created)f %(asctime)s %(levelname)s %(name)s %(message)s',
+            '()': 'engage.utils.logs.CustomJsonFormatter',
         },
     },
     'handlers': {
