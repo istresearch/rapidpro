@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from getenv import env
 from django.utils.translation import ugettext_lazy as _
 
 from temba.settings_engage import * # noqa

@@ -133,10 +133,13 @@
   -block temba-store
 
     -if user.is_authenticated
-      %temba-store(
-        completion="/mr/docs/{{ LANGUAGE_CODE }}/editor.json"
-        fields="/api/v2/fields.json"
-        globals="/api/v2/globals.json")
+      -if not user.is_anonymous
+        -if org
+          %temba-store(
+            completion="/mr/docs/{{ LANGUAGE_CODE }}/editor.json"
+            fields="/api/v2/fields.json"
+            globals="/api/v2/globals.json"
+          )
 
   .flex.flex-col.h-full
     <!-- Header -->

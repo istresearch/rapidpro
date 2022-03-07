@@ -384,7 +384,7 @@
 
         dlgPurge.addEventListener("temba-button-clicked", function(e) {
           if ( !e.detail.button.secondary ) {
-            doPurgeOutbox("{% url 'channels.purge_outbox' channel.channel_type channel.uuid %}");
+            doPurgeOutbox("{% url 'channels.channel_purge_outbox' channel.channel_type channel.uuid %}");
           }
           dlgPurge.open = false;
         });
