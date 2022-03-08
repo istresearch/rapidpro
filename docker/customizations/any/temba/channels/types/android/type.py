@@ -11,6 +11,9 @@ class AndroidType(ChannelType):
 
     code = "A"
 
+    # existing channels won't crash the system, but cannot add new channels.
+    beta_only = True
+
     name = "Android"
     icon = "icon-channel-android"
 
