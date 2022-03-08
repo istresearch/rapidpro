@@ -17,6 +17,7 @@ class CustomJsonFormatter(JsonFormatter):
             log_record['level'] = log_record['level'].upper()
         else:
             log_record['level'] = record.levelname
+        log_record['app'] = 'webapp'
 
 class OrgPermLogInfoMixin:
     """
