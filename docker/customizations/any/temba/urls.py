@@ -92,7 +92,6 @@ def track_user(self):  # pragma: no cover
 User.track_user = track_user
 AnonymousUser.track_user = track_user
 
-
 def handler500(request):
     """
     500 error handler which includes ``request`` in the context.
@@ -106,3 +105,7 @@ def handler500(request):
     t = loader.get_template("500.html")
     return HttpResponseServerError(t.render({"request": request}))  # pragma: needs cover
 
+# overwrite a single method of a single class rather then stomp on the whole file
+from temba.api.v2.serializers import WriteSerializer as TembaWriteSerializer
+from engage.api.serializers import WriteSerializer as EngageWriteSerializer
+setattr(TembaWriteSerializer, 'run_validation', EngageWriteSerializer.run_validation)
