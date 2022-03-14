@@ -52,10 +52,6 @@ urlpatterns = [
     url(r"^{}jsi18n/$".format(VHOST_NAME), JavaScriptCatalog.as_view(), js_info_dict, name="django.views.i18n.javascript_catalog"),
 ]
 
-# add a root url redirect when SUB_DIR not empty
-if len(VHOST_NAME) > 1:
-    url(r'^$', RedirectView.as_view(url="/{}/".format(VHOST_NAME), permanent=True)),
-
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
@@ -78,12 +74,8 @@ def track_user(self):  # pragma: no cover
     Should the current user be tracked
     """
 
-    # don't track unless we are on production
-    if not settings.IS_PROD:
-        return False
-
     # nothing to report if they haven't logged in
-    if not self.is_authenticated or self.is_anonymous:
+    if not self.is_authenticated:
         return False
 
     return True
@@ -91,6 +83,7 @@ def track_user(self):  # pragma: no cover
 
 User.track_user = track_user
 AnonymousUser.track_user = track_user
+
 
 def handler500(request):
     """
@@ -105,7 +98,6 @@ def handler500(request):
     t = loader.get_template("500.html")
     return HttpResponseServerError(t.render({"request": request}))  # pragma: needs cover
 
-# overwrite a single method of a single class rather then stomp on the whole file
-from temba.api.v2.serializers import WriteSerializer as TembaWriteSerializer
-from engage.api.serializers import WriteSerializer as EngageWriteSerializer
-setattr(TembaWriteSerializer, 'run_validation', EngageWriteSerializer.run_validation)
+# import our surgical overrides that required all Django apps and __init__.pys processed.
+from engage.utils.overrides import RunEngageOverrides
+RunEngageOverrides()
