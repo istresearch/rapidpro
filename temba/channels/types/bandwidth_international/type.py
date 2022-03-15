@@ -16,6 +16,9 @@ class BandwidthInternationalType(ChannelType):
     code = "BWI"
     category = ChannelType.Category.PHONE
 
+    # existing channels won't crash the system, but cannot add new channels.
+    beta_only = True
+
     courier_url = r"^bwi/(?P<uuid>[a-z0-9\-]+)/(?P<action>receive|status)$"
 
     name = "Bandwidth International"

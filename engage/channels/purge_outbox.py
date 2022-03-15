@@ -56,11 +56,14 @@ class PurgeOutboxMixin:
             }))
             try:
                 r = requests.post(theEndpoint, headers={"Content-Type": "application/json"})
-                logger.info("purge outbox returned 200", extra=self.withLogInfo({
+                theMessage = json.loads(r.content)['message']
+                logger.info(f"purge outbox returned {r.status_code}", extra=self.withLogInfo({
                     'channel_type': theChannelType,
                     'channel_uuid': theChannelUUID,
+                    'status_code': r.status_code,
+                    'message': theMessage,
                 }))
-                return HttpResponse(f"The courier service returned with status {r.status_code}: {json.loads(r.content)['message']}")
+                return HttpResponse(f"The courier service returned with status {r.status_code}: {theMessage}")
             except ConnectionError as ex:
                 logger.error("purge outbox cannot reach courier", extra=self.withLogInfo({
                     'channel_type': theChannelType,

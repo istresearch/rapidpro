@@ -1225,7 +1225,9 @@ class ChannelCRUDL(EngageChannelCRUDMixin, SmartCRUDL):
 
                 if ch_type.is_recommended_to(user):
                     recommended_channels.append(ch_type)
-                elif region_ignore_visible and region_aware_visible and ch_type.category:
+                #elif region_ignore_visible and region_aware_visible and ch_type.category:
+                # recommended channels _duplicated_, not either/or listings
+                if region_ignore_visible and region_aware_visible and ch_type.category:
                     types_by_category[ch_type.category.name].append(ch_type)
 
             return recommended_channels, types_by_category, True
@@ -1244,6 +1246,9 @@ class ChannelCRUDL(EngageChannelCRUDMixin, SmartCRUDL):
             context["recommended_channels"] = recommended_channels
             context["channel_types"] = types_by_category
             context["only_regional_channels"] = only_regional_channels
+            # engage features a single channel
+            from temba.channels.types.postmaster.type import PostmasterType
+            context["featured_channel"] = Channel.get_type_from_code(PostmasterType.code)
             return context
 
     class ClaimAll(Claim):
@@ -1256,7 +1261,9 @@ class ChannelCRUDL(EngageChannelCRUDMixin, SmartCRUDL):
                 region_aware_visible, region_ignore_visible = ch_type.is_available_to(user)
                 if ch_type.is_recommended_to(user):
                     recommended_channels.append(ch_type)
-                elif region_ignore_visible and ch_type.category:
+                #elif region_ignore_visible and ch_type.category:
+                # recommended channels _duplicated_, not either/or listings
+                if region_ignore_visible and ch_type.category:
                     types_by_category[ch_type.category.name].append(ch_type)
 
             return recommended_channels, types_by_category, False

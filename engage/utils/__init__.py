@@ -10,6 +10,7 @@ class AppConfig(BaseAppConfig):
     label = "engage_utils"
     verbose_name = "Engage Utilities"
 
+from engage.api.exceptions import ValueException
 
 def get_required_arg(arg_name, kwargs, bCheckForEmpty=True):
     """
@@ -24,4 +25,4 @@ def get_required_arg(arg_name, kwargs, bCheckForEmpty=True):
     if arg_name in kwargs and kwargs[arg_name] is not None:
         if not bCheckForEmpty or len(kwargs[arg_name]) > 0:
             return kwargs[arg_name]
-    raise ValueError(f"[{arg_name}] not defined.")
+    raise ValueException.withCause(cause='missing argument', msg=f"[{arg_name}] not defined.")
