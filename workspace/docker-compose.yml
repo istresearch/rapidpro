@@ -1,0 +1,313 @@
+version: '3.5'
+
+services:
+  engage:
+    container_name: engage
+    image: istresearch/p4-engage:$IMG_TAG_ENGAGE
+    restart: always
+    depends_on:
+      - redis
+      - postgresql
+    ports:
+      - 8000:8000
+    volumes:
+      - rpmedia:/rapidpro/media
+      #- ./.sitestatic:/rapidpro/sitestatic
+      #- ./docker/engage_local_settings.py:/rapidpro/temba/local_settings.py
+      - ./engage_initialsetup.py:/rapidpro/engage_initialsetup.py
+      - ../scm/src-refresh.sh:/opt/dev/src-refresh.sh
+      - ../docker/customizations/any:/opt/dev/any
+      - ../docker/customizations/engage:/opt/dev/brand
+      #- ../docker/customizations/generic:/opt/dev/brand
+      - ../engage:/opt/dev/rp/engage
+      - ../temba:/opt/dev/rp/temba
+    environment:
+      #- SUB_DIR=ist
+      - SEND_CALLS=on
+      - SEND_EMAILS=off
+      - SEND_MESSAGES=on
+      - SEND_WEBHOOKS=on
+      - CLEAR_COMPRESSOR_CACHE=off
+      - MANAGEPY_COLLECTSTATIC=off
+      - MANAGEPY_COMPRESS=off
+      - MANAGEPY_INIT_DB=off
+      - MANAGEPY_MIGRATE=off
+      - DOMAIN_NAME=localhost
+      - ALLOWED_HOSTS=*
+      - TEMBA_HOST=localhost
+      - DATABASE_URL=${RP_DB_URL}
+      - REDIS_URL=redis://redis:6379/1
+      - MAILROOM_URL=http://host.docker.internal:8091
+      - SECRET_KEY=notsecureatall
+      - AWS_STATIC=0
+      - AWS_STORAGE_BUCKET_NAME=${AWS_S3_BUCKET}
+      - AWS_ACCESS_KEY_ID=s3mock
+      - AWS_SECRET_ACCESS_KEY=s3mock
+      #- AWS_BUCKET_DOMAIN=localhost/s3
+      #- AWS_S3_REGION_NAME=us-east-1
+      #- AWS_S3_ENDPOINT_URL=http://localhost:9090/
+      #- AWS_S3_ENDPOINT_URL=http://localhost/s3/${AWS_S3_BUCKET}
+      #- AWS_S3_USE_SSL=0
+      #- AWS_S3_PATH_PREFIX=s3/
+      #- AWS_BASE_DOMAIN
+      #- AWS_DEFAULT_ACL=public-read
+      #- STORAGE_URL=http://localhost:9090/${AWS_S3_BUCKET}
+      #- MEDIA_URL=localhost/s3/${AWS_S3_BUCKET}
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - BRANDING_ALLOW_SIGNUPS=True
+      - UWSGI_HARAKIRI=600
+      - UWSGI_WORKERS=24
+      - UWSGI_LOGFORMAT
+      - UWSGI_LOGFORMAT_STRFTIME
+      - UWSGI_LOG_DATE
+      - POST_OFFICE_QR_URL=http://host.docker.internal:8088/postoffice/engage/claim
+      - POST_OFFICE_API_KEY
+      - POST_OFFICE_API_URL=http://host.docker.internal:8088/postoffice
+      - COURIER_URL=http://host.docker.internal:8080
+      - ASYNC_MESSAGE_EXPORT=off
+      - ADMIN_NAME=admin
+      - ADMIN_EMAIL=admin@istresearch.com
+      - ADMIN_PSWD=admin
+      - POST_MASTER_DL_URL=https://ist.app/beta
+      - POST_MASTER_DL_QRCODE="data:png;base64, iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEX///8AAABVwtN+AAABWUlEQVR42uyYu7HEIAxFr4dAISVQCq1taZRCCYQEHvRGCLzvY798ETfYj30ijT5XwtbW1tZ/4q7T6XcBgv56rQU0+XCnq1ThC4CQ5Uk0BxwSpitQPoccmJNVAFSp+gLrgOMKKlgX0LrQP1IYD4WzOjD7ZKVKxUtdPDTSxYEp4kryIj+Nx8WBhkMjowPDc0ZI8cfcXAHA0Y4TcBXExUsgekIkGAMObnCs4wCey3j97g9GgD4vZqOU/jAMozWgJ4wbdSO+OfQWERcDmLnJXCSxB70uEBJigkVgbAcSqdkgXsaAWRcSKN0OOMc/ftICoH1SDELRSHGK3+bFGsCQq8Q9IaQNWgQuV4yZDzmk2+1gbeA6kkCW4hEoi8DYmiVhfBmFg8iLAmIQxBbnvhSbBcYtyJeQ7+yiAWAeSUhPxWKKf62TJoD3kaQDvUHEdHss+mRga2vLor4CAAD//wP20XClmOsbAAAAAElFTkSuQmCC"
+      - VERSION_TAG=ci-local-dev
+      - VERSION_CI=1.0.0
+      - UWSGI_DISABLE_LOGGING=True
+      - DJANGO_DEBUG=on
+      #- DJANGO_LOG_LEVEL=DEBUG
+      - LOG_LEVEL=DEBUG
+      - DJANGO_COMPRESSOR=off
+      #- DEV_STATIC=off
+      #- DEV_CODE_ONLY=1
+
+  celery:
+    container_name: celery
+    image: istresearch/p4-engage:$IMG_TAG_ENGAGE
+    depends_on:
+      - engage
+    links:
+      - redis
+      - postgresql
+    volumes:
+      - rpmedia:/rapidpro/media
+    environment:
+      - SEND_CALLS=on
+      - SEND_MESSAGES=on
+      - SEND_AIRTIME=on
+      - SEND_WEBHOOKS=on
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - DATABASE_URL=${RP_DB_URL}
+      - REDIS_URL=redis://redis:6379/1
+      - SECRET_KEY=notsecureatall
+      - POST_OFFICE_API_KEY
+      - POST_OFFICE_API_URL=http://host.docker.internal:8088/postoffice
+    command: ["/venv/bin/celery", "--beat", "--app=temba", "worker", "--loglevel=INFO", "--queues=celery,flows,msgs,handler"]
+
+  courier:
+    container_name: courier
+    image: istresearch/courier:$IMG_TAG_COURIER
+    environment:
+      - COURIER_SPOOL_DIR=/tmp/courier/
+      - COURIER_DOMAIN=localhost
+      - COURIER_DB=${RP_DB_URL}
+      - COURIER_REDIS=redis://redis:6379/1
+      - COURIER_S3_ENDPOINT=http://s3mock:9090
+      - COURIER_S3_FORCE_PATH_STYLE=true
+      - COURIER_S3_BUCKET_URL_FORMAT=http://localhost:9090/%s
+      - COURIER_S3_REGION=us-east-1
+      - COURIER_S3_MEDIA_BUCKET=${AWS_S3_BUCKET}
+      - COURIER_AWS_ACCESS_KEY_ID=s3mock
+      - COURIER_AWS_SECRET_ACCESS_KEY=s3mock
+      - COURIER_LOG_LEVEL=DEBUG
+      - COURIER_POSTOFFICE_ENDPOINT=${POSTOFFICE_ENDPOINT:-http://host.docker.internal:8088}
+      - COURIER_POSTOFFICE_APIKEY=${POST_OFFICE_API_KEY}
+    depends_on:
+      - redis
+      - postgresql
+      - s3mock
+    ports:
+      - '8080:8080'
+
+  mailroom:
+    container_name: mailroom
+    image: istresearch/mailroom:$IMG_TAG_MAILROOM
+    restart: always
+    depends_on:
+      - postgresql
+      - redis
+    ports:
+      - 8091:8091
+    environment:
+      - MAILROOM_ELASTIC=http://elasticsearch:9200
+      - MAILROOM_REDIS=redis://redis:6379/1
+      - MAILROOM_DB=${RP_DB_URL}
+      - MAILROOM_S3_MEDIA_BUCKET=${AWS_S3_BUCKET}
+      - MAILROOM_AWS_ACCESS_KEY_ID=s3mock
+      - MAILROOM_AWS_SECRET_ACCESS_KEY=s3mock
+      - MAILROOM_S3_ENDPOINT=http://s3mock:9090
+      - MAILROOM_S3_FORCE_PATH_STYLE=true
+      - MAILROOM_S3_DISABLE_SSL=true
+      - MAILROOM_ADDRESS=0.0.0.0
+      - MAILROOM_PORT=8091
+      - MAILROOM_LOG_LEVEL=debug
+      - MAILROOM_CUSTOM_SCHEMES=pm_whatsapp, pm_telegram, pm_signal, pm_facebook, pm_line, pm_vk, pm_viber, pm_twitter, pm_kakao, pm_imo, pm_instagram, pm_mobyx, pm_fbm, pm_email, pm_element
+
+  indexer:
+    container_name: indexer
+    image: istresearch/rp-indexer:$IMG_TAG_RP_INDEXER
+    depends_on:
+      - engage
+    environment:
+      - INDEXER_DB=${RP_DB_URL}
+      - INDEXER_ELASTIC_URL=http://elasticsearch:9200
+
+  postoffice:
+    container_name: postoffice
+    image: istresearch/postoffice:$IMG_TAG_POSTOFFICE
+    restart: always
+    ports:
+      - 8088:8088
+    depends_on:
+      - redis
+    environment: &po-env
+      PO_APP_DB_URL: ${PO_DB_URL}
+      PO_APP_DB_STATSINTERVAL: 300s
+      PO_APP_ELASTICSEARCH_URL: http://elasticsearch:9200
+      PO_RAPIDPRO_APIKEY: $PO_RAPIDPRO_APIKEY
+      PO_RAPIDPRO_ENDPOINT: http://host.docker.internal:8000
+      PO_RAPIDPRO_DB_URL: ${RP_DB_URL}
+      PO_MAILROOM_ENDPOINT: http://host.docker.internal:8091/mr/ivr/c/
+      PO_REDIS_HOST: redis
+      PO_REDIS_DB: 2
+      PO_SERVER_ENDPOINT: http://localhost
+      PO_COURIER_ENDPOINT: http://host.docker.internal:8080/c/psm/
+      PO_AWS_ACCESSKEYID: s3mock
+      PO_AWS_SECRETACCESSKEY: s3mock
+      PO_AWS_S3BUCKET: ${AWS_S3_BUCKET}
+      PO_AWS_S3FORCEPATHSTYLE: "true"
+      PO_AWS_S3ENDPOINT: http://s3mock:9090
+      PO_FLIGHTLINE_URL: $PO_FLIGHTLINE_URL
+      PO_FLIGHTLINE_APIKEY: $PO_FLIGHTLINE_APIKEY
+      # set to 1 if you want to enable the heartbeats
+      PO_WORKERS_INCOMINGMESSAGES_ENABLED: 0
+      PO_WORKERS_INCOMINGMESSAGES_HEARTBEATINTERVAL: 300s
+      # set to 1 if you want to enable the heartbeats
+      PO_WORKERS_OUTGOINGSTATUSES_ENABLED: 0
+      PO_WORKERS_OUTGOINGSTATUSES_HEARTBEATINTERVAL: 300s
+      # --- test with graphql
+      PO_GRAPHQL_PLAYGROUNDENABLED: "true"
+      PO_GRAPHQL_PLAYGROUNDUSERNAME: graphql
+      PO_GRAPHQL_PLAYGROUNDPASSWORD: letmein
+
+  postoffice_custodian:
+    container_name: postoffice_custodian
+    image: istresearch/postoffice:$IMG_TAG_POSTOFFICE
+    restart: always
+    command: ["/app/postoffice", "custodian"]
+    depends_on:
+      - redis
+      - engage
+    environment:
+      <<: *po-env
+
+  nginx:
+    container_name: nginx
+    image: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - 80:8888
+    depends_on:
+      - engage
+
+  redis:
+    container_name: redis
+    image: redis:6.0.9
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - po_redis_db:/data
+  redis-commander:
+    container_name: redis_commander
+    image: rediscommander/redis-commander:latest
+    restart: always
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOSTS=local:redis:6379:0
+    ports:
+      - "8081:8081"
+
+  elasticsearch:
+    container_name: elasticsearch
+    image: elasticsearch:$IMG_TAG_ELASTICSEARCH
+    cpus: 1
+    command: elasticsearch
+      -E network.host=0.0.0.0
+      -E discovery.type=single-node
+      -E cluster.name="docker-cluster"
+      -E node.name="data-1"
+    ports:
+      - 9200:9200
+    environment:
+      ES_JAVA_OPTS: "-Xms256m -Xmx256m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    restart: always
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:$IMG_TAG_ELASTICSEARCH
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    restart: always
+  postgresql:
+    container_name: postgresql
+    image: mdillon/postgis:10
+    environment:
+      - POSTGRES_DB=rapidpro
+      - POSTGRES_USER=${PG_DB_USER}
+      - POSTGRES_PASSWORD=${PG_DB_PSWD}
+    volumes:
+      - ./postgres-rp-extensions.sh:/docker-entrypoint-initdb.d/pg01.sh
+      # NOTE: If you have an existing rp db, run this command to create PO schema via:
+      # docker exec -it postgresql docker-entrypoint-initdb.d/pg02.sh
+      - ./postgres-po-init.sh:/docker-entrypoint-initdb.d/pg02.sh
+      - po_db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    #command: ["postgres", "-c", "log_statement=all"]
+    restart: unless-stopped
+
+  s3mock:
+    container_name: s3mock
+    image: adobe/s3mock
+    ports:
+      - "9090:9090"
+      - "9091:9091"
+    volumes:
+      #- s3data:/data
+      - ./.s3data:/data
+    environment:
+      - root=/data
+      - validKmsKeys=s3mock
+      - initialBuckets=${AWS_S3_BUCKET}
+      - retainFilesOnExit=true
+      - debug=true
+
+volumes:
+  #s3data:
+  po_db:
+  esdata:
+  po_redis_db:
+    driver: local
+  rpmedia:
+    driver: local

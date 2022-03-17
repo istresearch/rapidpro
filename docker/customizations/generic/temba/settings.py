@@ -45,3 +45,9 @@ DEFAULT_BRAND_OBJ.update({
     'version': version_str,
 })
 BRANDING[DEFAULT_BRAND] = DEFAULT_BRAND_OBJ
+
+# in case an instance defines/overrides any previous setting
+try:
+    from temba.local_settings import *
+except ImportError:
+    pass
