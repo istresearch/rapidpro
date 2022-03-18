@@ -341,20 +341,24 @@
           });
         }
 
-        $('#menu .more').hoverIntent({
+        var theMoreMenuEl = $('#menu .more');
+        theMoreMenuEl.hoverIntent({
           over:function() {
             // $('.submenu').hide();
-            $(this).find('.submenu-container').slideDown(250);
+            $(this).find('.submenu-container').slideDown(100);
             $(this).parents("#menu").addClass('expanded');
             // $(this).find('.submenu').show();
           },
           out:function() {
-          $(this).find('.submenu-container').slideUp(200);
+          $(this).find('.submenu-container').slideUp(250);
           $(this).parents("#menu").removeClass('expanded');
             //$(this).find('.submenu').hide();
           },
           timeout:300
         });
+        // friendlier UX if we remove ... HTML link clickability (it is "" anyway and does nothing)
+        var theMoreMenuLinkEl = $('a', theMoreMenuEl);
+        theMoreMenuLinkEl.removeAttr('href');
 
         $(".posterize").click(function(event){
 
