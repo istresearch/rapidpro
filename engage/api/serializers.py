@@ -33,5 +33,5 @@ class WriteSerializer(serializers.Serializer):
                 cause=f"workspace {state}",
                 msg=f"Sorry, your workspace is currently {state}. Please contact support.",
             )
-
-        return super().run_validation(data)
+        # since we will be overriding a diff class with this method, be explicit with super().
+        return super(serializers.Serializer, self).run_validation(data)
