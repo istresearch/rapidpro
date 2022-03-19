@@ -37,6 +37,9 @@ INSTALLED_APPS = (
 TEMPLATES[0]['DIRS'].append(
     os.path.join(PROJECT_DIR, "../engage/hamls"),
 )
+STATICFILES_DIRS = STATICFILES_DIRS + (
+    os.path.join(PROJECT_DIR, "../engage/static"),
+)
 
 ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
 

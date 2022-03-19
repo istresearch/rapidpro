@@ -12,7 +12,9 @@ services:
       - 8000:8000
     volumes:
       - rpmedia:/rapidpro/media
-      #- ./.sitestatic:/rapidpro/sitestatic
+      #---- <*)))><: I found placing the local-static files far outside
+      #----  the IDE/git pervuew prevented Docker from locking up.
+      - ~/engage-sitestatic:/rapidpro/sitestatic
       #- ./docker/engage_local_settings.py:/rapidpro/temba/local_settings.py
       - ./engage_initialsetup.py:/rapidpro/engage_initialsetup.py
       - ../scm/src-refresh.sh:/opt/dev/src-refresh.sh
@@ -72,13 +74,15 @@ services:
       - POST_MASTER_DL_QRCODE="data:png;base64, iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEX///8AAABVwtN+AAABWUlEQVR42uyYu7HEIAxFr4dAISVQCq1taZRCCYQEHvRGCLzvY798ETfYj30ijT5XwtbW1tZ/4q7T6XcBgv56rQU0+XCnq1ThC4CQ5Uk0BxwSpitQPoccmJNVAFSp+gLrgOMKKlgX0LrQP1IYD4WzOjD7ZKVKxUtdPDTSxYEp4kryIj+Nx8WBhkMjowPDc0ZI8cfcXAHA0Y4TcBXExUsgekIkGAMObnCs4wCey3j97g9GgD4vZqOU/jAMozWgJ4wbdSO+OfQWERcDmLnJXCSxB70uEBJigkVgbAcSqdkgXsaAWRcSKN0OOMc/ftICoH1SDELRSHGK3+bFGsCQq8Q9IaQNWgQuV4yZDzmk2+1gbeA6kkCW4hEoi8DYmiVhfBmFg8iLAmIQxBbnvhSbBcYtyJeQ7+yiAWAeSUhPxWKKf62TJoD3kaQDvUHEdHss+mRga2vLor4CAAD//wP20XClmOsbAAAAAElFTkSuQmCC"
       - VERSION_TAG=ci-local-dev
       - VERSION_CI=1.0.0
+      #---- <*)))><: I found these settings worked best for dev
       - UWSGI_DISABLE_LOGGING=True
       - DJANGO_DEBUG=on
-      #- DJANGO_LOG_LEVEL=DEBUG
-      - LOG_LEVEL=DEBUG
       - DJANGO_COMPRESSOR=off
-      #- DEV_STATIC=off
-      #- DEV_CODE_ONLY=1
+      - DJANGO_LOG_LEVEL=INFO
+      - LOG_LEVEL=DEBUG
+      - DEV_STATIC=on
+      - DEV_CODE_ONLY=0
+      - CLEAR_SITESTATIC=0
 
   celery:
     container_name: celery

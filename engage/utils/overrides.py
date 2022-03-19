@@ -30,3 +30,7 @@ def RunEngageOverrides():
     from temba.api.v2.serializers import WriteSerializer as TembaWriteSerializer
     from engage.api.serializers import WriteSerializer as EngageWriteSerializer
     setattr(TembaWriteSerializer, 'run_validation', EngageWriteSerializer.run_validation)
+
+    from django.contrib.auth.models import User
+    from engage.orgs.models import get_user_orgs
+    User.get_user_orgs = get_user_orgs

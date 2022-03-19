@@ -29,20 +29,25 @@
         window.subdir = "{{ brand.sub_dir }}";
         var static_url = "{{ STATIC_URL }}";
 
-      %script{src:"{% static 'bower/jquery/jquery.min.js' %}"}
+      //%script{src:"{% static 'bower/jquery/jquery.min.js' %}"}
+      %script{src:"{% static 'bower-engage/jquery/jquery.min.js' %}"}
       %script{src:"{% static 'bower/jquery-migrate/jquery-migrate.min.js' %}"}
+      //%script{src:"{% static 'bower-engage/jquery/jquery-migrate.min.js' %}"}
       %script{src:"{% static 'bower/toastr/toastr.js' %}"}
       %script{src:"{% static 'bower/bootstrap/js/bootstrap-modal.js' %}"}
       %script{src:"{% static 'bower/bootstrap/js/bootstrap-dropdown.js' %}"}
       %script{src:"{% static 'bower/bootstrap/js/bootstrap-tooltip.js' %}"}
       %script{src:"{% static 'bower/bootstrap/js/bootstrap-tab.js' %}"}
       %script{src:"{% static 'bower/intercooler-js/src/intercooler.js' %}"}
-      %script{src:"{% static 'bower/moment/moment.js' %}"}
-      %script{src:"{% static 'bower/moment-timezone/builds/moment-timezone-with-data.js' %}"}
+      //%script{src:"{% static 'bower/moment/moment.js' %}"}
+      //%script{src:"{% static 'bower/moment-timezone/builds/moment-timezone-with-data.js' %}"}
+      %script{src:"{% static 'bower-engage/moment/moment.min.js' %}"}
+      %script{src:"{% static 'bower-engage/moment-timezone/moment-timezone-with-data.min.js' %}"}
       %script{src:"{% static 'bower/featherlight/src/featherlight.js' %}"}
       %script{src:"{% static 'bower/video.js/dist/video.js' %}"}
       %script{src:"{% static 'bower/videojs-vjsdownload/dist/videojs-vjsdownload.js' %}"}
       %script{src:"{% static 'bower/xregexp/xregexp-all.js' %}"}
+      %script{src:"{% static 'bower-engage/select2/select2.full.min.js' %}"}
 
       // expanded nav dropdown
       %script{src:"{% static 'bower/jquery-hoverintent/jquery.hoverIntent.js' %}"}
@@ -82,6 +87,7 @@
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'bower/featherlight/src/featherlight.css' %}", media:'all'}
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'bower/video.js/dist/video-js.css' %}", media:'all'}
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'bower/videojs-vjsdownload/dist/videojs-vjsdownload.css' %}", media:'all'}
+        %link{type:'text/css', rel:'stylesheet', href:"{% static 'bower-engage/select2/select2.min.css' %}", media:'all'}
 
       -compress css
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'fonts/icons/style.css' %}", media:'all'}
@@ -153,22 +159,8 @@
           {% if user.is_authenticated and brand.version %}{{brand.version}}{%else%}&nbsp;{%endif%}
 
       #menu-area.flex.flex-col
-        -if user_org
-          .org-header
-            .flex.flex-row
-              #org-name.org
-                {{ user_org.name }}
-              -if user_orgs|length > 1
-                #btn-org-list.pull-right.toggle
-                  .icon-menu-2
-
-            #org-list.other-orgs.hide
-              -for org in user_orgs
-                -if org != user_org
-                  .org
-                    %a.posterize{href:'{% url "orgs.org_choose"%}?organization={{org.pk}}'}
-                      {{ org.name }}
-
+        -block org
+          -include 'includes/org.html'
         -block nav
           -include 'includes/nav.html'
 
@@ -233,6 +225,12 @@
     {{block.super}}
 
     :javascript
+      var org_home_url_format = '{% url "orgs.org_home" %}?org=%s';
+      {% if user.is_superuser %}
+        var org_chosen_url_format = org_home_url_format;
+      {% else %}
+        var org_chosen_url_format = '{% url "orgs.org_choose" %}?organization=%s';
+      {% endif %}
       {% if user_org %}
         {% if user_org.is_anon %}
           var anon_org = true;
@@ -241,63 +239,7 @@
         {% endif %}
       {% endif %}
 
-      function posterize(href) {
-        var url = $.url(href);
-        $("#posterizer").attr("action", url.attr("path"));
-        for (var key in url.param()){
-          $("#posterizer").append("<input type='hidden' name='" + key + "' value='" + url.param(key) + "'></input>");
-        }
-        $("#posterizer").submit();
-      }
-
-      function handlePosterize(ele) {
-        posterize(ele.getAttribute('href'));
-      }
-
-      function removalConfirmation(removal, buttonName) {
-
-        var modal = document.querySelector("#general-delete-confirmation");
-        modal.classList.remove("hidden");
-
-        // set modal deets
-        var title = document.querySelector('.' + removal + ' > .title').innerHTML;
-        var body = document.querySelector('.' + removal + ' > .body').innerHTML;
-
-        modal.header = title;
-        modal.querySelector('.confirmation-body').innerHTML = body;
-
-        modal.open = true;
-
-        modal.addEventListener("temba-button-clicked", function(event){
-          if(!event.detail.button.secondary) {
-            var ele = document.querySelector('#' + removal + '-form');
-            handlePosterize(ele);
-          }
-          modal.open = false;
-
-          // clear our listeners
-          modal.outerHTML = modal.outerHTML;
-        });
-      }
-
-      function formatContact(item) {
-        if (item.text.indexOf(" (") > -1) {
-        var name = item.text.split("(")[0];
-        if (name.indexOf(")") == name.length - 1) {
-          name = name.substring(0, name.length - 1);
-        }
-        return name;
-      }
-      return item.text;
-      }
-
-      function createContactChoice(term, data) {
-        if ($(data).filter(function() { return this.text.localeCompare(term)===0; }).length===0) {
-          if (!isNaN(parseFloat(term)) && isFinite(term)) {
-            return {id:"number-" + term, text:term};
-          }
-        }
-      }
+    <script type="text/javascript" src="{% static 'engage/js/frame-common.js' %}"></script>
 
     -block extra-script
 
@@ -307,72 +249,7 @@
       {% csrf_token %}
     </form>
 
-    :javascript
-      $(document).ready(function() {
-        if (navigator.appVersion.indexOf("Win")!=-1) {
-          $("html").addClass("windows");
-        }
+    <script type="text/javascript" src="{% static 'engage/js/frame-ready.js' %}"></script>
 
-        $(".btn").tooltip();
-
-        var theOrgListBtn = $('#btn-org-list');
-        if ( theOrgListBtn ) {
-          theOrgListBtn.on('click', function(evt) {
-            evt.stopPropagation();
-            var header = $('.org-header');
-            if (header.hasClass('expanded')) {
-              header.removeClass('expanded');
-            } else {
-              header.addClass('expanded');
-            }
-          });
-        }
-
-        var theOrgNameArea = $('#org-name');
-        if ( theOrgNameArea ) {
-          theOrgNameArea.on('click', function(evt) {
-            var theUrl = '{% url "orgs.org_home" %}';
-            evt.stopPropagation();
-            if (evt.ctrlKey || evt.metaKey){
-              window.open(theUrl,'_blank')
-            } else {
-              window.location = theUrl;
-            }
-          });
-        }
-
-        var theMoreMenuEl = $('#menu .more');
-        theMoreMenuEl.hoverIntent({
-          over:function() {
-            // $('.submenu').hide();
-            $(this).find('.submenu-container').slideDown(100);
-            $(this).parents("#menu").addClass('expanded');
-            // $(this).find('.submenu').show();
-          },
-          out:function() {
-          $(this).find('.submenu-container').slideUp(250);
-          $(this).parents("#menu").removeClass('expanded');
-            //$(this).find('.submenu').hide();
-          },
-          timeout:300
-        });
-        // friendlier UX if we remove ... HTML link clickability (it is "" anyway and does nothing)
-        var theMoreMenuLinkEl = $('a', theMoreMenuEl);
-        theMoreMenuLinkEl.removeAttr('href');
-
-        $(".posterize").click(function(event){
-
-          var ele = event.target;
-          while (ele && !ele.classList.contains("posterize")) {
-            ele = ele.parentElement;
-          }
-
-          event.preventDefault();
-          event.stopPropagation();
-          handlePosterize(ele);
-        });
-
-      });
 {% endblock body %}
-
 </html>
