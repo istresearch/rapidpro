@@ -947,8 +947,8 @@ class UserCRUDL(SmartCRUDL):
             context["backup_tokens"] = self.get_user().backup_tokens.order_by("id")
             return context
 
-
-class OrgCRUDL(SmartCRUDL):
+from engage.orgs.views import EngageOrgCRUDMixin
+class OrgCRUDL(EngageOrgCRUDMixin, SmartCRUDL):
     actions = (
         "signup",
         "home",
