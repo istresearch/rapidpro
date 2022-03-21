@@ -48,7 +48,7 @@ $(document).ready(function() {
     if ( !theOrgHomeBtn ) theOrgHomeBtn = $('#org-name');
     if ( theOrgHomeBtn ) {
         theOrgHomeBtn.on('click', function(evt) {
-            var theOrgPK = theOrgPicker ? theOrgPicker.find(':selected').value : '0';
+            var theOrgPK = theOrgPicker ? theOrgPicker.find(':selected').val() : '0';
             var theUrl = org_home_url_format.sprintf(theOrgPK);
             evt.stopPropagation();
             if (evt.ctrlKey || evt.metaKey){

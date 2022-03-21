@@ -24,10 +24,16 @@ class PurgeOutboxMixin:
 
         def dispatch(self, request: HttpRequest, *args, **kwargs):
             # non authenticated users without orgs get an error (not the org chooser)
-            user = self.get_user()
+            user = request.user
             if not user.is_authenticated:
                 return HttpResponse('Not authorized', status=401)
 
+            return super().dispatch(request, *args, **kwargs)
+
+        def get(self, request, *args, **kwargs):
+            logger = logging.getLogger(__name__)
+
+            user = self.get_user()
             if user.is_authenticated and not user.derive_org():
                 theOrgPK = request.GET.get('org')
                 if theOrgPK:
@@ -39,11 +45,6 @@ class PurgeOutboxMixin:
 
             if not user.has_org_perm(self.permission):
                 return HttpResponse('Forbidden', status=403)
-
-            return super().dispatch(request, *args, **kwargs)
-
-        def get(self, request, *args, **kwargs):
-            logger = logging.getLogger(__name__)
 
             # ensure we have the necessary args
             try:

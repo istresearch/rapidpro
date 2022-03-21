@@ -1,7 +1,7 @@
 -load smartmin i18n humanize temba compress
 
 #org-area
-  {% if user_org %}
+  {% if user_orgs|length > 0 %}
     #btn-org-home
       -#emoji house
   {% endif %}

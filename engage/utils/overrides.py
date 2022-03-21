@@ -34,3 +34,8 @@ def RunEngageOverrides():
     from django.contrib.auth.models import User
     from engage.orgs.models import get_user_orgs
     User.get_user_orgs = get_user_orgs
+
+    # cannot use OrgHomeMixin due to circular unit reference; override def here.
+    from temba.orgs.views import OrgCRUDL as TembaOrgViews
+    from engage.orgs.home import OrgHomeMixin as EngageOrgViews
+    TembaOrgViews.Home.derive_formax_sections = EngageOrgViews.Home.derive_formax_sections
