@@ -2667,7 +2667,7 @@ class OrgCRUDL(SmartCRUDL):
 
             return obj
 
-    class Resthooks(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
+    class Resthooks(ComponentFormMixin, InferOrgMixin, OrgPermsMixin, SmartUpdateView):
         class ResthookForm(forms.ModelForm):
             new_slug = forms.SlugField(
                 required=False,
@@ -2682,7 +2682,7 @@ class OrgCRUDL(SmartCRUDL):
                 field_mapping = []
 
                 for resthook in self.instance.get_resthooks():
-                    check_field = forms.BooleanField(required=False)
+                    check_field = forms.BooleanField(required=False, widget=CheckboxWidget())
                     field_name = "resthook_%d" % resthook.id
 
                     field_mapping.append((field_name, check_field))
