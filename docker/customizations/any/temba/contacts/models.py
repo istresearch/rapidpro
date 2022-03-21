@@ -765,14 +765,6 @@ class Contact(RequireUpdateFieldsMixin, TembaModel):
         contact_urn = ContactURN.objects.get(id=response["urn"]["id"])
         return contact, contact_urn
 
-    STATUS_ACTIVE = "active"
-    STATUS_BLOCKED = "blocked"
-    STATUS_STOPPED = "stopped"
-
-    STATUS_ACTIVE = "active"
-    STATUS_BLOCKED = "blocked"
-    STATUS_STOPPED = "stopped"
-
     @property
     def anon_identifier(self):
         """
