@@ -703,7 +703,7 @@ class UpdateTelChannelForm(UpdateChannelForm):
     class Meta(UpdateChannelForm.Meta):
         helps = {"address": _("Phone number of this channel")}
 
-from engage.channels.model import EngageChannelCRUDMixin
+from engage.channels.views import EngageChannelCRUDMixin
 class ChannelCRUDL(EngageChannelCRUDMixin, SmartCRUDL):
     model = Channel
     actions = (
