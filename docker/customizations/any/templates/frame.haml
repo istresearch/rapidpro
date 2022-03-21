@@ -137,15 +137,13 @@
     -include "components-body.html"
 
   -block temba-store
-
-    -if user.is_authenticated
-      -if not user.is_anonymous
-        -if org
-          %temba-store(
-            completion="/mr/docs/{{ LANGUAGE_CODE }}/editor.json"
-            fields="/api/v2/fields.json"
-            globals="/api/v2/globals.json"
-          )
+    {% if user.is_authenticated and not user.is_anonymous and user_org and not user_org.is_anon %}
+      %temba-store(
+        completion="/mr/docs/{{ LANGUAGE_CODE }}/editor.json"
+        fields="/api/v2/fields.json"
+        globals="/api/v2/globals.json"
+      )
+    {% endif %}
 
   .flex.flex-col.h-full
     <!-- Header -->
@@ -167,10 +165,9 @@
 
     -if messages
       -block messages
-        -if messages
-          -for msg in messages
-            %div{class:"alert alert-{{ message.tags }}"}
-              {{ msg }}
+        -for msg in messages
+          %div{class:"alert alert-{{ message.tags }}"}
+            {{ msg }}
 
 
     -block post-header
@@ -227,7 +224,7 @@
     :javascript
       var org_home_url_format = '{% url "orgs.org_home" %}?org=%s';
       {% if user.is_superuser %}
-        var org_chosen_url_format = org_home_url_format;
+        var org_chosen_url_format = '{% url "orgs.org_service" %}?organization=%s';
       {% else %}
         var org_chosen_url_format = '{% url "orgs.org_choose" %}?organization=%s';
       {% endif %}

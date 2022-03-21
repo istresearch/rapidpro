@@ -24,8 +24,9 @@ $(document).ready(function() {
             if (!aOpt.id) {
                 return aOpt.text;
             }
+            var theOptClasses = $(aOpt.element).attr('class');
             var theOpt = $(
-                '<span class="' + $(aOpt.element).attr('class') + '">' + aOpt.text + '</span>'
+                '<span class="'+theOptClasses+'">' + aOpt.text + '</span><span class="status-icon '+theOptClasses+'"></span>'
             );
             return theOpt;
         };
@@ -74,7 +75,7 @@ $(document).ready(function() {
         timeout:300
     });
     // friendlier UX if we remove ... HTML link clickability (it is "" anyway and does nothing)
-    var theMoreMenuLinkEl = $('a', theMoreMenuEl);
+    var theMoreMenuLinkEl = $('a.icon-menu-4', theMoreMenuEl);
     theMoreMenuLinkEl.removeAttr('href');
 
     $(".posterize").click(function(event){

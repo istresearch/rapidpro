@@ -252,22 +252,24 @@ h5.contact-signup {
   .select2-container {
     .state-disabled {
       text-decoration: line-through;
+    }
+    .state-icon .state-disabled {
+      text-decoration: unset;
+      padding-left: 0.5em;
       &:after {
         content: "🚫";
-        text-decoration: unset;
-        padding-left: 0.5em;
       }
     }
-    .state-suspended {
+    .state-icon .state-suspended {
+      padding-left: 0.5em;
       &:after {
         content: "⚠️";
-        padding-left: 0.5em;
       }
     }
-    .state-flagged {
+    .state-icon .state-flagged {
+      padding-left: 0.5em;
       &:after {
         content: "🚩";
-        padding-left: 0.5em;
       }
     }
   }

@@ -1,10 +1,11 @@
 -load smartmin i18n humanize temba compress
 
 #org-area
-  -if not user.is_superuser
+  {% if user_orgs|length > 0 %}
     #btn-org-home
       -#emoji house
-  -if user_orgs|length > 1
+  {% endif %}
+  {% if user_orgs|length > 1 %}
     #org-picker-widget
       %select#org-picker
         -for org in user_orgs
@@ -34,10 +35,10 @@
             -else
               %option.org{value:'{{ org.pk }}', class:'state-ok'}
                 {{ org.name }}
-
-  -else
+  {% else %}
     #org-name.org
       {{ user_org.name }}
+  {% endif %}
 
 -#OLD, CLUNKY PICKER
 -##org-area.org-header

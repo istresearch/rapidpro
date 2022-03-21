@@ -1,10 +1,11 @@
 import logging
 import requests
 
-from django.http import HttpResponse
+from django.http import HttpRequest, HttpResponse
 from rest_framework.views import View
 
 from temba import settings
+from temba.orgs.models import Org
 from temba.orgs.views import OrgPermsMixin
 from temba.utils import json
 
@@ -21,16 +22,28 @@ class PurgeOutboxMixin:
         def derive_url_pattern(cls, path, action):
             return r"^%s/(?P<channel_type>[^/]+)/(?P<channel_uuid>[^/]+)/$" % ('purge')
 
+        def dispatch(self, request: HttpRequest, *args, **kwargs):
+            # non authenticated users without orgs get an error (not the org chooser)
+            user = self.get_user()
+            if not user.is_authenticated:
+                return HttpResponse('Not authorized', status=401)
+
+            if user.is_authenticated and not user.derive_org():
+                theOrgPK = request.GET.get('org')
+                if theOrgPK:
+                    org = Org.objects.filter(id=theOrgPK).first()
+                    if org is not None:
+                        user.set_org(org)
+                if not user.derive_org():
+                    return HttpResponse('Org ambiguous, please specify', status=400)
+
+            if not user.has_org_perm(self.permission):
+                return HttpResponse('Forbidden', status=403)
+
+            return super().dispatch(request, *args, **kwargs)
+
         def get(self, request, *args, **kwargs):
             logger = logging.getLogger(__name__)
-
-            # ensure we have a logged in user with the correct permission(s)
-            theUser = self.get_user()
-            if theUser is None or not (theUser.is_authenticated and not theUser.is_anonymous):
-                return HttpResponse('Not authorized', status=401)
-            self.org = self.derive_org()
-            if not self.org or not self.has_org_perm(self.permission):
-                return HttpResponse('Forbidden', status=403)
 
             # ensure we have the necessary args
             try:
