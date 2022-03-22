@@ -17,7 +17,7 @@ def _TrackUser(self):  # pragma: no cover
     else:
         return False
 
-from temba.channels.types.postmaster.schemes import PM_Schemes, PM_Scheme_Labels, PM_Scheme_Icons
+from engage.channels.types.postmaster.schemes import PM_Schemes, PM_Scheme_Labels, PM_Scheme_Icons
 #from engage.utils import cap_words
 from temba.contacts.models import URN as TembaURN
 Processed_TembaURN_Scheme_Choices = (
