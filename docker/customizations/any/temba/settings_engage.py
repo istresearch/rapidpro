@@ -326,5 +326,5 @@ else:
 # setting the above ^ to None means all are allowed.
 
 #Use CHAT_MODE_CHOICES to configure the chatmodes that are available to the Postmaster channel
-from engage.contacts.models import PM_Scheme_Default_Chats
+from temba.channels.types.postmaster.schemes import PM_Scheme_Default_Chats
 CHAT_MODE_CHOICES = PM_Scheme_Default_Chats
