@@ -207,6 +207,34 @@ h5.contact-signup {
   background-image: none;
 }
 
+#chat-btn-label {
+  font-size: 0.7em;
+  font-variant-caps: petite-caps;
+  line-height: 1.875rem;
+  height: 1.875rem;
+}
+/* ----------------------------------------------------
+ temba components make use of https://lit.dev/ and use the "shadow-DOM".
+ This makes it harder to override/target CSS. haml was updated to include
+ IDs for specific elements and we target the "slotted" div element for css.
+ */
+temba-modax#send-via-pm_element > div {
+  cursor: pointer;
+  height: 16px;
+  width: 16px;
+  background: url("/sitestatic/engage/img/element-chat.svg");
+  background-size: 16px;
+}
+temba-modax#send-via-pm_signal > div {
+  cursor: pointer;
+  height: 16px;
+  width: 16px;
+  background: url("/sitestatic/engage/img/signal-chat.svg");
+  background-size: 16px;
+}
+/* ----------------------------------------------------*/
+
+
 #flow {
   .node {
     .flow-start {
@@ -275,11 +303,5 @@ h5.contact-signup {
   }
 }
 @import "select2-theme-org-picker";
-
-.icon-element .pm-icon {
-  &:after {
-    content: "/sitestatic/engage/img/element-chat.svg";
-  }
-}
 
 

@@ -22,9 +22,12 @@ class PM_Schemes:
     PM_VK_SCHEME            = "pm_vk"
     PM_WHATSAPP_SCHEME      = "pm_whatsapp"
 
+# notes: iconclass can be a bootstrap icon glyph (icon-*); some will need 'pm-icon' to ensure css works right, or
+#        use a class that does _not_ begin with "icon-" and add to any/static/less/engage.less near
+#        "temba-modax#send-via-pm_element" using similar properties; remember to add the icon to engage/static/engage/img.
 Schemes_Meta = namedtuple('Postmaster_Schemes_Meta', 'scheme label iconclass mode mode_label')
 PM_Schemes_Meta = [
-    Schemes_Meta(PM_Schemes.PM_ELEMENT_SCHEME,    _("Postmaster Element Identifier"),   "icon-element pm-icon",            "ELE",   _("Element")),
+    Schemes_Meta(PM_Schemes.PM_ELEMENT_SCHEME,    _("Postmaster Element Identifier"),   "element-chat",                    "ELE",   _("Element")),
     Schemes_Meta(PM_Schemes.PM_EMAIL_SCHEME,      _("Postmaster Email Identifier"),     "icon-envelop",                    "EMAIL", _("Email")),
     Schemes_Meta(PM_Schemes.PM_FACEBOOK_SCHEME,   _("Postmaster Facebook Identifier"),  "icon-facebook",                   "FB",    _("Facebook")),
     Schemes_Meta(PM_Schemes.PM_FBM_SCHEME,        _("Postmaster Messenger Identifier"), "icon-tembatoo-fbm pm-icon",       "FBM",   _("FBM")),
@@ -33,7 +36,7 @@ PM_Schemes_Meta = [
     Schemes_Meta(PM_Schemes.PM_KAKAO_SCHEME,      _("Postmaster Kakao Identifier"),     "icon-tembatoo-kakao pm-icon",     "KAKAO", _("KAKAO")),
     Schemes_Meta(PM_Schemes.PM_LINE_SCHEME,       _("Postmaster Line Identifier"),      "icon-line",                       "LN",    _("LINE")),
     Schemes_Meta(PM_Schemes.PM_MOBYX_SCHEME,      _("Postmaster Mobyx Identifier"),     "icon-tembatoo-mobyx pm-icon",     "MBX",   _("Mobyx")),
-    Schemes_Meta(PM_Schemes.PM_SIGNAL_SCHEME,     _("Postmaster Signal Identifier"),    "icon-signal pm-icon",             "SIG",   _("SIGNAL")),
+    Schemes_Meta(PM_Schemes.PM_SIGNAL_SCHEME,     _("Postmaster Signal Identifier"),    "signal-chat",                     "SIG",   _("SIGNAL")),
     Schemes_Meta(PM_Schemes.PM_TELEGRAM_SCHEME,   _("Postmaster Telegram Identifier"),  "icon-telegram",                   "TG",    _("Telegram")),
     Schemes_Meta(PM_Schemes.PM_TWITTER_SCHEME,    _("Postmaster Twitter Identifier"),   "icon-twitter",                    "TWTR",  _("TWITTER")),
     Schemes_Meta(PM_Schemes.PM_VIBER_SCHEME,      _("Postmaster Viber Identifier"),     "icon-viber pm-icon",              "VB",    _("VIBER")),
