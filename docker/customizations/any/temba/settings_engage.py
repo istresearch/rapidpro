@@ -8,6 +8,8 @@ from __future__ import unicode_literals
 from getenv import env
 import dj_database_url
 import django_cache_url
+from django.utils.translation import ugettext_lazy as _
+
 from temba.settings_common import *  # noqa
 
 SUB_DIR = env('SUB_DIR', required=False)
@@ -36,6 +38,9 @@ INSTALLED_APPS = (
 
 TEMPLATES[0]['DIRS'].append(
     os.path.join(PROJECT_DIR, "../engage/hamls"),
+)
+STATICFILES_DIRS = STATICFILES_DIRS + (
+    os.path.join(PROJECT_DIR, "../engage/static"),
 )
 
 ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
@@ -319,3 +324,7 @@ if env('NON_ISO6391_LANGUAGES_ALLOWED', None) is not None:
 else:
     NON_ISO6391_LANGUAGES = None
 # setting the above ^ to None means all are allowed.
+
+#Use CHAT_MODE_CHOICES to configure the chatmodes that are available to the Postmaster channel
+from engage.channels.types.postmaster.schemes import PM_Scheme_Default_Chats
+CHAT_MODE_CHOICES = PM_Scheme_Default_Chats
