@@ -17,7 +17,9 @@
       -if not user_org.is_anon
         -#if urn.sendable
         %temba-modax.text-base{ id:'send-via-{{urn.scheme}}', header:'Send Message', endpoint:"{% url 'msgs.broadcast_send' %}?u={{urn.id}}"}
-          .hover-linked{class:"glyph {{urn|urn_icon}}", style:"margin-top:0px"}
+          .send-via-btn.hover-linked{class:"glyph {{urn|urn_icon}}", style:"margin-top:0px"}
+            .tooltiptext
+              Send via {{urn.scheme}}
 
 -block subtitle
 

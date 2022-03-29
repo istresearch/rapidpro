@@ -219,17 +219,38 @@ h5.contact-signup {
  This makes it harder to override/target CSS. haml was updated to include
  IDs for specific elements and we target the "slotted" div element for css.
  */
-temba-modax#send-via-pm_element > div {
+temba-modax > div.send-via-btn {
   cursor: pointer;
   height: 16px;
   width: 16px;
+  position: relative;
+  display: inline-block;
+  .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: var(--orgname-bkgd);
+    color: var(--color-nav-unselected);
+    font-family: "Roboto", 'Helvetica Neue', sans-serif;
+    font-weight: 200;
+    font-size: smaller;
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
+    text-align: center;
+    padding: 5px;
+    z-index: 5;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+  }
+  &:hover .tooltiptext {
+    visibility: visible;
+  }
+}
+temba-modax#send-via-pm_element > div.send-via-btn {
   background: url("/sitestatic/engage/img/element-chat.svg");
   background-size: 16px;
 }
-temba-modax#send-via-pm_signal > div {
-  cursor: pointer;
-  height: 16px;
-  width: 16px;
+temba-modax#send-via-pm_signal > div.send-via-btn {
   background: url("/sitestatic/engage/img/signal-chat.svg");
   background-size: 16px;
 }
