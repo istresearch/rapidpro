@@ -212,6 +212,7 @@ h5.contact-signup {
   font-variant-caps: petite-caps;
   line-height: 1.875rem;
   height: 1.875rem;
+  border-radius: 5px;
 }
 /* ----------------------------------------------------
  temba components make use of https://lit.dev/ and use the "shadow-DOM".
@@ -270,6 +271,16 @@ temba-modax#send-via-pm_signal > div {
       content: "🏠";
       font-size: large;
     }
+  }
+
+  #org-name {
+    background-color: var(--orgname-bkgd);
+    min-width: 15em;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    color: var(--color-nav-unselected);
+    line-height: 28px;
+    text-align: center;
   }
 
   #org-picker-widget {
