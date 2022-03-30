@@ -1,9 +1,7 @@
 from temba import settings
-import temba.msgs.views
+from temba.msgs.views import InboxView
 
-OrigInboxView = temba.msgs.views.InboxView
-
-class BaseInboxView(OrigInboxView):
+class BaseInboxView(InboxView):
     """
     Base class for inbox views with message folders and labels listed by the side
     """
@@ -25,9 +23,14 @@ class BaseInboxView(OrigInboxView):
         :return: the processed list.
         """
         for theMsg in aList:
-            theText = theMsg['text']
-            theText.replace(u'\xa0', ' ').replace('&nbsp;', ' ')
-            theMsg['text'] = theText
+            #import engage.utils
+            #engage.utils.var_dump(theMsg)
+            theText = theMsg.text
+            # convert non-breaking spaces to normal spaces, ads abuse long strings of them
+            theText = theText.replace(u'\xa0', ' ').replace('&nbsp;', ' ')
+            # remove 0-width non-joiner characters near spaces
+            theText = theText.replace(' '+u"\u200C", ' ').replace(' &zwnj;', ' ')
+            theMsg.text = theText
         return aList
 
     def get_context_data(self, **kwargs):

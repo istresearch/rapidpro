@@ -210,6 +210,7 @@ class InboxView(OrgPermsMixin, BulkActionMixin, SmartListView):
             )
         return links
 
+from engage.msgs.inboxview import BaseInboxView
 
 class BroadcastForm(forms.ModelForm):
     message = forms.CharField(
@@ -304,7 +305,7 @@ class BroadcastCRUDL(SmartCRUDL):
             broadcast.save()
             return broadcast
 
-    class ScheduleList(InboxView):
+    class ScheduleList(BaseInboxView):
         refresh = 30000
         title = _("Scheduled Messages")
         fields = ("contacts", "msgs", "sent", "status")
@@ -602,7 +603,7 @@ class MsgCRUDL(SmartCRUDL):
             kwargs["label"] = self.derive_label()[1]
             return kwargs
 
-    class Inbox(InboxView):
+    class Inbox(BaseInboxView):
         title = _("Inbox")
         template_name = "msgs/message_box.haml"
         system_label = SystemLabel.TYPE_INBOX
@@ -613,7 +614,7 @@ class MsgCRUDL(SmartCRUDL):
             qs = super().get_queryset(**kwargs)
             return qs.prefetch_related("labels").select_related("contact")
 
-    class Flow(InboxView):
+    class Flow(BaseInboxView):
         title = _("Flow Messages")
         template_name = "msgs/message_box.haml"
         system_label = SystemLabel.TYPE_FLOWS
@@ -624,7 +625,7 @@ class MsgCRUDL(SmartCRUDL):
             qs = super().get_queryset(**kwargs)
             return qs.prefetch_related("labels").select_related("contact")
 
-    class Archived(InboxView):
+    class Archived(BaseInboxView):
         title = _("Archived")
         template_name = "msgs/msg_archived.haml"
         system_label = SystemLabel.TYPE_ARCHIVED
@@ -635,7 +636,7 @@ class MsgCRUDL(SmartCRUDL):
             qs = super().get_queryset(**kwargs)
             return qs.prefetch_related("labels").select_related("contact")
 
-    class Outbox(InboxView):
+    class Outbox(BaseInboxView):
         title = _("Outbox Messages")
         template_name = "msgs/msg_outbox.haml"
         system_label = SystemLabel.TYPE_OUTBOX
@@ -661,7 +662,7 @@ class MsgCRUDL(SmartCRUDL):
             qs = super().get_queryset(**kwargs)
             return qs.prefetch_related("channel_logs").select_related("contact")
 
-    class Sent(InboxView):
+    class Sent(BaseInboxView):
         title = _("Sent Messages")
         template_name = "msgs/msg_sent.haml"
         system_label = SystemLabel.TYPE_SENT
@@ -673,7 +674,7 @@ class MsgCRUDL(SmartCRUDL):
             qs = super().get_queryset(**kwargs)
             return qs.prefetch_related("channel_logs").select_related("contact")
 
-    class Failed(InboxView):
+    class Failed(BaseInboxView):
         title = _("Failed Outgoing Messages")
         template_name = "msgs/msg_failed.haml"
         success_message = ""
@@ -688,7 +689,7 @@ class MsgCRUDL(SmartCRUDL):
             qs = super().get_queryset(**kwargs)
             return qs.prefetch_related("channel_logs").select_related("contact")
 
-    class Filter(InboxView):
+    class Filter(BaseInboxView):
         template_name = "msgs/msg_filter.haml"
         bulk_actions = ("label",)
 

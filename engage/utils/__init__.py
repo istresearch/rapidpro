@@ -21,9 +21,9 @@ def _var_dump( obj ):
     :return: Returns the nested thing to dump.
     """
     newobj=obj
-    if '__dict__' in dir(obj):
+    if '__dict__' in dir(obj) and not isinstance(obj, dict):
         newobj=obj.__dict__
-        if ' object at ' in str(obj) and not newobj.has_key('__type__'):
+        if ' object at ' in str(obj) and 'has_key' in newobj and not newobj.has_key('__type__'):
             newobj['__type__']=str(obj)
         for attr in newobj:
             newobj[attr] = _var_dump(newobj[attr])
