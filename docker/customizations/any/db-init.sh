@@ -21,8 +21,4 @@ echo "Finished creating db schema."
 echo "Updating db schema..."
 # migrate must be called to create initial db schema
 python manage.py migrate
-# however, not all schema updates made it to the "initialization" code
-python manage.py makemigrations
-# makemigrations requires a re-run of "migrate"
-python manage.py migrate
 echo "Finished updating db schema."
