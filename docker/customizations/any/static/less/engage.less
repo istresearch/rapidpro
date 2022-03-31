@@ -212,23 +212,45 @@ h5.contact-signup {
   font-variant-caps: petite-caps;
   line-height: 1.875rem;
   height: 1.875rem;
+  border-radius: 5px;
 }
 /* ----------------------------------------------------
  temba components make use of https://lit.dev/ and use the "shadow-DOM".
  This makes it harder to override/target CSS. haml was updated to include
  IDs for specific elements and we target the "slotted" div element for css.
  */
-temba-modax#send-via-pm_element > div {
+temba-modax > div.send-via-btn {
   cursor: pointer;
   height: 16px;
   width: 16px;
+  position: relative;
+  display: inline-block;
+  .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: var(--orgname-bkgd);
+    color: var(--color-nav-unselected);
+    font-family: "Roboto", 'Helvetica Neue', sans-serif;
+    font-weight: 200;
+    font-size: smaller;
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
+    text-align: center;
+    padding: 5px;
+    z-index: 5;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+  }
+  &:hover .tooltiptext {
+    visibility: visible;
+  }
+}
+temba-modax#send-via-pm_element > div.send-via-btn {
   background: url("/sitestatic/engage/img/element-chat.svg");
   background-size: 16px;
 }
-temba-modax#send-via-pm_signal > div {
-  cursor: pointer;
-  height: 16px;
-  width: 16px;
+temba-modax#send-via-pm_signal > div.send-via-btn {
   background: url("/sitestatic/engage/img/signal-chat.svg");
   background-size: 16px;
 }
@@ -270,6 +292,16 @@ temba-modax#send-via-pm_signal > div {
       content: "🏠";
       font-size: large;
     }
+  }
+
+  #org-name {
+    background-color: var(--orgname-bkgd);
+    min-width: 15em;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    color: var(--color-nav-unselected);
+    line-height: 28px;
+    text-align: center;
   }
 
   #org-picker-widget {

@@ -84,3 +84,15 @@ def RunEngageOverrides():
     # icons for schemes are kept in a separate class for some reason
     from temba.contacts.templatetags.contacts import URN_SCHEME_ICONS
     URN_SCHEME_ICONS.update(PM_Scheme_Icons)
+
+    # override the date picker widget with one we like better
+    import smartmin.widgets
+    from engage.msgs.datepicker import DatePickerMedia
+    smartmin.widgets.DatePickerWidget.Media = DatePickerMedia
+
+    # override the Export class with our own to handle ASYNC/SYNC exports
+    from temba.msgs.views import MsgCRUDL
+    from engage.msgs.exporter import Exporter
+    MsgCRUDL.Export = Exporter
+    # give failed msgs a resend/delete action
+    setattr(MsgCRUDL.Failed, 'actions', ["resend", "delete"])
