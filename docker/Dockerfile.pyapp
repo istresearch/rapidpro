@@ -19,6 +19,7 @@ ARG VERSION_CI
 FROM alpine as load-files
 
 WORKDIR /opt/code2use
+COPY ./engage      engage
 COPY ./locale      locale
 COPY ./media       media
 COPY ./static      static
@@ -56,12 +57,17 @@ RUN rsync -a /opt/rp/ ./ && rm -R /opt/rp
 ARG UWSGI_PORT
 ARG UWSGI_NUM_WORKERS
 ARG UWSGI_TIMEOUT
+# see https://uwsgi-docs.readthedocs.io/en/latest/LogFormat.html
+# local app debug env option to suppress uwsgi access logs: - UWSGI_DISABLE_LOGGING=True
 ENV UWSGI_VIRTUALENV=/venv \
     UWSGI_WSGI_FILE=temba/wsgi.py \
     UWSGI_HTTP=:$UWSGI_PORT \
     UWSGI_MASTER=1 \
     UWSGI_WORKERS=$UWSGI_NUM_WORKERS \
-    UWSGI_HARAKIRI=$UWSGI_TIMEOUT
+    UWSGI_HARAKIRI=$UWSGI_TIMEOUT \
+    UWSGI_LOGFORMAT_STRFTIME=true \
+    UWSGI_LOG_DATE='%Y-%m-%dT%H:%M:%SZ' \
+    UWSGI_LOGFORMAT='{"timestamp": "%(ftime)", "app": "webserver", "ip": "%(addr)", "http_method": "%(method)", "url": "%(uri)", "status": %(status), "size": %(size), "referrer": "%(referer)", "ua": "%(uagent)"}'
 EXPOSE $UWSGI_PORT
 
 # Enable HTTP 1.1 Keep Alive options for uWSGI (http-auto-chunked needed when ConditionalGetMiddleware not installed)

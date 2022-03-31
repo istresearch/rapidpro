@@ -13,13 +13,19 @@
       %div{style:"padding-left: 176px; padding-bottom: 20px"}
         %div
           %code
-            Claim Code: {{po_qr.data.claim_code}}
+            Claim Code:
+            %span#po_claim_code
+              {{ po_qr.data.claim_code }}
         %div
           %code
-            Server: {{po_qr.data.server}}
+            Server:
+            %span#po_server
+              {{ po_qr.data.server }}
         %div
           %code
-            API Key: {{po_qr.data.api_key}}
+            API Key:
+            %span#po_api_key
+              {{ po_qr.data.api_key }}
 
         %div{style: "margin-top: 30px;"}
           %label.switch

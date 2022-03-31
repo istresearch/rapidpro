@@ -141,14 +141,13 @@ h5.contact-signup {
 
   #menu-area {
     flex-grow: 1;
-    margin-right: 2em;
     align-self: end;
 
     .org-header {
       align-self: end;
       margin-top: 0.4em;
       margin-bottom: 0.6em;
-      margin-right: unset;
+      margin-right: 1em;
       padding-top: unset;
       max-width: unset;
       font-size: small;
@@ -185,6 +184,7 @@ h5.contact-signup {
 
     #menu {
       min-height: unset;
+      margin-right: 2em;
       margin-top: unset;
       padding-bottom: 0.5em;
       flex-grow: 1;
@@ -207,6 +207,56 @@ h5.contact-signup {
   background-image: none;
 }
 
+#chat-btn-label {
+  font-size: 0.7em;
+  font-variant-caps: petite-caps;
+  line-height: 1.875rem;
+  height: 1.875rem;
+  border-radius: 5px;
+}
+/* ----------------------------------------------------
+ temba components make use of https://lit.dev/ and use the "shadow-DOM".
+ This makes it harder to override/target CSS. haml was updated to include
+ IDs for specific elements and we target the "slotted" div element for css.
+ */
+temba-modax > div.send-via-btn {
+  cursor: pointer;
+  height: 16px;
+  width: 16px;
+  position: relative;
+  display: inline-block;
+  .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: var(--orgname-bkgd);
+    color: var(--color-nav-unselected);
+    font-family: "Roboto", 'Helvetica Neue', sans-serif;
+    font-weight: 200;
+    font-size: smaller;
+    -webkit-font-smoothing: auto;
+    -moz-osx-font-smoothing: auto;
+    text-align: center;
+    padding: 5px;
+    z-index: 5;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+  }
+  &:hover .tooltiptext {
+    visibility: visible;
+  }
+}
+temba-modax#send-via-pm_element > div.send-via-btn {
+  background: url("/sitestatic/engage/img/element-chat.svg");
+  background-size: 16px;
+}
+temba-modax#send-via-pm_signal > div.send-via-btn {
+  background: url("/sitestatic/engage/img/signal-chat.svg");
+  background-size: 16px;
+}
+/* ----------------------------------------------------*/
+
+
 #flow {
   .node {
     .flow-start {
@@ -224,3 +274,66 @@ h5.contact-signup {
     }
   }
 }
+
+#org-area {
+  align-self: end;
+  display: flex;
+  flex-direction: row;
+  margin-top: 0.4em;
+  margin-bottom: 0.6em;
+  margin-right: 1em;
+  font-size: small;
+
+  #btn-org-home {
+    align-self: start;
+    margin-right: 1em;
+    cursor: pointer;
+    &:after {
+      content: "🏠";
+      font-size: large;
+    }
+  }
+
+  #org-name {
+    background-color: var(--orgname-bkgd);
+    min-width: 15em;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    color: var(--color-nav-unselected);
+    line-height: 28px;
+    text-align: center;
+  }
+
+  #org-picker-widget {
+    align-self: end;
+    text-align: center;
+  }
+
+  .select2-container {
+    .state-disabled {
+      text-decoration: line-through;
+    }
+    .state-icon .state-disabled {
+      text-decoration: unset;
+      padding-left: 0.5em;
+      &:after {
+        content: "🚫";
+      }
+    }
+    .state-icon .state-suspended {
+      padding-left: 0.5em;
+      &:after {
+        content: "⚠️";
+      }
+    }
+    .state-icon .state-flagged {
+      padding-left: 0.5em;
+      &:after {
+        content: "🚩";
+      }
+    }
+  }
+}
+@import "select2-theme-org-picker";
+
+

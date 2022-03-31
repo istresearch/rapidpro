@@ -1,6 +1,5 @@
 # Django settings when running compress
 
-from getenv import env
 from temba.settings import *  # noqa
 
 

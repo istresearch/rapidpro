@@ -1,5 +1,5 @@
 -extends "smartmin/read.html"
--load smartmin temba compress humanize channels i18n tz
+-load static smartmin temba compress humanize channels i18n tz
 
 -block title
   .flex.items-start.flex-col
@@ -369,25 +369,26 @@
   {{ block.super }}
 
   -if start_date
-    <script src="{{ STATIC_URL }}bower/highcharts/highcharts.js"></script>
+    <script src="{% static 'bower/highcharts/highcharts.js' %}"></script>
 
   :javascript
     {% if org_perms.channels.channel_delete %}
       window.addEventListener('DOMContentLoaded', function(e) {
         var menuitemPurge = document.querySelector("#action-purge");
         var dlgPurge = document.querySelector("#purge-confirmation");
+        if ( menuitemPurge && dlgPurge ) {
+          menuitemPurge.addEventListener("click", function(e) {
+            dlgPurge.classList.remove("hide");
+            dlgPurge.open = true;
+          });
 
-        menuitemPurge.addEventListener("click", function(e) {
-          dlgPurge.classList.remove("hide");
-          dlgPurge.open = true;
-        });
-
-        dlgPurge.addEventListener("temba-button-clicked", function(e) {
-          if ( !e.detail.button.secondary ) {
-            doPurgeOutbox("{% url 'channels.purge_outbox' channel.channel_type channel.uuid %}");
-          }
-          dlgPurge.open = false;
-        });
+          dlgPurge.addEventListener("temba-button-clicked", function(e) {
+            if ( !e.detail.button.secondary ) {
+              doPurgeOutbox("{% url 'channels.channel_purge_outbox' channel.channel_type channel.uuid %}");
+            }
+            dlgPurge.open = false;
+          });
+        }
       });
 
       var doPurgeOutbox = function( aUrl ) {

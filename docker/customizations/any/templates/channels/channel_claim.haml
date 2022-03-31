@@ -11,12 +11,26 @@
 
   .channel-options.mt-8
 
-    .bg-gray-200.-mx-128.px-128.py-12.mt-16
-      .title.mb-4
-        -trans "Recommended"
+    .bg-gray-200.-mx-128.px-128
 
-      -for ch_type in channel_types.PHONE
-        -if ch_type.code == "PSM"
+      -if featured_channel
+        .title.mb-4.pt-8
+          -trans "Featured"
+
+        .card.link(href="{% url 'channels.types.'|add:featured_channel.slug|add:'.claim' %}" onclick="goto(event, this)")
+          .relative
+            .text-base.absolute.text-gray-100.bg-icon{class:"{{ featured_channel.icon }}"}
+          .flex.flex-col.mx-20.relative
+            .title
+              {{ featured_channel.name }}
+            .mt-2
+              {% include featured_channel.get_claim_blurb %}
+
+      -if recommended_channels
+        .title.mb-4.pt-8
+          -trans "Recommended"
+
+        -for ch_type in recommended_channels
           .card.link(href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}" onclick="goto(event, this)")
             .relative
               .text-base.absolute.text-gray-100.bg-icon{class:"{{ ch_type.icon }}"}
@@ -26,7 +40,7 @@
               .mt-2
                 {% include ch_type.get_claim_blurb %}
 
-      .title.mb-4
+      .title.mb-4.pt-8
         -trans "Social Network Channels"
 
       -for ch_type in channel_types.SOCIAL_MEDIA
@@ -39,22 +53,21 @@
             .mt-2
               {% include ch_type.get_claim_blurb %}
 
-      .title.mb-4.mt-8
+      .title.mb-4.pt-8
         -trans "SMS and Voice Channels"
 
       -for ch_type in channel_types.PHONE
-        -if ch_type.code != "BWI"
-          .card.link(href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}" onclick="goto(event, this)")
-            .relative
-              .text-base.absolute.text-gray-100.bg-icon{class:"{{ ch_type.icon }}"}
-            .flex.flex-col.mx-20.relative
-              .title
-                {{ch_type.name}}
-              .mt-2
-                {% include ch_type.get_claim_blurb %}
+        .card.link(href="{% url 'channels.types.'|add:ch_type.slug|add:'.claim' %}" onclick="goto(event, this)")
+          .relative
+            .text-base.absolute.text-gray-100.bg-icon{class:"{{ ch_type.icon }}"}
+          .flex.flex-col.mx-20.relative
+            .title
+              {{ch_type.name}}
+            .mt-2
+              {% include ch_type.get_claim_blurb %}
 
 
-      .title.mt-8
+      .title.pt-8
         -trans "API Channels"
 
       -for ch_type in channel_types.API
@@ -69,13 +82,16 @@
 
       -if only_regional_channels
 
-        .title.mt-8
+        .title.pt-8
           -trans "All Channels"
 
         {% url 'channels.channel_claim_all' as claim_all_url %}
         -blocktrans trimmed
           The channels above are the available channels for your region, but you can also <a class="inline" href="{{claim_all_url}}">view all channels</a>.
 
+      .pt-8
+        &nbsp;
+          
 -block form-buttons
 
 -block extra-script

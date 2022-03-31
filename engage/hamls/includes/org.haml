@@ -1,0 +1,57 @@
+-load smartmin i18n humanize temba compress
+
+#org-area
+  {% if user_orgs|length > 0 %}
+    #btn-org-home
+      -#emoji house
+  {% endif %}
+  {% if user_orgs|length > 1 %}
+    #org-picker-widget
+      %select#org-picker
+        -for org in user_orgs
+          -if user_org.name == org.name
+            -if not org.is_active
+              %option.org{value:'{{ org.pk }}', class:'state-disabled', selected: 'true'}
+                {{ org.name }}
+            -elif org.is_suspended
+              %option.org{value:'{{ org.pk }}', class:'state-suspended', selected: 'true'}
+                {{ org.name }}
+            -elif org.is_flagged
+              %option.org{value:'{{ org.pk }}', class:'state-flagged', selected: 'true'}
+                {{ org.name }}
+            -else
+              %option.org{value:'{{ org.pk }}', class:'state-ok', selected: 'true'}
+                {{ org.name }}
+          -else
+            -if not org.is_active
+              %option.org{value:'{{ org.pk }}', class:'state-disabled'}
+                {{ org.name }}
+            -elif org.is_suspended
+              %option.org{value:'{{ org.pk }}', class:'state-suspended'}
+                {{ org.name }}
+            -elif org.is_flagged
+              %option.org{value:'{{ org.pk }}', class:'state-flagged'}
+                {{ org.name }}
+            -else
+              %option.org{value:'{{ org.pk }}', class:'state-ok'}
+                {{ org.name }}
+  {% elif user_org.name|length > 0 %}
+    #org-name.org
+      {{ user_org.name }}
+  {% endif %}
+
+-#OLD, CLUNKY PICKER
+-##org-area.org-header
+-#  .flex.flex-row
+-#    #org-name.org
+-#      {{ user_org.name }}
+-#    -if user_orgs|length > 1
+-#      #btn-org-list.pull-right.toggle
+-#        .icon-menu-2
+-#
+-#  #org-list.other-orgs.hide
+-#    -for org in user_orgs
+-#      -if org != user_org
+-#        .org
+-#          %a.posterize{href:'{% url "orgs.org_choose"%}?organization={{org.pk}}'}
+-#            {{ org.name }}

@@ -71,58 +71,25 @@ class URN:
     ROCKETCHAT_SCHEME = "rocketchat"
     DISCORD_SCHEME = "discord"
 
-    # Postmaster schemes
-    PM_WHATSAPP_SCHEME = "pm_whatsapp"
-    PM_TELEGRAM_SCHEME = "pm_telegram"
-    PM_SIGNAL_SCHEME = "pm_signal"
-    PM_VIBER_SCHEME = "pm_viber"
-    PM_LINE_SCHEME = "pm_line"
-    PM_VK_SCHEME = "pm_vk"
-    PM_TWITTER_SCHEME = "pm_twitter"
-    PM_KAKAO_SCHEME = "pm_kakao"
-    PM_IMO_SCHEME = "pm_imo"
-    PM_FACEBOOK_SCHEME = "pm_facebook"
-    PM_INSTAGRAM_SCHEME = "pm_instagram"
-    PM_MOBYX_SCHEME = "pm_mobyx"
-    PM_FBM_SCHEME = "pm_fbm"
-    PM_EMAIL_SCHEME = "pm_email"
-    PM_ELEMENT_SCHEME = "pm_element"
-
-    PM_SCHEMES = ((PM_ELEMENT_SCHEME, _("Postmaster Element Identifier")),
-                  (PM_EMAIL_SCHEME, _("Postmaster Email Identifier")),
-                  (PM_FACEBOOK_SCHEME, _("Postmaster Facebook Identifier")),
-                  (PM_IMO_SCHEME, _("Postmaster IMO Identifier")),
-                  (PM_INSTAGRAM_SCHEME, _("Postmaster Instagram Identifier")),
-                  (PM_KAKAO_SCHEME, _("Postmaster Kakao Identifier")),
-                  (PM_LINE_SCHEME, _("Postmaster Line Identifier")),
-                  (PM_FBM_SCHEME, _("Postmaster Messenger Identifier")),
-                  (PM_MOBYX_SCHEME, _("Postmaster Mobyx Identifier")),
-                  (PM_SIGNAL_SCHEME, _("Postmaster Signal Identifier")),
-                  (PM_TELEGRAM_SCHEME, _("Postmaster Telegram Identifier")),
-                  (PM_TWITTER_SCHEME, _("Postmaster Twitter Identifier")),
-                  (PM_VIBER_SCHEME, _("Postmaster Viber Identifier")),
-                  (PM_VK_SCHEME, _("Postmaster VK Identifier")),
-                  (PM_WHATSAPP_SCHEME, _("Postmaster WhatsApp Identifier")))
-
     SCHEME_CHOICES = (
-        (TEL_SCHEME, _("Phone Number")),
-        (FACEBOOK_SCHEME, _("Facebook Identifier")),
-        (TWITTER_SCHEME, _("Twitter Handle")),
+        (TEL_SCHEME, _("Phone number")),
+        (FACEBOOK_SCHEME, _("Facebook identifier")),
+        (TWITTER_SCHEME, _("Twitter handle")),
         (TWITTERID_SCHEME, _("Twitter ID")),
-        (VIBER_SCHEME, _("Viber Identifier")),
-        (LINE_SCHEME, _("LINE Identifier")),
-        (TELEGRAM_SCHEME, _("Telegram Identifier")),
-        (EMAIL_SCHEME, _("Email Address")),
-        (EXTERNAL_SCHEME, _("External Identifier")),
-        (JIOCHAT_SCHEME, _("JioChat Identifier")),
-        (WECHAT_SCHEME, _("WeChat Identifier")),
-        (FCM_SCHEME, _("Firebase Cloud Messaging Identifier")),
-        (WHATSAPP_SCHEME, _("WhatsApp Identifier")),
-        (FRESHCHAT_SCHEME, _("Freshchat Identifier")),
-        (VK_SCHEME, _("VK Identifier")),
-        (ROCKETCHAT_SCHEME, _("RocketChat Identifier")),
+        (VIBER_SCHEME, _("Viber identifier")),
+        (LINE_SCHEME, _("LINE identifier")),
+        (TELEGRAM_SCHEME, _("Telegram identifier")),
+        (EMAIL_SCHEME, _("Email address")),
+        (EXTERNAL_SCHEME, _("External identifier")),
+        (JIOCHAT_SCHEME, _("JioChat identifier")),
+        (WECHAT_SCHEME, _("WeChat identifier")),
+        (FCM_SCHEME, _("Firebase Cloud Messaging identifier")),
+        (WHATSAPP_SCHEME, _("WhatsApp identifier")),
+        (FRESHCHAT_SCHEME, _("Freshchat identifier")),
+        (VK_SCHEME, _("VK identifier")),
+        (ROCKETCHAT_SCHEME, _("RocketChat identifier")),
         (DISCORD_SCHEME, _("Discord Identifier")),
-    ) + tuple([t[1] for t in sorted((lambda x: [[y[1].split(" ")[1], y] for y in x])(PM_SCHEMES))]) # Sort PM alphabetically
+    )
 
     VALID_SCHEMES = {s[0] for s in SCHEME_CHOICES}
 
@@ -559,7 +526,7 @@ class ContactField(SmartModel):
                         field.value_type == ContactField.TYPE_DATETIME
                         and field.campaign_events.filter(is_active=True).exists()
                     ):
-                        raise ValueError("Cannot change field type for '%s' while it is used in scenarios." % key)
+                        raise ValueError("Cannot change field type for '%s' while it is used in campaigns." % key)
 
                     field.value_type = value_type
                     changed = True
@@ -764,14 +731,6 @@ class Contact(RequireUpdateFieldsMixin, TembaModel):
         contact = Contact.objects.get(id=response["contact"]["id"])
         contact_urn = ContactURN.objects.get(id=response["urn"]["id"])
         return contact, contact_urn
-
-    STATUS_ACTIVE = "active"
-    STATUS_BLOCKED = "blocked"
-    STATUS_STOPPED = "stopped"
-
-    STATUS_ACTIVE = "active"
-    STATUS_BLOCKED = "blocked"
-    STATUS_STOPPED = "stopped"
 
     @property
     def anon_identifier(self):
@@ -986,156 +945,6 @@ class Contact(RequireUpdateFieldsMixin, TembaModel):
             return value.name
         else:
             return str(value)
-
-    def update(self, name: str, language: str) -> List[modifiers.Modifier]:
-        """
-        Updates attributes of this contact
-        """
-        mods = []
-        if (self.name or "") != (name or ""):
-            mods.append(modifiers.Name(name or ""))
-
-        if (self.language or "") != (language or ""):
-            mods.append(modifiers.Language(language or ""))
-
-        return mods
-
-    def update_fields(self, values: Dict[ContactField, str]) -> List[modifiers.Modifier]:
-        """
-        Updates custom field values of this contact
-        """
-        mods = []
-
-        for field, value in values.items():
-            field_ref = modifiers.FieldRef(key=field.key, name=field.label)
-            mods.append(modifiers.Field(field=field_ref, value=value))
-
-        return mods
-
-    def update_static_groups(self, groups) -> List[modifiers.Modifier]:
-        """
-        Updates the static groups for this contact to match the provided list
-        """
-        assert not [g for g in groups if g.is_dynamic], "can't update membership of a dynamic group"
-
-        current = self.user_groups.filter(query=None)
-
-        # figure out our diffs, what groups need to be added or removed
-        to_remove = [g for g in current if g not in groups]
-        to_add = [g for g in groups if g not in current]
-
-        def refs(gs):
-            return [modifiers.GroupRef(uuid=str(g.uuid), name=g.name) for g in gs]
-
-        mods = []
-
-        if to_remove:
-            mods.append(modifiers.Groups(groups=refs(to_remove), modification="remove"))
-        if to_add:
-            mods.append(modifiers.Groups(groups=refs(to_add), modification="add"))
-
-        return mods
-
-    def update_urns(self, urns: List[str]) -> List[modifiers.Modifier]:
-        return [modifiers.URNs(urns=urns, modification="set")]
-
-    def modify(self, user, mods: List[modifiers.Modifier], refresh=True):
-        self.bulk_modify(user, [self], mods)
-        if refresh:
-            self.refresh_from_db()
-
-    @classmethod
-    def bulk_modify(cls, user, contacts, mods: List[modifiers.Modifier]):
-        if not contacts:
-            return
-
-        org = contacts[0].org
-        client = mailroom.get_client()
-        try:
-            response = client.contact_modify(org.id, user.id, [c.id for c in contacts], mods)
-        except mailroom.MailroomException as e:
-            logger.error(f"Contact update failed: {str(e)}", exc_info=True)
-            raise e
-
-        def modified(contact):
-            return len(response.get(contact.id, {}).get("events", [])) > 0
-
-        return [c.id for c in contacts if modified(c)]
-
-    def update(self, name: str, language: str) -> List[modifiers.Modifier]:
-        """
-        Updates attributes of this contact
-        """
-        mods = []
-        if (self.name or "") != (name or ""):
-            mods.append(modifiers.Name(name or ""))
-
-        if (self.language or "") != (language or ""):
-            mods.append(modifiers.Language(language or ""))
-
-        return mods
-
-    def update_fields(self, values: Dict[ContactField, str]) -> List[modifiers.Modifier]:
-        """
-        Updates custom field values of this contact
-        """
-        mods = []
-
-        for field, value in values.items():
-            field_ref = modifiers.FieldRef(key=field.key, name=field.label)
-            mods.append(modifiers.Field(field=field_ref, value=value))
-
-        return mods
-
-    def update_static_groups(self, groups) -> List[modifiers.Modifier]:
-        """
-        Updates the static groups for this contact to match the provided list
-        """
-        assert not [g for g in groups if g.is_dynamic], "can't update membership of a dynamic group"
-
-        current = self.user_groups.filter(query=None)
-
-        # figure out our diffs, what groups need to be added or removed
-        to_remove = [g for g in current if g not in groups]
-        to_add = [g for g in groups if g not in current]
-
-        def refs(gs):
-            return [modifiers.GroupRef(uuid=str(g.uuid), name=g.name) for g in gs]
-
-        mods = []
-
-        if to_remove:
-            mods.append(modifiers.Groups(groups=refs(to_remove), modification="remove"))
-        if to_add:
-            mods.append(modifiers.Groups(groups=refs(to_add), modification="add"))
-
-        return mods
-
-    def update_urns(self, urns: List[str]) -> List[modifiers.Modifier]:
-        return [modifiers.URNs(urns=urns, modification="set")]
-
-    def modify(self, user, mods: List[modifiers.Modifier], refresh=True):
-        self.bulk_modify(user, [self], mods)
-        if refresh:
-            self.refresh_from_db()
-
-    @classmethod
-    def bulk_modify(cls, user, contacts, mods: List[modifiers.Modifier]):
-        if not contacts:
-            return
-
-        org = contacts[0].org
-        client = mailroom.get_client()
-        try:
-            response = client.contact_modify(org.id, user.id, [c.id for c in contacts], mods)
-        except mailroom.MailroomException as e:
-            logger.error(f"Contact update failed: {str(e)}", exc_info=True)
-            raise e
-
-        def modified(contact):
-            return len(response.get(contact.id, {}).get("events", [])) > 0
-
-        return [c.id for c in contacts if modified(c)]
 
     def update(self, name: str, language: str) -> List[modifiers.Modifier]:
         """
