@@ -90,7 +90,7 @@ jobs:
             BRANCH=${CIRCLE_BRANCH#*/}
             VERSION_STR=$(cat VERSION)
             if [[ -n $CIRCLE_TAG ]]; then
-              VERSION_TAG="${CIRCLE_TAG}"
+              VERSION_TAG="${CIRCLE_TAG#*v}"
             elif [[ "$BRANCH" == "develop" ]]; then
               VERSION_TAG="${VERSION_STR}-dev"
             elif [[ "$BRANCH" != "master" ]]; then
