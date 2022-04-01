@@ -81,11 +81,8 @@ class Archive(models.Model):
 
     @classmethod
     def s3_client(cls):
-        session = boto3.Session(
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID, aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name=settings.AWS_S3_REGION_NAME
-        )
-        return session.client("s3")
+        # use same code as the currently working api/v2 s3 downloads
+        return boto3.client("s3")
 
     @classmethod
     def release_org_archives(cls, org):
