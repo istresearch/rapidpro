@@ -1,0 +1,65 @@
+-extends 'smartmin/form.html'
+-load static smartmin i18n temba compress
+
+-block title
+  {{ title }}
+
+-block extra-style
+  {{block.super}}
+
+-block fields
+  .card
+    .w-full.items-end
+      #assign-user-to-org-picker-widget.pr-4.flex-grow
+        -##organization.w-48
+        -#  {% render_field 'organization' %}
+        .control-group.field_organization
+          %label.control-label
+            Organization
+          .controls
+            %select#id_organization{name:"organization"}
+              -for org in user_orgs
+                -if user_org.name == org.name
+                  -if not org.is_active
+                    %option.org{value:'{{ org.pk }}', class:'state-disabled', selected: 'true'}
+                      {{ org.name }}
+                  -elif org.is_suspended
+                    %option.org{value:'{{ org.pk }}', class:'state-suspended', selected: 'true'}
+                      {{ org.name }}
+                  -elif org.is_flagged
+                    %option.org{value:'{{ org.pk }}', class:'state-flagged', selected: 'true'}
+                      {{ org.name }}
+                  -else
+                    %option.org{value:'{{ org.pk }}', class:'state-ok', selected: 'true'}
+                      {{ org.name }}
+                -else
+                  -if not org.is_active
+                    %option.org{value:'{{ org.pk }}', class:'state-disabled'}
+                      {{ org.name }}
+                  -elif org.is_suspended
+                    %option.org{value:'{{ org.pk }}', class:'state-suspended'}
+                      {{ org.name }}
+                  -elif org.is_flagged
+                    %option.org{value:'{{ org.pk }}', class:'state-flagged'}
+                      {{ org.name }}
+                  -else
+                    %option.org{value:'{{ org.pk }}', class:'state-ok'}
+                      {{ org.name }}
+    #assign-user-group.w-48
+      {% render_field 'user_group' %}
+    #assign-user-name.w-48
+      .control-group.field_username
+        %label.control-label
+          Username
+        .controls.border
+          %input#id_username{name:"username", placeholder:"email address or username"}
+
+-block form-buttons
+  .form-actions.mt-4.ml-2
+    %input.button-primary(type="submit" value="{{ submit_button_name }}")
+
+-block script
+
+  {{block.super}}
+
+  <script type="text/javascript" src="{% static 'engage/js/org-assign_user-ready.js' %}"></script>
