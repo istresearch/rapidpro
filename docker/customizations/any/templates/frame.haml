@@ -111,6 +111,7 @@
       -compress css
         %link{rel:"stylesheet", href:"{% static 'css/tailwind.css' %}", type:"text/css"}
         %link{rel:"stylesheet", href:"{% static 'less/refresh.less' %}", type:"text/less"}
+        %link{rel:"stylesheet", href:"{% static 'engage/less/frame.less' %}", type:"text/less"}
 
         -if brand.final_style
           %link{rel:"stylesheet", href:"{% static brand.final_style %}", type:"text/less"}
@@ -162,13 +163,11 @@
         -block nav
           -include 'includes/nav.html'
 
-
     -if messages
       -block messages
         -for msg in messages
-          %div{class:"alert alert-{{ message.tags }}"}
+          %div{class:"blert blert-{{ msg.tags }}"}
             {{ msg }}
-
 
     -block post-header
     <!-- Content -->
@@ -197,7 +196,6 @@
                       -include "gear_links_include.haml"
 
               -block post-title
-
 
             .mt-6
               -block content

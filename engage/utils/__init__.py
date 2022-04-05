@@ -38,7 +38,8 @@ def var_dump( aThing, aMsg=None ):
     if aMsg:
         print(aMsg)
     from pprint import pprint
-    pprint(_var_dump(aThing))
+    from copy import deepcopy
+    pprint(_var_dump(deepcopy(aThing)))
 
 def get_required_arg(arg_name, kwargs, bCheckForEmpty=True):
     """
