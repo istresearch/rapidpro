@@ -1,4 +1,6 @@
+import functools
 import logging
+import operator
 
 from django import forms
 from django.contrib import messages
@@ -59,7 +61,11 @@ class AssignUserMixin:
                 super().__init__(*args, **kwargs)
                 self.user = user
                 #self.organization.choices = self.user.get_user_orgs() ### O.o "'AssignUserForm' object has no attribute 'organization'"
-                self.fields['organization'].choices = self.user.get_user_orgs()
+                self.fields['organization'].choices = self.get_org_choices()
+
+            def get_org_choices(self):
+                admin_orgs = OrgRole.ADMINISTRATOR.get_orgs(self.user)
+                return admin_orgs.filter(is_active=True).distinct().order_by("name", "slug")
 
             # do not need the conversion of org_pk choice to Org class when using ModelChoiceField() type of form field.
             # def clean_organization(self):
@@ -81,53 +87,63 @@ class AssignUserMixin:
         success_message = ""
         submit_button_name = _("Assign User")
 
+        def assign_user(self, org, role, user):
+            org.add_user(user=user, role=role)
+
+            # when a user's role changes, delete any API tokens they're no longer allowed to have
+            api_roles = APIToken.get_allowed_roles(org, user)
+            for token in APIToken.objects.filter(org=org, user=user).exclude(role__in=api_roles):
+                token.release()
+
+            org.save()
+            logger.error("user assigned to org", extra=self.withLogInfo({
+                'assigned_to_org_uuid': org.uuid,
+                'assigned_to_org_slug': org.slug,
+                'assigned_user_id': user.id,
+                'assigned_user_name': user.username,
+                'assigned_user_email': user.email,
+                'assigned_role': role.display,
+            }))
+            messages.success(self.request,
+                _("User '{}' successfully added to org '{}' as the role {}.").format(
+                    user.email, org.name, role.display
+                )
+            )
+
         def form_valid(self, form):
             org = form.cleaned_data["organization"]
-            user_group = form.cleaned_data["user_group"]
-            username = form.cleaned_data["username"]
-            user = User.objects.filter(username__iexact=username).first() if username else None
-
-            if org and user:
-                if user_group == OrgRole.ADMINISTRATOR.code:
-                    role = OrgRole.ADMINISTRATOR
-                elif user_group == OrgRole.EDITOR.code:
-                    role = OrgRole.EDITOR
-                elif user_group == OrgRole.SURVEYOR.code:
-                    role = OrgRole.SURVEYOR
+            if org:
+                user_group = form.cleaned_data["user_group"]
+                role = OrgRole.from_code(user_group)
+                if role:
+                    username = form.cleaned_data["username"]
+                    user = User.objects.filter(username__iexact=username).first() if username else None
+                    if user:
+                        if user.id != self.get_user().id:
+                            self.assign_user(org, role, user)
+                        else:
+                            logger.warning("assigned_user cannot be self", extra=self.withLogInfo({
+                                'assigned_user': self.get_user().username,
+                            }))
+                            messages.warning(self.request, _("You cannot re-assign yourself."))
+                    else:
+                        theName = form.data.get("username")
+                        logger.error("assigned_user not found", extra=self.withLogInfo({
+                            'assigned_user': theName,
+                        }))
+                        messages.warning(self.request, _("Username/Email '{}' not found.").format(theName))
                 else:
-                    role = OrgRole.VIEWER
-                org.add_user(user=user, role=role)
-
-                # when a user's role changes, delete any API tokens they're no longer allowed to have
-                api_roles = APIToken.get_allowed_roles(org, user)
-                for token in APIToken.objects.filter(org=org, user=user).exclude(role__in=api_roles):
-                    token.release()
-
-                org.save()
-                logger.error("user assigned to org", extra=self.withLogInfo({
-                    'assigned_to_org_uuid': org.uuid,
-                    'assigned_to_org_slug': org.slug,
-                    'assigned_user_id': user.id,
-                    'assigned_user_name': user.username,
-                    'assigned_user_email': user.email,
-                    'assigned_role': role.display,
-                }))
-                messages.success(self.request, _("User '{}' successfully added to org '{}' as the role {}.").format(
-                    user.email, org.name, role.display)
-                )
+                    theRole = user_group
+                    logger.error("role not found", extra=self.withLogInfo({
+                        'assigned_role': theRole,
+                    }))
+                    messages.error(self.request, _("Role '{}' not found.").format(theRole))
             else:
-                if not org:
-                    theOrgPK = form.data.get("organization")
-                    logger.error("org not found", extra=self.withLogInfo({
-                        'assigned_org_pk': theOrgPK,
-                    }))
-                    messages.error(self.request, _("Org id [{}] not found.").format(theOrgPK))
-                if not user:
-                    theName = form.data.get("username")
-                    logger.error("assigned_user not found", extra=self.withLogInfo({
-                        'assigned_user': theName,
-                    }))
-                    messages.warning(self.request, _("Username/Email '{}' not found.").format(theName))
+                theOrgPK = form.data.get("organization")
+                logger.error("org not found", extra=self.withLogInfo({
+                    'assigned_org_pk': theOrgPK,
+                }))
+                messages.error(self.request, _("Org id [{}] not found.").format(theOrgPK))
 
             success_url = reverse("orgs.org_assign_user")
             return HttpResponseRedirect(success_url)

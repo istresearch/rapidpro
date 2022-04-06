@@ -18,8 +18,8 @@
             Organization
           .controls
             %select#id_organization{name:"organization"}
-              -for org in user_orgs
-                -if user_org.name == org.name
+              -for org in form.fields.organization.choices
+                -if user_org.pk == org.pk
                   -if not org.is_active
                     %option.org{value:'{{ org.pk }}', class:'state-disabled', selected: 'true'}
                       {{ org.name }}
@@ -46,11 +46,11 @@
                     %option.org{value:'{{ org.pk }}', class:'state-ok'}
                       {{ org.name }}
     #assign-user-group.w-48
-      {% render_field 'user_group' %}
+      -render_field 'user_group'
     #assign-user-name.w-48
       .control-group.field_username
         %label.control-label
-          Username
+          {{ form.fields.username.label }}
         .controls.border
           %input#id_username{name:"username", placeholder:"email address or username"}
 
