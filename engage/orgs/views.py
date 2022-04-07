@@ -1,16 +1,11 @@
 from .assign_user import AssignUserMixin
-from .postmaster import PostmasterChannelMixin
 from .bandwidth import BandwidthChannelMixin
+from .postmaster import PostmasterChannelMixin
 
 class EngageOrgCRUDMixin(BandwidthChannelMixin, PostmasterChannelMixin, AssignUserMixin):
     def __init__(self, *args, **kwargs):
-        self.actions = self.actions + (
-            "bandwidth_connect",
-            "bandwidth_international_connect",
-            "bandwidth_account",
-            "bandwidth_international_account",
-            "postmaster_connect",
-            "postmaster_account",
-            "assign_user",
-        )
+        self.actions = self.actions + \
+            AssignUserMixin.get_actions() + \
+            BandwidthChannelMixin.get_actions() + \
+            PostmasterChannelMixin.get_actions()
         super().__init__(*args, **kwargs)
