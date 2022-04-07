@@ -12,6 +12,12 @@ from temba.orgs.views import OrgPermsMixin
 
 class ManageChannelMixin:
 
+    @classmethod
+    def get_actions(cls):
+        return (
+            "manage",
+        )
+
     class Manage(OrgPermsMixin, SmartListView):
         paginate_by = settings.PAGINATE_CHANNELS_COUNT
         title = _("Manage Channels")

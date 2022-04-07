@@ -1,6 +1,4 @@
-import functools
 import logging
-import operator
 
 from django import forms
 from django.contrib import messages
@@ -23,6 +21,12 @@ from temba.orgs.views import OrgPermsMixin
 logger = logging.getLogger(__name__)
 
 class AssignUserMixin:
+
+    @classmethod
+    def get_actions(cls):
+        return (
+            "assign_user",
+        )
 
     class AssignUser(OrgPermLogInfoMixin, OrgPermsMixin, SmartFormView):
         permission = "orgs.org_manage_accounts"

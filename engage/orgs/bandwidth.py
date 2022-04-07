@@ -20,6 +20,15 @@ from temba.orgs.views import (
 
 class BandwidthChannelMixin:
 
+    @classmethod
+    def get_actions(cls):
+        return (
+            "bandwidth_connect",
+            "bandwidth_international_connect",
+            "bandwidth_account",
+            "bandwidth_international_account",
+        )
+
     class BandwidthConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
         class BandwidthConnectForm(forms.Form):
             bw_account_sid = forms.CharField(label="Account SID", help_text=_("Your Bandwidth Account ID"))

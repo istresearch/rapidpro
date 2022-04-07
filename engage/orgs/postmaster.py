@@ -17,6 +17,13 @@ from temba.orgs.views import (
 
 class PostmasterChannelMixin:
 
+    @classmethod
+    def get_actions(cls):
+        return (
+            "postmaster_connect",
+            "postmaster_account",
+        )
+
     class PostmasterAccount(InferOrgMixin, OrgPermsMixin, SmartUpdateView):
         success_message = ""
 

@@ -15,6 +15,12 @@ from engage.utils.logs import OrgPermLogInfoMixin
 
 class PurgeOutboxMixin:
 
+    @classmethod
+    def get_actions(cls):
+        return (
+            "purge_outbox",
+        )
+
     class PurgeOutbox(OrgPermLogInfoMixin, OrgPermsMixin, View):  # pragma: no cover
         permission = "msgs.broadcast_send"
 
