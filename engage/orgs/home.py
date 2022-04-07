@@ -17,17 +17,17 @@ class OrgHomeMixin:
             if self.has_org_perm("orgs.org_manage_accounts"):
                 links.append(dict(title=_("Assign User"), href=reverse("orgs.org_assign_user")))
 
+            if self.has_org_perm("channels.channel_configuration"):
+                links.append(dict(title=_("Manage Channels"), href=reverse("channels.channel_manage"), as_btn=True))
+
             # utils/overrides will set 'orig_get_gear_links' to the original get_gear_links()
             links.extend(self.orig_get_gear_links())
 
-            # modify "add channel" to become "Manage Channels"
-            # theAddChannelUrl = reverse("channels.channel_claim")
-            # for item in links:
-            #     if item['href'] == theAddChannelUrl:
-            #         item['title'] = _("Manage Channels")
-            #         item['as_btn'] = "true"
-            #         #item['href'] = reverse("orgs.org_channels")
-            #         break
+            theAddChannelUrl = reverse("channels.channel_claim")
+            for item in links:
+                if item['href'] == theAddChannelUrl:
+                    item['as_btn'] = True
+                    break
 
             return links
 
