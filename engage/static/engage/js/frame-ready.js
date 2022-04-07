@@ -26,7 +26,7 @@ $(document).ready(function() {
             }
             var theOptClasses = $(aOpt.element).attr('class');
             var theOpt = $(
-                '<span class="'+theOptClasses+'">' + aOpt.text + '</span><span class="status-icon '+theOptClasses+'"></span>'
+                '<span class="'+theOptClasses+'">' + aOpt.text + '</span><span class="state-icon '+theOptClasses+'"></span>'
             );
             return theOpt;
         };
