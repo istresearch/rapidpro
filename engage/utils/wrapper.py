@@ -2,7 +2,7 @@ class Wrapper(object):
     """
     Wrapper class that provides proxy access to an instance of some
     internal instance.
-    @see `StackOverflow answer <https://stackoverflow.com/a/9059858>`_.
+    @see `StackOverflow answer <https://stackoverflow.com/a/9059858>`_
 
     **Usage:**
 
@@ -34,6 +34,8 @@ class Wrapper(object):
 
     # provide proxy access to regular attributes of wrapped object
     def __getattr__(self, name):
+        if name in self.__dict__:
+            return getattr(self, name)
         return getattr(self._obj, name)
 
     # create proxies for wrapped object's double-underscore attributes

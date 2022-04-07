@@ -9,6 +9,7 @@ from temba.orgs.models import Org
 from temba.orgs.views import OrgPermsMixin
 from temba.utils import json
 
+from engage.auth.account import UserAcct
 from engage.utils import get_required_arg
 from engage.utils.logs import OrgPermLogInfoMixin
 
@@ -30,26 +31,26 @@ class PurgeOutboxMixin:
 
         def dispatch(self, request: HttpRequest, *args, **kwargs):
             # non authenticated users without orgs get an error (not the org chooser)
-            user = request.user
+            user = self.get_user()
             if not user.is_authenticated:
                 return HttpResponse('Not authorized', status=401)
 
             return super().dispatch(request, *args, **kwargs)
 
-        def get(self, request, *args, **kwargs):
+        def get(self, request: HttpRequest, *args, **kwargs):
             logger = logging.getLogger(__name__)
 
             user = self.get_user()
-            if user.is_authenticated and not user.derive_org():
+            if not UserAcct.get_org(user):
                 theOrgPK = request.GET.get('org')
                 if theOrgPK:
                     org = Org.objects.filter(id=theOrgPK).first()
                     if org is not None:
-                        user.set_org(org)
-                if not user.derive_org():
+                        UserAcct.set_org(user, org)
+                if not UserAcct.get_org(user):
                     return HttpResponse('Org ambiguous, please specify', status=400)
 
-            if not user.has_org_perm(self.permission):
+            if not UserAcct.is_allowed(user, self.permission):
                 return HttpResponse('Forbidden', status=403)
 
             # ensure we have the necessary args
@@ -81,7 +82,7 @@ class PurgeOutboxMixin:
                     'channel_type': theChannelType,
                     'channel_uuid': theChannelUUID,
                     'status_code': r.status_code,
-                    'message': theMessage,
+                    'courier_response': theMessage,
                 }))
                 return HttpResponse(f"The courier service returned with status {r.status_code}: {theMessage}")
             except ConnectionError as ex:
