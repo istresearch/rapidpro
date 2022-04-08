@@ -31,8 +31,13 @@ MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
     tuple(filter(lambda tup : tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
-    'engage.utils',
+    'engage.api',
+    'engage.auth',
     'engage.channels',
+    'engage.contacts',
+    'engage.msgs',
+    'engage.orgs',
+    'engage.utils',
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
 

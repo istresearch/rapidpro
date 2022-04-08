@@ -67,6 +67,8 @@ def RunEngageOverrides():
     # cannot use OrgHomeMixin due to circular unit reference; override def here.
     from temba.orgs.views import OrgCRUDL as TembaOrgViews
     from engage.orgs.home import OrgHomeMixin as EngageOrgViews
+    TembaOrgViews.Home.orig_get_gear_links = TembaOrgViews.Home.get_gear_links
+    TembaOrgViews.Home.get_gear_links = EngageOrgViews.Home.get_gear_links
     TembaOrgViews.Home.derive_formax_sections = EngageOrgViews.Home.derive_formax_sections
 
     # URN is a static-only class, add in our needs

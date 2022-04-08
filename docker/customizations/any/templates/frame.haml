@@ -69,11 +69,10 @@
     -if not COMPONENTS_DEV_MODE
       -include "components-head.html"
 
-    -# Favicon works without the need to be explicit
-    -# -if brand.favico
-    -#   %link{type:"image/ico", rel:"shortcut icon", href:"{% static brand.favico %}"}
-    -# -else
-    -#   %link{type:"image/ico", rel:"shortcut icon", href:"{% static 'images/favicon.ico' %}"}
+    -if brand.favico
+      %link{type:"image/ico", rel:"shortcut icon", href:"{% static brand.favico %}"}
+    -else
+      %link{type:"image/ico", rel:"shortcut icon", href:"{% static 'images/favicon.ico' %}"}
 
     -block styles
       -# do not want to use non-local fonts
@@ -111,6 +110,7 @@
       -compress css
         %link{rel:"stylesheet", href:"{% static 'css/tailwind.css' %}", type:"text/css"}
         %link{rel:"stylesheet", href:"{% static 'less/refresh.less' %}", type:"text/less"}
+        %link{rel:"stylesheet", href:"{% static 'engage/less/frame.less' %}", type:"text/less"}
 
         -if brand.final_style
           %link{rel:"stylesheet", href:"{% static brand.final_style %}", type:"text/less"}
@@ -162,13 +162,11 @@
         -block nav
           -include 'includes/nav.html'
 
-
     -if messages
       -block messages
         -for msg in messages
-          %div{class:"alert alert-{{ message.tags }}"}
+          %div{class:"blert blert-{{ msg.tags }}"}
             {{ msg }}
-
 
     -block post-header
     <!-- Content -->
@@ -198,7 +196,6 @@
 
               -block post-title
 
-
             .mt-6
               -block content
 
@@ -223,10 +220,9 @@
 
     :javascript
       var org_home_url_format = '{% url "orgs.org_home" %}?org=%s';
+      var org_chosen_url_format = '{% url "orgs.org_choose" %}?organization=%s';
       {% if user.is_superuser %}
-        var org_chosen_url_format = '{% url "orgs.org_service" %}?organization=%s';
-      {% else %}
-        var org_chosen_url_format = '{% url "orgs.org_choose" %}?organization=%s';
+        var org_service_url_format = '{% url "orgs.org_service" %}?organization=%s';
       {% endif %}
       {% if user_org %}
         {% if user_org.is_anon %}

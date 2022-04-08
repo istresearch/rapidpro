@@ -1,15 +1,19 @@
+import os
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 
+from engage.utils.bandwidth import BandwidthRestClient
+
 from smartmin.views import (
     SmartFormView,
     SmartUpdateView,
 )
-from temba.orgs.models import ( Org,
-    BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_ACCOUNT_SECRET, BW_APPLICATION_SID,
+from temba.orgs.models import (Org,
+    BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_ACCOUNT_SECRET, BW_APPLICATION_SID, BWI_USERNAME, BWI_PASSWORD,
 )
 from temba.orgs.views import (
     ModalMixin,
@@ -19,6 +23,15 @@ from temba.orgs.views import (
 
 
 class BandwidthChannelMixin:
+
+    @classmethod
+    def get_actions(cls):
+        return (
+            "bandwidth_connect",
+            "bandwidth_international_connect",
+            "bandwidth_account",
+            "bandwidth_international_account",
+        )
 
     class BandwidthConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
         class BandwidthConnectForm(forms.Form):
@@ -30,8 +43,6 @@ class BandwidthChannelMixin:
             bw_application_sid = forms.CharField(label="Application SID", help_text=_("Your Bandwidth Account Application ID"))
 
             def clean(self):
-                from temba.utils.bandwidth import BandwidthRestClient
-
                 bw_account_sid = self.cleaned_data.get("bw_account_sid", None)
                 bw_account_token = self.cleaned_data.get("bw_account_token", None)
                 bw_account_secret = self.cleaned_data.get("bw_account_secret", None)
@@ -252,9 +263,9 @@ class BandwidthChannelMixin:
             org = self.get_object()
             bwi_username = org.config.get(BWI_USERNAME, None)
             bwi_password = org.config.get(BWI_PASSWORD, None)
-            bwi_key = os.environ.get("BWI_KEY")
-            initial[str.lower(BWI_USERNAME)] = AESCipher(bwi_username, bwi_key).decrypt()
-            initial[str.lower(BWI_PASSWORD)] = AESCipher(bwi_password, bwi_key).decrypt()
+            #bwi_key = os.environ.get("BWI_KEY")
+            initial[str.lower(BWI_USERNAME)] = str.lower(bwi_username) #AESCipher(bwi_username, bwi_key).decrypt()
+            initial[str.lower(BWI_PASSWORD)] = str.lower('BWI NOT AVAILABLE') #AESCipher(bwi_password, bwi_key).decrypt()
             initial["disconnect"] = bool(self.request.POST.get("disconnect"))
             return initial
 
@@ -263,9 +274,9 @@ class BandwidthChannelMixin:
             org = self.get_object()
             bwi_username = org.config.get(BWI_USERNAME, None)
             bwi_password = org.config.get(BWI_PASSWORD, None)
-            bwi_key = os.environ.get("BWI_KEY")
-            context[str.lower(BWI_USERNAME)] = AESCipher(bwi_username, bwi_key).decrypt()
-            context[str.lower(BWI_PASSWORD)] = AESCipher(bwi_password, bwi_key).decrypt()
+            #bwi_key = os.environ.get("BWI_KEY")
+            context[str.lower(BWI_USERNAME)] = str.lower(bwi_username) #AESCipher(bwi_username, bwi_key).decrypt()
+            context[str.lower(BWI_PASSWORD)] = str.lower('BWI NOT AVAILABLE') #AESCipher(bwi_password, bwi_key).decrypt()
             return context
 
         def form_valid(self, form):
