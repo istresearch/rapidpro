@@ -107,7 +107,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             links.append(
                 dict(
                     title="Show App QR",
-                    as_btn="true",
+                    as_btn=True,
                     js_class="mi-pm-app-qr",
                 )
             )

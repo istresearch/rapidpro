@@ -776,7 +776,7 @@ class ChannelCRUDL(EngageChannelCRUDMixin, SmartCRUDL):
                     dict(
                         id="action-purge",
                         title="Purge Outbox",
-                        as_btn="true",
+                        as_btn=True,
                         js_class="button-danger",
                     )
                 )
@@ -788,7 +788,7 @@ class ChannelCRUDL(EngageChannelCRUDMixin, SmartCRUDL):
                         title=_("Edit"),
                         href=reverse("channels.channel_update", args=[self.object.id]),
                         modax=_("Edit Channel"),
-                        as_btn="true", # used to determine if placed in hamburger menu or as its own button
+                        as_btn=True, # used to determine if placed in hamburger menu or as its own button
                     )
                 )
 

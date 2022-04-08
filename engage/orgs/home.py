@@ -1,14 +1,35 @@
 from django.conf import settings
 from django.urls import reverse
+from django.utils.translation import ugettext_lazy as _
 
 from temba.channels.models import Channel
 from temba.orgs.models import IntegrationType
-#from temba.orgs.views import OrgCRUDL
+from temba.orgs.views import OrgCRUDL
 
 
 class OrgHomeMixin:
 
-    class Home: #(OrgCRUDL.TembaOrgHome): will cause a circular reference; defined and uses utils/override.py
+    class Home: #(OrgCRUDL.TembaOrgHome): will cause a circular reference; defined and uses utils/overrides.py
+
+        def get_gear_links(self):
+            links = []
+
+            if self.has_org_perm("orgs.org_manage_accounts"):
+                links.append(dict(title=_("Assign User"), href=reverse("orgs.org_assign_user")))
+
+            if self.has_org_perm("channels.channel_configuration"):
+                links.append(dict(title=_("Manage Channels"), href=reverse("channels.channel_manage"), as_btn=True))
+
+            # utils/overrides will set 'orig_get_gear_links' to the original get_gear_links()
+            links.extend(self.orig_get_gear_links())
+
+            theAddChannelUrl = reverse("channels.channel_claim")
+            for item in links:
+                if item['href'] == theAddChannelUrl:
+                    item['as_btn'] = True
+                    break
+
+            return links
 
         def derive_formax_sections(self, formax, context):
             # add the channel option if we have one

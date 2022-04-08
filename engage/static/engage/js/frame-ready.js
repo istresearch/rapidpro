@@ -18,6 +18,7 @@ $(document).ready(function() {
         });
     }
 
+    var theOrgHomeBtn = $('#btn-org-home');
     var theOrgPicker = $('#org-picker');
     if ( theOrgPicker ) {
         function formatOption (aOpt) {
@@ -26,7 +27,7 @@ $(document).ready(function() {
             }
             var theOptClasses = $(aOpt.element).attr('class');
             var theOpt = $(
-                '<span class="'+theOptClasses+'">' + aOpt.text + '</span><span class="status-icon '+theOptClasses+'"></span>'
+                '<span class="'+theOptClasses+'">' + aOpt.text + '</span><span class="state-icon '+theOptClasses+'"></span>'
             );
             return theOpt;
         };
@@ -36,17 +37,19 @@ $(document).ready(function() {
             theme: 'org-picker',
             templateResult: formatOption,
         });
-        theOrgPicker.on('select2:select', function(e) {
-            var theOrgPK = e.params.data.id;
-            var theUrl = org_chosen_url_format.sprintf(theOrgPK);
-            posterize(theUrl);
-        });
-        //$('#select2-selection__arrow').addClass('icon-menu-2');
+        if ( theOrgHomeBtn ) {
+            theOrgPicker.on('select2:select', function(e) {
+                var theOrgPK = e.params.data.id;
+                var theUrl = org_home_url_format.sprintf(theOrgPK);
+                theOrgHomeBtn.prop('href', theUrl);
+                theUrl = org_chosen_url_format.sprintf(theOrgPK);
+                posterize(theUrl);
+            });
+        }
     }
 
-    var theOrgHomeBtn = $('#btn-org-home');
-    if ( !theOrgHomeBtn ) theOrgHomeBtn = $('#org-name');
-    if ( theOrgHomeBtn ) {
+    if ( !theOrgHomeBtn ) {
+        theOrgHomeBtn = $('#org-name');
         theOrgHomeBtn.on('click', function(evt) {
             var theOrgPK = theOrgPicker ? theOrgPicker.find(':selected').val() : '0';
             var theUrl = org_home_url_format.sprintf(theOrgPK);
