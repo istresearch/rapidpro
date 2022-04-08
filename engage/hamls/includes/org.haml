@@ -2,8 +2,9 @@
 
 #org-area
   {% if user_orgs|length > 0 %}
-    #btn-org-home
-      -#emoji house
+    -if user_org
+      %a#btn-org-home{href:'{% url "orgs.org_home" %}?org={{ user_org.id }}'}
+        -# house icon
   {% endif %}
   {% if user_orgs|length > 1 %}
     #org-picker-widget

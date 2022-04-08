@@ -21,7 +21,7 @@ body {
 
 #splash {
   /* margin-top: -30px; */
-  background: url("/sitestatic/brands/engage/images/splash.png") !important;
+  background: url("../images/splash.png") !important;
   background-size: cover !important;
   width: 100%;
   height: 0px;
@@ -247,11 +247,11 @@ temba-modax > div.send-via-btn {
   }
 }
 temba-modax#send-via-pm_element > div.send-via-btn {
-  background: url("/sitestatic/engage/img/element-chat.svg");
+  background: url("../../../engage/img/element-chat.svg");
   background-size: 16px;
 }
 temba-modax#send-via-pm_signal > div.send-via-btn {
-  background: url("/sitestatic/engage/img/signal-chat.svg");
+  background: url("../../../engage/img/signal-chat.svg");
   background-size: 16px;
 }
 /* ----------------------------------------------------*/
@@ -288,10 +288,20 @@ temba-modax#send-via-pm_signal > div.send-via-btn {
     align-self: start;
     margin-right: 1em;
     cursor: pointer;
+    background-image: url("../../../engage/img/house-door.svg");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+    filter: invert(1);
+    height: 28px;
+    width: 28px;
+    border-width: 2px;
+    /* desire icon, not this emoji
     &:after {
       content: "🏠";
       font-size: large;
     }
+     */
   }
 
   #org-name {
