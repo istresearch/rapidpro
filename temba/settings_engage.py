@@ -187,6 +187,11 @@ COMPRESS_OFFLINE_MANIFEST = f"manifest-{env('VERSION_CI', '1-dev')[:-4]}.json"
 #COMPRESS_OFFLINE = False
 COMPRESS_OFFLINE = COMPRESS_ENABLED and (env('DEV_STATIC', 'off') != 'on')
 
+if not TESTING:
+    COMPRESS_PRECOMPILERS = COMPRESS_PRECOMPILERS + (
+        ("text/less", 'lessc --include-path="%s" {infile} {outfile}' % os.path.join(PROJECT_DIR, "../engage/static/engage/less", "less")),
+    )
+
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
 MAGE_API_URL = env('MAGE_API_URL', 'http://localhost:8026/api/v1')
 SEND_MESSAGES = env('SEND_MESSAGES', 'off') == 'on'
