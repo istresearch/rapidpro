@@ -11,11 +11,11 @@ services:
     ports:
       - 8000:8000
     volumes:
-      - rpmedia:/rapidpro/media
+      - data4media:/rapidpro/media
       #---- <*)))><: I found placing the local-static files far outside
       #----  the IDE/git pervuew prevented Docker from locking up.
       - ~/engage-sitestatic:/rapidpro/sitestatic
-      #- ./docker/engage_local_settings.py:/rapidpro/temba/local_settings.py
+      #- ./local_settings.py:/rapidpro/temba/local_settings.py
       - ./engage_initialsetup.py:/rapidpro/engage_initialsetup.py
       - ../scm/src-refresh.sh:/opt/dev/src-refresh.sh
       - ../docker/customizations/any:/opt/dev/any
@@ -23,7 +23,7 @@ services:
       #- ../docker/customizations/generic:/opt/dev/brand
       - ../engage:/opt/dev/rp/engage
       - ../temba:/opt/dev/rp/temba
-    environment:
+    environment: &engage-env
       #- SUB_DIR=ist
       - SEND_CALLS=on
       - SEND_EMAILS=off
@@ -93,18 +93,9 @@ services:
       - redis
       - postgresql
     volumes:
-      - rpmedia:/rapidpro/media
+      - data4media:/rapidpro/media
     environment:
-      - SEND_CALLS=on
-      - SEND_MESSAGES=on
-      - SEND_AIRTIME=on
-      - SEND_WEBHOOKS=on
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - DATABASE_URL=${RP_DB_URL}
-      - REDIS_URL=redis://redis:6379/1
-      - SECRET_KEY=notsecureatall
-      - POST_OFFICE_API_KEY
-      - POST_OFFICE_API_URL=http://host.docker.internal:8088/postoffice
+      <<: *engage-env
     command: ["/venv/bin/celery", "--beat", "--app=temba", "worker", "--loglevel=INFO", "--queues=celery,flows,msgs,handler"]
 
   courier:
@@ -231,7 +222,7 @@ services:
     ports:
       - 6379:6379
     volumes:
-      - po_redis_db:/data
+      - data4redis:/data
   redis-commander:
     container_name: redis_commander
     image: rediscommander/redis-commander:latest
@@ -262,7 +253,8 @@ services:
         hard: -1
     restart: always
     volumes:
-      - esdata:/usr/share/elasticsearch/data
+      - data4es:/usr/share/elasticsearch/data
+
   kibana:
     container_name: kibana
     image: docker.elastic.co/kibana/kibana:$IMG_TAG_ELASTICSEARCH
@@ -273,6 +265,7 @@ services:
     depends_on:
       - elasticsearch
     restart: always
+
   postgresql:
     container_name: postgresql
     image: mdillon/postgis:10
@@ -285,7 +278,7 @@ services:
       # NOTE: If you have an existing rp db, run this command to create PO schema via:
       # docker exec -it postgresql docker-entrypoint-initdb.d/pg02.sh
       - ./postgres-po-init.sh:/docker-entrypoint-initdb.d/pg02.sh
-      - po_db:/var/lib/postgresql/data
+      - data4pgsql:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     #command: ["postgres", "-c", "log_statement=all"]
@@ -298,7 +291,6 @@ services:
       - "9090:9090"
       - "9091:9091"
     volumes:
-      #- s3data:/data
       - ./.s3data:/data
     environment:
       - root=/data
@@ -307,11 +299,20 @@ services:
       - retainFilesOnExit=true
       - debug=true
 
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:17.0.0
+    entrypoint: /opt/keycloak/bin/kc.sh start-dev
+    ports:
+      - 8008:8080
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+
 volumes:
-  #s3data:
-  po_db:
-  esdata:
-  po_redis_db:
+  data4pgsql:
+  data4es:
+  data4redis:
     driver: local
-  rpmedia:
+  data4media:
     driver: local
