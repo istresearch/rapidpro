@@ -23,7 +23,7 @@ services:
       #- ../docker/customizations/generic:/opt/dev/brand
       - ../engage:/opt/dev/rp/engage
       - ../temba:/opt/dev/rp/temba
-    environment: &engage-env
+    environment:
       #- SUB_DIR=ist
       - SEND_CALLS=on
       - SEND_EMAILS=off
@@ -95,7 +95,16 @@ services:
     volumes:
       - data4media:/rapidpro/media
     environment:
-      <<: *engage-env
+      - SEND_CALLS=on
+      - SEND_MESSAGES=on
+      - SEND_AIRTIME=on
+      - SEND_WEBHOOKS=on
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - DATABASE_URL=${RP_DB_URL}
+      - REDIS_URL=redis://redis:6379/1
+      - SECRET_KEY=notsecureatall
+      - POST_OFFICE_API_KEY
+      - POST_OFFICE_API_URL=http://host.docker.internal:8088/postoffice
     command: ["/venv/bin/celery", "--beat", "--app=temba", "worker", "--loglevel=INFO", "--queues=celery,flows,msgs,handler"]
 
   courier:
