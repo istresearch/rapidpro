@@ -187,9 +187,9 @@ COMPRESS_OFFLINE_MANIFEST = f"manifest-{env('VERSION_CI', '1-dev')[:-4]}.json"
 #COMPRESS_OFFLINE = False
 COMPRESS_OFFLINE = COMPRESS_ENABLED and (env('DEV_STATIC', 'off') != 'on')
 
-if not TESTING:
+if COMPRESS_PRECOMPILERS and len(COMPRESS_PRECOMPILERS)>0:
     COMPRESS_PRECOMPILERS = COMPRESS_PRECOMPILERS + (
-        ("text/less", 'lessc --include-path="%s" {infile} {outfile}' % os.path.join(PROJECT_DIR, "../engage/static/engage/less", "less")),
+        ("text/less", 'lessc --include-path="%s" {infile} {outfile}' % os.path.join(PROJECT_DIR, "../engage/static/engage", "less")),
     )
 
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
