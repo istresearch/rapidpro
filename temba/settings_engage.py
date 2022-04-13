@@ -174,6 +174,14 @@ if not AWS_STATIC:
 
 STATIC_ROOT = os.path.join(PROJECT_DIR, "../sitestatic/")
 
+# compress_precompilers used for static LESS files whether or not COMPRESS_ENABLED==True
+COMPRESS_PRECOMPILERS = (
+    ("text/less", 'lessc --include-path="%s:%s" {infile} {outfile}' % (
+        os.path.join(COMPRESS_ROOT, "less"),
+        os.path.join(COMPRESS_ROOT, "engage", "less"),
+    )),
+)
+
 COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'on') == 'on'
 if COMPRESS_ENABLED:
     COMPRESS_URL = STATIC_URL

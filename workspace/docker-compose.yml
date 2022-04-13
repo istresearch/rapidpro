@@ -106,6 +106,7 @@ services:
       - POST_OFFICE_API_KEY
       - POST_OFFICE_API_URL=http://host.docker.internal:8088/postoffice
     command: ["/venv/bin/celery", "--beat", "--app=temba", "worker", "--loglevel=INFO", "--queues=celery,flows,msgs,handler"]
+    restart: unless-stopped
 
   courier:
     container_name: courier
@@ -131,11 +132,11 @@ services:
       - s3mock
     ports:
       - '8080:8080'
+    restart: unless-stopped
 
   mailroom:
     container_name: mailroom
     image: istresearch/mailroom:$IMG_TAG_MAILROOM
-    restart: always
     depends_on:
       - postgresql
       - redis
@@ -155,6 +156,7 @@ services:
       - MAILROOM_PORT=8091
       - MAILROOM_LOG_LEVEL=debug
       - MAILROOM_CUSTOM_SCHEMES=pm_whatsapp, pm_telegram, pm_signal, pm_facebook, pm_line, pm_vk, pm_viber, pm_twitter, pm_kakao, pm_imo, pm_instagram, pm_mobyx, pm_fbm, pm_email, pm_element
+    restart: unless-stopped
 
   indexer:
     container_name: indexer
@@ -164,11 +166,11 @@ services:
     environment:
       - INDEXER_DB=${RP_DB_URL}
       - INDEXER_ELASTIC_URL=http://elasticsearch:9200
+    restart: unless-stopped
 
   postoffice:
     container_name: postoffice
     image: istresearch/postoffice:$IMG_TAG_POSTOFFICE
-    restart: always
     ports:
       - 8088:8088
     depends_on:
@@ -202,17 +204,18 @@ services:
       PO_GRAPHQL_PLAYGROUNDENABLED: "true"
       PO_GRAPHQL_PLAYGROUNDUSERNAME: graphql
       PO_GRAPHQL_PLAYGROUNDPASSWORD: letmein
+    restart: unless-stopped
 
   postoffice_custodian:
     container_name: postoffice_custodian
     image: istresearch/postoffice:$IMG_TAG_POSTOFFICE
-    restart: always
     command: ["/app/postoffice", "custodian"]
     depends_on:
       - redis
       - engage
     environment:
       <<: *po-env
+    restart: unless-stopped
 
   nginx:
     container_name: nginx
@@ -223,25 +226,27 @@ services:
       - 80:8888
     depends_on:
       - engage
+    restart: unless-stopped
 
   redis:
     container_name: redis
-    image: redis:6.0.9
-    restart: always
+    image: redis:6.2.5
     ports:
       - 6379:6379
     volumes:
       - data4redis:/data
+    restart: unless-stopped
+
   redis-commander:
     container_name: redis_commander
     image: rediscommander/redis-commander:latest
-    restart: always
     depends_on:
       - redis
     environment:
       - REDIS_HOSTS=local:redis:6379:0
     ports:
       - "8081:8081"
+    restart: unless-stopped
 
   elasticsearch:
     container_name: elasticsearch
@@ -260,9 +265,9 @@ services:
       memlock:
         soft: -1
         hard: -1
-    restart: always
     volumes:
       - data4es:/usr/share/elasticsearch/data
+    restart: unless-stopped
 
   kibana:
     container_name: kibana
@@ -273,7 +278,7 @@ services:
       - "5601:5601"
     depends_on:
       - elasticsearch
-    restart: always
+    restart: unless-stopped
 
   postgresql:
     container_name: postgresql
@@ -307,6 +312,7 @@ services:
       - initialBuckets=${AWS_S3_BUCKET}
       - retainFilesOnExit=true
       - debug=true
+    restart: unless-stopped
 
   keycloak:
     container_name: keycloak
@@ -317,6 +323,7 @@ services:
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=admin
+    restart: unless-stopped
 
 volumes:
   data4pgsql:
