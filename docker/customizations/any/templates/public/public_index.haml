@@ -50,7 +50,7 @@
       #lead-form
         %form{action:'{% ssl_brand_url "public.lead_create" %}', method:'POST'}
           -csrf_token
-          %input{type:"hidden" name:"next" value:"{{ next }}"}
+          %input{type:"hidden", name:"next", value:"{{ next }}"}
 
           %fieldset
             .control-group
