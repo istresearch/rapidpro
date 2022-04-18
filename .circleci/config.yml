@@ -6,13 +6,13 @@ jobs:
       image: ubuntu-2004:202111-02
     resource_class: medium
     steps:
+      - checkout
       - run:
           name: Install Docker Buildx for Multi-Architectures
           command: |
             source scm/utils.sh; multiArch_installBuildx;
             source scm/utils.sh; multiArch_addArm64Arch;
             source scm/utils.sh; multiArch_createBuilderContext;
-      - checkout
       - run:
           name: Avoid "Are you sure you want to connect?" to GitHub
           command: |
