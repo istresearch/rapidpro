@@ -25,8 +25,8 @@ cmake \
   -DCMAKE_INSTALL_PREFIX=/usr/local \
   -DBUILD_DOCUMENTATION=OFF \
   -DBUILD_SHARED_LIBS=ON \
-  -DDISABLE_GEOS_INLINE=OFF
-
+  -DDISABLE_GEOS_INLINE=OFF \
+  ..
 # Run the build, test, install
 make
 ctest --verbose
