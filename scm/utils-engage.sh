@@ -54,7 +54,12 @@ function EnsureGeosImage()
   USE_MULTIARCH="${2:-false}"
   IMG_STAGE=pygeos
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
-  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}"`
+  IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
+  if [[ ${USE_MULTIARCH} == "false" ]]; then
+    IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
+  else
+    IMAGE_TAG="${IMG_STAGE}-ma-${IMAGE_TAG_HASH}"
+  fi
   echo "${IMAGE_TAG}" > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
@@ -83,10 +88,15 @@ function EnsurePyLibsImage()
   USE_MULTIARCH="${2:-false}"
   IMG_STAGE=pylibs
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
-  IMAGE_TAG=${IMG_STAGE}-`CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile pygeos)" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json"`
+  IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile pygeos)" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json")
+  if [[ ${USE_MULTIARCH} == "false" ]]; then
+    IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
+  else
+    IMAGE_TAG="${IMG_STAGE}-ma-${IMAGE_TAG_HASH}"
+  fi
   echo "${IMAGE_TAG}" > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
-    FROM_STAGE_TAG=`GetImgStageTag pygeos`
+    FROM_STAGE_TAG=$(GetImgStageTag pygeos)
     PrintPaddedTextRight "  Using pygeos Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
     if [[ ${USE_MULTIARCH} == "false" ]]; then
@@ -115,10 +125,15 @@ function EnsurePyAppImage()
   fi
   USE_MULTIARCH="${2:-false}"
   IMG_STAGE=pyapp
-  IMAGE_TAG=${IMG_STAGE}-`cat ${UTILS_PATH}/version_tag.txt`
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
+  IMAGE_TAG_HASH=$(cat ${UTILS_PATH}/version_tag.txt)
+  if [[ ${USE_MULTIARCH} == "false" ]]; then
+    IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
+  else
+    IMAGE_TAG="${IMG_STAGE}-ma-${IMAGE_TAG_HASH}"
+  fi
   echo "${IMAGE_TAG}" > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
-  FROM_STAGE_TAG=`GetImgStageTag pylibs`
+  FROM_STAGE_TAG=$(GetImgStageTag pylibs)
   PrintPaddedTextRight "  Using pylibs Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
   echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
   if [[ ${USE_MULTIARCH} == "false" ]]; then
@@ -158,7 +173,7 @@ function BuildVersionForX()
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
   IMAGE_TAG=${IMG_TAG}
   echo "${IMAGE_TAG}" > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
-  FROM_STAGE_TAG=`GetImgStageTag pyapp`
+  FROM_STAGE_TAG=$(GetImgStageTag pyapp)
   PrintPaddedTextRight "  Using pyapp Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
   echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
   if [[ ${USE_MULTIARCH} == "false" ]]; then
@@ -194,10 +209,10 @@ function BuildVersionForEngage()
   USE_MULTIARCH="${2:-false}"
   if [[ ${USE_MULTIARCH} == "false" ]]; then
     IMAGE_NAME=$DEFAULT_IMAGE_NAME
-    VERSION_CI_TAG=`GetImgStageTag version_ci`
-    docker tag $IMAGE_NAME:$1 $IMAGE_NAME:$VERSION_CI_TAG
-    docker push $IMAGE_NAME:$VERSION_CI_TAG
-    PrintPaddedTextRight "Created Image" "$IMAGE_NAME:${VERSION_CI_TAG}" "${COLOR_MSG_INFO}"
+    VERSION_CI_TAG=$(GetImgStageTag version_ci)
+    docker tag "${IMAGE_NAME}:$1" "${IMAGE_NAME}:${VERSION_CI_TAG}"
+    docker push "${IMAGE_NAME}:${VERSION_CI_TAG}"
+    PrintPaddedTextRight "Created Image" "${IMAGE_NAME}:${VERSION_CI_TAG}" "${COLOR_MSG_INFO}"
   fi
 }
 
@@ -208,15 +223,15 @@ function BuildVersionForEngage()
 function BuildVersionForGeneric()
 {
   IMAGE_NAME="istresearch/rapidpro"
-  VERSION_CI=`GetImgStageTag version_ci`
+  VERSION_CI=$(GetImgStageTag version_ci)
   VER_TAG=${VERSION_CI%-*}
   BuildVersionForX "${IMAGE_NAME}" generic "$1" "${VER_TAG}" "$2"
 
   USE_MULTIARCH="${2:-false}"
   if [[ ${USE_MULTIARCH} == "false" ]]; then
-    docker tag $IMAGE_NAME:$1 $IMAGE_NAME:$VER_TAG
-    docker push $IMAGE_NAME:$VER_TAG
-    PrintPaddedTextRight "Created Image" "$IMAGE_NAME:${VER_TAG}" ${COLOR_MSG_INFO}
+    docker tag "${IMAGE_NAME}:$1" "${IMAGE_NAME}:${VER_TAG}"
+    docker push "${IMAGE_NAME}:${VER_TAG}"
+    PrintPaddedTextRight "Created Image" "${IMAGE_NAME}:${VER_TAG}" "${COLOR_MSG_INFO}"
   fi
 }
 
