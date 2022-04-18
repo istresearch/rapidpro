@@ -725,6 +725,8 @@ function multiArch_buildImages()
     IMG_TAG=getVersionStr
   fi
   DOCKER_FILE_TO_USE="${3:-docker/Dockerfile}"
+  # eat the 3 fixed, used arguments; so $@ will pass the rest into buildx.
+  shift 3
   set -x
   docker buildx build --progress=plain \
     --platform linux/amd64,linux/arm64 \
@@ -757,6 +759,8 @@ function buildImage()
     IMG_TAG=getVersionStr
   fi
   DOCKER_FILE_TO_USE="${3:-docker/Dockerfile}"
+  # eat the 3 fixed, used arguments; so $@ will pass the rest into buildx.
+  shift 3
 
   docker build --progress=plain \
     -t "$IMG_NAME:$IMG_TAG" \
