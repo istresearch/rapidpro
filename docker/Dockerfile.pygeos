@@ -7,7 +7,7 @@ RUN set -ex \
  && apk add --no-cache --virtual .build-deps \
     gcc \
     g++ \
-    make \
+    cmake \
     libc-dev \
     musl-dev \
     linux-headers \

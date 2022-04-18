@@ -54,7 +54,7 @@ function EnsureGeosImage()
   USE_MULTIARCH="${2:-false}"
   IMG_STAGE=pygeos
   DOCKERFILE2USE=docker/Dockerfile.${IMG_STAGE}
-  IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
+  IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "docker/geolibs.sh")
   if [[ ${USE_MULTIARCH} == "false" ]]; then
     IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
   else

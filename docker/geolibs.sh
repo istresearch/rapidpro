@@ -17,10 +17,20 @@ cd /tmp
 wget https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2
 tar xjf geos-${GEOS_VERSION}.tar.bz2
 cd geos-${GEOS_VERSION}
-./configure --enable-silent-rules CFLAGS="-D__sun -D__GNUC__"  CXXFLAGS="-D__GNUC___ -D__sun"
-make -s
-make -s install
+mkdir _build
+cd _build
+# Set up the build
+cmake \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DBUILD_DOCUMENTATION=OFF \
+  -DBUILD_SHARED_LIBS=ON \
+  -DDISABLE_GEOS_INLINE=OFF
 
+# Run the build, test, install
+make
+ctest --verbose
+make install
 
 # Install proj
 # ===================================================================
