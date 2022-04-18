@@ -9,10 +9,9 @@ jobs:
       - run:
           name: Install Docker Buildx for Multi-Architectures
           command: |
-            source scm/utils.sh;
-            multiArch_installBuildx;
-            multiArch_addArm64Arch;
-            multiArch_createBuilderContext;
+            source scm/utils.sh; multiArch_installBuildx;
+            source scm/utils.sh; multiArch_addArm64Arch;
+            source scm/utils.sh; multiArch_createBuilderContext;
       - checkout
       - run:
           name: Avoid "Are you sure you want to connect?" to GitHub
