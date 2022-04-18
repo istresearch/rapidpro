@@ -1,6 +1,63 @@
 version: 2
 
 jobs:
+  build-multi-arch-containers:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - run:
+          name: Install Docker Buildx for Multi-Architectures
+          command: |
+            source scm/utils.sh;
+            multiArch_installBuildx;
+            multiArch_addArm64Arch;
+            multiArch_createBuilderContext;
+      - checkout
+      - run:
+          name: Avoid "Are you sure you want to connect?" to GitHub
+          command: |
+            mkdir -p ~/.ssh;
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts;
+            chmod 600 ~/.ssh/known_hosts;
+      - run:
+          name: Login to DockerHub to pull/push private images
+          command: |
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Ensure GEOS Libs Image Exists, building if necessary
+          command: |
+            source scm/utils-engage.sh; EnsureGeosImage default mabuild;
+      - run:
+          name: Ensure Python Libs Image Exists, building if necessary
+          command: |
+            source scm/utils-engage.sh; EnsurePyLibsImage default mabuild;
+      - run:
+          name: Figure out tag to use
+          command: |
+            source scm/utils-engage.sh; determine_image_tag;
+            VERSION_TAG=$(cat scm/version_tag.txt);
+            echo "Using tag: ${VERSION_TAG}";
+      - run:
+          name: Ensure PyApp Image Exists, building if necessary
+          command: |
+            source scm/utils-engage.sh; EnsurePyAppImage default mabuild;
+      - run:
+          name: Build "Default Branding" Image
+          command: |
+            VERSION_TAG=$(cat scm/version_tag.txt)
+            source scm/utils-engage.sh; BuildVersionForRp "$VERSION_TAG" mabuild
+      - run:
+          name: Build "Engage Branding" Image
+          command: |
+            VERSION_TAG=$(cat scm/version_tag.txt)
+            source scm/utils-engage.sh; BuildVersionForEngage "$VERSION_TAG" mabuild
+      - run:
+          name: Build "Generic Branding" Image
+          command: |
+            VERSION_TAG=$(cat scm/version_tag.txt)
+            source scm/utils-engage.sh; BuildVersionForGeneric "${VERSION_TAG}-generic" mabuild
+
   build-containers:
     docker:
       - image: cimg/base:stable
@@ -9,38 +66,30 @@ jobs:
       - run:
           name: Avoid "Are you sure you want to connect?" to GitHub
           command: |
-            mkdir -p ~/.ssh
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-            chmod 600 ~/.ssh/known_hosts
+            mkdir -p ~/.ssh;
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts;
+            chmod 600 ~/.ssh/known_hosts;
       - setup_remote_docker:
           version: 20.10.7
           # Base GEOS image cannot build, force ver 20.10.7: https://discuss.circleci.com/t/unable-to-use-make/40552/4
       - run:
           name: Login to Docker
           command: |
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Ensure GEOS Libs Image Exists, building if necessary
           command: |
-            source scm/utils-engage.sh; EnsureGeosImage
+            source scm/utils-engage.sh; EnsureGeosImage;
       - run:
           name: Ensure Python Libs Image Exists, building if necessary
           command: |
-            source scm/utils-engage.sh; EnsurePyLibsImage
+            source scm/utils-engage.sh; EnsurePyLibsImage;
       - run:
           name: Figure out tag to use
           command: |
-            BRANCH=${CIRCLE_BRANCH#*/}
-            VERSION_STR=$(cat VERSION)
-            if [[ -n $CIRCLE_TAG ]]; then
-              VERSION_TAG="${CIRCLE_TAG#*v}"
-            elif [[ "$BRANCH" == "develop" ]]; then
-              VERSION_TAG="${VERSION_STR}-dev"
-            elif [[ "$BRANCH" != "master" ]]; then
-              VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
-            fi
-            echo ${VERSION_TAG} > scm/version_tag.txt
-            echo "Using tag: ${VERSION_TAG}"
+            source scm/utils-engage.sh; determine_image_tag;
+            VERSION_TAG=$(cat scm/version_tag.txt);
+            echo "Using tag: ${VERSION_TAG}";
       - run:
           name: Ensure PyApp Image Exists, building if necessary
           command: |
@@ -70,7 +119,6 @@ jobs:
           name: Build "Generic Branding" Image
           command: |
             VERSION_TAG=$(cat scm/version_tag.txt)
-            # only build this if constructing a tag version
             source scm/utils-engage.sh; BuildVersionForGeneric "${VERSION_TAG}-generic"
 
   deploy-dev-container:
@@ -114,6 +162,16 @@ workflows:
   version: 2
   pipeline:
     jobs:
+      - build-multi-arch-containers:
+          context: globalconfig
+          filters:
+            branches:
+              only:
+                - /^ma\/.*/
+            tags:
+              only:
+                - /^v.*/
+                - /^ma[-\/].*/
       - build-containers:
           context: globalconfig
           filters:
@@ -122,8 +180,12 @@ workflows:
                 - /^rel\/.*/
                 - /^master$/
                 - /^main$/
+                - /^ma\/.*/
             tags:
-              ignore: /^test-.*/
+              ignore:
+                - /^test-.*/
+                - /^v.*/
+                - /^ma[-\/].*/
       - deploy-dev-container:
           context: globalconfig
           requires:

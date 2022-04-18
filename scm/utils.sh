@@ -626,7 +626,7 @@ function uploadFileToRepo
   if [ -f "${LOCAL_SRC_FILE}" ]; then
     if [[ "$3" == "1" && -n $(SpotCheckRemoteFile ${SCP_SSH} ${REMOTE_DST_FILE}) ]]; then
       PrintPaddedTextRight "${REMOTE_DST_FILE} already uploaded" "SKIPPED" "1;31"
-      continue
+      return
     fi
     local src=$(basename "${LOCAL_SRC_FILE}")
     local dst=$(basename "${REMOTE_DST_FILE}")
@@ -644,4 +644,130 @@ function uploadFileToRepo
     echo -e "${COLOR_MSG_WARNING}Local file ${LOCAL_SRC_FILE} not found.${COLOR_NONE}"
     exit 1
   fi
+}
+
+####################
+# Multi-architecture Docker images require some bleeding edge software, buildx.
+# Use this function to install Docker `buildx`.
+# @see https://docs.docker.com/engine/install/ubuntu/
+# Used with machine image: ubuntu-2004:202111-02 (Ubuntu 20.04, revision: Nov 02, 2021)
+function multiArch_installBuildx()
+{
+  # Uninstall older versions of Docker, ok if it reports none are installed.
+  sudo apt-get remove docker docker-engine docker.io containerd runc;
+  # install using repository
+  sudo apt-get update && sudo apt-get install \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release;
+  # add Docker's official GPG key
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg;
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null;
+  # install docker engine
+  sudo apt-get update && sudo apt-get install docker-ce docker-ce-cli containerd.io;
+  # test engine installation
+  sudo docker run hello-world;
+}
+
+####################
+# Multi-architecture Docker images require some bleeding edge software, buildx.
+# Use this function to install arm64 architecture.
+# @see https://docs.docker.com/engine/install/ubuntu/
+# Used with machine image: ubuntu-2004:202111-02 (Ubuntu 20.04, revision: Nov 02, 2021)
+# @ENV USER - the circleci user that executes commands.
+function multiArch_addArm64Arch()
+{
+  sudo apt-get update && sudo apt-get install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg-agent \
+    software-properties-common;
+  sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  sudo apt-get update && sudo apt-get install docker-ce docker-ce-cli containerd.io;
+  # so we don't have to use sudo
+  sudo groupadd docker && sudo usermod -aG docker $USER && newgrp docker;
+  # emulation deps
+  sudo apt-get install binfmt-support qemu-user-static;
+  # test engine installation again to show what arch it supports
+  sudo docker run hello-world;
+}
+
+####################
+# Multi-architecture Docker images require some bleeding edge software, buildx.
+# Use this function to create and use a new builder context.
+# @see https://docs.docker.com/engine/install/ubuntu/
+# Used with machine image: ubuntu-2004:202111-02 (Ubuntu 20.04, revision: Nov 02, 2021)
+# @param string $1 - (OPTIONAL) the name of the context to use (defaults to 'mabuilder').
+function multiArch_createBuilderContext()
+{
+  DOCKER_CONTEXT=${1:-mabuilder};
+  docker context create "${DOCKER_CONTEXT}";
+  docker buildx create "${DOCKER_CONTEXT}" --use;
+}
+
+####################
+# Use this function to build multi-architecture container images and push them to DockerHub.
+# @param string $1 - image name to use (w/o the tag); if empty, it is constructed from CI vars.
+# @param string $2 - image tag to use; if empty, it will use getVersionStr()
+# @param string $3 - docker build file to use; if empty, "docker/Dockerfile" is used.
+# @param string $4…- (OPTIONAL) extra docker build args, e.g. --build-arg "APK_URI=${APK_URI}"
+function multiArch_buildImages()
+{
+  IMG_NAME="$1"
+  if [[ -z ${IMG_NAME} ]]; then
+    IMG_NAME=${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+  fi
+  IMG_TAG="$2"
+  if [[ -z $IMG_TAG ]]; then
+    IMG_TAG=getVersionStr
+  fi
+  DOCKER_FILE_TO_USE="${3:-docker/Dockerfile}"
+
+  docker buildx build --progress=plain \
+    --platform linux/amd64,linux/arm64 \
+    -t "$IMG_NAME:$IMG_TAG" \
+    -f "$DOCKER_FILE_TO_USE" \
+    "$@" \
+    --push .
+  if [ $? -eq 0 ]; then
+    PrintPaddedTextRight "$IMG_NAME:$IMG_TAG build and upload" "OK" "${COLOR_MSG_INFO}"
+  else
+    PrintPaddedTextRight "$IMG_NAME:$IMG_TAG build and upload" "FAILED" "${COLOR_MSG_WARNING}"
+    exit 2
+  fi
+}
+
+####################
+# Use this function to build a standard "docker build" image and push it to DockerHub.
+# @param string $1 - image name to use (w/o the tag); if empty, it is constructed from CI vars.
+# @param string $2 - image tag to use; if empty, it will use getVersionStr()
+# @param string $3 - docker build file to use; if empty, "docker/Dockerfile" is used.
+# @param string $4…- (OPTIONAL) extra docker build args, e.g. --build-arg "APK_URI=${APK_URI}"
+function buildImage()
+{
+  IMG_NAME="$1"
+  if [[ -z ${IMG_NAME} ]]; then
+    IMG_NAME=${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+  fi
+  IMG_TAG="$2"
+  if [[ -z $IMG_TAG ]]; then
+    IMG_TAG=getVersionStr
+  fi
+  DOCKER_FILE_TO_USE="${3:-docker/Dockerfile}"
+
+  docker build --progress=plain \
+    -t "$IMG_NAME:$IMG_TAG" \
+    -f "$DOCKER_FILE_TO_USE" \
+    "$@" \
+    .
+  if [ $? -eq 0 ]; then
+    PrintPaddedTextRight "$IMG_NAME:$IMG_TAG build" "OK" "${COLOR_MSG_INFO}"
+  else
+    PrintPaddedTextRight "$IMG_NAME:$IMG_TAG build" "FAILED" "${COLOR_MSG_WARNING}"
+    exit 2
+  fi
+  docker push "${IMG_NAME}:${IMG_TAG}"
 }
