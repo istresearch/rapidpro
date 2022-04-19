@@ -15,7 +15,7 @@ GDAL_VERSION=3.4.2
 # ===================================================================
 cd /tmp
 wget https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2
-tar xjf geos-${GEOS_VERSION}.tar.bz2
+tar xvjf geos-${GEOS_VERSION}.tar.bz2
 cd geos-${GEOS_VERSION}
 mkdir _build
 cd _build
@@ -28,9 +28,9 @@ cmake \
   -DDISABLE_GEOS_INLINE=OFF \
   ..
 # Run the build, test, install
-make
-ctest --verbose
-make install
+cmake --build .
+ctest --output-on-failure .
+make --build . --target install
 
 # Install proj
 # ===================================================================
