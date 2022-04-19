@@ -30,7 +30,7 @@ cmake \
 # Run the build, test, install
 cmake --build .
 ctest --output-on-failure .
-make --build . --target install
+cmake --build . --target install
 
 # Install proj
 # ===================================================================
