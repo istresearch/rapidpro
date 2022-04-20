@@ -13,8 +13,18 @@ RUN set -ex \
     musl-dev \
     linux-headers \
     sqlite \
+    sqlite-dev \
     tiff \
+    tiff-dev \
     curl \
+    curl-dev \
  && sh /geolibs.sh \
  && apk del .build-deps \
  && rm /geolibs.sh
+
+RUN set -ex \
+ && apk add --no-cache \
+    sqlite \
+    tiff \
+    curl \
+ && echo "installed runtime osgeo dependencies"
