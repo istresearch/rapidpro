@@ -2,14 +2,11 @@
 
 set -e # fail on any error
 
-
 # Versions
 # ===================================================================
 GEOS_VERSION=3.10.2
 PROJ_VERSION=9.0.0
-PROJ_DATA_VERSION=1.9
 GDAL_VERSION=3.4.2
-
 
 # Install geos
 # ===================================================================
@@ -36,15 +33,17 @@ cmake --build . --target install
 # ===================================================================
 cd /tmp
 wget https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz
-wget https://download.osgeo.org/proj/proj-data-${PROJ_DATA_VERSION}.tar.gz
-tar xzf proj-${PROJ_VERSION}.tar.gz
-cd proj-${PROJ_VERSION}/nad
-tar xzf ../../proj-data-${PROJ_DATA_VERSION}.tar.gz
-cd ..
-./configure --enable-silent-rules
-make -s
-make -s install
-
+tar xvzf proj-${PROJ_VERSION}.tar.gz
+cd proj-${PROJ_VERSION}
+mkdir _build
+cd _build
+cmake \
+  -DCMAKE_BUILD_TYPE=Release \
+  ..
+cmake --build .
+ctest --output-on-failure .
+cmake --build . --target install
+projsync --system-directory
 
 # Install gdal
 # ===================================================================
@@ -55,7 +54,6 @@ cd gdal-${GDAL_VERSION}
 ./configure --enable-silent-rules --with-static-proj4=/usr/local/lib
 make -s
 make -s install
-
 
 # Clean up
 # ===================================================================

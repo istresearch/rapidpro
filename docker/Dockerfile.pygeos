@@ -12,6 +12,9 @@ RUN set -ex \
     libc-dev \
     musl-dev \
     linux-headers \
+    sqlite \
+    tiff \
+    curl \
  && sh /geolibs.sh \
  && apk del .build-deps \
  && rm /geolibs.sh
