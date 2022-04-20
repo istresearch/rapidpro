@@ -44,7 +44,7 @@ cmake \
 cmake --build .
 #ctest --output-on-failure .
 cmake --build . --target install
-projsync --system-directory
+projsync --system-directory --all
 
 # Install gdal
 # ===================================================================
