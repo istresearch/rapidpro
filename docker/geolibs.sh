@@ -5,7 +5,7 @@ set -e # fail on any error
 # Versions
 # ===================================================================
 GEOS_VERSION=3.10.2
-PROJ_VERSION=9.0.0
+PROJ_VERSION=8.2.1    #9.0.0 has known issues with M1, avoid for now.
 GDAL_VERSION=3.4.2
 
 # Install geos
@@ -26,7 +26,7 @@ cmake \
   ..
 # Run the build, test, install
 cmake --build .
-ctest --output-on-failure .
+#ctest --output-on-failure .
 cmake --build . --target install
 
 # Install proj
@@ -39,9 +39,10 @@ mkdir _build
 cd _build
 cmake \
   -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_TESTING=OFF \
   ..
 cmake --build .
-ctest --output-on-failure .
+#ctest --output-on-failure .
 cmake --build . --target install
 projsync --system-directory
 
