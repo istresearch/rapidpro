@@ -728,12 +728,21 @@ function multiArch_buildImages()
   # eat the 3 fixed, used arguments; so $@ will pass the rest into buildx.
   shift 3
   set -x
-  docker buildx build --progress=plain \
-    --platform linux/amd64,linux/arm64 \
-    -t "$IMG_NAME:$IMG_TAG" \
-    -f "$DOCKER_FILE_TO_USE" \
-    "$@" \
-    --push .
+  for i in $(seq 1 3); do
+    if docker buildx build --progress=plain \
+        --platform linux/amd64,linux/arm64 \
+        -t "$IMG_NAME:$IMG_TAG" \
+        -f "$DOCKER_FILE_TO_USE" \
+        "$@" \
+        --push .; then
+      break
+    fi
+    sleep 3
+    if [[ "${i}" == "3" ]]; then
+      echo "[Error]: build error"
+      exit 1
+    fi
+  done
   if [ $? -eq 0 ]; then
     PrintPaddedTextRight "$IMG_NAME:$IMG_TAG build and upload" "OK" "${COLOR_MSG_INFO}"
   else

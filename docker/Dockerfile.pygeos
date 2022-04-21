@@ -17,9 +17,11 @@ RUN set -ex \
     tiff \
     tiff-dev \
     curl \
-    curl-dev \
- && sh /geolibs.sh \
- && apk del .build-deps \
+    curl-dev
+RUN sh /geolibs.sh "geos"
+RUN sh /geolibs.sh "proj"
+RUN sh /geolibs.sh "gdal"
+RUN apk del .build-deps \
  && rm /geolibs.sh
 
 RUN set -ex \
