@@ -11,7 +11,9 @@ RUN apk add --no-cache --virtual .build-deps \
     linux-headers
 
 ARG GDAL_VERSION=3.4.2
-COPY https://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz /tmp
+
+ADD https://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz /tmp
+
 RUN set -ex \
  && cd /tmp \
  && tar xzf gdal-${GDAL_VERSION}.tar.gz \

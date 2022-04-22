@@ -11,7 +11,9 @@ RUN apk add --no-cache --virtual .build-deps \
     linux-headers
 
 ARG GEOS_VERSION=3.10.2
-COPY https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 /tmp
+
+ADD https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 /tmp
+
 RUN set -ex \
  && cd /tmp \
  && tar xvjf geos-${GEOS_VERSION}.tar.bz2 \

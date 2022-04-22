@@ -18,7 +18,8 @@ RUN apk add --no-cache --virtual .build-deps \
 
 # v9.0.0 has known issues with M1, avoid for now.
 ARG PROJ_VERSION=8.2.1
-COPY https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz /tmp
+
+ADD https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz /tmp
 
 RUN set -ex \
  && cd /tmp \
