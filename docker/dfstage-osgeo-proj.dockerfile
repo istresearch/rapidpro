@@ -24,7 +24,8 @@ ADD https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz /tmp
 RUN set -ex \
  && cd /tmp \
  && tar xvzf proj-${PROJ_VERSION}.tar.gz \
- && cd proj-${PROJ_VERSION}
+ && mv proj-${PROJ_VERSION} proj \
+ && cd proj \
  && mkdir _build && cd _build \
  && cmake \
   -DCMAKE_BUILD_TYPE=Release \

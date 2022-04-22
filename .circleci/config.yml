@@ -77,6 +77,24 @@ jobs:
           name: Ensure OSGeo GDAL Image Exists
           command: |
             source scm/utils-engage.sh; EnsureOsGeoImageStageExists "gdal";
+  build-stage-osgeo:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - checkout
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: workspace
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Ensure OSGeo Image Exists
+          command: |
+            source scm/utils-engage.sh; EnsureOsGeoImageExists;
   build-multi-arch-containers:
     machine:
       image: ubuntu-2004:202111-02
@@ -252,10 +270,11 @@ workflows:
           requires:
             - build-stage-base
           filters: *ma-filters
-      - build-stage-osgeo-gdal:
+      - build-stage-osgeo:
           context: globalconfig
           requires:
-            - build-stage-base
+            - build-stage-osgeo-geos
+            - build-stage-osgeo-proj
           filters: *ma-filters
       - build-multi-arch-containers:
           context: globalconfig

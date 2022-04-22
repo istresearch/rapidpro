@@ -98,7 +98,7 @@ function EnsureOsGeoImageStageExists()
 }
 
 ####################
-# Determine the image tag for Python3 & OSGeo image based on its requirements file(s).
+# Determine the image tag for OSGeo image based on its requirements file(s).
 # Ensure the docker image tagged with the special tag exists; build if needed.
 function EnsureOsGeoImageExists()
 {
@@ -113,14 +113,20 @@ function EnsureOsGeoImageExists()
     multiArch_installBuildx
     multiArch_addArm64Arch
     multiArch_createBuilderContext
-    # build base layers
-    EnsureOsGeoImageStage "geos"
-    EnsureGeosMultiArchImageStage "proj"
-    EnsureGeosMultiArchImageStage "gdal"
 
+    FROM_STAGE_TAG=$(GetImgStageTag "base")
+    PrintPaddedTextRight "  Using Base Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
+    FROM_GEOS_TAG=$(GetImgStageTag "osgeo-geos")
+    PrintPaddedTextRight "  Using OSGeo-GEOS Tag" "${FROM_GEOS_TAG}" "${COLOR_MSG_INFO}"
+    FROM_PROJ_TAG=$(GetImgStageTag "osgeo-proj")
+    PrintPaddedTextRight "  Using OSGeo-PROJ Tag" "${FROM_PROJ_TAG}" "${COLOR_MSG_INFO}"
 
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
-    multiArch_buildImages "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}"
+    multiArch_buildImages "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}" \
+      --build-arg "FROM_STAGE=${IMAGE_NAME}:${FROM_STAGE_TAG}" \
+      --build-arg "FROM_GEOS=${IMAGE_NAME}:${FROM_GEOS_TAG}" \
+      --build-arg "FROM_PROJ=${IMAGE_NAME}:${FROM_PROJ_TAG}"
+
     "${UTILS_PATH}/pr-comment.sh" "osgeo.org libs image built: ${IMAGE_NAME}:${IMAGE_TAG}"
   fi
   PrintPaddedTextRight "Using osgeo.org libs image tag" "${IMAGE_TAG}" "${COLOR_MSG_INFO}"

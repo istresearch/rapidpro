@@ -17,7 +17,8 @@ ADD https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 /tmp
 RUN set -ex \
  && cd /tmp \
  && tar xvjf geos-${GEOS_VERSION}.tar.bz2 \
- && cd geos-${GEOS_VERSION} \
+ && mv geos-${GEOS_VERSION} geos \
+ && cd geos \
  && mkdir _build && cd _build \
  && cmake \
   -DCMAKE_BUILD_TYPE=Release \
@@ -25,6 +26,7 @@ RUN set -ex \
   -DBUILD_DOCUMENTATION=OFF \
   -DBUILD_SHARED_LIBS=ON \
   -DDISABLE_GEOS_INLINE=OFF \
+  -DGEOS_ENABLE_TESTS=OFF \
   .. \
  && cmake --build . \
  && echo "Finished build, install ready."
