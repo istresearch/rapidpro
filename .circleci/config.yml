@@ -210,7 +210,7 @@ jobs:
 
 workflows:
   version: 2
-  pipeline:
+  build-engage-images:
     jobs:
       - build-stage-base:
           context: globalconfig
@@ -237,9 +237,12 @@ workflows:
           requires:
             - build-stage-base
           filters: *ma-filters
-      #- build-multi-arch-containers:
-      #    context: globalconfig
-      #    filters: *ma-filters
+      - build-multi-arch-containers:
+          context: globalconfig
+          filters:
+            branches:
+              only:
+                - /^none$/
       - build-containers:
           context: globalconfig
           filters:
