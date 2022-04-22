@@ -12,12 +12,22 @@ jobs:
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
             source scm/utils.sh; EnsureGitHubIsKnownHost
             source scm/utils-engage.sh; EnsureBaseImageExists;
+      - persist_to_workspace:
+          # Must be an absolute path, or relative path from working_directory.
+          # This directory is considered to be the root directory of the workspace.
+          root: workspace
+          # Must be relative path from root
+          paths:
+            - info
   build-stage-osgeo-geos:
     machine:
       image: ubuntu-2004:202111-02
     resource_class: medium
     steps:
       - checkout
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: workspace
       - run:
           name: Pre-build Setup
           command: |
@@ -33,6 +43,9 @@ jobs:
     resource_class: medium
     steps:
       - checkout
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: workspace
       - run:
           name: Pre-build Setup
           command: |
@@ -48,6 +61,9 @@ jobs:
     resource_class: medium
     steps:
       - checkout
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: workspace
       - run:
           name: Pre-build Setup
           command: |

@@ -23,7 +23,12 @@ DEFAULT_IMAGE_NAME=istresearch/p4-engage
 function GetImgStageFile()
 {
   IMG_STAGE=$1
-  echo "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
+  TAG_FILE="${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
+  if [ -f "${TAG_FILE}" ]; then
+    echo "${TAG_FILE}"
+  else
+    echo "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
+  fi
 }
 
 ####################
@@ -49,7 +54,7 @@ function EnsureBaseImageExists()
   DOCKERFILE2USE="docker/dfstage-${IMG_STAGE}.dockerfile"
   IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
   IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
-  echo "${IMAGE_TAG}" > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
+  echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
     # prep for multi-arch building
     multiArch_installBuildx
@@ -73,7 +78,7 @@ function EnsureOsGeoImageStageExists()
   DOCKERFILE2USE="docker/dfstage-${IMG_STAGE}.dockerfile"
   IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
   IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
-  echo "${IMAGE_TAG}" > "${UTILS_PATH}/${IMG_STAGE}_tag.txt"
+  echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
     # prep for multi-arch building
     multiArch_installBuildx
