@@ -41,6 +41,10 @@ jobs:
           name: Ensure OSGeo GEOS Image Exists
           command: |
             source scm/utils-engage.sh; EnsureOsGeoImageStageExists "geos";
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info
   build-stage-osgeo-proj:
     machine:
       image: ubuntu-2004:202111-02
@@ -59,6 +63,10 @@ jobs:
           name: Ensure OSGeo PROJ Image Exists
           command: |
             source scm/utils-engage.sh; EnsureOsGeoImageStageExists "proj";
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info
   build-stage-osgeo-gdal:
     machine:
       image: ubuntu-2004:202111-02
@@ -77,6 +85,10 @@ jobs:
           name: Ensure OSGeo GDAL Image Exists
           command: |
             source scm/utils-engage.sh; EnsureOsGeoImageStageExists "gdal";
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info
   build-stage-osgeo:
     machine:
       image: ubuntu-2004:202111-02
@@ -95,6 +107,10 @@ jobs:
           name: Ensure OSGeo Image Exists
           command: |
             source scm/utils-engage.sh; EnsureOsGeoImageExists;
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info
   build-multi-arch-containers:
     machine:
       image: ubuntu-2004:202111-02
