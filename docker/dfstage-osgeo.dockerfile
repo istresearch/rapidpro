@@ -33,4 +33,6 @@ RUN set -ex \
  && ./configure --enable-silent-rules --with-static-proj4=/usr/local/lib \
  && make -s
 
-RUN apk del .build-deps
+RUN apk del .build-deps \
+ && rm -rf /tmp/* \
+ && rm -rf /root/.cache

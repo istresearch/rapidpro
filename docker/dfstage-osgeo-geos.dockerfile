@@ -26,7 +26,7 @@ RUN set -ex \
   -DBUILD_DOCUMENTATION=OFF \
   -DBUILD_SHARED_LIBS=ON \
   -DDISABLE_GEOS_INLINE=OFF \
-  -DGEOS_ENABLE_TESTS=OFF \
+  -DBUILD_TESTING=OFF \
   .. \
  && cmake --build . \
  && echo "Finished build, install ready."
