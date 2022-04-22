@@ -292,6 +292,11 @@ workflows:
             - build-stage-osgeo-geos
             - build-stage-osgeo-proj
           filters: *ma-filters
+      - build-stage-pylibs:
+          context: globalconfig
+          requires:
+            - build-stage-osgeo
+          filters: *ma-filters
       - build-multi-arch-containers:
           context: globalconfig
           filters:
