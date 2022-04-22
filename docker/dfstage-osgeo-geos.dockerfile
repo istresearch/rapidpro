@@ -27,7 +27,6 @@ RUN set -ex \
   -DDISABLE_GEOS_INLINE=OFF \
   .. \
  && cmake --build . \
-# && ctest --output-on-failure . \
  && echo "Finished build, install ready."
 
 RUN apk del .build-deps

@@ -31,7 +31,6 @@ RUN set -ex \
   -DBUILD_TESTING=OFF \
   .. \
  && cmake --build . \
-# && ctest --output-on-failure .
  && echo "Finished build, install ready."
 
 RUN apk del .build-deps
