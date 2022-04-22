@@ -202,6 +202,15 @@ function ConstructReleasePrepBranch
 }
 
 ####################
+# Put github.com into our known_hosts file. Avoid "are you sure?" prompts.
+function EnsureGitHubIsKnownHost()
+{
+  mkdir -p ~/.ssh;
+  ssh-keyscan -H github.com >> ~/.ssh/known_hosts;
+  chmod 600 ~/.ssh/known_hosts;
+}
+
+####################
 # Trigger a CircleCI build in a different project (repo).
 # @param string $1 - project name (URL segment for CircleCI API call).
 # @param string $2 - the branch name of the project build to trigger (URL segment).

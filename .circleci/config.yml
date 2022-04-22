@@ -1,6 +1,62 @@
 version: 2
 
 jobs:
+  build-stage-base:
+    machine:
+      image: ubuntu-2004:202111-02
+    steps:
+      - checkout
+      - run:
+          name: Ensure Base Image Exists
+          command: |
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            source scm/utils-engage.sh; EnsureBaseImageExists;
+  build-stage-osgeo-geos:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Ensure OSGeo GEOS Image Exists
+          command: |
+            source scm/utils-engage.sh; EnsureOsGeoImageStageExists "geos";
+  build-stage-osgeo-proj:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Ensure OSGeo PROJ Image Exists
+          command: |
+            source scm/utils-engage.sh; EnsureOsGeoImageStageExists "proj";
+  build-stage-osgeo-gdal:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Ensure OSGeo GDAL Image Exists
+          command: |
+            source scm/utils-engage.sh; EnsureOsGeoImageStageExists "gdal";
   build-multi-arch-containers:
     machine:
       image: ubuntu-2004:202111-02
@@ -14,14 +70,9 @@ jobs:
             source scm/utils.sh; multiArch_addArm64Arch;
             source scm/utils.sh; multiArch_createBuilderContext;
       - run:
-          name: Avoid "Are you sure you want to connect?" to GitHub
+          name: Pre-build Setup
           command: |
-            mkdir -p ~/.ssh;
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts;
-            chmod 600 ~/.ssh/known_hosts;
-      - run:
-          name: Login to DockerHub to pull/push private images
-          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Ensure GEOS Libs Image Exists, building if necessary
@@ -161,9 +212,9 @@ workflows:
   version: 2
   pipeline:
     jobs:
-      - build-multi-arch-containers:
+      - build-stage-base:
           context: globalconfig
-          filters:
+          filters: &ma-filters
             branches:
               only:
                 - /^ma\/.*/
@@ -171,6 +222,24 @@ workflows:
               only:
                 - /^v.*/
                 - /^ma[-\/].*/
+      - build-stage-osgeo-geos:
+          context: globalconfig
+          requires:
+            - build-stage-base
+          filters: *ma-filters
+      - build-stage-osgeo-proj:
+          context: globalconfig
+          requires:
+            - build-stage-base
+          filters: *ma-filters
+      - build-stage-osgeo-gdal:
+          context: globalconfig
+          requires:
+            - build-stage-base
+          filters: *ma-filters
+      #- build-multi-arch-containers:
+      #    context: globalconfig
+      #    filters: *ma-filters
       - build-containers:
           context: globalconfig
           filters:
