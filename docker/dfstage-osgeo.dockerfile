@@ -31,11 +31,13 @@ ADD https://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz 
 RUN set -ex \
  && cd /tmp/geos/_build; cmake --build . --target install \
  && cd /tmp/proj/_build; cmake --build . --target install \
+ && cd /tmp/proj/_build; projsync --system-directory --all \
  && cd /tmp \
  && tar xzf gdal-${GDAL_VERSION}.tar.gz \
  && cd gdal-${GDAL_VERSION} \
  && ./configure --enable-silent-rules --with-static-proj4=/usr/local/lib \
- && make -s
+ && make \
+ && make install
 
 RUN apk del .build-deps \
  && rm -rf /tmp/* \
