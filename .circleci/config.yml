@@ -7,10 +7,14 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Pre-build Setup
+          command: |
+            mkdir -p workspace/info
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
           name: Ensure Base Image Exists
           command: |
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-            source scm/utils.sh; EnsureGitHubIsKnownHost
             source scm/utils-engage.sh; EnsureBaseImageExists;
       - persist_to_workspace:
           # Must be an absolute path, or relative path from working_directory.
