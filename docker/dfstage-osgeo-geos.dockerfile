@@ -17,9 +17,7 @@ ADD https://download.osgeo.org/geos/geos-${GEOS_VERSION}.tar.bz2 /tmp
 RUN set -ex \
  && cd /tmp \
  && tar xvjf geos-${GEOS_VERSION}.tar.bz2 \
- && cd geos-${GEOS_VERSION}
-
-RUN set -ex \
+ && cd geos-${GEOS_VERSION} \
  && mkdir _build && cd _build \
  && cmake \
   -DCMAKE_BUILD_TYPE=Release \
@@ -27,9 +25,9 @@ RUN set -ex \
   -DBUILD_DOCUMENTATION=OFF \
   -DBUILD_SHARED_LIBS=ON \
   -DDISABLE_GEOS_INLINE=OFF \
-  ..
-
-RUN cmake --build .
-#ctest --output-on-failure .
+  .. \
+ && cmake --build . \
+# && ctest --output-on-failure . \
+ && echo "Finished build, install ready."
 
 RUN apk del .build-deps

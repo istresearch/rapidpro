@@ -25,15 +25,13 @@ RUN set -ex \
  && cd /tmp \
  && tar xvzf proj-${PROJ_VERSION}.tar.gz \
  && cd proj-${PROJ_VERSION}
-
-RUN set -ex \
  && mkdir _build && cd _build \
  && cmake \
   -DCMAKE_BUILD_TYPE=Release \
   -DBUILD_TESTING=OFF \
-  ..
-
-RUN cmake --build .
-#ctest --output-on-failure .
+  .. \
+ && cmake --build . \
+# && ctest --output-on-failure .
+ && echo "Finished build, install ready."
 
 RUN apk del .build-deps

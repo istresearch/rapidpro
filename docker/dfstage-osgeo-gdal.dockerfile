@@ -17,11 +17,8 @@ ADD https://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz 
 RUN set -ex \
  && cd /tmp \
  && tar xzf gdal-${GDAL_VERSION}.tar.gz \
- && cd gdal-${GDAL_VERSION}
-
-RUN set -ex \
- && ./configure --enable-silent-rules --with-static-proj4=/usr/local/lib
-
-RUN make -s
+ && cd gdal-${GDAL_VERSION} \
+ && ./configure --enable-silent-rules --with-static-proj4=/usr/local/lib \
+ && make -s
 
 RUN apk del .build-deps
