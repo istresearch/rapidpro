@@ -24,6 +24,10 @@ RUN apk add --no-cache --virtual .build-deps \
 COPY --from=stage-geos /tmp/geos /tmp/geos
 COPY --from=stage-proj /tmp/proj /tmp/proj
 
+ARG GDAL_VERSION=3.4.2
+
+ADD https://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz /tmp
+
 RUN set -ex \
  && cd /tmp/geos/_build; cmake --build . --target install \
  && cd /tmp/proj/_build; cmake --build . --target install \
