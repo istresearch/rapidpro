@@ -34,7 +34,8 @@ RUN set -ex \
  && cd /tmp/proj/_build; projsync --system-directory --all \
  && cd /tmp \
  && tar xzf gdal-${GDAL_VERSION}.tar.gz \
- && cd gdal-${GDAL_VERSION} \
+ && mv gdal-${GDAL_VERSION} gdal \
+ && cd gdal \
  && ./configure --enable-silent-rules --with-static-proj4=/usr/local/lib \
  && make \
  && make install

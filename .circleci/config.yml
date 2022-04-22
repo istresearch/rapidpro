@@ -67,28 +67,6 @@ jobs:
           root: workspace
           paths:
             - info/osgeo-proj_tag.txt
-  build-stage-osgeo-gdal:
-    machine:
-      image: ubuntu-2004:202111-02
-    resource_class: medium
-    steps:
-      - checkout
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: workspace
-      - run:
-          name: Pre-build Setup
-          command: |
-            source scm/utils.sh; EnsureGitHubIsKnownHost
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-      - run:
-          name: Ensure OSGeo GDAL Image Exists
-          command: |
-            source scm/utils-engage.sh; EnsureOsGeoImageStageExists "gdal";
-      - persist_to_workspace:
-          root: workspace
-          paths:
-            - info/osgeo_tag.txt
   build-stage-osgeo:
     machine:
       image: ubuntu-2004:202111-02
@@ -110,7 +88,29 @@ jobs:
       - persist_to_workspace:
           root: workspace
           paths:
-            - info
+            - info/osgeo_tag.txt
+  build-stage-pylibs:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - checkout
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: workspace
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Ensure Pylibs Image Exists
+          command: |
+            source scm/utils-engage.sh; EnsurePyLibsImageExists;
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info/pylibs_tag.txt
   build-multi-arch-containers:
     machine:
       image: ubuntu-2004:202111-02
