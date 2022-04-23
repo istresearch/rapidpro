@@ -37,8 +37,8 @@ RUN set -ex \
  && mv gdal-${GDAL_VERSION} gdal \
  && cd gdal \
  && ./configure --enable-silent-rules --with-static-proj4=/usr/local/lib \
- && make \
- && make install
+ && make -s \
+ && make -s install
 
 RUN apk del .build-deps \
  && rm -rf /tmp/* \
