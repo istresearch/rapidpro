@@ -26,7 +26,7 @@ jobs:
   build-stage-osgeo-geos:
     machine:
       image: ubuntu-2004:202111-02
-    resource_class: medium
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -48,7 +48,7 @@ jobs:
   build-stage-osgeo-proj:
     machine:
       image: ubuntu-2004:202111-02
-    resource_class: medium
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -70,7 +70,7 @@ jobs:
   build-stage-osgeo:
     machine:
       image: ubuntu-2004:202111-02
-    resource_class: 2xlarge
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:
@@ -92,7 +92,7 @@ jobs:
   build-stage-pylibs:
     machine:
       image: ubuntu-2004:202111-02
-    resource_class: medium
+    resource_class: large
     steps:
       - checkout
       - attach_workspace:

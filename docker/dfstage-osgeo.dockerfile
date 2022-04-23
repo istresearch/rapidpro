@@ -37,8 +37,9 @@ RUN set -ex \
  && mv gdal-${GDAL_VERSION} gdal \
  && cd gdal \
  && ./configure --enable-silent-rules --with-static-proj4=/usr/local/lib \
- && make -s \
- && make -s install
+ && make \
+ && make install
+# ^ make -s generates: Too long with no output (exceeded 10m0s)
 
 RUN apk del .build-deps \
  && rm -rf /tmp/* \
