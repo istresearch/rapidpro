@@ -70,7 +70,7 @@ jobs:
   build-stage-osgeo:
     machine:
       image: ubuntu-2004:202111-02
-    resource_class: medium
+    resource_class: 2xlarge
     steps:
       - checkout
       - attach_workspace:
