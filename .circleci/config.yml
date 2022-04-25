@@ -273,16 +273,16 @@ workflows:
           requires:
             - build-stage-pyapp
           filters: *ma-filters
-      - build-stage-generic:
-          context: globalconfig
-          requires:
-            - build-stage-pyapp
-          filters: *ma-filters
-      - build-stage-rapidpro:
-          context: globalconfig
-          requires:
-            - build-stage-pyapp
-          filters: *ma-filters
+#      - build-stage-generic:
+#          context: globalconfig
+#          requires:
+#            - build-stage-pyapp
+#          filters: *ma-filters
+#      - build-stage-rapidpro:
+#          context: globalconfig
+#          requires:
+#            - build-stage-pyapp
+#          filters: *ma-filters
       - build-multi-arch-containers:
           context: globalconfig
           filters:
