@@ -73,8 +73,9 @@ RUN set -ex; apk -U add --virtual .my-build-deps \
  && npm install -g node-gyp less \
  && echo "installed global runtime npm libs" \
  && ./rp-build-deps.sh \
- && su-exec engage:engage ./install-pylibs.sh \
+ && set -x; su-exec engage:engage ./install-pylibs.sh \
  && su-exec engage:engage npm install \
+ && su-exec engage:engage npm audit \
  && apk del .rp-build-deps \
  && apk del .my-build-deps \
  && echo "installed/built python and npm libs"
