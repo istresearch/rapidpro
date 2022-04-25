@@ -79,11 +79,12 @@ function EnsurePyLibsImageExists()
   IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
   echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
-    # prep for multi-arch building
-    multiArch_installBuildx
-    multiArch_addArm64Arch
-    multiArch_createBuilderContext
-
+    if [[ -z $(multiArch_isBuildx) ]]; then
+      # prep for multi-arch building
+      multiArch_installBuildx
+      multiArch_addArm64Arch
+      multiArch_createBuilderContext
+    fi
     FROM_STAGE_TAG=$(GetImgStageTag "base")
     PrintPaddedTextRight "  Using Base Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
 

@@ -62,6 +62,7 @@ RUN set -ex; apk -U add --virtual .my-build-deps \
     su-exec \
     cargo \
     gcc \
+	git \
     linux-headers \
     libressl-dev \
     libxslt-dev \
@@ -74,7 +75,6 @@ RUN set -ex; apk -U add --virtual .my-build-deps \
  && echo "installed all runtime deps" \
  && npm install -g node-gyp less \
  && echo "installed global runtime npm libs" \
- && python3 -m pip install cryptography \
  && ./rp-build-deps.sh \
  && set -x; su-exec engage:engage ./install-pylibs.sh \
  && su-exec engage:engage npm install \

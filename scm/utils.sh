@@ -656,6 +656,15 @@ function uploadFileToRepo
 }
 
 ####################
+# Is the Multi-architecture Docker builder, buildx, installed.
+function multiArch_isBuildx()
+{
+  if [ -f "/usr/share/keyrings/docker-archive-keyring.gpg" ]; then
+    echo "1"
+  fi
+}
+
+####################
 # Multi-architecture Docker images require some bleeding edge software, buildx.
 # Use this function to install Docker `buildx`.
 # @see https://docs.docker.com/engine/install/ubuntu/
