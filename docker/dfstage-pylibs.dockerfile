@@ -60,18 +60,21 @@ COPY --from=load-files --chown=engage:engage /opt/code2use/* ./
 # required runtime libs
 RUN set -ex; apk -U add --virtual .my-build-deps \
     su-exec \
+    cargo \
     gcc \
     linux-headers \
     libressl-dev \
     libxslt-dev \
     libxml2-dev \
     libffi-dev \
+    openssl-dev \
     python3-dev \
     musl-dev \
     postgresql-dev \
  && echo "installed all runtime deps" \
  && npm install -g node-gyp less \
  && echo "installed global runtime npm libs" \
+ && python3 -m pip install cryptography \
  && ./rp-build-deps.sh \
  && set -x; su-exec engage:engage ./install-pylibs.sh \
  && su-exec engage:engage npm install \
