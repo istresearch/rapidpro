@@ -140,12 +140,12 @@ function EnsurePyLibsImageExists()
   IMAGE_NAME="${DEFAULT_IMAGE_NAME}"
   IMG_STAGE="pylibs"
   DOCKERFILE2USE="docker/dfstage-${IMG_STAGE}.dockerfile"
-  IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile pygeos)" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json")
+  IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile "base")" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json")
   IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
   echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
-    FROM_STAGE_TAG=$(GetImgStageTag osgeo)
-    PrintPaddedTextRight "  Using osgeo Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
+    FROM_STAGE_TAG=$(GetImgStageTag "base")
+    PrintPaddedTextRight "  Using base Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
     multiArch_buildImages "${IMAGE_NAME}" "${IMAGE_TAG}"  "${DOCKERFILE2USE}" \
       --build-arg "FROM_STAGE=${IMAGE_NAME}:${FROM_STAGE_TAG}"

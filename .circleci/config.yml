@@ -276,26 +276,26 @@ workflows:
               only:
                 - /^v.*/
                 - /^ma[-\/].*/
-      - build-stage-osgeo-geos:
-          context: globalconfig
-          requires:
-            - build-stage-base
-          filters: *ma-filters
-      - build-stage-osgeo-proj:
-          context: globalconfig
-          requires:
-            - build-stage-base
-          filters: *ma-filters
-      - build-stage-osgeo:
-          context: globalconfig
-          requires:
-            - build-stage-osgeo-geos
-            - build-stage-osgeo-proj
-          filters: *ma-filters
+#      - build-stage-osgeo-geos:
+#          context: globalconfig
+#          requires:
+#            - build-stage-base
+#          filters: *ma-filters
+#      - build-stage-osgeo-proj:
+#          context: globalconfig
+#          requires:
+#            - build-stage-base
+#          filters: *ma-filters
+#      - build-stage-osgeo:
+#          context: globalconfig
+#          requires:
+#            - build-stage-osgeo-geos
+#            - build-stage-osgeo-proj
+#          filters: *ma-filters
       - build-stage-pylibs:
           context: globalconfig
           requires:
-            - build-stage-osgeo
+            - build-stage-base
           filters: *ma-filters
       - build-multi-arch-containers:
           context: globalconfig
