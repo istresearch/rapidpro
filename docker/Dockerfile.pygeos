@@ -8,9 +8,25 @@ RUN set -ex \
     gcc \
     g++ \
     make \
+    cmake \
     libc-dev \
     musl-dev \
     linux-headers \
- && sh /geolibs.sh \
- && apk del .build-deps \
+    sqlite \
+    sqlite-dev \
+    tiff \
+    tiff-dev \
+    curl \
+    curl-dev
+RUN sh /geolibs.sh "geos"
+RUN sh /geolibs.sh "proj"
+RUN sh /geolibs.sh "gdal"
+RUN apk del .build-deps \
  && rm /geolibs.sh
+
+RUN set -ex \
+ && apk add --no-cache \
+    sqlite \
+    tiff \
+    curl \
+ && echo "installed runtime osgeo dependencies"
