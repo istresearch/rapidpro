@@ -23,72 +23,6 @@ jobs:
           # Must be relative path from root
           paths:
             - info
-  build-stage-osgeo-geos:
-    machine:
-      image: ubuntu-2004:202111-02
-    resource_class: large
-    steps:
-      - checkout
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: workspace
-      - run:
-          name: Pre-build Setup
-          command: |
-            source scm/utils.sh; EnsureGitHubIsKnownHost
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-      - run:
-          name: Ensure OSGeo GEOS Image Exists
-          command: |
-            source scm/utils-engage.sh; EnsureOsGeoImageStageExists "geos";
-      - persist_to_workspace:
-          root: workspace
-          paths:
-            - info/osgeo-geos_tag.txt
-  build-stage-osgeo-proj:
-    machine:
-      image: ubuntu-2004:202111-02
-    resource_class: large
-    steps:
-      - checkout
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: workspace
-      - run:
-          name: Pre-build Setup
-          command: |
-            source scm/utils.sh; EnsureGitHubIsKnownHost
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-      - run:
-          name: Ensure OSGeo PROJ Image Exists
-          command: |
-            source scm/utils-engage.sh; EnsureOsGeoImageStageExists "proj";
-      - persist_to_workspace:
-          root: workspace
-          paths:
-            - info/osgeo-proj_tag.txt
-  build-stage-osgeo:
-    machine:
-      image: ubuntu-2004:202111-02
-    resource_class: 2xlarge
-    steps:
-      - checkout
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: workspace
-      - run:
-          name: Pre-build Setup
-          command: |
-            source scm/utils.sh; EnsureGitHubIsKnownHost
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-      - run:
-          name: Ensure OSGeo Image Exists
-          command: |
-            source scm/utils-engage.sh; EnsureOsGeoImageExists;
-      - persist_to_workspace:
-          root: workspace
-          paths:
-            - info/osgeo_tag.txt
   build-stage-pylibs:
     machine:
       image: ubuntu-2004:202111-02
@@ -276,22 +210,6 @@ workflows:
               only:
                 - /^v.*/
                 - /^ma[-\/].*/
-#      - build-stage-osgeo-geos:
-#          context: globalconfig
-#          requires:
-#            - build-stage-base
-#          filters: *ma-filters
-#      - build-stage-osgeo-proj:
-#          context: globalconfig
-#          requires:
-#            - build-stage-base
-#          filters: *ma-filters
-#      - build-stage-osgeo:
-#          context: globalconfig
-#          requires:
-#            - build-stage-osgeo-geos
-#            - build-stage-osgeo-proj
-#          filters: *ma-filters
       - build-stage-pylibs:
           context: globalconfig
           requires:

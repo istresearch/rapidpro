@@ -144,11 +144,18 @@ function EnsurePyLibsImageExists()
   IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
   echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
+    # prep for multi-arch building
+    multiArch_installBuildx
+    multiArch_addArm64Arch
+    multiArch_createBuilderContext
+
     FROM_STAGE_TAG=$(GetImgStageTag "base")
-    PrintPaddedTextRight "  Using base Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
+    PrintPaddedTextRight "  Using Base Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
+
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
     multiArch_buildImages "${IMAGE_NAME}" "${IMAGE_TAG}"  "${DOCKERFILE2USE}" \
       --build-arg "FROM_STAGE=${IMAGE_NAME}:${FROM_STAGE_TAG}"
+
     "${UTILS_PATH}/pr-comment.sh" "Python/NPM Libs Image built: ${IMAGE_NAME}:${IMAGE_TAG}"
   fi
   PrintPaddedTextRight "Using Python/NPM Libs Image Tag" "${IMAGE_TAG}" "${COLOR_MSG_INFO}"
