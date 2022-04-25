@@ -59,10 +59,10 @@ COPY --from=load-files --chown=engage:engage /opt/code2use/* ./
 
 # required runtime libs
 RUN set -ex; apk -U add --virtual .my-build-deps \
-	su-exec \
-	gcc \
-	linux-headers \
-	libressl-dev \
+    su-exec \
+    gcc \
+    linux-headers \
+    libressl-dev \
     libxslt-dev \
     libxml2-dev \
     libffi-dev \
@@ -75,7 +75,6 @@ RUN set -ex; apk -U add --virtual .my-build-deps \
  && ./rp-build-deps.sh \
  && set -x; su-exec engage:engage ./install-pylibs.sh \
  && su-exec engage:engage npm install \
- && su-exec engage:engage npm audit \
  && apk del .rp-build-deps \
  && apk del .my-build-deps \
  && echo "installed/built python and npm libs"
