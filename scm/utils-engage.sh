@@ -68,71 +68,6 @@ function EnsureBaseImageExists()
 }
 
 ####################
-# Determine the image tag for OSGeo image stage.
-# Ensure the docker image tagged with the special tag exists; build if needed.
-# @param string $1 - the OSGeo stage to build ('geos'|'proj'|'gdal').
-function EnsureOsGeoImageStageExists()
-{
-  IMAGE_NAME="${DEFAULT_IMAGE_NAME}"
-  IMG_STAGE="osgeo-${1}"
-  DOCKERFILE2USE="docker/dfstage-${IMG_STAGE}.dockerfile"
-  IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
-  IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
-  echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
-  if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
-    # prep for multi-arch building
-    multiArch_installBuildx
-    multiArch_addArm64Arch
-    multiArch_createBuilderContext
-
-    FROM_STAGE_TAG=$(GetImgStageTag "base")
-    PrintPaddedTextRight "  Using Base Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
-
-    echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
-    multiArch_buildImages "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}" \
-      --build-arg "FROM_STAGE=${IMAGE_NAME}:${FROM_STAGE_TAG}"
-
-    "${UTILS_PATH}/pr-comment.sh" "OSGeo Layer [${IMG_STAGE}] Image built: ${IMAGE_NAME}:${IMAGE_TAG}"
-  fi
-  PrintPaddedTextRight "Using OSGeo Layer [${IMG_STAGE}] Image Tag" "${IMAGE_TAG}" "${COLOR_MSG_INFO}"
-}
-
-####################
-# Determine the image tag for OSGeo image based on its requirements file(s).
-# Ensure the docker image tagged with the special tag exists; build if needed.
-function EnsureOsGeoImageExists()
-{
-  IMAGE_NAME="${DEFAULT_IMAGE_NAME}"
-  IMG_STAGE="osgeo"
-  DOCKERFILE2USE="docker/dfstage-${IMG_STAGE}.dockerfile"
-  IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
-  IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
-  echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
-  if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
-    # prep for multi-arch building
-    multiArch_installBuildx
-    multiArch_addArm64Arch
-    multiArch_createBuilderContext
-
-    FROM_STAGE_TAG=$(GetImgStageTag "base")
-    PrintPaddedTextRight "  Using Base Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
-    FROM_GEOS_TAG=$(GetImgStageTag "osgeo-geos")
-    PrintPaddedTextRight "  Using OSGeo-GEOS Tag" "${FROM_GEOS_TAG}" "${COLOR_MSG_INFO}"
-    FROM_PROJ_TAG=$(GetImgStageTag "osgeo-proj")
-    PrintPaddedTextRight "  Using OSGeo-PROJ Tag" "${FROM_PROJ_TAG}" "${COLOR_MSG_INFO}"
-
-    echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
-    multiArch_buildImages "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}" \
-      --build-arg "FROM_STAGE=${IMAGE_NAME}:${FROM_STAGE_TAG}" \
-      --build-arg "FROM_GEOS=${IMAGE_NAME}:${FROM_GEOS_TAG}" \
-      --build-arg "FROM_PROJ=${IMAGE_NAME}:${FROM_PROJ_TAG}"
-
-    "${UTILS_PATH}/pr-comment.sh" "osgeo.org libs image built: ${IMAGE_NAME}:${IMAGE_TAG}"
-  fi
-  PrintPaddedTextRight "Using osgeo.org libs image tag" "${IMAGE_TAG}" "${COLOR_MSG_INFO}"
-}
-
-####################
 # Determine the image tag for Python Libs image based on its requirements file(s).
 # Ensure the docker image tagged with the special tag exists; build if needed.
 function EnsurePyLibsImageExists()
@@ -159,6 +94,54 @@ function EnsurePyLibsImageExists()
     "${UTILS_PATH}/pr-comment.sh" "Python/NPM Libs Image built: ${IMAGE_NAME}:${IMAGE_TAG}"
   fi
   PrintPaddedTextRight "Using Python/NPM Libs Image Tag" "${IMAGE_TAG}" "${COLOR_MSG_INFO}"
+}
+
+####################
+# Determine the TAG to use and saves it in ${WORKSPACE}/info/version[_ci]_tag.txt.
+# @ENV CIRCLE_BRANCH - the current git branch
+# @ENV CIRCLE_TAG - the current tag, if any
+function EnsureAppImageTagExists()
+{
+  BRANCH=${CIRCLE_BRANCH#*/}
+  VERSION_STR=$(cat VERSION)
+  if [[ -n $CIRCLE_TAG ]]; then
+    VERSION_TAG="${CIRCLE_TAG#*v}"
+  elif [[ "$BRANCH" == "develop" ]]; then
+    VERSION_TAG="${VERSION_STR}-dev"
+  elif [ "$BRANCH" != "master" ] && [ "$BRANCH" != "main" ]; then
+    VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
+  fi
+  echo "${VERSION_TAG}" > "${WORKSPACE}/info/version_tag.txt"
+  echo "Using tag: ${VERSION_TAG}";
+
+  VERSION_CI=$(getVersionStr)
+  echo "${VERSION_CI}" > "${WORKSPACE}/info/version_ci_tag.txt"
+  echo "Using ci tag: ${VERSION_CI}";
+}
+
+####################
+# Determine the image tag for "code stage" image based on its requirements file(s).
+# Ensure the docker image tagged with the special tag exists; build if needed.
+function EnsurePyAppImageExists()
+{
+  IMAGE_NAME="${DEFAULT_IMAGE_NAME}"
+  IMG_STAGE="pyapp"
+  DOCKERFILE2USE="docker/dfstage-${IMG_STAGE}.dockerfile"
+  #IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile "pylibs")" "${WORKSPACE}/info/version_tag.txt")
+  #IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
+  #we want to always build this stage and not rely on a hash like prior stages; but keep script similar.
+  IMAGE_TAG_HASH=$(cat "${WORKSPACE}/info/version_tag.txt")
+  echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
+
+  FROM_STAGE_TAG=$(GetImgStageTag "pylibs")
+  PrintPaddedTextRight "  Using PyLibs Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
+
+  echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
+  multiArch_buildImages "${IMAGE_NAME}" "${IMAGE_TAG}"  "${DOCKERFILE2USE}" --no-cache \
+    --build-arg "FROM_STAGE=${IMAGE_NAME}:${FROM_STAGE_TAG}" \
+    --build-arg "VERSION_CI=${VERSION_CI}"
+
+  "${UTILS_PATH}/pr-comment.sh" "Python App Image built: ${IMAGE_NAME}:${IMAGE_TAG}"
 }
 
 
@@ -374,7 +357,9 @@ function determine_image_tag()
     VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
   fi
   echo "${VERSION_TAG}" > "${UTILS_PATH}/version_tag.txt"
+  echo "Using tag: ${VERSION_TAG}";
 
   VERSION_CI=$(getVersionStr)
   echo "${VERSION_CI}" > "${UTILS_PATH}/version_ci_tag.txt"
+  echo "Using ci tag: ${VERSION_CI}";
 }

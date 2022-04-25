@@ -45,6 +45,56 @@ jobs:
           root: workspace
           paths:
             - info/pylibs_tag.txt
+  build-stage-pyapp:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Install Docker Buildx for Multi-Architectures
+          command: |
+            source scm/utils.sh; multiArch_installBuildx;
+            source scm/utils.sh; multiArch_addArm64Arch;
+            source scm/utils.sh; multiArch_createBuilderContext;
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Figure out tag to use
+          command: |
+            source scm/utils-engage.sh; EnsureAppImageTagExists;
+      - run:
+          name: Ensure PyApp Image Exists, building if necessary
+          command: |
+            source scm/utils-engage.sh; EnsurePyAppImageExists;
+  build-stage-engage:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: Install Docker Buildx for Multi-Architectures
+          command: |
+            source scm/utils.sh; multiArch_installBuildx;
+            source scm/utils.sh; multiArch_addArm64Arch;
+            source scm/utils.sh; multiArch_createBuilderContext;
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Figure out tag to use
+          command: |
+            source scm/utils-engage.sh; EnsureAppImageTagExists;
+      - run:
+          name: Build Engage Brand Image
+          command: |
+            source scm/utils-engage.sh; BuildVersionForEngage "$(cat "${WORKSPACE}/info/version_tag.txt")"
   build-multi-arch-containers:
     machine:
       image: ubuntu-2004:202111-02
@@ -202,6 +252,14 @@ workflows:
     jobs:
       - build-stage-base:
           context: globalconfig
+      - build-stage-pylibs:
+          context: globalconfig
+          requires:
+            - build-stage-base
+      - build-stage-pyapp:
+          context: globalconfig
+          requires:
+            - build-stage-pylibs
           filters: &ma-filters
             branches:
               only:
@@ -210,10 +268,20 @@ workflows:
               only:
                 - /^v.*/
                 - /^ma[-\/].*/
-      - build-stage-pylibs:
+      - build-stage-engage:
           context: globalconfig
           requires:
-            - build-stage-base
+            - build-stage-pyapp
+          filters: *ma-filters
+      - build-stage-generic:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters: *ma-filters
+      - build-stage-rapidpro:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
           filters: *ma-filters
       - build-multi-arch-containers:
           context: globalconfig
