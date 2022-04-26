@@ -138,6 +138,10 @@ jobs:
           name: Build Engage Brand Image
           command: |
             source scm/utils-engage.sh; BuildVersionForEngage "$(cat workspace/info/version_tag.txt)" mabuild
+            if [[ ${CIRCLE_BRANCH#*/} == "develop" ]]; then
+              source scm/utils-engage.sh; BuildVersionForEngage "ci-develop" mabuild
+            fi  
+
   build-stage-generic:
     machine:
       image: ubuntu-2004:202111-02
@@ -183,98 +187,21 @@ jobs:
           command: |
             source scm/utils-engage.sh; BuildVersionForRp "$(cat workspace/info/version_tag.txt)" mabuild
 
-  build-containers:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - run:
-          name: Avoid "Are you sure you want to connect?" to GitHub
-          command: |
-            mkdir -p ~/.ssh;
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts;
-            chmod 600 ~/.ssh/known_hosts;
-      - setup_remote_docker:
-          version: 20.10.7
-          # Base GEOS image cannot build, force ver 20.10.7: https://discuss.circleci.com/t/unable-to-use-make/40552/4
-      - run:
-          name: Login to Docker
-          command: |
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-      - run:
-          name: Ensure GEOS Libs Image Exists, building if necessary
-          command: |
-            source scm/utils-engage.sh; EnsureGeosImage;
-      - run:
-          name: Ensure Python Libs Image Exists, building if necessary
-          command: |
-            source scm/utils-engage.sh; EnsurePyLibsImage;
-      - run:
-          name: Figure out tag to use
-          command: |
-            source scm/utils-engage.sh; determine_image_tag;
-            VERSION_TAG=$(cat scm/version_tag.txt);
-            echo "Using tag: ${VERSION_TAG}";
-      - run:
-          name: Ensure PyApp Image Exists, building if necessary
-          command: |
-            VERSION_TAG=$(cat scm/version_tag.txt)
-            source scm/utils-engage.sh; EnsurePyAppImage default "$VERSION_TAG"
-      - run:
-          name: Build "Default Branding" Image
-          command: |
-            VERSION_TAG=$(cat scm/version_tag.txt)
-            # only build this if constructing a tag version
-            if [[ ! -z $CIRCLE_TAG ]]; then
-              source scm/utils-engage.sh; BuildVersionForRp "$VERSION_TAG"
-            fi
-      - run:
-          name: Build "Engage Branding" Image
-          command: |
-            BRANCH=${CIRCLE_BRANCH#*/}
-            VERSION_TAG=$(cat scm/version_tag.txt)
-            source scm/utils-engage.sh; BuildVersionForEngage "$VERSION_TAG"
-            if [[ $BRANCH == develop ]]; then
-              IMAGE_NAME=istresearch/p4-engage
-              IMAGE_TAG=ci-develop
-              docker tag ${IMAGE_NAME}:${VERSION_TAG} ${IMAGE_NAME}:${IMAGE_TAG}
-              docker push ${IMAGE_NAME}:${IMAGE_TAG}
-            fi
-      - run:
-          name: Build "Generic Branding" Image
-          command: |
-            VERSION_TAG=$(cat scm/version_tag.txt)
-            source scm/utils-engage.sh; BuildVersionForGeneric "${VERSION_TAG}-generic"
-
   deploy-dev-container:
     docker:
       - image: cimg/base:stable
     steps:
       - checkout
+      - attach_workspace:
+          at: workspace
       - run:
-          name: Avoid "Are you sure you want to connect?" to GitHub
+          name: Pre-build Setup
           command: |
-            mkdir -p ~/.ssh
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-            chmod 600 ~/.ssh/known_hosts
-      - run:
-          name: Figure out tag to use
-          command: |
-            BRANCH=${CIRCLE_BRANCH#*/}
-            VERSION_STR=$(cat VERSION)
-            if [[ -n $CIRCLE_TAG ]]; then
-              VERSION_TAG="${CIRCLE_TAG#*v}"
-            elif [[ "$BRANCH" == "develop" ]]; then
-              VERSION_TAG="${VERSION_STR}-dev"
-            elif [[ "$BRANCH" != "master" ]]; then
-              VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
-            fi
-            echo ${VERSION_TAG} > scm/version_tag.txt
-            echo "Using tag: ${VERSION_TAG}"
+            source scm/utils.sh; EnsureGitHubIsKnownHost
       - run:
           name: Deploy To K8s
           command: |
-            VERSION_TAG=$(cat scm/version_tag.txt)
+            VERSION_TAG="$(cat workspace/info/version_tag.txt)"
             K8_URL=https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/develop
             echo "Deploy to K8s: $CIRCLE_PROJECT_USERNAME/p4-engage:${VERSION_TAG}"
             curl -XPOST --user "${oCI_API_TOKEN}:" \
@@ -289,64 +216,61 @@ workflows:
     jobs:
       - build-stage-base:
           context: globalconfig
-      - build-stage-pylibs-amd64:
-          context: globalconfig
-          requires:
-            - build-stage-base
-      - build-stage-pylibs-arm64:
-          context: globalconfig
-          requires:
-            - build-stage-base
-      - build-stage-pylibs-manifest:
-          context: globalconfig
-          requires:
-            - build-stage-pylibs-amd64
-            - build-stage-pylibs-arm64
-      - build-stage-pyapp:
-          context: globalconfig
-          requires:
-            - build-stage-pylibs-manifest
-          filters: &ma-filters
-            branches:
-              only:
-                - /^ma\/.*/
-            tags:
-              only:
-                - /^v.*/
-                - /^ma[-\/].*/
-      - build-stage-engage:
-          context: globalconfig
-          requires:
-            - build-stage-pyapp
-          filters: *ma-filters
-      - build-stage-generic:
-          context: globalconfig
-          requires:
-            - build-stage-pyapp
-          filters: *ma-filters
-      - build-stage-rp:
-          context: globalconfig
-          requires:
-            - build-stage-pyapp
-          filters: *ma-filters
-      - build-containers:
-          context: globalconfig
-          filters:
+          filters: &main-filter
             branches:
               ignore:
                 - /^rel\/.*/
                 - /^master$/
                 - /^main$/
-                - /^ma\/.*/
             tags:
               ignore:
                 - /^test-.*/
+      - build-stage-pylibs-amd64:
+          context: globalconfig
+          requires:
+            - build-stage-base
+          filters: *main-filter
+      - build-stage-pylibs-arm64:
+          context: globalconfig
+          requires:
+            - build-stage-base
+          filters: *main-filter
+      - build-stage-pylibs-manifest:
+          context: globalconfig
+          requires:
+            - build-stage-pylibs-amd64
+            - build-stage-pylibs-arm64
+          filters: *main-filter
+      - build-stage-pyapp:
+          context: globalconfig
+          requires:
+            - build-stage-pylibs-manifest
+          filters: *main-filter
+      - build-stage-engage:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters: *main-filter
+      - build-stage-generic:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters:
+            tags:
+              only:
                 - /^v.*/
-                - /^ma[-\/].*/
+      - build-stage-rp:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters:
+            tags:
+              only:
+                - /^v.*/
       - deploy-dev-container:
           context: globalconfig
           requires:
-            - build-containers
+            - build-stage-engage
           filters:
             branches:
               only:

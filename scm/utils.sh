@@ -218,12 +218,12 @@ function EnsureGitHubIsKnownHost()
 #   NOTE USING $3: v1 does NOT handle workflows and therefore no context, YOU HAVE BEEN WARNED!
 #   NOTE: use v1.1 with Artifacts if you need build params with workflow context builds!
 # @ENV oCI_API_TOKEN - the required API token used to call CircleCI's API
-# @ENV oCI_ORG - (OPTIONAL) the org name for the project to trigger. Default: "istresearch"
+# @ENV oCI_ORG - (OPTIONAL) the org name for the project to trigger. Default: "$CIRCLE_PROJECT_USERNAME"
 # @ENV BUILD_INFO - the results of the curl command, if desired.
 function TriggerCircleCIProjectBuild
 {
   if [[ -z ${oCI_ORG} ]]; then
-    oCI_ORG="istresearch"
+    oCI_ORG="$CIRCLE_PROJECT_USERNAME"
   fi
   oCI_PROJECT=$1
   BRANCH=$2
@@ -250,7 +250,7 @@ function TriggerCircleCIProjectBuild
 ####################
 # Verify a specific tagged DockerHub image exists.
 # DockerHub introduced a (bug?) requirement to sleep 1 second between login and whatever.
-# e.g.: if DockerImageTagExists istresearch/joka ${JOKA_TAG}; then
+# e.g.: if DockerImageTagExists foo/bar ${SOME_TAG}; then
 # @param string $1 - DockerHub image name.
 # @param string $2 - the image tag.
 # @ENV DOCKER_USER - the circleci DockerHub username
@@ -366,7 +366,7 @@ function ExportAsArtifact
 ####################
 # Import an artifact created by ExportAsArtifact from a different repo build process.
 # See ExportAsArtifact for details.
-# @param string $1 - the "org/project" whose artifacts we desire, e.g. "istresearch/PULSE"
+# @param string $1 - the "org/project" whose artifacts we desire
 # @param string $2 - the filename in which to retrieve the data.
 # @return string Returns the file contents as a string.
 function ImportFromArtifact
@@ -401,7 +401,7 @@ function ImportFromArtifact
 
 ####################
 # Retrieve CircleCI build artifacts.
-# @param string $1 - the "org/project" whose artifacts we desire, e.g. "istresearch/PULSE"
+# @param string $1 - the "org/project" whose artifacts we desire
 # @return Returns the JSON result of the latest artifacts endpoint.
 function GetBuildArtifactsForProject
 {
@@ -411,7 +411,7 @@ function GetBuildArtifactsForProject
 
 ####################
 # Add an ENV var to a particular project.
-# @param string $1 - the "org/project" we desire to poke, e.g. "istresearch/Pulse-UI"
+# @param string $1 - the "org/project" we desire to poke
 # @param string $2 - ENV var name
 # @param string $3 - ENV var value
 function AddEnvVarToProject
@@ -423,7 +423,7 @@ function AddEnvVarToProject
 
 ####################
 # Remove a single ENV var for a particular project.
-# @param string $1 - the "org/project" we desire to poke, e.g. "istresearch/Pulse-UI"
+# @param string $1 - the "org/project" we desire to poke
 # @param string $2 - ENV var name.
 function DelEnvVarToProject
 {
