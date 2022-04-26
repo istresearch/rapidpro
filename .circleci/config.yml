@@ -113,6 +113,8 @@ jobs:
       - persist_to_workspace:
           root: workspace
           paths:
+            - info/version_tag.txt
+            - info/version_ci_tag.txt
             - info/pyapp_tag.txt
   build-stage-engage:
     machine:
