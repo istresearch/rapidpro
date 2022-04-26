@@ -16,7 +16,7 @@ COPY package*.json /opt/code2use/
 COPY poetry-install.sh /opt/code2use/
 COPY rp-build-deps.sh /opt/code2use/
 
-RUN sed "s|poetry install|poetry install -vvv -n|" /opt/code2use/poetry-install.sh > /opt/code2use/install-pylibs.sh \
+RUN sed "s|poetry install|poetry install -vvv -n --no-dev|" /opt/code2use/poetry-install.sh > /opt/code2use/install-pylibs.sh \
  && chmod +x /opt/code2use/install-pylibs.sh
 
 # ========================================================================
