@@ -68,6 +68,7 @@ jobs:
             source scm/utils-engage.sh; EnsureAppImageTagExists;
       - run:
           name: Ensure PyApp Image Exists, building if necessary
+          no_output_timeout: 60m
           command: |
             source scm/utils-engage.sh; EnsurePyAppImageExists;
   build-stage-engage:
