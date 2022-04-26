@@ -46,6 +46,78 @@ jobs:
           root: workspace
           paths:
             - info/pylibs_tag.txt
+  build-stage-pylibs-amd64:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - checkout
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: workspace
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Ensure Pylibs-amd64 Image Exists
+          command: |
+            source scm/utils-engage.sh; EnsurePyLibsImageExists "amd64";
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info/pylibs-amd64_tag.txt
+  build-stage-pylibs-arm64:
+    machine:
+      image: arm-default
+    resource_class: arm.medium
+    steps:
+      - checkout
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: workspace
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Ensure Pylibs-arm64 Image Exists
+          command: |
+            source scm/utils-engage.sh; EnsurePyLibsImageExists "arm64";
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info/pylibs-arm64_tag.txt
+  build-stage-pylibs-manifest:
+    machine:
+      image: ubuntu-2004:202111-02
+    steps:
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: workspace
+      - run:
+          name: Pre-build Setup
+          command: |
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Ensure Pylibs Image Exists
+          command: |
+            IMG1_TAG=$(cat "${WORKSPACE}/info/pylibs-amd64_tag.txt")
+            IMG2_TAG=$(cat "${WORKSPACE}/info/pylibs-arm64_tag.txt")
+            STAGE_HASH="${IMG1_TAG##*-}"
+            IMG_NAME=istresearch/p4-engage
+            IMG_TAG="pylibs-${STAGE_HASH}"
+            echo "${IMG_TAG}" > "${WORKSPACE}/info/pylibs_tag.txt"
+            docker manifest create "${IMG_NAME}:${IMG_TAG}" \
+              --amend "istresearch/p4-engage:${IMG1_TAG}" \
+              --amend "istresearch/p4-engage:${IMG2_TAG}"
+            docker manifest push "${IMG_NAME}:${IMG_TAG}"
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info/pylibs_tag.txt
   build-stage-pyapp:
     machine:
       image: ubuntu-2004:202111-02
@@ -304,10 +376,19 @@ workflows:
     jobs:
       - build-stage-base:
           context: globalconfig
-      - build-stage-pylibs:
+      - build-stage-pylibs-amd64:
           context: globalconfig
           requires:
             - build-stage-base
+      - build-stage-pylibs-arm64:
+          context: globalconfig
+          requires:
+            - build-stage-base
+      - build-stage-pylibs-manifest:
+          context: globalconfig
+          requires:
+            - build-stage-pylibs-amd64
+            - build-stage-pylibs-arm64
       - build-stage-pyapp:
           context: globalconfig
           requires:

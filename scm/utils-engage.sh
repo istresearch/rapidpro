@@ -70,27 +70,23 @@ function EnsureBaseImageExists()
 ####################
 # Determine the image tag for Python Libs image based on its requirements file(s).
 # Ensure the docker image tagged with the special tag exists; build if needed.
+# @param string $1 - the image stage string to use, "pylibs" if empty.
 function EnsurePyLibsImageExists()
 {
   IMAGE_NAME="${DEFAULT_IMAGE_NAME}"
-  IMG_STAGE="pylibs"
-  DOCKERFILE2USE="docker/dfstage-${IMG_STAGE}.dockerfile"
+  IMG_STAGE=${1:-"pylibs"}
+  DOCKERFILE2USE="docker/dfstage-${IMG_STAGE%-*}.dockerfile"
   IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile "base")" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json")
   IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
   echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
-    if [[ -z $(multiArch_isBuildx) ]]; then
-      # prep for multi-arch building
-      multiArch_installBuildx
-      multiArch_addArm64Arch
-      multiArch_createBuilderContext
-    fi
     FROM_STAGE_TAG=$(GetImgStageTag "base")
     PrintPaddedTextRight "  Using Base Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
 
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
-    multiArch_buildImages "${IMAGE_NAME}" "${IMAGE_TAG}"  "${DOCKERFILE2USE}" \
-      --build-arg "FROM_STAGE=${IMAGE_NAME}:${FROM_STAGE_TAG}"
+    buildImage "${IMAGE_NAME}" "${IMAGE_TAG}"  "${DOCKERFILE2USE}" \
+      --build-arg "FROM_STAGE=${IMAGE_NAME}:${FROM_STAGE_TAG}" \
+      --build-arg "ARCH=${IMG_STAGE##*-}/"
 
     "${UTILS_PATH}/pr-comment.sh" "Python/NPM Libs Image built: ${IMAGE_NAME}:${IMAGE_TAG}"
   fi
