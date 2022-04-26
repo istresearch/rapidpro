@@ -70,7 +70,7 @@ jobs:
             - info/pylibs-amd64_tag.txt
   build-stage-pylibs-arm64:
     machine:
-      image: arm-default
+      image: ubuntu-2004:202111-02
     resource_class: arm.medium
     steps:
       - checkout
@@ -98,22 +98,9 @@ jobs:
           # Must be absolute path or relative path from working_directory
           at: workspace
       - run:
-          name: Pre-build Setup
+          name: Ensure Pylibs Image Manifest Exists
           command: |
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-      - run:
-          name: Ensure Pylibs Image Exists
-          command: |
-            IMG1_TAG=$(cat "${WORKSPACE}/info/pylibs-amd64_tag.txt")
-            IMG2_TAG=$(cat "${WORKSPACE}/info/pylibs-arm64_tag.txt")
-            STAGE_HASH="${IMG1_TAG##*-}"
-            IMG_NAME=istresearch/p4-engage
-            IMG_TAG="pylibs-${STAGE_HASH}"
-            echo "${IMG_TAG}" > "${WORKSPACE}/info/pylibs_tag.txt"
-            docker manifest create "${IMG_NAME}:${IMG_TAG}" \
-              --amend "istresearch/p4-engage:${IMG1_TAG}" \
-              --amend "istresearch/p4-engage:${IMG2_TAG}"
-            docker manifest push "${IMG_NAME}:${IMG_TAG}"
+            source scm/utils-engage.sh; EnsurePyLibsManifestExists;
       - persist_to_workspace:
           root: workspace
           paths:

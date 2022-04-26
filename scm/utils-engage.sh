@@ -94,6 +94,33 @@ function EnsurePyLibsImageExists()
 }
 
 ####################
+# Determine the image tag for Python Libs image based on its requirements file(s).
+# Ensure the docker image tagged with the special tag exists; build if needed.
+function EnsurePyLibsManifestExists()
+{
+  IMAGE_NAME="${DEFAULT_IMAGE_NAME}"
+  IMG_STAGE="pylibs"
+  DOCKERFILE2USE="docker/dfstage-${IMG_STAGE}.dockerfile"
+  IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile "base")" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json")
+  IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
+  echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
+  if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
+    IMG1_TAG=$(cat "${WORKSPACE}/info/pylibs-amd64_tag.txt")
+    IMG2_TAG=$(cat "${WORKSPACE}/info/pylibs-arm64_tag.txt")
+    STAGE_HASH="${IMG1_TAG##*-}"
+    IMG_NAME=istresearch/p4-engage
+    IMG_TAG="pylibs-${STAGE_HASH}"
+    echo "${IMG_TAG}" > "${WORKSPACE}/info/pylibs_tag.txt"
+    docker manifest create "${IMG_NAME}:${IMG_TAG}" \
+      --amend "istresearch/p4-engage:${IMG1_TAG}" \
+      --amend "istresearch/p4-engage:${IMG2_TAG}"
+    docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+    docker manifest push "${IMG_NAME}:${IMG_TAG}"
+  fi
+  PrintPaddedTextRight "Using Python/NPM Libs Image Tag" "${IMAGE_TAG}" "${COLOR_MSG_INFO}"
+}
+
+####################
 # Determine the TAG to use and saves it in ${WORKSPACE}/info/version[_ci]_tag.txt.
 # @ENV CIRCLE_BRANCH - the current git branch
 # @ENV CIRCLE_TAG - the current tag, if any
