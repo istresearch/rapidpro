@@ -26,7 +26,7 @@ jobs:
   build-stage-pylibs:
     machine:
       image: ubuntu-2004:202111-02
-    resource_class: large
+    resource_class: 2xlarge
     steps:
       - checkout
       - attach_workspace:
@@ -39,6 +39,7 @@ jobs:
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Ensure Pylibs Image Exists
+          no_output_timeout: 180m
           command: |
             source scm/utils-engage.sh; EnsurePyLibsImageExists;
       - persist_to_workspace:
@@ -68,7 +69,7 @@ jobs:
             source scm/utils-engage.sh; EnsureAppImageTagExists;
       - run:
           name: Ensure PyApp Image Exists, building if necessary
-          no_output_timeout: 60m
+          no_output_timeout: 180m
           command: |
             source scm/utils-engage.sh; EnsurePyAppImageExists;
   build-stage-engage:
