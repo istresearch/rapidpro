@@ -56,10 +56,12 @@ function EnsureBaseImageExists()
   IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
   echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
   if ! DockerImageTagExists "${IMAGE_NAME}" "${IMAGE_TAG}"; then
-    # prep for multi-arch building
-    multiArch_installBuildx
-    multiArch_addArm64Arch
-    multiArch_createBuilderContext
+    if [[ -z $(multiArch_isBuildx) ]]; then
+      # prep for multi-arch building
+      multiArch_installBuildx
+      multiArch_addArm64Arch
+      multiArch_createBuilderContext
+    fi
     echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
     multiArch_buildImages "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}"
     "${UTILS_PATH}/pr-comment.sh" "Base Image built: ${IMAGE_NAME}:${IMAGE_TAG}"

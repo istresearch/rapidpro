@@ -14,6 +14,7 @@ jobs:
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Ensure Base Image Exists
+          #no_output_timeout: 180m
           command: |
             source scm/utils-engage.sh; EnsureBaseImageExists;
       - persist_to_workspace:
@@ -109,9 +110,10 @@ jobs:
   build-stage-pyapp:
     machine:
       image: ubuntu-2004:202111-02
-    resource_class: large
     steps:
       - checkout
+      - attach_workspace:
+          at: workspace
       - run:
           name: Install Docker Buildx for Multi-Architectures
           command: |
@@ -129,15 +131,19 @@ jobs:
             source scm/utils-engage.sh; EnsureAppImageTagExists;
       - run:
           name: Ensure PyApp Image Exists, building if necessary
-          no_output_timeout: 180m
           command: |
             source scm/utils-engage.sh; EnsurePyAppImageExists;
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info/pyapp_tag.txt
   build-stage-engage:
     machine:
       image: ubuntu-2004:202111-02
-    resource_class: medium
     steps:
       - checkout
+      - attach_workspace:
+          at: workspace
       - run:
           name: Install Docker Buildx for Multi-Architectures
           command: |
@@ -150,19 +156,16 @@ jobs:
             source scm/utils.sh; EnsureGitHubIsKnownHost
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
-          name: Figure out tag to use
-          command: |
-            source scm/utils-engage.sh; EnsureAppImageTagExists;
-      - run:
           name: Build Engage Brand Image
           command: |
-            source scm/utils-engage.sh; BuildVersionForEngage "$(cat "${WORKSPACE}/info/version_tag.txt")"
+            source scm/utils-engage.sh; BuildVersionForEngage "$(cat "${WORKSPACE}/info/version_tag.txt")" mabuild
   build-stage-generic:
     machine:
       image: ubuntu-2004:202111-02
-    resource_class: medium
     steps:
       - checkout
+      - attach_workspace:
+          at: workspace
       - run:
           name: Install Docker Buildx for Multi-Architectures
           command: |
@@ -175,19 +178,16 @@ jobs:
             source scm/utils.sh; EnsureGitHubIsKnownHost
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
-          name: Figure out tag to use
-          command: |
-            source scm/utils-engage.sh; EnsureAppImageTagExists;
-      - run:
           name: Build Engage Brand Image
           command: |
-            source scm/utils-engage.sh; BuildVersionForGeneric "$(cat "${WORKSPACE}/info/version_tag.txt")-generic"
+            source scm/utils-engage.sh; BuildVersionForGeneric "$(cat "${WORKSPACE}/info/version_tag.txt")-generic" mabuild
   build-stage-rp:
     machine:
       image: ubuntu-2004:202111-02
-    resource_class: medium
     steps:
       - checkout
+      - attach_workspace:
+          at: workspace
       - run:
           name: Install Docker Buildx for Multi-Architectures
           command: |
@@ -200,63 +200,9 @@ jobs:
             source scm/utils.sh; EnsureGitHubIsKnownHost
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
-          name: Figure out tag to use
+          name: Build RP Brand Image
           command: |
-            source scm/utils-engage.sh; EnsureAppImageTagExists;
-      - run:
-          name: Build Engage Brand Image
-          command: |
-            source scm/utils-engage.sh; BuildVersionForRp "$(cat "${WORKSPACE}/info/version_tag.txt")"
-  build-multi-arch-containers:
-    machine:
-      image: ubuntu-2004:202111-02
-    resource_class: medium
-    steps:
-      - checkout
-      - run:
-          name: Install Docker Buildx for Multi-Architectures
-          command: |
-            source scm/utils.sh; multiArch_installBuildx;
-            source scm/utils.sh; multiArch_addArm64Arch;
-            source scm/utils.sh; multiArch_createBuilderContext;
-      - run:
-          name: Pre-build Setup
-          command: |
-            source scm/utils.sh; EnsureGitHubIsKnownHost
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-      - run:
-          name: Ensure GEOS Libs Image Exists, building if necessary
-          command: |
-            source scm/utils-engage.sh; EnsureGeosImage default mabuild;
-      - run:
-          name: Ensure Python Libs Image Exists, building if necessary
-          command: |
-            source scm/utils-engage.sh; EnsurePyLibsImage default mabuild;
-      - run:
-          name: Figure out tag to use
-          command: |
-            source scm/utils-engage.sh; determine_image_tag;
-            VERSION_TAG=$(cat scm/version_tag.txt);
-            echo "Using tag: ${VERSION_TAG}";
-      - run:
-          name: Ensure PyApp Image Exists, building if necessary
-          command: |
-            source scm/utils-engage.sh; EnsurePyAppImage default mabuild;
-      - run:
-          name: Build "Default Branding" Image
-          command: |
-            VERSION_TAG=$(cat scm/version_tag.txt)
-            source scm/utils-engage.sh; BuildVersionForRp "$VERSION_TAG" mabuild
-      - run:
-          name: Build "Engage Branding" Image
-          command: |
-            VERSION_TAG=$(cat scm/version_tag.txt)
-            source scm/utils-engage.sh; BuildVersionForEngage "$VERSION_TAG" mabuild
-      - run:
-          name: Build "Generic Branding" Image
-          command: |
-            VERSION_TAG=$(cat scm/version_tag.txt)
-            source scm/utils-engage.sh; BuildVersionForGeneric "${VERSION_TAG}-generic" mabuild
+            source scm/utils-engage.sh; BuildVersionForRp "$(cat "${WORKSPACE}/info/version_tag.txt")" mabuild
 
   build-containers:
     docker:
@@ -404,12 +350,6 @@ workflows:
           requires:
             - build-stage-pyapp
           filters: *ma-filters
-      - build-multi-arch-containers:
-          context: globalconfig
-          filters:
-            branches:
-              only:
-                - /^none$/
       - build-containers:
           context: globalconfig
           filters:
