@@ -94,6 +94,7 @@ jobs:
     machine:
       image: ubuntu-2004:202111-02
     steps:
+      - checkout
       - attach_workspace:
           # Must be absolute path or relative path from working_directory
           at: workspace
