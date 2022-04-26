@@ -392,7 +392,7 @@ workflows:
       - build-stage-pyapp:
           context: globalconfig
           requires:
-            - build-stage-pylibs
+            - build-stage-pylibs-manifest
           filters: &ma-filters
             branches:
               only:
