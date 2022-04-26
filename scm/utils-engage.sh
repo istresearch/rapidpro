@@ -154,9 +154,9 @@ function EnsurePyAppImageExists()
   IMG_STAGE="pyapp"
   DOCKERFILE2USE="docker/dfstage-${IMG_STAGE}.dockerfile"
   #IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "$(GetImgStageFile "pylibs")" "${WORKSPACE}/info/version_tag.txt")
-  #IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
   #we want to always build this stage and not rely on a hash like prior stages; but keep script similar.
   IMAGE_TAG_HASH=$(cat "${WORKSPACE}/info/version_tag.txt")
+  IMAGE_TAG="${IMG_STAGE}-${IMAGE_TAG_HASH}"
   echo "${IMAGE_TAG}" > "${WORKSPACE}/info/${IMG_STAGE}_tag.txt"
 
   FROM_STAGE_TAG=$(GetImgStageTag "pylibs")
