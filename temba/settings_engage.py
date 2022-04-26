@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 # -----------------------------------------------------------------------------------
 
 from getenv import env
+from glob import glob
 import dj_database_url
 import django_cache_url
 from django.utils.translation import ugettext_lazy as _
@@ -52,8 +53,10 @@ ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
 
 DEBUG = env('DJANGO_DEBUG', 'off') == 'on'
 
-GEOS_LIBRARY_PATH = '/usr/local/lib/libgeos_c.so'
-GDAL_LIBRARY_PATH = '/usr/local/lib/libgdal.so'
+# no OSGeo stage building libs, just using pre-built libs now.
+# @see https://stackoverflow.com/questions/58403178/geodjango-cant-find-gdal-on-docker-python-alpine-based-image
+GDAL_LIBRARY_PATH = glob('/usr/lib/libgdal.so.*')[0]
+GEOS_LIBRARY_PATH = glob('/usr/lib/libgeos_c.so.*')[0]
 
 SECRET_KEY = env('SECRET_KEY', required=True)
 
