@@ -24,29 +24,6 @@ jobs:
           # Must be relative path from root
           paths:
             - info
-  build-stage-pylibs:
-    machine:
-      image: ubuntu-2004:202111-02
-    resource_class: 2xlarge
-    steps:
-      - checkout
-      - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: workspace
-      - run:
-          name: Pre-build Setup
-          command: |
-            source scm/utils.sh; EnsureGitHubIsKnownHost
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-      - run:
-          name: Ensure Pylibs Image Exists
-          no_output_timeout: 180m
-          command: |
-            source scm/utils-engage.sh; EnsurePyLibsImageExists;
-      - persist_to_workspace:
-          root: workspace
-          paths:
-            - info/pylibs_tag.txt
   build-stage-pylibs-amd64:
     machine:
       image: ubuntu-2004:202111-02
@@ -158,7 +135,7 @@ jobs:
       - run:
           name: Build Engage Brand Image
           command: |
-            source scm/utils-engage.sh; BuildVersionForEngage "$(cat "${WORKSPACE}/info/version_tag.txt")" mabuild
+            source scm/utils-engage.sh; BuildVersionForEngage "$(cat workspace/info/version_tag.txt)" mabuild
   build-stage-generic:
     machine:
       image: ubuntu-2004:202111-02
@@ -180,7 +157,7 @@ jobs:
       - run:
           name: Build Engage Brand Image
           command: |
-            source scm/utils-engage.sh; BuildVersionForGeneric "$(cat "${WORKSPACE}/info/version_tag.txt")-generic" mabuild
+            source scm/utils-engage.sh; BuildVersionForGeneric "$(cat workspace/info/version_tag.txt)-generic" mabuild
   build-stage-rp:
     machine:
       image: ubuntu-2004:202111-02
@@ -202,7 +179,7 @@ jobs:
       - run:
           name: Build RP Brand Image
           command: |
-            source scm/utils-engage.sh; BuildVersionForRp "$(cat "${WORKSPACE}/info/version_tag.txt")" mabuild
+            source scm/utils-engage.sh; BuildVersionForRp "$(cat workspace/info/version_tag.txt)" mabuild
 
   build-containers:
     docker:
