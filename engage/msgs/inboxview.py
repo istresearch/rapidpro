@@ -16,6 +16,22 @@ class BaseInboxView(InboxView):
             if 'page_by' in self.request.GET:
                 self.paginate_by = self.request.GET['page_by']
 
+    def _sanitize_text(self, aText: str) -> str:
+        """
+        Ensure HTML in messages do not bork our display.
+        :param aText: the text of a message to process.
+        :return: the processed text.
+        """
+        #import engage.utils
+        #engage.utils.var_dump(aText)
+        if aText and aText is not None:
+            # convert non-breaking spaces to normal spaces, ads abuse long strings of them
+            aText = aText.replace(u'\xa0', ' ').replace('&nbsp;', ' ')
+            # remove 0-width non-joiner characters near spaces
+            aText = aText.replace(' '+u"\u200C", ' ').replace(' &zwnj;', ' ')
+        return aText
+
+
     def process_list(self, aList):
         """
         Ensure HTML in messages do not bork our display.
@@ -23,14 +39,14 @@ class BaseInboxView(InboxView):
         :return: the processed list.
         """
         for theMsg in aList:
-            #import engage.utils
-            #engage.utils.var_dump(theMsg)
-            theText = theMsg.text
-            # convert non-breaking spaces to normal spaces, ads abuse long strings of them
-            theText = theText.replace(u'\xa0', ' ').replace('&nbsp;', ' ')
-            # remove 0-width non-joiner characters near spaces
-            theText = theText.replace(' '+u"\u200C", ' ').replace(' &zwnj;', ' ')
-            theMsg.text = theText
+            if theMsg and theMsg.text is not None:
+                if isinstance(theMsg.text, str):
+                    theMsg.text = self._sanitize_text(theMsg.text)
+                elif isinstance(theMsg.text, dict):
+                    for key, val in theMsg.text.items():
+                        if isinstance(val, str):
+                            theMsg.text[key] = self._sanitize_text(val)
+
         return aList
 
     def get_context_data(self, **kwargs):
