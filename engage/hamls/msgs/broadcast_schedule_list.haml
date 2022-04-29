@@ -23,6 +23,8 @@
               -if object.schedule.next_fire
                 .glyph.icon-clock
                 {{object.schedule.next_fire|timeuntil}}
+              -if object.schedule.next_fire
+                {{ object.schedule.next_fire|date:"m/d/Y P" }}
 
           -empty
             %tr

@@ -18,7 +18,7 @@
             {{ broadcast.get_text }}
           %td.created_on
             %span.time
-              {% short_datetime broadcast.created_on %}
+              {% format_datetime broadcast.created_on %}
 
       -for object in object_list
         %tr
@@ -42,7 +42,7 @@
 
           %td.created_on
             %span.time
-              {% short_datetime object.created_on %}
+              {% format_datetime object.created_on %}
 
             -if show_channel_logs and not user_org.is_anon or perms.contacts.contact_break_anon
               .inline-block.text-gray-400.linked
