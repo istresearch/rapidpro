@@ -47,7 +47,7 @@
           %td
             .flex.w-full.items-end.justify-end.pr-4
               .time.whitespace-nowrap
-                {% short_datetime object.occurred_on %}
+                {% format_datetime object.occurred_on %}
 
       -if not object_list
         %tr.empty_list
