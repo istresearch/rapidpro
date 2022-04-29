@@ -60,7 +60,11 @@
   {% endif %}
   $(document).on("click", '.multiselect-select-all', function(event) {
     $(this).toggleClass('checked');
-    $('td temba-checkbox').each(function() { $($(this)[0].shadowRoot).children('temba-field').click();});
+    if ( $(this).hasClass('checked') ) {
+      $('tr:not(:has(.checked)) td temba-checkbox').each(function() { $($(this)[0].shadowRoot).children('temba-field').click();});
+    } else {
+      $('tr:has(.checked) td temba-checkbox').each(function() { $($(this)[0].shadowRoot).children('temba-field').click();});
+    }
   });
 
 <script>
