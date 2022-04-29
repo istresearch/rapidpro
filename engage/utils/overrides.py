@@ -98,8 +98,3 @@ def RunEngageOverrides():
     MsgCRUDL.Export = Exporter
     # give failed msgs a resend/delete action
     setattr(MsgCRUDL.Failed, 'actions', ["resend", "delete"])
-
-    # override "calls" url with our BaseInboxView
-    from temba.channels.views import ChannelEventCRUDL
-    from engage.channels.channel_event import EngageChannelEventCRUDL
-    ChannelEventCRUDL.Calls = EngageChannelEventCRUDL.Calls
