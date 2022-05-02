@@ -23,7 +23,7 @@ class PM_Schemes:
     PM_WHATSAPP_SCHEME      = "pm_whatsapp"
 
 # notes: iconclass can be a bootstrap icon glyph (icon-*); some will need 'pm-icon' to ensure css works right, or
-#        use a class that does _not_ begin with "icon-" and add to any/static/less/engage.less near
+#        use a class that does _not_ begin with "icon-" and add to engage/static/engage/less/engage.less near
 #        "temba-modax#send-via-pm_element" using similar properties; remember to add the icon to engage/static/engage/img.
 Schemes_Meta = namedtuple('Postmaster_Schemes_Meta', 'scheme label iconclass mode mode_label')
 PM_Schemes_Meta = [

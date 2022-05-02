@@ -171,18 +171,6 @@
 
             -block message-list
               %table.list.object-list.lined{class: '{% if org_perms.msgs.msg_update or org_perms.msgs.broadcast_send %}selectable{% endif %}'}
-                %thead
-                  - if actions
-                    %tr.multiselect-header
-                      %th
-                        %div{style: 'padding-top: 4px; width: 12px'}
-                          %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox
-                          %div.multiselect-header
-                            %span
-                              Select all
-                      %th
-                      %th
-                      %th
                 %tbody
                   -for object in object_list
                     %tr.sms.object-row{id: 'id-row-{{object.id}}', data-object-id:'{{ object.id }}',

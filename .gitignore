@@ -26,7 +26,6 @@ parser.out
 screenshots
 sitestatic
 static/javascripts/
-temba/settings.py
 temba/smartmin
 temba.db
 smartmin
@@ -126,6 +125,12 @@ ansible/site.retry
 # CircleCI artifacts
 scm/*_tag.txt
 
+# prior versions for compare
 _v*/
 
+# mock s3 attachments storage
+.s3data/
+
+# container build layers tag info
 workspace/info/
+!/engage/hamls/smartmin/list.haml

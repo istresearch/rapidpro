@@ -40,8 +40,12 @@ INSTALLED_APPS = (
     'engage.utils',
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
+#nothing stand-alone new to add, yet
+#APP_URLS.append(
+#    'engage.channels.urls',
+#)
 
-TEMPLATES[0]['DIRS'].append(
+TEMPLATES[0]['DIRS'].insert(0,
     os.path.join(PROJECT_DIR, "../engage/hamls"),
 )
 STATICFILES_DIRS = STATICFILES_DIRS + (
@@ -173,6 +177,14 @@ if not AWS_STATIC:
     WHITENOISE_MANIFEST_STRICT = False
 
 STATIC_ROOT = os.path.join(PROJECT_DIR, "../sitestatic/")
+
+# compress_precompilers used for static LESS files whether or not COMPRESS_ENABLED==True
+COMPRESS_PRECOMPILERS = (
+    ("text/less", 'lessc --include-path="%s:%s" {infile} {outfile}' % (
+        os.path.join(COMPRESS_ROOT, "less"),
+        os.path.join(COMPRESS_ROOT, "engage", "less"),
+    )),
+)
 
 COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'on') == 'on'
 if COMPRESS_ENABLED:

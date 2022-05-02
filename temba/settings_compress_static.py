@@ -1,4 +1,6 @@
 # Django settings when running compress
+from getenv import env
+import os
 
 from temba.settings import *  # noqa
 
@@ -14,3 +16,4 @@ if env('DEV_STATIC', 'off') != 'on':
     COMPRESS_OFFLINE_CONTEXT = dict(
         STATIC_URL=STATIC_URL, base_template="frame.html", brand=BRANDING[DEFAULT_BRAND], debug=False, testing=False
     )
+    COMPRESS_STORAGE = 'compressor.storage.GzipCompressorFileStorage'
