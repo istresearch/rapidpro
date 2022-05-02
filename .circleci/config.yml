@@ -1,107 +1,207 @@
 version: 2
 
 jobs:
-  build-containers:
-    docker:
-      - image: cimg/base:stable
+  build-stage-base:
+    machine:
+      image: ubuntu-2004:202111-02
     steps:
       - checkout
       - run:
-          name: Avoid "Are you sure you want to connect?" to GitHub
+          name: Pre-build Setup
           command: |
-            mkdir -p ~/.ssh
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-            chmod 600 ~/.ssh/known_hosts
-      - setup_remote_docker:
-          version: 20.10.7
-          # Base GEOS image cannot build, force ver 20.10.7: https://discuss.circleci.com/t/unable-to-use-make/40552/4
+            mkdir -p workspace/info
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
-          name: Login to Docker
+          name: Ensure Base Image Exists
+          #no_output_timeout: 180m
           command: |
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+            source scm/utils-engage.sh; EnsureBaseImageExists;
+      - persist_to_workspace:
+          # Must be an absolute path, or relative path from working_directory.
+          # This directory is considered to be the root directory of the workspace.
+          root: workspace
+          # Must be relative path from root
+          paths:
+            - info
+  build-stage-pylibs-amd64:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - checkout
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: workspace
       - run:
-          name: Ensure GEOS Libs Image Exists, building if necessary
+          name: Pre-build Setup
           command: |
-            source scm/utils-engage.sh; EnsureGeosImage
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
-          name: Ensure Python Libs Image Exists, building if necessary
+          name: Ensure Pylibs-amd64 Image Exists
           command: |
-            source scm/utils-engage.sh; EnsurePyLibsImage
+            source scm/utils-engage.sh; EnsurePyLibsImageExists "pylibs-amd64";
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info/pylibs-amd64_tag.txt
+  build-stage-pylibs-arm64:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: arm.medium
+    steps:
+      - checkout
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: workspace
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Ensure Pylibs-arm64 Image Exists
+          command: |
+            source scm/utils-engage.sh; EnsurePyLibsImageExists "pylibs-arm64";
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info/pylibs-arm64_tag.txt
+  build-stage-pylibs-manifest:
+    machine:
+      image: ubuntu-2004:202111-02
+    steps:
+      - checkout
+      - attach_workspace:
+          # Must be absolute path or relative path from working_directory
+          at: workspace
+      - run:
+          name: Ensure Pylibs Image Manifest Exists
+          command: |
+            source scm/utils-engage.sh; EnsurePyLibsManifestExists;
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info/pylibs_tag.txt
+  build-stage-pyapp:
+    machine:
+      image: ubuntu-2004:202111-02
+    steps:
+      - checkout
+      - attach_workspace:
+          at: workspace
+      - run:
+          name: Install Docker Buildx for Multi-Architectures
+          command: |
+            source scm/utils.sh; multiArch_installBuildx;
+            source scm/utils.sh; multiArch_addArm64Arch;
+            source scm/utils.sh; multiArch_createBuilderContext;
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Figure out tag to use
           command: |
-            BRANCH=${CIRCLE_BRANCH#*/}
-            VERSION_STR=$(cat VERSION)
-            if [[ -n $CIRCLE_TAG ]]; then
-              VERSION_TAG="${CIRCLE_TAG#*v}"
-            elif [[ "$BRANCH" == "develop" ]]; then
-              VERSION_TAG="${VERSION_STR}-dev"
-            elif [[ "$BRANCH" != "master" ]]; then
-              VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
-            fi
-            echo ${VERSION_TAG} > scm/version_tag.txt
-            echo "Using tag: ${VERSION_TAG}"
+            source scm/utils-engage.sh; EnsureAppImageTagExists;
       - run:
           name: Ensure PyApp Image Exists, building if necessary
           command: |
-            VERSION_TAG=$(cat scm/version_tag.txt)
-            source scm/utils-engage.sh; EnsurePyAppImage default "$VERSION_TAG"
+            source scm/utils-engage.sh; EnsurePyAppImageExists;
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - info/version_tag.txt
+            - info/version_ci_tag.txt
+            - info/pyapp_tag.txt
+  build-stage-engage:
+    machine:
+      image: ubuntu-2004:202111-02
+    steps:
+      - checkout
+      - attach_workspace:
+          at: workspace
       - run:
-          name: Build "Default Branding" Image
+          name: Install Docker Buildx for Multi-Architectures
           command: |
-            VERSION_TAG=$(cat scm/version_tag.txt)
-            # only build this if constructing a tag version
-            if [[ ! -z $CIRCLE_TAG ]]; then
-              source scm/utils-engage.sh; BuildVersionForRp "$VERSION_TAG"
-            fi
+            source scm/utils.sh; multiArch_installBuildx;
+            source scm/utils.sh; multiArch_addArm64Arch;
+            source scm/utils.sh; multiArch_createBuilderContext;
       - run:
-          name: Build "Engage Branding" Image
+          name: Pre-build Setup
           command: |
-            BRANCH=${CIRCLE_BRANCH#*/}
-            VERSION_TAG=$(cat scm/version_tag.txt)
-            source scm/utils-engage.sh; BuildVersionForEngage "$VERSION_TAG"
-            if [[ $BRANCH == develop ]]; then
-              IMAGE_NAME=istresearch/p4-engage
-              IMAGE_TAG=ci-develop
-              docker tag ${IMAGE_NAME}:${VERSION_TAG} ${IMAGE_NAME}:${IMAGE_TAG}
-              docker push ${IMAGE_NAME}:${IMAGE_TAG}
-            fi
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
-          name: Build "Generic Branding" Image
+          name: Build Engage Brand Image
           command: |
-            VERSION_TAG=$(cat scm/version_tag.txt)
-            # only build this if constructing a tag version
-            source scm/utils-engage.sh; BuildVersionForGeneric "${VERSION_TAG}-generic"
+            source scm/utils-engage.sh; BuildVersionForEngage "$(cat workspace/info/version_tag.txt)" mabuild
+            if [[ ${CIRCLE_BRANCH#*/} == "develop" ]]; then
+              source scm/utils-engage.sh; BuildVersionForEngage "ci-develop" mabuild
+            fi  
+
+  build-stage-generic:
+    machine:
+      image: ubuntu-2004:202111-02
+    steps:
+      - checkout
+      - attach_workspace:
+          at: workspace
+      - run:
+          name: Install Docker Buildx for Multi-Architectures
+          command: |
+            source scm/utils.sh; multiArch_installBuildx;
+            source scm/utils.sh; multiArch_addArm64Arch;
+            source scm/utils.sh; multiArch_createBuilderContext;
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Build Engage Brand Image
+          command: |
+            source scm/utils-engage.sh; BuildVersionForGeneric "$(cat workspace/info/version_tag.txt)-generic" mabuild
+  build-stage-rp:
+    machine:
+      image: ubuntu-2004:202111-02
+    steps:
+      - checkout
+      - attach_workspace:
+          at: workspace
+      - run:
+          name: Install Docker Buildx for Multi-Architectures
+          command: |
+            source scm/utils.sh; multiArch_installBuildx;
+            source scm/utils.sh; multiArch_addArm64Arch;
+            source scm/utils.sh; multiArch_createBuilderContext;
+      - run:
+          name: Pre-build Setup
+          command: |
+            source scm/utils.sh; EnsureGitHubIsKnownHost
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - run:
+          name: Build RP Brand Image
+          command: |
+            source scm/utils-engage.sh; BuildVersionForRp "$(cat workspace/info/version_tag.txt)" mabuild
 
   deploy-dev-container:
     docker:
       - image: cimg/base:stable
     steps:
       - checkout
+      - attach_workspace:
+          at: workspace
       - run:
-          name: Avoid "Are you sure you want to connect?" to GitHub
+          name: Pre-build Setup
           command: |
-            mkdir -p ~/.ssh
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-            chmod 600 ~/.ssh/known_hosts
-      - run:
-          name: Figure out tag to use
-          command: |
-            BRANCH=${CIRCLE_BRANCH#*/}
-            VERSION_STR=$(cat VERSION)
-            if [[ -n $CIRCLE_TAG ]]; then
-              VERSION_TAG="${CIRCLE_TAG#*v}"
-            elif [[ "$BRANCH" == "develop" ]]; then
-              VERSION_TAG="${VERSION_STR}-dev"
-            elif [[ "$BRANCH" != "master" ]]; then
-              VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
-            fi
-            echo ${VERSION_TAG} > scm/version_tag.txt
-            echo "Using tag: ${VERSION_TAG}"
+            source scm/utils.sh; EnsureGitHubIsKnownHost
       - run:
           name: Deploy To K8s
           command: |
-            VERSION_TAG=$(cat scm/version_tag.txt)
+            VERSION_TAG="$(cat workspace/info/version_tag.txt)"
             K8_URL=https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/develop
             echo "Deploy to K8s: $CIRCLE_PROJECT_USERNAME/p4-engage:${VERSION_TAG}"
             curl -XPOST --user "${oCI_API_TOKEN}:" \
@@ -112,22 +212,65 @@ jobs:
 
 workflows:
   version: 2
-  pipeline:
+  build-docker-images:
     jobs:
-      - build-containers:
+      - build-stage-base:
           context: globalconfig
-          filters:
+          filters: &main-filter
             branches:
               ignore:
                 - /^rel\/.*/
                 - /^master$/
                 - /^main$/
             tags:
-              ignore: /^test-.*/
+              ignore:
+                - /^test-.*/
+      - build-stage-pylibs-amd64:
+          context: globalconfig
+          requires:
+            - build-stage-base
+          filters: *main-filter
+      - build-stage-pylibs-arm64:
+          context: globalconfig
+          requires:
+            - build-stage-base
+          filters: *main-filter
+      - build-stage-pylibs-manifest:
+          context: globalconfig
+          requires:
+            - build-stage-pylibs-amd64
+            - build-stage-pylibs-arm64
+          filters: *main-filter
+      - build-stage-pyapp:
+          context: globalconfig
+          requires:
+            - build-stage-pylibs-manifest
+          filters: *main-filter
+      - build-stage-engage:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters: *main-filter
+      - build-stage-generic:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters:
+            tags:
+              only:
+                - /^v.*/
+      - build-stage-rp:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters:
+            tags:
+              only:
+                - /^v.*/
       - deploy-dev-container:
           context: globalconfig
           requires:
-            - build-containers
+            - build-stage-engage
           filters:
             branches:
               only:

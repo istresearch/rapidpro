@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 # -----------------------------------------------------------------------------------
 
 from getenv import env
+from glob import glob
 import dj_database_url
 import django_cache_url
 from django.utils.translation import ugettext_lazy as _
@@ -56,8 +57,10 @@ ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
 
 DEBUG = env('DJANGO_DEBUG', 'off') == 'on'
 
-GEOS_LIBRARY_PATH = '/usr/local/lib/libgeos_c.so'
-GDAL_LIBRARY_PATH = '/usr/local/lib/libgdal.so'
+# no OSGeo stage building libs, just using pre-built libs now.
+# @see https://stackoverflow.com/questions/58403178/geodjango-cant-find-gdal-on-docker-python-alpine-based-image
+GDAL_LIBRARY_PATH = glob('/usr/lib/libgdal.so.*')[0]
+GEOS_LIBRARY_PATH = glob('/usr/lib/libgeos_c.so.*')[0]
 
 SECRET_KEY = env('SECRET_KEY', required=True)
 
@@ -326,6 +329,37 @@ LOGGING = {
     },
 }
 LOGGING['root']['level'] = env('LOG_LEVEL', env('DJANGO_LOG_LEVEL', 'INFO'))
+
+#============== KeyCloak SSO ===================
+OAUTH2_PROVIDER = None
+KEYCLOAK_URL = env('KEYCLOAK_URL', None)
+if KEYCLOAK_URL is not None:
+    pkey = env('OIDC_RSA_PRIVATE_KEY', None)
+    if not pkey:
+        pkey64 = env('OIDC_RSA_PRIVATE_KEY_BASE64', None)
+        if pkey64:
+            import base64
+            pkey = base64.b64decode(pkey64)
+    # see https://django-oauth-toolkit.readthedocs.io/en/latest/oidc.html
+    OAUTH2_PROVIDER = {
+        'OIDC_ENABLED': True,
+        'OIDC_RSA_PRIVATE_KEY': pkey,
+        'SCOPES': {
+            'openid': "OpenID Connect scope",
+            'permissions': "permissions",
+        },
+        'KEYCLOAK_URL': KEYCLOAK_URL,
+        'KEYCLOAK_CLIENT_ID': env('KEYCLOAK_CLIENT_ID', 'engage'),
+        'KEYCLOAK_CLIENT_SECRET': env('KEYCLOAK_CLIENT_SECRET', 'NOT_A_SECRET'),
+        'OAUTH2_VALIDATOR_CLASS': "engage.auth.oauth_validator.EngageOAuth2Validator",
+    }
+    INSTALLED_APPS += (
+        'oauth2_provider',
+        'corsheaders',
+    )
+    APP_URLS.append('engage.auth.urls')
+    MIDDLEWARE = MIDDLEWARE[:1] + ('corsheaders.middleware.CorsMiddleware',) + MIDDLEWARE[1:]
+    CORS_ORIGIN_ALLOW_ALL = True #TODO (replace with actual keycloak URL rather than all
 
 ORG_SEARCH_CONTEXT = []
 
