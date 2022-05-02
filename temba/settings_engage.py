@@ -40,8 +40,12 @@ INSTALLED_APPS = (
     'engage.utils',
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
+#nothing stand-alone new to add, yet
+#APP_URLS.append(
+#    'engage.channels.urls',
+#)
 
-TEMPLATES[0]['DIRS'].append(
+TEMPLATES[0]['DIRS'].insert(0,
     os.path.join(PROJECT_DIR, "../engage/hamls"),
 )
 STATICFILES_DIRS = STATICFILES_DIRS + (
