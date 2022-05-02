@@ -1,4 +1,4 @@
-ARG FROM_STAGE_TAG
+ARG FROM_STAGE
 
 ARG ARG_C_FORCE_ROOT=1
 
@@ -31,8 +31,8 @@ COPY ./VERSION     VERSION
 
 # ========================================================================
 
-ARG FROM_STAGE_TAG
-FROM istresearch/p4-engage:${FROM_STAGE_TAG}
+ARG FROM_STAGE
+FROM ${FROM_STAGE}
 
 # NOTE: we default force Celery to run as root; do we still wish to force that?
 ARG ARG_C_FORCE_ROOT
