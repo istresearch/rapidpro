@@ -57,8 +57,6 @@ class Exporter(OrgPermLogInfoMixin, ModalMixin, OrgPermsMixin, SmartFormView):
         user = self.request.user
         org = user.get_org()
 
-        logger.info("export msg BLAH")
-
         export_all = bool(int(form.cleaned_data["export_all"]))
         groups = form.cleaned_data["groups"]
         start_date = form.cleaned_data["start_date"]
@@ -88,13 +86,18 @@ class Exporter(OrgPermLogInfoMixin, ModalMixin, OrgPermsMixin, SmartFormView):
                 start_date=start_date,
                 end_date=end_date,
             )
-            logger.info("export msg task created", extra=self.withLogInfo({
+            logger.info("export msgs task created", extra=self.withLogInfo({
+                'context': 'export msgs',
                 'is_async': 'on' if settings.ASYNC_MESSAGE_EXPORT else 'off',
             }))
             if settings.ASYNC_MESSAGE_EXPORT:
                 on_transaction_commit(lambda: export_messages_task.delay(export.id))
 
                 if not getattr(settings, "CELERY_ALWAYS_EAGER", False):  # pragma: needs cover
+                    logger.info("task running, email when done", extra=self.withLogInfo({
+                        'context': 'export msgs',
+                        'is_async': 'on',
+                    }))
                     messages.info(
                         self.request,
                         _("We are preparing your export. We will e-mail you at %s when " "it is ready.")
@@ -102,6 +105,10 @@ class Exporter(OrgPermLogInfoMixin, ModalMixin, OrgPermsMixin, SmartFormView):
                     )
 
                 else:
+                    logger.info("task complete, email sent, link provided", extra=self.withLogInfo({
+                        'context': 'export msgs',
+                        'is_async': 'on',
+                    }))
                     dl_url = reverse("assets.download", kwargs=dict(type="message_export", pk=export.pk))
                     messages.info(
                         self.request,
@@ -111,6 +118,10 @@ class Exporter(OrgPermLogInfoMixin, ModalMixin, OrgPermsMixin, SmartFormView):
 
             else:
                 on_transaction_commit(lambda: export_messages_task.run(export.id))
+                logger.info("task complete, link provided", extra=self.withLogInfo({
+                    'context': 'export msgs',
+                    'is_async': 'off',
+                }))
                 dl_url = reverse("assets.download", kwargs=dict(type="message_export", pk=export.pk))
                 messages.info(self.request,
                     mark_safe(_(f"Export complete, you can find it here: <a href=\"{dl_url}\">{dl_url}</a>"))
@@ -121,7 +132,14 @@ class Exporter(OrgPermLogInfoMixin, ModalMixin, OrgPermsMixin, SmartFormView):
         if "HTTP_X_PJAX" not in self.request.META:
             return HttpResponseRedirect(self.get_success_url())
         else:  # pragma: no cover
-            response = self.render_modal_response(form)
+            response = self.render_to_response(
+                self.get_context_data(
+                    form=form,
+                    success_url=self.get_success_url(),
+                    success_script=getattr(self, "success_script", None),
+                )
+            )
+            response["Temba-Success"] = self.get_success_url()
             response["REDIRECT"] = self.get_success_url()
             return response
 
