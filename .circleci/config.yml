@@ -201,13 +201,20 @@ jobs:
       - run:
           name: Deploy To K8s
           command: |
-            VERSION_TAG="$(cat workspace/info/version_tag.txt)"
+            IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/p4-engage"
+            IMAGE_TAG="$(cat workspace/info/version_tag.txt)"
             K8_URL=https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/develop
-            echo "Deploy to K8s: $CIRCLE_PROJECT_USERNAME/p4-engage:${VERSION_TAG}"
+            echo "Deploy to K8s: ${IMAGE_NAME}:${IMAGE_TAG}"
             curl -XPOST --user "${oCI_API_TOKEN}:" \
               --data build_parameters[CIRCLE_JOB]=eks_deploy \
               --data build_parameters[DEPLOY_PROJECT]=pulse-engage \
-              --data build_parameters[DEPLOY_IMAGE]=$CIRCLE_PROJECT_USERNAME/p4-engage:${VERSION_TAG} \
+              --data build_parameters[DEPLOY_IMAGE]=${IMAGE_NAME}:${IMAGE_TAG} \
+              $K8_URL
+            # celery uses the same image, deploy that as well.
+            curl -XPOST --user "${oCI_API_TOKEN}:" \
+              --data build_parameters[CIRCLE_JOB]=eks_deploy \
+              --data build_parameters[DEPLOY_PROJECT]=pulse-engage-celery \
+              --data build_parameters[DEPLOY_IMAGE]=${IMAGE_NAME}:${IMAGE_TAG} \
               $K8_URL
 
 workflows:

@@ -491,7 +491,7 @@ function createVersionNumFrom10minTs
 # usage: VERSION_NUM=$(parseVersionNumFromBranchNameOrTag)
 function parseVersionNumFromBranchNameOrTag
 {
-  if [[ ${BRANCH_NAME} =~ (release|staging)-v([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)\.{0,1}([[:digit:]]*)$ ]] || \
+  if [[ ${BRANCH_NAME} =~ (release|staging)[-/]v([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)\.{0,1}([[:digit:]]*)$ ]] || \
      [[ ${CIRCLE_TAG} =~ (v|beta)([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)\.{0,1}([[:digit:]]*)$ ]]
   then
     echo $(buildVersionNum "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}" "${BASH_REMATCH[5]}")
@@ -796,9 +796,9 @@ function buildImage()
     .
   if [ $? -eq 0 ]; then
     PrintPaddedTextRight "$IMG_NAME:$IMG_TAG build" "OK" "${COLOR_MSG_INFO}"
+    docker push "${IMG_NAME}:${IMG_TAG}"
   else
     PrintPaddedTextRight "$IMG_NAME:$IMG_TAG build" "FAILED" "${COLOR_MSG_WARNING}"
     exit 2
   fi
-  docker push "${IMG_NAME}:${IMG_TAG}"
 }
