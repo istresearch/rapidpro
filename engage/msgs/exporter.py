@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect
@@ -5,6 +7,8 @@ from django.urls import reverse
 from django.utils.http import is_safe_url, urlquote_plus
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
+
+from engage.utils.logs import OrgPermLogInfoMixin
 
 from smartmin.views import SmartFormView
 
@@ -15,7 +19,9 @@ from temba.msgs.models import ExportMessagesTask, Label
 from temba.msgs.tasks import export_messages_task
 from temba.msgs.views import ExportForm
 
-class Exporter(ModalMixin, OrgPermsMixin, SmartFormView):
+logger = logging.getLogger(__name__)
+
+class Exporter(OrgPermLogInfoMixin, ModalMixin, OrgPermsMixin, SmartFormView):
     """
     Export messages override to allow for ASYNC/SYNC behavior.
     """
@@ -51,6 +57,8 @@ class Exporter(ModalMixin, OrgPermsMixin, SmartFormView):
         user = self.request.user
         org = user.get_org()
 
+        logger.info("export msg BLAH")
+
         export_all = bool(int(form.cleaned_data["export_all"]))
         groups = form.cleaned_data["groups"]
         start_date = form.cleaned_data["start_date"]
@@ -80,7 +88,9 @@ class Exporter(ModalMixin, OrgPermsMixin, SmartFormView):
                 start_date=start_date,
                 end_date=end_date,
             )
-
+            logger.info("export msg task created", extra=self.withLogInfo({
+                'is_async': 'on' if settings.ASYNC_MESSAGE_EXPORT else 'off',
+            }))
             if settings.ASYNC_MESSAGE_EXPORT:
                 on_transaction_commit(lambda: export_messages_task.delay(export.id))
 
@@ -120,4 +130,3 @@ class Exporter(ModalMixin, OrgPermsMixin, SmartFormView):
         kwargs["user"] = self.request.user
         kwargs["label"] = self.derive_label()[1]
         return kwargs
-

@@ -92,9 +92,6 @@ def RunEngageOverrides():
     from engage.msgs.datepicker import DatePickerMedia
     smartmin.widgets.DatePickerWidget.Media = DatePickerMedia
 
-    # override the Export class with our own to handle ASYNC/SYNC exports
-    from temba.msgs.views import MsgCRUDL
-    from engage.msgs.exporter import Exporter
-    MsgCRUDL.Export = Exporter
     # give failed msgs a resend/delete action
+    from temba.msgs.views import MsgCRUDL
     setattr(MsgCRUDL.Failed, 'actions', ["resend", "delete"])
