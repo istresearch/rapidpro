@@ -9,7 +9,6 @@ from getenv import env
 from glob import glob
 import dj_database_url
 import django_cache_url
-from django.utils.translation import ugettext_lazy as _
 
 from temba.settings_common import *  # noqa
 
@@ -32,15 +31,16 @@ MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
     tuple(filter(lambda tup : tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
-    'engage.api',
-    'engage.auth',
-    'engage.channels',
-    'engage.contacts',
-    'engage.msgs',
-    'engage.orgs',
-    'engage.utils',
+        'engage.api',
+        'engage.auth',
+        'engage.channels',
+        'engage.contacts',
+        'engage.msgs',
+        'engage.orgs',
+        'engage.utils',
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
+
 #nothing stand-alone new to add, yet
 #APP_URLS.append(
 #    'engage.channels.urls',
