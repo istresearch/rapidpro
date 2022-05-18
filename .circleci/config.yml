@@ -8,138 +8,190 @@ jobs:
       - checkout
       - run:
           name: Pre-build Setup
-          command: |
+          command: |-
             mkdir -p workspace/info
             source scm/utils.sh; EnsureGitHubIsKnownHost
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Ensure Base Image Exists
           #no_output_timeout: 180m
-          command: |
+          command: |-
             source scm/utils-engage.sh; EnsureBaseImageExists;
       - persist_to_workspace:
           # Must be an absolute path, or relative path from working_directory.
           # This directory is considered to be the root directory of the workspace.
-          root: workspace
+          root: .
           # Must be relative path from root
           paths:
-            - info
+            - .
   build-stage-pylibs-amd64:
     machine:
       image: ubuntu-2004:202111-02
     resource_class: medium
     steps:
-      - checkout
       - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: workspace
+          at: .
       - run:
           name: Pre-build Setup
-          command: |
+          command: |-
             source scm/utils.sh; EnsureGitHubIsKnownHost
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Ensure Pylibs-amd64 Image Exists
-          command: |
+          command: |-
             source scm/utils-engage.sh; EnsurePyLibsImageExists "pylibs-amd64";
       - persist_to_workspace:
-          root: workspace
+          root: .
           paths:
-            - info/pylibs-amd64_tag.txt
+            - workspace/info/pylibs-amd64_tag.txt
   build-stage-pylibs-arm64:
     machine:
       image: ubuntu-2004:202111-02
     resource_class: arm.medium
     steps:
-      - checkout
       - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: workspace
+          at: .
       - run:
           name: Pre-build Setup
-          command: |
+          command: |-
             source scm/utils.sh; EnsureGitHubIsKnownHost
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Ensure Pylibs-arm64 Image Exists
-          command: |
+          command: |-
             source scm/utils-engage.sh; EnsurePyLibsImageExists "pylibs-arm64";
       - persist_to_workspace:
-          root: workspace
+          root: .
           paths:
-            - info/pylibs-arm64_tag.txt
+            - workspace/info/pylibs-arm64_tag.txt
   build-stage-pylibs-manifest:
     machine:
       image: ubuntu-2004:202111-02
     steps:
-      - checkout
       - attach_workspace:
-          # Must be absolute path or relative path from working_directory
-          at: workspace
+          at: .
       - run:
           name: Ensure Pylibs Image Manifest Exists
-          command: |
+          command: |-
             source scm/utils-engage.sh; EnsurePyLibsManifestExists;
       - persist_to_workspace:
-          root: workspace
+          root: .
           paths:
-            - info/pylibs_tag.txt
+            - workspace/info/pylibs_tag.txt
   build-stage-pyapp:
     machine:
       image: ubuntu-2004:202111-02
     steps:
-      - checkout
       - attach_workspace:
-          at: workspace
+          at: .
       - run:
           name: Install Docker Buildx for Multi-Architectures
-          command: |
+          command: |-
             source scm/utils.sh; multiArch_installBuildx;
             source scm/utils.sh; multiArch_addArm64Arch;
             source scm/utils.sh; multiArch_createBuilderContext;
       - run:
           name: Pre-build Setup
-          command: |
+          command: |-
             source scm/utils.sh; EnsureGitHubIsKnownHost
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Figure out tag to use
-          command: |
+          command: |-
             source scm/utils-engage.sh; EnsureAppImageTagExists;
       - run:
           name: Ensure PyApp Image Exists, building if necessary
-          command: |
+          command: |-
             source scm/utils-engage.sh; EnsurePyAppImageExists;
       - persist_to_workspace:
-          root: workspace
+          root: .
           paths:
-            - info/version_tag.txt
-            - info/version_ci_tag.txt
-            - info/pyapp_tag.txt
-  build-stage-engage:
+            - workspace/info/version_tag.txt
+            - workspace/info/version_ci_tag.txt
+            - workspace/info/pyapp_tag.txt
+
+  build-stage-engage-amd64:
     machine:
       image: ubuntu-2004:202111-02
+    resource_class: medium
     steps:
-      - checkout
       - attach_workspace:
-          at: workspace
+          at: .
       - run:
-          name: Install Docker Buildx for Multi-Architectures
-          command: |
-            source scm/utils.sh; multiArch_installBuildx;
-            source scm/utils.sh; multiArch_addArm64Arch;
-            source scm/utils.sh; multiArch_createBuilderContext;
+          name: Build Engage Brand Image (amd64)
+          command: |-
+            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+            IMAGE_TAG=`workspace/info/version_tag.txt`-amd64
+            IMG_STAGE=engage
+            DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
+
+            FROM_STAGE_TAG=$(source scm/utils-engage.sh; GetImgStageTag pyapp)
+            source scm/utils-engage.sh; PrintPaddedTextRight "  Using pyapp Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
+            
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+            echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
+            source scm/utils.sh; buildImage "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}" --no-cache \
+              --build-arg "FROM_STAGE_TAG=${FROM_STAGE_TAG}" \
+              --build-arg "VERSION_TAG=${IMAGE_TAG}" \
+              --build-arg "ARCH=${IMAGE_TAG##*-}/"
+            docker push "${IMAGE_NAME}:${IMAGE_TAG}"
+
+  build-stage-engage-arm64:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: arm.medium
+    steps:
+      - attach_workspace:
+          at: .
       - run:
-          name: Pre-build Setup
-          command: |
+          name: Build Engage Brand Image (arm64)
+          command: |-
+            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+            IMAGE_TAG=`workspace/info/version_tag.txt`-arm64
+            IMG_STAGE=engage
+            DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
+
+            FROM_STAGE_TAG=$(source scm/utils-engage.sh; GetImgStageTag pyapp)
+            source scm/utils-engage.sh; PrintPaddedTextRight "  Using pyapp Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
+            
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+            echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
+            source scm/utils.sh; buildImage "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}" --no-cache \
+              --build-arg "FROM_STAGE_TAG=${FROM_STAGE_TAG}" \
+              --build-arg "VERSION_TAG=${IMAGE_TAG}" \
+              --build-arg "ARCH=${IMAGE_TAG##*-}/"
+            docker push "${IMAGE_NAME}:${IMAGE_TAG}"
+
+  build-stage-engage:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - attach_workspace:
+          at: .
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          name: "Create and Push Docker Manifest"
+          command: |-
+            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/joka
+            IMAGE_TAG=`cat workspace/info/version_tag.txt`
+
             source scm/utils.sh; EnsureGitHubIsKnownHost
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-      - run:
-          name: Build Engage Brand Image
-          command: |
-            source scm/utils-engage.sh; BuildVersionForEngage "$(cat workspace/info/version_tag.txt)" mabuild
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+            echo "Creating Docker manifest for ${IMAGE_NAME}:${IMAGE_TAG}…"
+            docker manifest create "${IMAGE_NAME}:${IMAGE_TAG}" \
+              --amend "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \
+              --amend "${IMAGE_NAME}:${IMAGE_TAG}-arm64"
+            docker manifest push "${IMAGE_NAME}:${IMAGE_TAG}"
+            echo "Manifest built and pushed to DockerHub: ${IMAGE_NAME}:${IMAGE_TAG}"
+            
+            scm/pr-comment.sh "Container built: ${IMAGE_NAME}:${IMAGE_TAG}"
+
             if [[ ${CIRCLE_BRANCH#*/} == "develop" ]]; then
-              source scm/utils-engage.sh; BuildVersionForEngage "ci-develop" mabuild
+              docker manifest create "${IMAGE_NAME}:ci-develop" \
+                --amend "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \
+                --amend "${IMAGE_NAME}:${IMAGE_TAG}-arm64"
+              docker manifest push "${IMAGE_NAME}:ci-develop"
             fi  
 
   build-stage-generic:
@@ -151,19 +203,20 @@ jobs:
           at: workspace
       - run:
           name: Install Docker Buildx for Multi-Architectures
-          command: |
+          command: |-
             source scm/utils.sh; multiArch_installBuildx;
             source scm/utils.sh; multiArch_addArm64Arch;
             source scm/utils.sh; multiArch_createBuilderContext;
       - run:
           name: Pre-build Setup
-          command: |
+          command: |-
             source scm/utils.sh; EnsureGitHubIsKnownHost
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Build Engage Brand Image
-          command: |
+          command: |-
             source scm/utils-engage.sh; BuildVersionForGeneric "$(cat workspace/info/version_tag.txt)-generic" mabuild
+
   build-stage-rp:
     machine:
       image: ubuntu-2004:202111-02
@@ -173,18 +226,18 @@ jobs:
           at: workspace
       - run:
           name: Install Docker Buildx for Multi-Architectures
-          command: |
+          command: |-
             source scm/utils.sh; multiArch_installBuildx;
             source scm/utils.sh; multiArch_addArm64Arch;
             source scm/utils.sh; multiArch_createBuilderContext;
       - run:
           name: Pre-build Setup
-          command: |
+          command: |-
             source scm/utils.sh; EnsureGitHubIsKnownHost
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Build RP Brand Image
-          command: |
+          command: |-
             source scm/utils-engage.sh; BuildVersionForRp "$(cat workspace/info/version_tag.txt)" mabuild
 
   deploy-dev-container:
@@ -196,11 +249,11 @@ jobs:
           at: workspace
       - run:
           name: Pre-build Setup
-          command: |
+          command: |-
             source scm/utils.sh; EnsureGitHubIsKnownHost
       - run:
           name: Deploy To K8s
-          command: |
+          command: |-
             IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/p4-engage"
             IMAGE_TAG="$(cat workspace/info/version_tag.txt)"
             K8_URL=https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/develop
@@ -253,10 +306,21 @@ workflows:
           requires:
             - build-stage-pylibs-manifest
           filters: *main-filter
-      - build-stage-engage:
+      - build-stage-engage-amd64:
           context: globalconfig
           requires:
             - build-stage-pyapp
+          filters: *main-filter
+      - build-stage-engage-arm64:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters: *main-filter
+      - build-stage-engage:
+          context: globalconfig
+          requires:
+            - build-stage-engage-amd64
+            - build-stage-engage-arm64
           filters: *main-filter
       - build-stage-generic:
           context: globalconfig
