@@ -350,18 +350,7 @@ workflows:
           context: globalconfig
           requires:
             - build-stage-pyapp
-          filters: *main-filter
-      - build-stage-generic-arm64:
-          context: globalconfig
-          requires:
-            - build-stage-pyapp
-          filters: *main-filter
-      - build-stage-generic:
-          context: globalconfig
-          requires:
-            - build-stage-generic-amd64
-            - build-stage-generic-arm64
-          filters:
+          filters: &gen-filter
             branches:
               only:
                 - /^develop$/
@@ -369,27 +358,37 @@ workflows:
             tags:
               only:
                 - /^v.*/
+      - build-stage-generic-arm64:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters: *gen-filter
+      - build-stage-generic:
+          context: globalconfig
+          requires:
+            - build-stage-generic-amd64
+            - build-stage-generic-arm64
+          filters: *gen-filter
       - build-stage-rp-amd64:
           context: globalconfig
           requires:
             - build-stage-pyapp
-          filters: *main-filter
+            branches: &rp-filter
+              ignore: /.*/
+            tags:
+              only:
+                - /^v.*/
       - build-stage-rp-arm64:
           context: globalconfig
           requires:
             - build-stage-pyapp
-          filters: *main-filter
+          filters: *rp-filter
       - build-stage-rp:
           context: globalconfig
           requires:
             - build-stage-rp-amd64
             - build-stage-rp-arm64
-          filters:
-            branches:
-              ignore: /.*/
-            tags:
-              only:
-                - /^v.*/
+          filters: *rp-filter
       - deploy-dev-container:
           context: globalconfig
           requires:

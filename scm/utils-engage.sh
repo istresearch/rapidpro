@@ -245,7 +245,8 @@ function BuildImageForArch()
   else
     IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
   fi
-  IMAGE_TAG="$(cat workspace/info/version_tag.txt)-${2}"
+  VERSION_TAG="$(cat workspace/info/version_tag.txt)"
+  IMAGE_TAG="${VERSION_TAG}-${2}"
   if [[ "${IMG_STAGE}" != 'pyapp' ]]; then
     DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
   else
@@ -263,7 +264,7 @@ function BuildImageForArch()
   buildImage "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}" --no-cache \
     --build-arg "FROM_STAGE=${CIRCLE_PROJECT_USERNAME}/p4-engage:${FROM_STAGE_TAG}" \
     --build-arg "FROM_STAGE_TAG=${FROM_STAGE_TAG}" \
-    --build-arg "VERSION_TAG=${IMAGE_TAG}" \
+    --build-arg "VERSION_TAG=${VERSION_TAG}" \
     --build-arg "ARCH=${IMAGE_TAG##*-}/"
   docker push "${IMAGE_NAME}:${IMAGE_TAG}"
 }
