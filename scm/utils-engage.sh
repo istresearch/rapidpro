@@ -261,6 +261,7 @@ function BuildImageForArch()
   docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
   echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
   buildImage "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}" --no-cache \
+    --build-arg "FROM_STAGE=${CIRCLE_PROJECT_USERNAME}/p4-engage:${FROM_STAGE_TAG}" \
     --build-arg "FROM_STAGE_TAG=${FROM_STAGE_TAG}" \
     --build-arg "VERSION_TAG=${IMAGE_TAG}" \
     --build-arg "ARCH=${IMAGE_TAG##*-}/"
