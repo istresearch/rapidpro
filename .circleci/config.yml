@@ -121,7 +121,7 @@ jobs:
           name: Build Engage Brand Image (amd64)
           command: |-
             IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
-            IMAGE_TAG=`workspace/info/version_tag.txt`-amd64
+            IMAGE_TAG=`cat workspace/info/version_tag.txt`-amd64
             IMG_STAGE=engage
             DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
 
@@ -147,7 +147,7 @@ jobs:
           name: Build Engage Brand Image (arm64)
           command: |-
             IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
-            IMAGE_TAG=`workspace/info/version_tag.txt`-arm64
+            IMAGE_TAG=`cat workspace/info/version_tag.txt`-arm64
             IMG_STAGE=engage
             DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
 
@@ -198,9 +198,8 @@ jobs:
     machine:
       image: ubuntu-2004:202111-02
     steps:
-      - checkout
       - attach_workspace:
-          at: workspace
+          at: .
       - run:
           name: Install Docker Buildx for Multi-Architectures
           command: |-
@@ -221,9 +220,8 @@ jobs:
     machine:
       image: ubuntu-2004:202111-02
     steps:
-      - checkout
       - attach_workspace:
-          at: workspace
+          at: .
       - run:
           name: Install Docker Buildx for Multi-Architectures
           command: |-
@@ -244,9 +242,8 @@ jobs:
     docker:
       - image: cimg/base:stable
     steps:
-      - checkout
       - attach_workspace:
-          at: workspace
+          at: .
       - run:
           name: Pre-build Setup
           command: |-
@@ -264,11 +261,12 @@ jobs:
               --data build_parameters[DEPLOY_IMAGE]=${IMAGE_NAME}:${IMAGE_TAG} \
               $K8_URL
             # celery uses the same image, deploy that as well.
-            curl -XPOST --user "${oCI_API_TOKEN}:" \
-              --data build_parameters[CIRCLE_JOB]=eks_deploy \
-              --data build_parameters[DEPLOY_PROJECT]=pulse-engage-celery \
-              --data build_parameters[DEPLOY_IMAGE]=${IMAGE_NAME}:${IMAGE_TAG} \
-              $K8_URL
+            #curl -XPOST --user "${oCI_API_TOKEN}:" \
+            #  --data build_parameters[CIRCLE_JOB]=eks_deploy \
+            #  --data build_parameters[DEPLOY_PROJECT]=pulse-engage-celery \
+            #  --data build_parameters[DEPLOY_IMAGE]=${IMAGE_NAME}:${IMAGE_TAG} \
+            #  $K8_URL
+            # uncomment once deployment of alternate containers is working
 
 workflows:
   version: 2
