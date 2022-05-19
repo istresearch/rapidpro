@@ -274,14 +274,14 @@ function BuildImageForArch()
 function CreateManifestForImage()
 {
   IMG_STAGE=${1}
-  if [[ "${IMG_STAGE}" == 'engage' ]]; then
+  if [[ "${IMG_STAGE}" == 'engage' || "${IMG_STAGE}" == 'pyapp' ]]; then
     IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/p4-engage"
   elif [[ "${IMG_STAGE}" == 'generic' ]]; then
     IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
   elif [[ "${IMG_STAGE}" == 'rp' ]]; then
     IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
   fi
-  IMAGE_TAG="$(cat workspace/info/version_tag.txt)-${2}"
+  IMAGE_TAG="$(cat workspace/info/version_tag.txt)"
 
   EnsureGitHubIsKnownHost
   docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
