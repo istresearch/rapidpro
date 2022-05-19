@@ -296,17 +296,18 @@ function CreateManifestForImage()
 
   if [[ "${IMG_STAGE}" == 'engage' ]]; then
     if [[ ${CIRCLE_BRANCH#*/} == "develop" ]]; then
-      docker manifest create "${IMAGE_NAME}:ci-develop" \
+      VER_TAG=ci-develop
+      docker manifest create "${IMAGE_NAME}:${VER_TAG}" \
         --amend "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \
         --amend "${IMAGE_NAME}:${IMAGE_TAG}-arm64"
-      docker manifest push "${IMAGE_NAME}:ci-develop"
+      docker manifest push "${IMAGE_NAME}:${VER_TAG}"
     fi
   elif [[ "${IMG_STAGE}" == 'generic' ]]; then
     VERSION_CI=$(GetImgStageTag version_ci)
-    IMAGE_TAG=${VERSION_CI%-*}
-    docker manifest create "${IMAGE_NAME}:${IMAGE_TAG}" \
+    VER_TAG=${VERSION_CI%-*}
+    docker manifest create "${IMAGE_NAME}:${VER_TAG}" \
       --amend "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \
       --amend "${IMAGE_NAME}:${IMAGE_TAG}-arm64"
-    docker manifest push "${IMAGE_NAME}:${IMAGE_TAG}"
+    docker manifest push "${IMAGE_NAME}:${VER_TAG}"
   fi
 }
