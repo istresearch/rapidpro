@@ -120,7 +120,7 @@ jobs:
       - run:
           name: Build Engage Brand Image (amd64)
           command: |-
-            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/p4-engage
             IMAGE_TAG=`cat workspace/info/version_tag.txt`-amd64
             IMG_STAGE=engage
             DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
@@ -146,7 +146,7 @@ jobs:
       - run:
           name: Build Engage Brand Image (arm64)
           command: |-
-            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/p4-engage
             IMAGE_TAG=`cat workspace/info/version_tag.txt`-arm64
             IMG_STAGE=engage
             DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
@@ -173,7 +173,7 @@ jobs:
       - run:
           name: "Create and Push Docker Manifest"
           command: |-
-            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/joka
+            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/p4-engage
             IMAGE_TAG=`cat workspace/info/version_tag.txt`
 
             source scm/utils.sh; EnsureGitHubIsKnownHost
