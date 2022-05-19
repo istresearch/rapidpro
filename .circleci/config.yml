@@ -64,7 +64,7 @@ jobs:
           root: .
           paths:
             - workspace/info/pylibs-arm64_tag.txt
-  build-stage-pylibs-manifest:
+  build-stage-pylibs:
     machine:
       image: ubuntu-2004:202111-02
     steps:
@@ -78,37 +78,64 @@ jobs:
           root: .
           paths:
             - workspace/info/pylibs_tag.txt
-  build-stage-pyapp:
-    machine:
-      image: ubuntu-2004:202111-02
+
+  build-stage-pyapp-pre-build:
+    docker:
+      - image: cimg/base:stable
     steps:
       - attach_workspace:
           at: .
-      - run:
-          name: Install Docker Buildx for Multi-Architectures
-          command: |-
-            source scm/utils.sh; multiArch_installBuildx;
-            source scm/utils.sh; multiArch_addArm64Arch;
-            source scm/utils.sh; multiArch_createBuilderContext;
-      - run:
-          name: Pre-build Setup
-          command: |-
-            source scm/utils.sh; EnsureGitHubIsKnownHost
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
           name: Figure out tag to use
           command: |-
             source scm/utils-engage.sh; EnsureAppImageTagExists;
-      - run:
-          name: Ensure PyApp Image Exists, building if necessary
-          command: |-
-            source scm/utils-engage.sh; EnsurePyAppImageExists;
+            IMAGE_TAG=pyapp-$(cat "workspace/info/version_tag.txt")
+            echo "${IMAGE_TAG}" > "workspace/info/pyapp_tag.txt"
       - persist_to_workspace:
           root: .
           paths:
             - workspace/info/version_tag.txt
             - workspace/info/version_ci_tag.txt
             - workspace/info/pyapp_tag.txt
+
+  build-stage-pyapp-amd64:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Build pyapp Stage Image (amd64)
+          command: |-
+            source scm/utils-engage.sh; BuildImageForArch "pyapp" "amd64" "$(GetImgStageTag pylibs)"
+
+  build-stage-pyapp-arm64:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: arm.medium
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Build pyapp Stage Image (arm64)
+          command: |-
+            source scm/utils-engage.sh; BuildImageForArch "pyapp" "arm64" "$(GetImgStageTag pylibs)"
+
+  build-stage-pyapp:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - attach_workspace:
+          at: .
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          name: "Create and Push Docker Manifest"
+          command: |-
+            source scm/utils-engage.sh; CreateManifestForImage "pyapp"
 
   build-stage-engage-amd64:
     machine:
@@ -276,16 +303,32 @@ workflows:
           requires:
             - build-stage-base
           filters: *main-filter
-      - build-stage-pylibs-manifest:
+      - build-stage-pylibs:
           context: globalconfig
           requires:
             - build-stage-pylibs-amd64
             - build-stage-pylibs-arm64
           filters: *main-filter
+      - build-stage-pyapp-pre-build:
+          context: globalconfig
+          requires:
+            - build-stage-pylibs
+          filters: *main-filter
+      - build-stage-pyapp-amd64:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp-pre-build
+          filters: *main-filter
+      - build-stage-pyapp-arm64:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp-pre-build
+          filters: *main-filter
       - build-stage-pyapp:
           context: globalconfig
           requires:
-            - build-stage-pylibs-manifest
+            - build-stage-pyapp-amd64
+            - build-stage-pyapp-arm64
           filters: *main-filter
       - build-stage-engage-amd64:
           context: globalconfig

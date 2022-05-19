@@ -237,21 +237,24 @@ function BuildVersionForGeneric()
 # Build the final image for the given type.
 # @param string $1 - the image type name to build (engage|generic|rp).
 # @param string $2 - the architecture being built (amd64|arm64).
+# @param string $3 - the alt FROM_STAGE_TAG, if any.
 function BuildImageForArch()
 {
   IMG_STAGE=${1}
-  if [[ "${IMG_STAGE}" == 'engage' ]]; then
+  if [[ "${IMG_STAGE}" == 'engage' || "${IMG_STAGE}" == 'pyapp' ]]; then
     IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/p4-engage"
-  elif [[ "${IMG_STAGE}" == 'generic' ]]; then
-    IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
-  elif [[ "${IMG_STAGE}" == 'rp' ]]; then
+  else
     IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
   fi
   IMAGE_TAG="$(cat workspace/info/version_tag.txt)-${2}"
   DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
 
-  FROM_STAGE_TAG=$(source scm/utils-engage.sh; GetImgStageTag pyapp)
-  PrintPaddedTextRight "  Using pyapp Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
+  if [[ -z "${3}" ]]; then
+    FROM_STAGE_TAG=$(source scm/utils-engage.sh; GetImgStageTag pyapp)
+  else
+    FROM_STAGE_TAG=${3}
+  fi
+  PrintPaddedTextRight "  Using From Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
 
   docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
   echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
