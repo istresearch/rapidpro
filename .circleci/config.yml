@@ -120,20 +120,8 @@ jobs:
       - run:
           name: Build Engage Brand Image (amd64)
           command: |-
-            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/p4-engage
-            IMAGE_TAG=`cat workspace/info/version_tag.txt`-amd64
-            IMG_STAGE=engage
-            DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
-
-            FROM_STAGE_TAG=$(source scm/utils-engage.sh; GetImgStageTag pyapp)
-            source scm/utils-engage.sh; PrintPaddedTextRight "  Using pyapp Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
-            
+            source scm/utils-engage.sh; BuildImageForArch "engage" "amd64"
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
-            echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
-            source scm/utils.sh; buildImage "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}" --no-cache \
-              --build-arg "FROM_STAGE_TAG=${FROM_STAGE_TAG}" \
-              --build-arg "VERSION_TAG=${IMAGE_TAG}" \
-              --build-arg "ARCH=${IMAGE_TAG##*-}/"
             docker push "${IMAGE_NAME}:${IMAGE_TAG}"
 
   build-stage-engage-arm64:
@@ -146,20 +134,8 @@ jobs:
       - run:
           name: Build Engage Brand Image (arm64)
           command: |-
-            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/p4-engage
-            IMAGE_TAG=`cat workspace/info/version_tag.txt`-arm64
-            IMG_STAGE=engage
-            DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
-
-            FROM_STAGE_TAG=$(source scm/utils-engage.sh; GetImgStageTag pyapp)
-            source scm/utils-engage.sh; PrintPaddedTextRight "  Using pyapp Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
-            
+            source scm/utils-engage.sh; BuildImageForArch "engage" "arm64"
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
-            echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
-            source scm/utils.sh; buildImage "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}" --no-cache \
-              --build-arg "FROM_STAGE_TAG=${FROM_STAGE_TAG}" \
-              --build-arg "VERSION_TAG=${IMAGE_TAG}" \
-              --build-arg "ARCH=${IMAGE_TAG##*-}/"
             docker push "${IMAGE_NAME}:${IMAGE_TAG}"
 
   build-stage-engage:
@@ -173,70 +149,89 @@ jobs:
       - run:
           name: "Create and Push Docker Manifest"
           command: |-
-            IMAGE_NAME=${CIRCLE_PROJECT_USERNAME}/p4-engage
-            IMAGE_TAG=`cat workspace/info/version_tag.txt`
+            source scm/utils-engage.sh; CreateManifestForImage "engage"
 
-            source scm/utils.sh; EnsureGitHubIsKnownHost
+  build-stage-generic-amd64:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: medium
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Build Generic Brand Image (amd64)
+          command: |-
+            source scm/utils-engage.sh; BuildImageForArch "generic" "amd64"
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
-            echo "Creating Docker manifest for ${IMAGE_NAME}:${IMAGE_TAG}…"
-            docker manifest create "${IMAGE_NAME}:${IMAGE_TAG}" \
-              --amend "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \
-              --amend "${IMAGE_NAME}:${IMAGE_TAG}-arm64"
-            docker manifest push "${IMAGE_NAME}:${IMAGE_TAG}"
-            echo "Manifest built and pushed to DockerHub: ${IMAGE_NAME}:${IMAGE_TAG}"
-            
-            scm/pr-comment.sh "Container built: ${IMAGE_NAME}:${IMAGE_TAG}"
+            docker push "${IMAGE_NAME}:${IMAGE_TAG}"
 
-            if [[ ${CIRCLE_BRANCH#*/} == "develop" ]]; then
-              docker manifest create "${IMAGE_NAME}:ci-develop" \
-                --amend "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \
-                --amend "${IMAGE_NAME}:${IMAGE_TAG}-arm64"
-              docker manifest push "${IMAGE_NAME}:ci-develop"
-            fi  
+  build-stage-generic-arm64:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: arm.medium
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Build Generic Brand Image (arm64)
+          command: |-
+            source scm/utils-engage.sh; BuildImageForArch "generic" "arm64"
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+            docker push "${IMAGE_NAME}:${IMAGE_TAG}"
 
   build-stage-generic:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - attach_workspace:
+          at: .
+      - setup_remote_docker:
+          version: 20.10.7
+      - run:
+          name: Create Generic Manifests
+          command: |-
+            source scm/utils-engage.sh; CreateManifestForImage "generic"
+
+  build-stage-rp-amd64:
     machine:
       image: ubuntu-2004:202111-02
+    resource_class: medium
     steps:
       - attach_workspace:
           at: .
       - run:
-          name: Install Docker Buildx for Multi-Architectures
+          name: Build RP Brand Image (amd64)
           command: |-
-            source scm/utils.sh; multiArch_installBuildx;
-            source scm/utils.sh; multiArch_addArm64Arch;
-            source scm/utils.sh; multiArch_createBuilderContext;
+            source scm/utils-engage.sh; BuildImageForArch "rp" "amd64"
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+            docker push "${IMAGE_NAME}:${IMAGE_TAG}"
+
+  build-stage-rp-arm64:
+    machine:
+      image: ubuntu-2004:202111-02
+    resource_class: arm.medium
+    steps:
+      - attach_workspace:
+          at: .
       - run:
-          name: Pre-build Setup
+          name: Build RP Brand Image (arm64)
           command: |-
-            source scm/utils.sh; EnsureGitHubIsKnownHost
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-      - run:
-          name: Build Engage Brand Image
-          command: |-
-            source scm/utils-engage.sh; BuildVersionForGeneric "$(cat workspace/info/version_tag.txt)-generic" mabuild
+            source scm/utils-engage.sh; BuildImageForArch "rp" "arm64"
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+            docker push "${IMAGE_NAME}:${IMAGE_TAG}"
 
   build-stage-rp:
-    machine:
-      image: ubuntu-2004:202111-02
+    docker:
+      - image: cimg/base:stable
     steps:
       - attach_workspace:
           at: .
+      - setup_remote_docker:
+          version: 20.10.7
       - run:
-          name: Install Docker Buildx for Multi-Architectures
+          name: Create RP Manifests
           command: |-
-            source scm/utils.sh; multiArch_installBuildx;
-            source scm/utils.sh; multiArch_addArm64Arch;
-            source scm/utils.sh; multiArch_createBuilderContext;
-      - run:
-          name: Pre-build Setup
-          command: |-
-            source scm/utils.sh; EnsureGitHubIsKnownHost
-            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
-      - run:
-          name: Build RP Brand Image
-          command: |-
-            source scm/utils-engage.sh; BuildVersionForRp "$(cat workspace/info/version_tag.txt)" mabuild
+            source scm/utils-engage.sh; CreateManifestForImage "rp"
 
   deploy-dev-container:
     docker:

@@ -14,7 +14,7 @@ if [[ -z "${UTILS_PATH}" ]]; then
 fi
 source "${UTILS_PATH}/utils.sh"
 
-DEFAULT_IMAGE_NAME=istresearch/p4-engage
+DEFAULT_IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/p4-engage"
 
 
 ####################
@@ -208,7 +208,7 @@ function BuildVersionForX()
 # @param string $1 - the image tag to use.
 function BuildVersionForRp()
 {
-  BuildVersionForX "istresearch/rapidpro" rp "$1"
+  BuildVersionForX "${CIRCLE_PROJECT_USERNAME}/rapidpro" rp "$1"
 }
 
 ####################
@@ -226,9 +226,79 @@ function BuildVersionForEngage()
 # @param string $1 - the image tag to use.
 function BuildVersionForGeneric()
 {
-  IMAGE_NAME="istresearch/rapidpro"
+  IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
   VERSION_CI=$(GetImgStageTag version_ci)
   VER_TAG=${VERSION_CI%-*}
   BuildVersionForX "${IMAGE_NAME}" generic "$1" "${VER_TAG}"
   BuildVersionForX "${IMAGE_NAME}" generic "${VER_TAG}"
+}
+
+####################
+# Build the final image for the given type.
+# @param string $1 - the image type name to build (engage|generic|rp).
+# @param string $2 - the architecture being built (amd64|arm64).
+function BuildImageForArch()
+{
+  IMG_STAGE=${1}
+  if [[ "${IMG_STAGE}" == 'engage' ]]; then
+    IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/p4-engage"
+  elif [[ "${IMG_STAGE}" == 'generic' ]]; then
+    IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
+  elif [[ "${IMG_STAGE}" == 'rp' ]]; then
+    IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
+  fi
+  IMAGE_TAG="$(cat workspace/info/version_tag.txt)-${2}"
+  DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
+
+  FROM_STAGE_TAG=$(source scm/utils-engage.sh; GetImgStageTag pyapp)
+  PrintPaddedTextRight "  Using pyapp Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
+
+  echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
+  buildImage "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}" --no-cache \
+    --build-arg "FROM_STAGE_TAG=${FROM_STAGE_TAG}" \
+    --build-arg "VERSION_TAG=${IMAGE_TAG}" \
+    --build-arg "ARCH=${IMAGE_TAG##*-}/"
+}
+
+####################
+# Create the manifest for the given type.
+# @param string $1 - the image type name to build (engage|generic|rp).
+function CreateManifestForImage()
+{
+  IMG_STAGE=${1}
+  if [[ "${IMG_STAGE}" == 'engage' ]]; then
+    IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/p4-engage"
+  elif [[ "${IMG_STAGE}" == 'generic' ]]; then
+    IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
+  elif [[ "${IMG_STAGE}" == 'rp' ]]; then
+    IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
+  fi
+  IMAGE_TAG="$(cat workspace/info/version_tag.txt)-${2}"
+
+  EnsureGitHubIsKnownHost
+  docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+  echo "Creating Docker manifest for ${IMAGE_NAME}:${IMAGE_TAG}…"
+  docker manifest create "${IMAGE_NAME}:${IMAGE_TAG}" \
+    --amend "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \
+    --amend "${IMAGE_NAME}:${IMAGE_TAG}-arm64"
+  docker manifest push "${IMAGE_NAME}:${IMAGE_TAG}"
+  echo "Manifest built and pushed to DockerHub: ${IMAGE_NAME}:${IMAGE_TAG}"
+
+  "${UTILS_PATH}/pr-comment.sh" "Container built: ${IMAGE_NAME}:${IMAGE_TAG}"
+
+  if [[ "${IMG_STAGE}" == 'engage' ]]; then
+    if [[ ${CIRCLE_BRANCH#*/} == "develop" ]]; then
+      docker manifest create "${IMAGE_NAME}:ci-develop" \
+        --amend "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \
+        --amend "${IMAGE_NAME}:${IMAGE_TAG}-arm64"
+      docker manifest push "${IMAGE_NAME}:ci-develop"
+    fi
+  elif [[ "${IMG_STAGE}" == 'generic' ]]; then
+    VERSION_CI=$(GetImgStageTag version_ci)
+    IMAGE_TAG=${VERSION_CI%-*}
+    docker manifest create "${IMAGE_NAME}:${IMAGE_TAG}" \
+      --amend "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \
+      --amend "${IMAGE_NAME}:${IMAGE_TAG}-arm64"
+    docker manifest push "${IMAGE_NAME}:${IMAGE_TAG}"
+  fi
 }
