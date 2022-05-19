@@ -315,19 +315,47 @@ workflows:
             - build-stage-engage-amd64
             - build-stage-engage-arm64
           filters: *main-filter
+      - build-stage-generic-amd64:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters: *main-filter
+      - build-stage-generic-arm64:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters: *main-filter
       - build-stage-generic:
           context: globalconfig
           requires:
-            - build-stage-pyapp
+            - build-stage-generic-amd64
+            - build-stage-generic-arm64
           filters:
+            branches:
+              only:
+                - /^develop$/
+                - /^dev[-\/].*/
             tags:
               only:
                 - /^v.*/
-      - build-stage-rp:
+      - build-stage-rp-amd64:
           context: globalconfig
           requires:
             - build-stage-pyapp
+          filters: *main-filter
+      - build-stage-rp-arm64:
+          context: globalconfig
+          requires:
+            - build-stage-pyapp
+          filters: *main-filter
+      - build-stage-rp:
+          context: globalconfig
+          requires:
+            - build-stage-rp-amd64
+            - build-stage-rp-arm64
           filters:
+            branches:
+              ignore: /.*/
             tags:
               only:
                 - /^v.*/
