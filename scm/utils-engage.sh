@@ -237,7 +237,6 @@ function BuildVersionForGeneric()
 # Build the final image for the given type.
 # @param string $1 - the image type name to build (engage|generic|rp).
 # @param string $2 - the architecture being built (amd64|arm64).
-# @param string $3 - the alt FROM_STAGE_TAG, if any.
 function BuildImageForArch()
 {
   IMG_STAGE=${1}
@@ -247,12 +246,15 @@ function BuildImageForArch()
     IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
   fi
   IMAGE_TAG="$(cat workspace/info/version_tag.txt)-${2}"
-  DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
-
-  if [[ -z "${3}" ]]; then
-    FROM_STAGE_TAG=$(source scm/utils-engage.sh; GetImgStageTag pyapp)
+  if [[ "${IMG_STAGE}" != 'pyapp' ]]; then
+    DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
   else
-    FROM_STAGE_TAG=${3}
+    DOCKERFILE2USE="docker/dfstage-${IMG_STAGE}.dockerfile"
+  fi
+  if [[ "${IMG_STAGE}" != 'pyapp' ]]; then
+    FROM_STAGE_TAG=$(GetImgStageTag pyapp)
+  else
+    FROM_STAGE_TAG=$(GetImgStageTag pylibs)
   fi
   PrintPaddedTextRight "  Using From Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
 

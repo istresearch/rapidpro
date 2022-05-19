@@ -110,7 +110,7 @@ jobs:
       - run:
           name: Build pyapp Stage Image (amd64)
           command: |-
-            source scm/utils-engage.sh; BuildImageForArch "pyapp" "amd64" "$(GetImgStageTag pylibs)"
+            source scm/utils-engage.sh; BuildImageForArch "pyapp" "amd64"
 
   build-stage-pyapp-arm64:
     machine:
@@ -122,7 +122,7 @@ jobs:
       - run:
           name: Build pyapp Stage Image (arm64)
           command: |-
-            source scm/utils-engage.sh; BuildImageForArch "pyapp" "arm64" "$(GetImgStageTag pylibs)"
+            source scm/utils-engage.sh; BuildImageForArch "pyapp" "arm64"
 
   build-stage-pyapp:
     docker:
