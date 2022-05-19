@@ -253,11 +253,13 @@ function BuildImageForArch()
   FROM_STAGE_TAG=$(source scm/utils-engage.sh; GetImgStageTag pyapp)
   PrintPaddedTextRight "  Using pyapp Tag" "${FROM_STAGE_TAG}" "${COLOR_MSG_INFO}"
 
+  docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
   echo "Building Docker container ${IMAGE_NAME}:${IMAGE_TAG}…"
   buildImage "${IMAGE_NAME}" "${IMAGE_TAG}" "${DOCKERFILE2USE}" --no-cache \
     --build-arg "FROM_STAGE_TAG=${FROM_STAGE_TAG}" \
     --build-arg "VERSION_TAG=${IMAGE_TAG}" \
     --build-arg "ARCH=${IMAGE_TAG##*-}/"
+  docker push "${IMAGE_NAME}:${IMAGE_TAG}"
 }
 
 ####################
