@@ -132,8 +132,6 @@ function EnsureAppImageTagExists()
   VERSION_STR=$(cat VERSION)
   if [[ -n $CIRCLE_TAG ]]; then
     VERSION_TAG="${CIRCLE_TAG#*v}"
-  elif [[ "$BRANCH" == "develop" ]]; then
-    VERSION_TAG="${VERSION_STR}-dev"
   elif [ "$BRANCH" != "master" ] && [ "$BRANCH" != "main" ]; then
     VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
   fi

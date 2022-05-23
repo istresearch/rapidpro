@@ -18,10 +18,15 @@ LABEL org.label-schema.name="RapidPro" \
 WORKDIR /rapidpro
 
 # apply branding/overrides
-COPY --chown=engage:engage docker/customizations/any /opt/rp
-COPY --chown=engage:engage docker/customizations/rp /opt/rp
+COPY --chown=engage:engage docker/customizations/any /opt/ov/any
+COPY --chown=engage:engage docker/customizations/rp /opt/ov/brand
 USER root
+# copy over the base code
 RUN rsync -a /opt/rp/ ./ && rm -R /opt/rp
+# overlay with custom/any
+RUN rsync -a /opt/ov/any/ ./ && rm -R /opt/ov/any
+# overlay with custom/brand
+RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
 USER engage
 
 # compress static files
