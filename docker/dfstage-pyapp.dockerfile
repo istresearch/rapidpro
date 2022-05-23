@@ -1,4 +1,4 @@
-ARG FROM_STAGE_TAG
+ARG FROM_STAGE
 
 ARG ARG_C_FORCE_ROOT=1
 
@@ -31,8 +31,8 @@ COPY ./VERSION     VERSION
 
 # ========================================================================
 
-ARG FROM_STAGE_TAG
-FROM istresearch/p4-engage:${FROM_STAGE_TAG}
+ARG FROM_STAGE
+FROM ${FROM_STAGE}
 
 # NOTE: we default force Celery to run as root; do we still wish to force that?
 ARG ARG_C_FORCE_ROOT
@@ -67,7 +67,7 @@ ENV UWSGI_VIRTUALENV=/venv \
     UWSGI_HARAKIRI=$UWSGI_TIMEOUT \
     UWSGI_LOGFORMAT_STRFTIME=true \
     UWSGI_LOG_DATE='%Y-%m-%dT%H:%M:%SZ' \
-    UWSGI_LOGFORMAT='{"timestamp": "%(ftime)", "app": "webserver", "ip": "%(addr)", "http_method": "%(method)", "url": "%(uri)", "status": %(status), "size": %(size), "referrer": "%(referer)", "ua": "%(uagent)"}'
+    UWSGI_LOGFORMAT='{"timestamp": "%(ftime)", "message": "access log", "level": "INFO", "app": "webserver", "message": "access log", "ip": "%(addr)", "http_method": "%(method)", "url": "%(uri)", "status": %(status), "size": %(size), "referrer": "%(referer)", "ua": "%(uagent)"}'
 EXPOSE $UWSGI_PORT
 
 # Enable HTTP 1.1 Keep Alive options for uWSGI (http-auto-chunked needed when ConditionalGetMiddleware not installed)

@@ -1,5 +1,5 @@
 -extends "smartmin/list.html"
--load smartmin sms temba compress contacts i18n humanize
+-load smartmin sms temba static compress contacts i18n humanize
 
 -block extra-style
   {{block.super}}
@@ -74,7 +74,7 @@
                     -if not node.obj.is_folder
                       .lp-nav-item{ class:'{% if current_label.id == node.obj.id %}font-normal{% endif %}' }
                         .name{onclick:"goto(event)", href:"{% url 'msgs.msg_filter' node.obj.uuid %}", class:'{% if current_label.id == node.obj.id %}font-normal active{% endif %}' }
-                          {{ node.obj.name }} 
+                          {{ node.obj.name }}
                         .count{onclick:"goto(event)", href:"{% url 'msgs.msg_filter' node.obj.uuid %}", class:'{% if current_label.id == node.obj.id %}font-normal active{% endif %}' }
                           {{ node.count | intcomma }}
 
@@ -83,7 +83,7 @@
                 %temba-modax#create-label-modal{ header:'{% trans "Create Label" %}', endpoint:"{% url 'msgs.label_create' %}", "-temba-loaded": "handleCreateLabelModalLoaded", "-temba-submitted": "handleCreateLabelModalSubmitted"}
                   .button-light.block.mt-3
                     - trans "Create Label"
-                  
+
               -if org_perms.msgs.label_create_folder
                 %temba-modax{ header:'{% trans "Create Folder" %}', endpoint:"{% url 'msgs.label_create_folder' %}"}
                   .button-light.block.mt-3
@@ -171,6 +171,18 @@
 
             -block message-list
               %table.list.object-list.lined{class: '{% if org_perms.msgs.msg_update or org_perms.msgs.broadcast_send %}selectable{% endif %}'}
+                %thead
+                  - if actions
+                    %tr.multiselect-header
+                      %th
+                        %div{style: 'padding-top: 4px; width: 12px'}
+                          %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox
+                          %div.multiselect-header
+                            %span
+                              Select all
+                      %th
+                      %th
+                      %th
                 %tbody
                   -for object in object_list
                     %tr.sms.object-row{id: 'id-row-{{object.id}}', data-object-id:'{{ object.id }}',
@@ -188,7 +200,7 @@
                           .labels.flex.items-center.flex-wrap
                             -if 'label' in actions
                               -for label in object.labels.all
-                                .lbl.linked.ml-2{onclick:"goto(event, this)", href:"{% url 'msgs.msg_filter' label.uuid %}", data-id: '{{label.id}}'}                                
+                                .lbl.linked.ml-2{onclick:"goto(event, this)", href:"{% url 'msgs.msg_filter' label.uuid %}", data-id: '{{label.id}}'}
                                   {{label.name}}
 
                         -if object.attachments
@@ -198,8 +210,8 @@
 
                       %td
                         .flex.w-full.items-end.justify-end.pr-4
-                          .time.whitespace-nowrap
-                            {% short_datetime object.created_on %}
+                          .time.whitespace-nowrap.eng
+                            {% format_datetime object.created_on %}
 
                           -if show_channel_logs and not user_org.is_anon or perms.contacts.contact_break_anon
                             .inline-block.text-gray-400.linked.ml-3
@@ -215,7 +227,7 @@
                   -block search-details
                     .flex.mx-4.mt-3.mb-16
                       .text-gray-700
-                        -if not paginator or paginator.num_pages <= 1                        
+                        -if not paginator or paginator.num_pages <= 1
                           -if search
                             -blocktrans trimmed with results_count=paginator.count|intcomma count cc=paginator.count
                               Found {{ results_count }} message in last 90 days matching <i>{{search}}</i>.
@@ -231,17 +243,17 @@
                         - else
 
                           -if search
-                            -blocktrans trimmed with results_count=paginator.count|intcomma start=page_obj.start_index|intcomma end=page_obj.end_index|intcomma count cc=paginator.count 
+                            -blocktrans trimmed with results_count=paginator.count|intcomma start=page_obj.start_index|intcomma end=page_obj.end_index|intcomma count cc=paginator.count
                               Found {{ results_count }} message in last 90 days matching <i>{{search}}</i>.
                               -plural
                                 {{ start }} - {{ end }} of {{ results_count }} results for <i>{{search}}</i> since {{start_date}}.
                           -else
                             -if start_date
-                              -blocktrans trimmed with results_count=paginator.count|intcomma start=page_obj.start_index|intcomma end=page_obj.end_index|intcomma count cc=paginator.count 
+                              -blocktrans trimmed with results_count=paginator.count|intcomma start=page_obj.start_index|intcomma end=page_obj.end_index|intcomma count cc=paginator.count
                                 {{ results_count }} message since {{ start_date}}.
                                 -plural
                                   {{ start }} - {{ end }} of {{ results_count }} messages since {{ start_date}}.
-                                    
+
                       .flex-grow
                         -include "includes/pages.html"
         -else
@@ -249,36 +261,8 @@
 
 -block extra-script
   {{ block.super }}
-  :javascript
 
-    function handleRowClick(uuid) {
-      gotoLink("/contact/read/" + uuid + "/");
-    }
-
-    {% if org_perms.msgs.msg_update %}
-
-    function handleCreateLabelModalLoaded(event) {
-      lastChecked = getCheckedIds();
-      var body = event.detail.body;
-      body.querySelector("#id_messages").value = lastChecked.join();
-    }
-
-    function handleCreateLabelModalSubmitted(event) {
-      refresh(function() { recheckIds(); }, true);
-    }
-
-    function handleSendMessageClicked() {
-      var sendEndpoint = "{% url 'msgs.broadcast_send' %}";
-      var sendModal = document.querySelector("#send-message-modal");
-      var msgIds = getCheckedIds();
-      if (msgIds.length > 0) {
-        sendModal.setAttribute("endpoint", sendEndpoint + '?m=' + msgIds);
-      } else {
-        sendModal.setAttribute("endpoint", sendEndpoint);
-      }
-    }
-    {% endif %}
-
-    function handleAddLabelClicked() {
-      document.getElementById("create-label-modal").open = true;
-    }
+  <script type="text/javascript" src="{% static 'engage/js/msg-message_box.js' %}"></script>
+  {% if org_perms.msgs.msg_update %}
+    <script type="text/javascript" src="{% static 'engage/js/msg-message_box-update.js' %}"></script>
+  {% endif %}

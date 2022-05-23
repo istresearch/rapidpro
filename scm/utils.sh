@@ -202,6 +202,15 @@ function ConstructReleasePrepBranch
 }
 
 ####################
+# Put github.com into our known_hosts file. Avoid "are you sure?" prompts.
+function EnsureGitHubIsKnownHost()
+{
+  mkdir -p ~/.ssh;
+  ssh-keyscan -H github.com >> ~/.ssh/known_hosts;
+  chmod 600 ~/.ssh/known_hosts;
+}
+
+####################
 # Trigger a CircleCI build in a different project (repo).
 # @param string $1 - project name (URL segment for CircleCI API call).
 # @param string $2 - the branch name of the project build to trigger (URL segment).
@@ -209,12 +218,12 @@ function ConstructReleasePrepBranch
 #   NOTE USING $3: v1 does NOT handle workflows and therefore no context, YOU HAVE BEEN WARNED!
 #   NOTE: use v1.1 with Artifacts if you need build params with workflow context builds!
 # @ENV oCI_API_TOKEN - the required API token used to call CircleCI's API
-# @ENV oCI_ORG - (OPTIONAL) the org name for the project to trigger. Default: "istresearch"
+# @ENV oCI_ORG - (OPTIONAL) the org name for the project to trigger. Default: "$CIRCLE_PROJECT_USERNAME"
 # @ENV BUILD_INFO - the results of the curl command, if desired.
 function TriggerCircleCIProjectBuild
 {
   if [[ -z ${oCI_ORG} ]]; then
-    oCI_ORG="istresearch"
+    oCI_ORG="$CIRCLE_PROJECT_USERNAME"
   fi
   oCI_PROJECT=$1
   BRANCH=$2
@@ -241,7 +250,7 @@ function TriggerCircleCIProjectBuild
 ####################
 # Verify a specific tagged DockerHub image exists.
 # DockerHub introduced a (bug?) requirement to sleep 1 second between login and whatever.
-# e.g.: if DockerImageTagExists istresearch/joka ${JOKA_TAG}; then
+# e.g.: if DockerImageTagExists foo/bar ${SOME_TAG}; then
 # @param string $1 - DockerHub image name.
 # @param string $2 - the image tag.
 # @ENV DOCKER_USER - the circleci DockerHub username
@@ -357,7 +366,7 @@ function ExportAsArtifact
 ####################
 # Import an artifact created by ExportAsArtifact from a different repo build process.
 # See ExportAsArtifact for details.
-# @param string $1 - the "org/project" whose artifacts we desire, e.g. "istresearch/PULSE"
+# @param string $1 - the "org/project" whose artifacts we desire
 # @param string $2 - the filename in which to retrieve the data.
 # @return string Returns the file contents as a string.
 function ImportFromArtifact
@@ -392,7 +401,7 @@ function ImportFromArtifact
 
 ####################
 # Retrieve CircleCI build artifacts.
-# @param string $1 - the "org/project" whose artifacts we desire, e.g. "istresearch/PULSE"
+# @param string $1 - the "org/project" whose artifacts we desire
 # @return Returns the JSON result of the latest artifacts endpoint.
 function GetBuildArtifactsForProject
 {
@@ -402,7 +411,7 @@ function GetBuildArtifactsForProject
 
 ####################
 # Add an ENV var to a particular project.
-# @param string $1 - the "org/project" we desire to poke, e.g. "istresearch/Pulse-UI"
+# @param string $1 - the "org/project" we desire to poke
 # @param string $2 - ENV var name
 # @param string $3 - ENV var value
 function AddEnvVarToProject
@@ -414,7 +423,7 @@ function AddEnvVarToProject
 
 ####################
 # Remove a single ENV var for a particular project.
-# @param string $1 - the "org/project" we desire to poke, e.g. "istresearch/Pulse-UI"
+# @param string $1 - the "org/project" we desire to poke
 # @param string $2 - ENV var name.
 function DelEnvVarToProject
 {
@@ -482,7 +491,7 @@ function createVersionNumFrom10minTs
 # usage: VERSION_NUM=$(parseVersionNumFromBranchNameOrTag)
 function parseVersionNumFromBranchNameOrTag
 {
-  if [[ ${BRANCH_NAME} =~ (release|staging)-v([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)\.{0,1}([[:digit:]]*)$ ]] || \
+  if [[ ${BRANCH_NAME} =~ (release|staging)[-/]v([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)\.{0,1}([[:digit:]]*)$ ]] || \
      [[ ${CIRCLE_TAG} =~ (v|beta)([[:digit:]]+)\.([[:digit:]]+)\.([[:digit:]]+)\.{0,1}([[:digit:]]*)$ ]]
   then
     echo $(buildVersionNum "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}" "${BASH_REMATCH[5]}")
@@ -626,7 +635,7 @@ function uploadFileToRepo
   if [ -f "${LOCAL_SRC_FILE}" ]; then
     if [[ "$3" == "1" && -n $(SpotCheckRemoteFile ${SCP_SSH} ${REMOTE_DST_FILE}) ]]; then
       PrintPaddedTextRight "${REMOTE_DST_FILE} already uploaded" "SKIPPED" "1;31"
-      continue
+      return
     fi
     local src=$(basename "${LOCAL_SRC_FILE}")
     local dst=$(basename "${REMOTE_DST_FILE}")
@@ -643,5 +652,153 @@ function uploadFileToRepo
   else
     echo -e "${COLOR_MSG_WARNING}Local file ${LOCAL_SRC_FILE} not found.${COLOR_NONE}"
     exit 1
+  fi
+}
+
+####################
+# Is the Multi-architecture Docker builder, buildx, installed.
+function multiArch_isBuildx()
+{
+  if [ -f "/usr/share/keyrings/docker-archive-keyring.gpg" ]; then
+    echo "1"
+  fi
+}
+
+####################
+# Multi-architecture Docker images require some bleeding edge software, buildx.
+# Use this function to install Docker `buildx`.
+# @see https://docs.docker.com/engine/install/ubuntu/
+# Used with machine image: ubuntu-2004:202111-02 (Ubuntu 20.04, revision: Nov 02, 2021)
+function multiArch_installBuildx()
+{
+  # Uninstall older versions of Docker, ok if it reports none are installed.
+  sudo apt-get remove docker docker-engine docker.io containerd runc;
+  # install using repository
+  sudo apt-get update && sudo apt-get install \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release;
+  # add Docker's official GPG key
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg;
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null;
+  # install docker engine
+  sudo apt-get update && sudo apt-get install docker-ce docker-ce-cli containerd.io;
+  # test engine installation
+  sudo docker run hello-world;
+}
+
+####################
+# Multi-architecture Docker images require some bleeding edge software, buildx.
+# Use this function to install arm64 architecture.
+# @see https://docs.docker.com/engine/install/ubuntu/
+# Used with machine image: ubuntu-2004:202111-02 (Ubuntu 20.04, revision: Nov 02, 2021)
+# @ENV USER - the circleci user that executes commands.
+function multiArch_addArm64Arch()
+{
+  sudo apt-get update && sudo apt-get install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg-agent \
+    software-properties-common;
+  sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  sudo apt-get update && sudo apt-get install docker-ce docker-ce-cli containerd.io;
+  # so we don't have to use sudo
+  sudo groupadd docker && sudo usermod -aG docker $USER && newgrp docker;
+  # emulation deps
+  sudo apt-get install binfmt-support qemu-user-static;
+  # test engine installation again to show what arch it supports
+  sudo docker run hello-world;
+}
+
+####################
+# Multi-architecture Docker images require some bleeding edge software, buildx.
+# Use this function to create and use a new builder context.
+# @see https://docs.docker.com/engine/install/ubuntu/
+# Used with machine image: ubuntu-2004:202111-02 (Ubuntu 20.04, revision: Nov 02, 2021)
+# @param string $1 - (OPTIONAL) the name of the context to use (defaults to 'mabuilder').
+function multiArch_createBuilderContext()
+{
+  DOCKER_CONTEXT=${1:-mabuilder};
+  docker context create "${DOCKER_CONTEXT}";
+  docker buildx create "${DOCKER_CONTEXT}" --use;
+}
+
+####################
+# Use this function to build multi-architecture container images and push them to DockerHub.
+# @param string $1 - image name to use (w/o the tag); if empty, it is constructed from CI vars.
+# @param string $2 - image tag to use; if empty, it will use getVersionStr()
+# @param string $3 - docker build file to use; if empty, "docker/Dockerfile" is used.
+# @param string $4…- (OPTIONAL) extra docker build args, e.g. --build-arg "APK_URI=${APK_URI}"
+function multiArch_buildImages()
+{
+  IMG_NAME="$1"
+  if [[ -z ${IMG_NAME} ]]; then
+    IMG_NAME=${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+  fi
+  IMG_TAG="$2"
+  if [[ -z $IMG_TAG ]]; then
+    IMG_TAG=getVersionStr
+  fi
+  DOCKER_FILE_TO_USE="${3:-docker/Dockerfile}"
+  # eat the 3 fixed, used arguments; so $@ will pass the rest into buildx.
+  shift 3
+  set -x
+  for i in $(seq 1 3); do
+    if docker buildx build --progress=plain \
+        --platform linux/amd64,linux/arm64 \
+        -t "$IMG_NAME:$IMG_TAG" \
+        -f "$DOCKER_FILE_TO_USE" \
+        "$@" \
+        --push .; then
+      break
+    fi
+    sleep 3
+    if [[ "${i}" == "3" ]]; then
+      echo "[Error]: build error"
+      exit 1
+    fi
+  done
+  if [ $? -eq 0 ]; then
+    PrintPaddedTextRight "$IMG_NAME:$IMG_TAG build and upload" "OK" "${COLOR_MSG_INFO}"
+  else
+    PrintPaddedTextRight "$IMG_NAME:$IMG_TAG build and upload" "FAILED" "${COLOR_MSG_WARNING}"
+    exit 2
+  fi
+}
+
+####################
+# Use this function to build a standard "docker build" image and push it to DockerHub.
+# @param string $1 - image name to use (w/o the tag); if empty, it is constructed from CI vars.
+# @param string $2 - image tag to use; if empty, it will use getVersionStr()
+# @param string $3 - docker build file to use; if empty, "docker/Dockerfile" is used.
+# @param string $4…- (OPTIONAL) extra docker build args, e.g. --build-arg "APK_URI=${APK_URI}"
+function buildImage()
+{
+  IMG_NAME="$1"
+  if [[ -z ${IMG_NAME} ]]; then
+    IMG_NAME=${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}
+  fi
+  IMG_TAG="$2"
+  if [[ -z $IMG_TAG ]]; then
+    IMG_TAG=getVersionStr
+  fi
+  DOCKER_FILE_TO_USE="${3:-docker/Dockerfile}"
+  # eat the 3 fixed, used arguments; so $@ will pass the rest into buildx.
+  shift 3
+
+  docker build --progress=plain \
+    -t "$IMG_NAME:$IMG_TAG" \
+    -f "$DOCKER_FILE_TO_USE" \
+    "$@" \
+    .
+  if [ $? -eq 0 ]; then
+    PrintPaddedTextRight "$IMG_NAME:$IMG_TAG build" "OK" "${COLOR_MSG_INFO}"
+    docker push "${IMG_NAME}:${IMG_TAG}"
+  else
+    PrintPaddedTextRight "$IMG_NAME:$IMG_TAG build" "FAILED" "${COLOR_MSG_WARNING}"
+    exit 2
   fi
 }

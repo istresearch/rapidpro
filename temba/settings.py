@@ -11,11 +11,9 @@ version_str = None
 vtag = env('VERSION_TAG', '')
 vstr = env('VERSION_CI', '')
 if vtag and vstr and vtag.startswith('ci'):
-    version_str = f"{vstr} ({vtag})"
-elif vtag and vtag.startswith('ci'):
-    version_str = f"{vtag}"
+    version_str = "v{} ({})".format(vstr, vtag)
 elif vtag:
-    version_str = f"v{vtag}"
+    version_str = "v{}".format(vtag)
 
 DEFAULT_BRAND = "engage"
 DEFAULT_BRAND_OBJ.update({

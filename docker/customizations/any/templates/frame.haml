@@ -1,6 +1,5 @@
-{% load static %}
 <!DOCTYPE HTML>
--load humanize i18n smartmin sms compress
+-load humanize i18n smartmin sms static compress
 
 {% block html-tag %}
 <html lang="{{ LANGUAGE_CODE }}">
@@ -13,8 +12,6 @@
         -else
           {{ brand.name }}
 
-    %link{href:"{% static 'fonts/roboto/stylesheet.css' %}", rel:'stylesheet', type:'text/css'}
-    %link{href:"{% static 'brands/engage/images/engage.ico' %}", rel:'shortcut icon', type:'image/png'}
     %meta{charset:"utf-8"}
     %meta{name:"viewport", content:"width=device-width, initial-scale=1.0"}
     %meta{name:"description", content:"{% block page-description %}{{ brand.meta_desc }}{% endblock %}"}
@@ -79,6 +76,7 @@
       -# %link{rel:'stylesheet', href:'https://fonts.googleapis.com/css?family=Roboto+Mono:300|Roboto:200,300,400,500'}
 
       -compress css
+        %link{type:'text/css', rel:'stylesheet', href:"{% static 'fonts/roboto/stylesheet.css' %}" }
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'bower/bootstrap-css/css/bootstrap.css' %}",  media:'all' }
 
       -compress css
@@ -156,7 +154,7 @@
         %span.version-str
           {% if user.is_authenticated and brand.version %}{{brand.version}}{%else%}&nbsp;{%endif%}
 
-      #menu-area.flex.flex-col
+      #menu-area.flex.flex-col.h-full
         -block org
           -include 'includes/org.html'
         -block nav
