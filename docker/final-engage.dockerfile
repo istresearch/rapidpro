@@ -16,15 +16,9 @@ LABEL org.label-schema.name="Engage" \
 
 ENV VERSION_TAG=$VERSION_TAG
 
-# apply branding/overrides
-COPY --chown=engage:engage docker/customizations/any /opt/ov/any
+# apply branding
 COPY --chown=engage:engage docker/customizations/engage /opt/ov/brand
 USER root
-# copy over the base code
-RUN rsync -a /opt/rp/ ./ && rm -R /opt/rp
-# overlay with custom/any
-RUN rsync -a /opt/ov/any/ ./ && rm -R /opt/ov/any
-# overlay with custom/brand
 RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
 USER engage
 
