@@ -135,7 +135,7 @@ function EnsureAppImageTagExists()
   elif [ "$BRANCH" != "master" ] && [ "$BRANCH" != "main" ]; then
     VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
   fi
-  echo "${VERSION_TAG}" > "${WORKSPACE}/info/version_tag.txt"
+  echo "pyapp-${VERSION_TAG}" > "${WORKSPACE}/info/version_tag.txt"
   echo "Using tag: ${VERSION_TAG}";
 
   VERSION_CI=$(getVersionStr)
