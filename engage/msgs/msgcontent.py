@@ -24,7 +24,7 @@ class ListMsgContentMixin:
         :return: the processed list.
         """
         for theMsg in aList:
-            if theMsg and theMsg.text is not None:
+            if theMsg and hasattr(theMsg, 'text') and theMsg.text is not None:
                 if isinstance(theMsg.text, str):
                     theMsg.text = sanitize_text(theMsg.text)
                 elif isinstance(theMsg.text, dict):
