@@ -179,6 +179,10 @@
           -trans "Failed to call"
         {{ event.url|truncatechars:100 }}
 
+      -if event.channel_log and event.channel_log.is_error
+        %div{class:"blert blert-danger"}
+          {% if event.channel_log.response_status > 0 %}{{ event.channel_log.response_status }} {% endif %}{{ event.channel_log.description }}
+
     %td.created_on
       .time.flex.items-end.justify-end
         %span.short.hide
@@ -193,8 +197,8 @@
 
 -if has_older and not recent_only
   %tr{ ic-append-from:"/contact/history/{{contact.uuid}}/?after={{ next_after }}&before={{ next_before }}",
-       ic-trigger-on:"scrolled-into-view", 
-       ic-target:"table.activity tbody.previous", 
+       ic-trigger-on:"scrolled-into-view",
+       ic-target:"table.activity tbody.previous",
        ic-indicator:"#indicator" }
 
 -if not has_older and not recent_only and start_date

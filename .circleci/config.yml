@@ -91,7 +91,7 @@ jobs:
           name: Figure out tag to use
           command: |-
             source scm/utils-engage.sh; EnsureAppImageTagExists;
-            IMAGE_TAG=pyapp-$(cat "workspace/info/version_tag.txt")
+            IMAGE_TAG="pyapp-$(cat 'workspace/info/version_tag.txt')"
             echo "${IMAGE_TAG}" > "workspace/info/pyapp_tag.txt"
       - persist_to_workspace:
           root: .

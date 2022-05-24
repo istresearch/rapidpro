@@ -334,6 +334,10 @@ LOGGING = {
 }
 LOGGING['root']['level'] = env('LOG_LEVEL', env('DJANGO_LOG_LEVEL', 'INFO'))
 
+GROUP_PERMISSIONS['Editors'] += (
+    "channels.channellog_read",
+)
+
 #============== KeyCloak SSO ===================
 OAUTH2_PROVIDER = None
 KEYCLOAK_URL = env('KEYCLOAK_URL', None)

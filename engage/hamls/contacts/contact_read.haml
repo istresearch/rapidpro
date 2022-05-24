@@ -170,6 +170,25 @@
           %td.created_on
             {% short_datetime ticket.opened_on %}
 
+  -if open_tickets
+    %h5
+      -trans "Open Tickets"
+
+    %table.activity.tickets
+      -for ticket in open_tickets
+        %tr.item
+          %td.icon
+            %span.glyph.icon-ticket
+          %td.details
+            %a(href="{% url 'tickets.ticket_filter' ticket.ticketer.uuid %}")
+              {{ ticket.ticketer.name }}
+          %td.details
+            {{ ticket.subject }}
+          %td.details
+            {{ ticket.body }}
+          %td.created_on
+            {% short_datetime ticket.opened_on %}
+
   -if upcoming_events
     -if upcoming_events|length > 3
       :css
@@ -255,11 +274,6 @@
     :css
       .urn-link {
         display: inline-block;
-      }
-
-      .page-content {
-        align-self: auto;
-        max-width: 1024px;
       }
 
     {% lessblock %}

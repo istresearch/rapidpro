@@ -76,9 +76,9 @@ ENV STARTUP_CMD="/venv/bin/uwsgi --http-auto-chunked --http-keepalive"
 
 ENV CELERY_CMD="/venv/bin/celery --beat --app=temba worker --loglevel=INFO --queues=celery,msgs,flows,handler"
 
-# apply branding/overrides
-COPY --chown=engage:engage docker/customizations/any /opt/rp
-RUN rsync -a /opt/rp/ ./ && rm -R /opt/rp
+# apply overrides
+COPY --chown=engage:engage docker/customizations/any /opt/ov/any
+RUN rsync -a /opt/ov/any/ ./ && rm -R /opt/ov/any
 
 COPY --chown=engage:engage docker/customizations/startup.sh /startup.sh
 CMD ["/startup.sh"]

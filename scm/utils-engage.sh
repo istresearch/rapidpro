@@ -132,8 +132,6 @@ function EnsureAppImageTagExists()
   VERSION_STR=$(cat VERSION)
   if [[ -n $CIRCLE_TAG ]]; then
     VERSION_TAG="${CIRCLE_TAG#*v}"
-  elif [[ "$BRANCH" == "develop" ]]; then
-    VERSION_TAG="${VERSION_STR}-dev"
   elif [ "$BRANCH" != "master" ] && [ "$BRANCH" != "main" ]; then
     VERSION_TAG="ci-${VERSION_STR}-${BRANCH}"
   fi
@@ -245,13 +243,16 @@ function BuildImageForArch()
   else
     IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
   fi
-  VERSION_TAG="$(cat workspace/info/version_tag.txt)"
-  IMAGE_TAG="${VERSION_TAG}-${2}"
+
   if [[ "${IMG_STAGE}" != 'pyapp' ]]; then
+    VERSION_TAG="$(cat workspace/info/version_tag.txt)"
     DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
   else
+    VERSION_TAG="$(cat workspace/info/pyapp_tag.txt)"
     DOCKERFILE2USE="docker/dfstage-${IMG_STAGE}.dockerfile"
   fi
+  IMAGE_TAG="${VERSION_TAG}-${2}"
+
   if [[ "${IMG_STAGE}" != 'pyapp' ]]; then
     FROM_STAGE_TAG=$(GetImgStageTag pyapp)
   else
@@ -282,7 +283,13 @@ function CreateManifestForImage()
   elif [[ "${IMG_STAGE}" == 'rp' ]]; then
     IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/rapidpro"
   fi
-  IMAGE_TAG="$(cat workspace/info/version_tag.txt)"
+
+  if [[ "${IMG_STAGE}" != 'pyapp' ]]; then
+    VERSION_TAG="$(cat workspace/info/version_tag.txt)"
+  else
+    VERSION_TAG="$(cat workspace/info/pyapp_tag.txt)"
+  fi
+  IMAGE_TAG="${VERSION_TAG}"
 
   EnsureGitHubIsKnownHost
   docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}"

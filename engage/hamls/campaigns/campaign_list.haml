@@ -9,7 +9,7 @@
     }
 
 -block page-title
-  -trans "Campaigns"
+  -trans "Scenarios"
 
 -block title-icon
   .title-icon
@@ -28,7 +28,7 @@
             .flex.flex-col
               -if org_perms.flows.flow_create
                 .w-64.mr-5
-                  %temba-modax{ header:"Create Scenario", endpoint:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/create/" }
+                  %temba-modax{ header:"Create Scenario", endpoint:"/campaign/create/" }
                     .button-primary.block
                       -trans "Create Scenario"
 
@@ -76,6 +76,9 @@
                         %div.multiselect-header
                           %span
                             Select all
+                  %th
+                  %th
+                  %th
               %tbody
                 -for obj in object_list
                   %tr.campaign.object-row.select-row{ data-object-id: "{{ obj.id }}", onrowclick:'gotoLink("{% url "campaigns.campaign_read" obj.id%}")'}

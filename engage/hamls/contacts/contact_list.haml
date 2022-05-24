@@ -165,9 +165,14 @@
                 %table.list.object-list.lined.selectable
                   - if object_list
                     %thead
-                      %tr.contacts
+                      %tr.contacts.multiselect-header
                         -if org_perms.contacts.contact_update
                           %th
+                            %div{style: 'padding-top: 4px; width: 12px'}
+                              %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox
+                              %div.multiselect-header
+                                %span
+                                  Select all
                         %th
                         %th
                         -for field in contact_fields
@@ -285,7 +290,7 @@
                 -if paginator.is_es_search and not page_obj.has_next_page and page_obj.number == paginator.num_pages and paginator.count > 10000
                   .text-gray-400.text-sm.self-end.mt-2
                     -trans "To view more than 10,000 search results, save it as a group."
-
+                
           -else
             -include "contacts/empty_include.haml"
 
@@ -307,7 +312,7 @@
       color: #717171;
       font-size: 0.75rem;
     }
-
+    
     tr.contacts th:hover a span.icon {
       visibility: visible;
       font-size: 14px;
@@ -315,7 +320,7 @@
     tr.contacts th a span.icon.visible {
       visibility: visible;
     }
-
+    
     .span9 .contact_list tr.contacts {
       border-top: none;
     }
@@ -411,3 +416,4 @@
     function handleAddGroupClicked() {
       document.getElementById("create-group-modal").open = true;
     }
+
