@@ -39,7 +39,7 @@
 
           -trans "To learn more about flows, visit the"
             <a href="{% non_ssl_brand_url 'public.video_list'%}">{% trans "learning center" %}</a>.
-    
+
           .mt-6
             %temba-modax.inline-block.mb-1(endpoint="{% url 'flows.flow_create'%}" header='{{_("Create Flow")|escapejs}}')
               .button-primary.lift.inline-block
@@ -80,7 +80,6 @@
         .title
           %a(href="{% url 'contacts.contact_list' %}")
             -trans "Contacts"
-
         -blocktrans with name=brand.name
           Before you do anything else in {{name}}, it is helpful to have a list of contacts. This will make it easy to send a message or survey out
           to a wide distribution list.
@@ -115,7 +114,6 @@
         .title
           %a(href="{% url 'msgs.msg_inbox' %}")
             -trans "Messages"
-
         -blocktrans with name=brand.name
           If you use e-mail, reading and writing messages in {{name}} should already be familiar to you. Just like e-mail, you have an Inbox and it's easy to label
           messages so you can follow up with them later. {{name}} also allows you to schedule a message to be sent later or even as a reminder
@@ -138,7 +136,7 @@
         .title
           %a(href="{% url 'orgs.org_home' %}")
             -trans "Workspace"
-  
+
         -block account-blurb
 
         .mt-2
@@ -147,7 +145,7 @@
             {{name}} also offers a robust REST API to add SMS features to your own website. Have a look through the
             %a{href:'{{api_url}}'}
               API documentation
-            to learn more. 
+            to learn more.
 
         .mt-6
           -block account-details

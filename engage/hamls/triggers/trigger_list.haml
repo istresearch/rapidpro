@@ -72,6 +72,14 @@
           -block trigger-list
             %table.list.trigger-list.lined{class: '{% if org_perms.flows.flow_update %}selectable{% endif %}'}
               %tbody
+                %th
+                  %div{style: 'padding-top: 4px; width: 12px'}
+                    %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox
+                    %div.multiselect-header
+                      %span
+                        Select all
+                %th
+                %th
                 -for obj in object_list
                   %tr.trigger.object-row{ data-object-id: "{{ obj.id }}", onrowclick:"updateTrigger(event, {{obj.id}})" }
                     - if org_perms.triggers.trigger_update
@@ -132,7 +140,7 @@
 
             -block paginator
               -include "includes/pagination.haml"
-
+  
   %temba-modax#update-trigger
 -block extra-script
   {{ block.super }}
@@ -146,3 +154,4 @@
       modal.header = '{{ _("Update Trigger")|escapejs }}';
       modal.open = true;
     }
+    
