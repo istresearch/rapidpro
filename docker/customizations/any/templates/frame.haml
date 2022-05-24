@@ -151,7 +151,7 @@
           .name
             {{brand.name}}
           %img{ src:"{% static brand.logo %}" }
-        %span.version-str
+        %span.version-str{title:"{% if user.is_authenticated and not user.is_anonymous %}{{user.email}}{%endif%}"}
           {% if user.is_authenticated and brand.version %}{{brand.version}}{%else%}&nbsp;{%endif%}
 
       #menu-area.flex.flex-col.h-full
