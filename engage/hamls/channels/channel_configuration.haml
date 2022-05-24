@@ -9,7 +9,7 @@
 
   -if object.channel_type == 'BWD' or object.channel_type == 'BWI'
     %h4
-      Callback URL: https://{{channel.callback_domain}}{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/c/bwd/{{channel.uuid}}/receive
+      Callback URL: https://{{channel.callback_domain}}/c/bwd/{{channel.uuid}}/receive
 
   -if object.get_country_display
     .text-base
@@ -29,7 +29,7 @@
       .title
         {{url.label}}
       .code.inline-block.mt-3
-        {{url.url}}       
+        {{url.url}}
 
       .my-4
         {{url.description}}
