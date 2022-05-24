@@ -93,3 +93,8 @@ def RunEngageOverrides():
     setattr(MsgCRUDL.Failed, 'actions', ["resend", "delete"])
     from engage.msgs.exporter import MsgExporter
     setattr(MsgCRUDL.Export, 'form_valid', MsgExporter.form_valid)
+
+    from temba.mailroom.events import event_renderers
+    from engage.mailroom.events import getHistoryContentFromMsg
+    from temba.msgs.models import Msg
+    event_renderers[Msg] = getHistoryContentFromMsg
