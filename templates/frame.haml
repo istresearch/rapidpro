@@ -18,7 +18,7 @@
     :javascript
 
       window.supportEmail = '{{brand.support_email}}';
-      window.subdir = '{{brand.sub_dir}}';
+
       function conditionalLoad(local, remote) {
         if (local != null && (window.location.hostname == "localhost" || remote == null)) {
           loadResource("{{ STATIC_URL }}" + local);
@@ -46,7 +46,7 @@
       %script{src:"{{ STATIC_URL }}bower/bootstrap/js/bootstrap-modal.js"}
       %script{src:"{{ STATIC_URL }}bower/bootstrap/js/bootstrap-dropdown.js"}
       %script{src:"{{ STATIC_URL }}bower/bootstrap/js/bootstrap-tooltip.js"}
-      %script{src:"{{ STATIC_URL }}bower/bootstrap/js/bootstrap-tab.js"}      
+      %script{src:"{{ STATIC_URL }}bower/bootstrap/js/bootstrap-tab.js"}
       %script{src:"{{ STATIC_URL }}bower/intercooler-js/src/intercooler.js"}
       %script{src:"{{ STATIC_URL }}bower/moment/moment.js"}
       %script{src:"{{ STATIC_URL }}bower/moment-timezone/builds/moment-timezone-with-data.js"}
@@ -95,10 +95,7 @@
       -compress css
         %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}fonts/icons/style.css", media:'all'}
         %link{type:'text/less', rel:'stylesheet', href:'{{STATIC_URL}}less/print.less', media:'print'}
-        %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}fonts/tembatoo/style.css", media:'all'}
-
         %link{type:"text/css", rel:"stylesheet", href:"{{ STATIC_URL }}css/temba-components.css"}
-        %link{type:'text/css', rel:'stylesheet', href:"{{ STATIC_URL }}fonts/tembatoo/style.css", media:'all'}
 
       -compress css
 
@@ -141,11 +138,11 @@
     <script type="module">
       import '../out-tsc/temba-modules.js';
     </script>
-  -else 
+  -else
     -include "components-body.html"
-  
+
   -block temba-store
-    
+
     -if user.is_authenticated
       %temba-store(
         completion="/mr/docs/{{ LANGUAGE_CODE }}/editor.json"
@@ -210,7 +207,7 @@
                 .flex.flex-col.mr-5.leading-tight
                   .page-title
                     -block title
-                      
+
                   .page-subtitle
                     -block subtitle
 
@@ -224,7 +221,7 @@
 
             .mt-6
               -block content
-            
+
             -block post-content
 
     -block footer
@@ -267,7 +264,7 @@
       }
 
       function removalConfirmation(removal, buttonName) {
-  
+
         var modal = document.querySelector("#general-delete-confirmation");
         modal.classList.remove("hidden");
 

@@ -38,7 +38,7 @@
               color: var(--color-primary-dark);
               margin-bottom: 10px;
               font-size: 11px;
-              
+
             }
 
             &:hover {
@@ -60,7 +60,7 @@
             color: var(--color-nav-unselected);
           }
         }
-      
+
         a {
           width: 75px;
           display: flex;
@@ -137,21 +137,21 @@
     %a{href:"{% url 'msgs.msg_inbox' %}", class:"{% active request 'inbox|outbox|broadcast|call|msg/filter|msg/flow|msg/archived|failed' %}"}
       .circle
         .icon-bubble-3.icon-2
-      .title 
+      .title
         -trans "messages"
 
   -if org_perms.contacts.contact_list and not request.user.is_superuser
     %a{href:"{% url 'contacts.contact_list' %}", class:"{% active request 'contact|imports' %}"}
       .circle
         .icon-contact
-      .title 
+      .title
         -trans "contacts"
 
   -if org_perms.flows.flow_list and not request.user.is_superuser
     %a{href:"{% url 'flows.flow_list' %}", class:"{% active request '(?<!msg)/flow' %}"}
       .circle
         .icon-flow.icon-3
-      .title 
+      .title
         -trans "flows"
 
   -if org_perms.campaigns.campaign_list and not request.user.is_superuser
@@ -159,7 +159,7 @@
       .circle
         .icon-campaign
       .title
-        -trans "scenarios"
+        -trans "campaigns"
 
   -if org_perms.triggers.trigger_list and not request.user.is_superuser
     %a{href:"{% url 'triggers.trigger_list' %}", class:"{% active request 'trigger' %}"}
@@ -182,12 +182,6 @@
           .icon-phone
         .title
           -trans "channels"
-    -else
-      %a{href:"{% url 'channels.channel_manage' %}", class:"{% active request 'channels' %}"}
-        .circle
-          .icon-phone
-        .title
-          -trans "channels"
 
   -if request.user.is_superuser or perms.auth.user_list
     -if not user_org
@@ -204,6 +198,13 @@
           .icon-office.icon-2
         .title
           -trans "workspaces"
+
+  -if request.user.is_superuser or perms.apks.apk_list
+    %a{href:"{% url 'apks.apk_list' %}", class:"{% active request 'apk' %}"}
+      .circle
+        .icon-channel-android
+      .title
+        -trans "android"
 
   -if request.user.is_superuser or perms.orgs.org_dashboard
     %a{href:"{% url 'dashboard.dashboard_home' %}", class:"{% active request 'dashboard(?!/flows)' %}"}

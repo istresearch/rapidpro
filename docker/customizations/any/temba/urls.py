@@ -58,7 +58,7 @@ if settings.DEBUG:
 
 # import any additional urls
 for app in settings.APP_URLS:  # pragma: needs cover
-    urlpatterns.append(url(r"^", include(app)))
+    urlpatterns.append(url(r"^{}".format(VHOST_NAME), include(app)))
 
 # initialize our analytics (the signal below will initialize each worker)
 init_analytics()

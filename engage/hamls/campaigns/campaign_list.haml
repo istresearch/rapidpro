@@ -28,10 +28,10 @@
             .flex.flex-col
               -if org_perms.flows.flow_create
                 .w-64.mr-5
-                  %temba-modax{ header:"Create Scenario", endpoint:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/create/" }
+                  %temba-modax{ header:"Create Scenario", endpoint:"/campaign/create/" }
                     .button-primary.block
                       -trans "Create Scenario"
-              
+
               .lp-nav.upper
                 -for folder in folders
                   .lp-nav-item{'class': '{% if folder.url == request_url %}font-normal{% endif %}' }
@@ -76,9 +76,9 @@
                         %div.multiselect-header
                           %span
                             Select all
-                    %th
-                    %th
-                    %th
+                  %th
+                  %th
+                  %th
               %tbody
                 -for obj in object_list
                   %tr.campaign.object-row.select-row{ data-object-id: "{{ obj.id }}", onrowclick:'gotoLink("{% url "campaigns.campaign_read" obj.id%}")'}
@@ -101,7 +101,7 @@
                       -trans "No matching campaigns"
 
                 - block extra-rows
-            
+
             .flex.flex-col.mx-4.mt-3.mb-16
               .flex.flex-wrap
                 .text-gray-700

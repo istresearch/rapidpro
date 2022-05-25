@@ -17,8 +17,10 @@ EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
 
 version_str = None
 vtag = env('VERSION_TAG', '')
-if vtag:
-    version_str = "v{}".format(vtag)
+if vtag and vtag.startswith('ci'):
+    version_str = f"{vtag}"
+elif vtag:
+    version_str = f"v{vtag}"
 
 DEFAULT_BRAND = "engage"
 DEFAULT_BRAND_OBJ.update({

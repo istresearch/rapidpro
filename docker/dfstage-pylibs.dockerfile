@@ -1,4 +1,4 @@
-ARG FROM_STAGE_TAG
+ARG FROM_STAGE
 
 ARG ARG_PIP_RETRIES=120
 ARG ARG_PIP_TIMEOUT=400
@@ -9,17 +9,20 @@ ARG USER_PID=1717
 
 # ========================================================================
 
-FROM istresearch/p4-engage:${FROM_STAGE_TAG} as load-files
+FROM alpine as load-files
 
 COPY pyproject.toml /opt/code2use/
 COPY package*.json /opt/code2use/
 COPY poetry-install.sh /opt/code2use/
 COPY rp-build-deps.sh /opt/code2use/
 
+RUN sed "s|poetry install|poetry install -vvv -n --no-dev|" /opt/code2use/poetry-install.sh > /opt/code2use/install-pylibs.sh \
+ && chmod +x /opt/code2use/install-pylibs.sh
+
 # ========================================================================
 
-ARG FROM_STAGE_TAG
-FROM istresearch/p4-engage:${FROM_STAGE_TAG}
+ARG FROM_STAGE
+FROM ${FROM_STAGE}
 
 # Colors! :D
 ENV COLOR_NONE=\033[0m \
@@ -55,17 +58,17 @@ WORKDIR /rapidpro
 COPY --from=load-files --chown=engage:engage /opt/code2use/* ./
 
 # required runtime libs
-RUN set -ex; apk -U add \
-	bash \
-	nano \
-	python3 \
-	su-exec \
-	gcc \
-	linux-headers \
-	libressl-dev \
+RUN set -ex; apk -U add --virtual .my-build-deps \
+    su-exec \
+    cargo \
+    gcc \
+	git \
+    linux-headers \
+    libressl-dev \
     libxslt-dev \
     libxml2-dev \
     libffi-dev \
+    openssl-dev \
     python3-dev \
     musl-dev \
     postgresql-dev \
@@ -73,13 +76,11 @@ RUN set -ex; apk -U add \
  && npm install -g node-gyp less \
  && echo "installed global runtime npm libs" \
  && ./rp-build-deps.sh \
- && su-exec engage:engage ./poetry-install.sh \
+ && set -x; su-exec engage:engage ./install-pylibs.sh \
  && su-exec engage:engage npm install \
  && apk del .rp-build-deps \
+ && apk del .my-build-deps \
  && echo "installed/built python and npm libs"
-
-# rather than also installing coffee to global area, just put it on PATH
-ENV PATH=/rapidpro/node_modules/coffeescript/bin:$PATH
 
 RUN runDeps="$( \
     scanelf --needed --nobanner --recursive /venv \

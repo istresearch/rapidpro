@@ -9,7 +9,7 @@
     }
 
 -block page-title
-  -trans "Scenarios"
+  -trans "Campaigns"
 
 -block title-icon
   .title-icon
@@ -31,7 +31,7 @@
                   %temba-modax{ header:"Create Scenario", endpoint:"{% if request.subdir %}/{{request.subdir}}{%else%}{%endif%}/campaign/create/" }
                     .button-primary.block
                       -trans "Create Scenario"
-              
+
               .lp-nav.upper
                 -for folder in folders
                   .lp-nav-item{'class': '{% if folder.url == request_url %}font-normal{% endif %}' }
@@ -98,7 +98,7 @@
                       -trans "No matching campaigns"
 
                 - block extra-rows
-            
+
             .flex.flex-col.mx-4.mt-3.mb-16
               .flex.flex-wrap
                 .text-gray-700
