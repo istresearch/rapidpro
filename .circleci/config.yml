@@ -14,7 +14,7 @@ jobs:
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Ensure Base Image Exists
-          #no_output_timeout: 180m
+          no_output_timeout: 180m
           command: |-
             source scm/utils-engage.sh; EnsureBaseImageExists;
       - persist_to_workspace:
@@ -38,6 +38,7 @@ jobs:
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Ensure Pylibs-amd64 Image Exists
+          no_output_timeout: 180m
           command: |-
             source scm/utils-engage.sh; EnsurePyLibsImageExists "pylibs-amd64";
       - persist_to_workspace:
@@ -58,6 +59,7 @@ jobs:
             docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
       - run:
           name: Ensure Pylibs-arm64 Image Exists
+          no_output_timeout: 180m
           command: |-
             source scm/utils-engage.sh; EnsurePyLibsImageExists "pylibs-arm64";
       - persist_to_workspace:
@@ -73,6 +75,7 @@ jobs:
       - run:
           name: Ensure Pylibs Image Manifest Exists
           command: |-
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
             source scm/utils-engage.sh; EnsurePyLibsManifestExists;
       - persist_to_workspace:
           root: .
@@ -291,8 +294,8 @@ workflows:
                 - /^master$/
                 - /^main$/
             tags:
-              ignore:
-                - /^test-.*/
+              only:
+                - /^v.*/
       - build-stage-pylibs-amd64:
           context: globalconfig
           requires:

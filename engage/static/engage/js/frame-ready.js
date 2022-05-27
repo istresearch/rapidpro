@@ -5,11 +5,11 @@ $(document).ready(function() {
 
     $(".btn").tooltip();
 
-    var theOrgListBtn = $('#btn-org-list');
+    let theOrgListBtn = $('#btn-org-list');
     if ( theOrgListBtn ) {
         theOrgListBtn.on('click', function(evt) {
             evt.stopPropagation();
-            var header = $('.org-header');
+            let header = $('.org-header');
             if (header.hasClass('expanded')) {
                 header.removeClass('expanded');
             } else {
@@ -18,19 +18,19 @@ $(document).ready(function() {
         });
     }
 
-    var theOrgHomeBtn = $('#btn-org-home');
-    var theOrgPicker = $('#org-picker');
+    let theOrgHomeBtn = $('#btn-org-home');
+    let theOrgPicker = $('#org-picker');
     if ( theOrgPicker ) {
         function formatOption (aOpt) {
-            if (!aOpt.id) {
+            if ( !aOpt.id ) {
                 return aOpt.text;
             }
-            var theOptClasses = $(aOpt.element).attr('class');
-            var theOpt = $(
+            let theOptClasses = $(aOpt.element).attr('class');
+            let theOpt = $(
                 '<span class="'+theOptClasses+'">' + aOpt.text + '</span><span class="state-icon '+theOptClasses+'"></span>'
             );
             return theOpt;
-        };
+        }
         theOrgPicker.select2({
             dropdownParent: $('#org-area'),
             width: 'fit-content',
@@ -39,8 +39,8 @@ $(document).ready(function() {
         });
         if ( theOrgHomeBtn ) {
             theOrgPicker.on('select2:select', function(e) {
-                var theOrgPK = e.params.data.id;
-                var theUrl = org_home_url_format.sprintf(theOrgPK);
+                let theOrgPK = e.params.data.id;
+                let theUrl = org_home_url_format.sprintf(theOrgPK);
                 theOrgHomeBtn.prop('href', theUrl);
                 theUrl = org_chosen_url_format.sprintf(theOrgPK);
                 posterize(theUrl);
@@ -51,8 +51,8 @@ $(document).ready(function() {
     if ( !theOrgHomeBtn ) {
         theOrgHomeBtn = $('#org-name');
         theOrgHomeBtn.on('click', function(evt) {
-            var theOrgPK = theOrgPicker ? theOrgPicker.find(':selected').val() : '0';
-            var theUrl = org_home_url_format.sprintf(theOrgPK);
+            let theOrgPK = theOrgPicker ? theOrgPicker.find(':selected').val() : '0';
+            let theUrl = org_home_url_format.sprintf(theOrgPK);
             evt.stopPropagation();
             if (evt.ctrlKey || evt.metaKey){
                 window.open(theUrl,'_blank')
@@ -62,7 +62,7 @@ $(document).ready(function() {
         });
     }
 
-    var theMoreMenuEl = $('#menu .more');
+    let theMoreMenuEl = $('#menu .more');
     theMoreMenuEl.hoverIntent({
         over:function() {
             // $('.submenu').hide();
@@ -78,12 +78,12 @@ $(document).ready(function() {
         timeout:300
     });
     // friendlier UX if we remove ... HTML link clickability (it is "" anyway and does nothing)
-    var theMoreMenuLinkEl = $('a.icon-menu-4', theMoreMenuEl);
+    let theMoreMenuLinkEl = $('a.icon-menu-4', theMoreMenuEl);
     theMoreMenuLinkEl.removeAttr('href');
 
     $(".posterize").click(function(event){
 
-        var ele = event.target;
+        let ele = event.target;
         while (ele && !ele.classList.contains("posterize")) {
             ele = ele.parentElement;
         }

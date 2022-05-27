@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@nyaruka/flow-editor": "github:istresearch/floweditor#v1.14.0-1",
-    "@nyaruka/temba-components": "0.26.3",
+    "@nyaruka/temba-components": "0.13.3",
     "colorette": "1.2.2",
     "fa-icons": "0.2.0",
     "is-core-module": "2.4.0",
@@ -23,9 +23,6 @@
     "preinstall": "npx npm-force-resolutions",
     "tw-build": "postcss static/scss/tailwind.scss -o static/css/tailwind.css",
     "tw-watch": "watch 'npm run tw-build' ./static/scss"
-  },
-  "scripts": {
-    "preinstall": "npx npm-force-resolutions"
   },
   "devDependencies": {
     "autoprefixer": "10.2.5",
