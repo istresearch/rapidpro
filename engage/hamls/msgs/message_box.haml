@@ -261,6 +261,8 @@
 
 -block extra-script
   {{ block.super }}
+  :javascript
+    var theSendMsgEndpoint = "{% url 'msgs.broadcast_send' %}";
 
   <script type="text/javascript" src="{% static 'engage/js/msg-message_box.js' %}"></script>
   {% if org_perms.msgs.msg_update %}
