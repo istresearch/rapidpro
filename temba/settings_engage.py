@@ -51,6 +51,7 @@ TEMPLATES[0]['DIRS'].insert(0,
 )
 STATICFILES_DIRS = STATICFILES_DIRS + (
     os.path.join(PROJECT_DIR, "../engage/static"),
+    os.path.join(PROJECT_DIR, "../node_config"),
 )
 
 ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
