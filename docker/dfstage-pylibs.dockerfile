@@ -57,7 +57,7 @@ WORKDIR /rapidpro
 
 COPY --from=load-files --chown=engage:engage /opt/code2use/* ./
 # special folder for package*.json files when DEBUG mode is enabled and collectstatic is run.
-COPY --from=load-files --chown=engage:engage /opt/code2use/package*.json ./node_config
+COPY --from=load-files --chown=engage:engage /opt/code2use/package*.json ./node_config/
 
 # required runtime libs
 RUN set -ex; apk -U add --virtual .my-build-deps \
