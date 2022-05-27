@@ -13,6 +13,8 @@ import django_cache_url
 from temba.settings_common import *  # noqa
 
 SUB_DIR = env('SUB_DIR', required=False)
+# NOTE: we do not support SUB_DIR anymore, kits no longer use it. Feel free to rip out.
+
 COURIER_URL = env('COURIER_URL', 'http://localhost:8080')
 DEFAULT_TPS = env('DEFAULT_TPS', 10)    # Default Transactions Per Second for newly create Channels.
 MAX_TPS = env('MAX_TPS', 50)            # Max configurable Transactions Per Second for newly Created Channels and Updated Channels.
@@ -41,10 +43,9 @@ INSTALLED_APPS = (
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
 
-#nothing stand-alone new to add, yet
-#APP_URLS.append(
-#    'engage.channels.urls',
-#)
+APP_URLS.append(
+    'engage.utils.user_guide',
+)
 
 TEMPLATES[0]['DIRS'].insert(0,
     os.path.join(PROJECT_DIR, "../engage/hamls"),
@@ -170,14 +171,9 @@ if AWS_STORAGE_BUCKET_NAME:
         MEDIA_URL = f"{AWS_S3_URL}/media/"
 
 if not AWS_MEDIA:
-    if SUB_DIR is not None and len(SUB_DIR) > 0:
-        MEDIA_URL = f"{SUB_DIR}{MEDIA_URL}"
     STORAGE_URL = MEDIA_URL[:-1]
 
 if not AWS_STATIC:
-    if SUB_DIR is not None and len(SUB_DIR) > 0:
-        STATIC_URL = '/' + SUB_DIR + '/sitestatic/'
-
     # @see whitenoise middleware usage: https://whitenoise.evans.io/en/stable/django.html
     STATICFILES_STORAGE = 'engage.utils.storage.WhiteNoiseStaticFilesStorage'
     # insert just after security middleware (which is at idx 0)
@@ -226,7 +222,7 @@ EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
 
 BRANDING["rapidpro.io"].update({
-    "logo_link": env('BRANDING_LOGO_LINK', '/{}/'.format(SUB_DIR) if SUB_DIR is not None else '/'),
+    "logo_link": env('BRANDING_LOGO_LINK', '/'),
     "styles": ['fonts/style.css', ],
     "domain": HOSTNAME,
     "allow_signups": env('BRANDING_ALLOW_SIGNUPS', True),
@@ -235,12 +231,16 @@ BRANDING["rapidpro.io"].update({
 })
 DEFAULT_BRAND_OBJ = BRANDING["rapidpro.io"]
 
-if 'SUB_DIR' in locals() and SUB_DIR is not None:
-    DEFAULT_BRAND_OBJ.update({"sub_dir": SUB_DIR})
-    LOGIN_URL = f"/{SUB_DIR}/users/login/"
-    LOGOUT_URL = f"/{SUB_DIR}/users/logout/"
-    LOGIN_REDIRECT_URL = f"/{SUB_DIR}/org/choose/"
-    LOGOUT_REDIRECT_URL = f"/{SUB_DIR}/"
+# user guide stored in S3
+USER_GUIDE_CONFIG = {
+    'AWS_S3_ACCESS_KEY_ID': env("USER_GUIDE_AWS_S3_ACCESS_KEY_ID", "USER_GUIDE_AWS_S3_ACCESS_KEY_ID_NOT_SET"),
+    'AWS_S3_SECRET_KEY': env("USER_GUIDE_AWS_S3_SECRET_KEY", "USER_GUIDE_AWS_S3_SECRET_KEY_NOT_SET"),
+    'AWS_S3_ENDPOINT_URL': env("USER_GUIDE_AWS_S3_ENDPOINT_URL", ""),
+    'AWS_S3_REGION': env("USER_GUIDE_AWS_S3_REGION", "us-east-1"),
+    'AWS_S3_BUCKET': env("USER_GUIDE_AWS_S3_BUCKET", ""),
+    'AWS_S3_PATH': env("USER_GUIDE_AWS_S3_PATH", ""),
+    'FILENAME': env("USER_GUIDE_FILENAME", "user-guide.pdf"),
+}
 
 CHANNEL_TYPES = [
     "temba.channels.types.postmaster.PostmasterType",
