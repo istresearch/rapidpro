@@ -75,6 +75,7 @@ jobs:
       - run:
           name: Ensure Pylibs Image Manifest Exists
           command: |-
+            docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}";
             source scm/utils-engage.sh; EnsurePyLibsManifestExists;
       - persist_to_workspace:
           root: .
