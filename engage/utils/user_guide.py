@@ -1,11 +1,15 @@
+import io
+
 import boto3
 import gzip
 import logging
 from typing import Optional
+import zipfile
 
 from django.conf import settings
 from django.conf.urls import url
 from django.contrib.auth.models import AnonymousUser, User
+#from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpRequest, HttpResponse
 from rest_framework.views import View
 
@@ -73,13 +77,29 @@ class UserGuideMixin:
                         s3client = self.aws_session.client('s3', region_name=self.s3_region)
                     #endif
                     s3obj = s3client.get_object(Bucket=self.s3_bucket, Key=self.s3_object_key)
-                    #stream = gzip.GzipFile(fileobj=s3obj["Body"])
 
                     logger.debug("served user guide", extra=self.withLogInfo({
                         'bucket': self.s3_bucket,
                         'filepath': self.s3_object_key,
                     }))
-                    return HttpResponse(s3obj["Body"])
+                    return HttpResponse(s3obj["Body"], content_type='application/pdf')
+
+                    #TODO: Compressing not neccessary, but may be desired someday; figure out how later.
+                    # is_zip = True if request.GET.get('zip', '0') in ['1', 'true', 'True', 'T'] else False
+                    # is_gz = True if request.GET.get('gzip', '0') in ['1', 'true', 'True', 'T'] else False
+                    # if is_zip: # or request.accepts('zip'):
+                    #     buffer = io.BytesIO()
+                    #     theZip = zipfile.ZipFile(file=buffer, mode='wb')
+                    #     theZip.filename=self.s3_object_name
+                    #     theZip.writestr(data=s3obj["Body"])
+                    #     theZip.close()
+                    #     return HttpResponse(buffer.getvalue(), content_type='application/zip')
+                    # elif is_gz: # or request.accepts('gzip'):
+                    #     gz = gzip.GzipFile(filename=self.s3_object_name, fileobj=s3obj["Body"])
+                    #     return HttpResponse(gz.read(), content_type='application/gzip')
+                    # else:
+                    #     return HttpResponse(s3obj["Body"], content_type='application/pdf')
+                    # #endif
                 else:
                     logger.error("user guide S3 not defined", extra=self.withLogInfo({
                     }))
