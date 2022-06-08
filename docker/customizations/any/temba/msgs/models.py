@@ -753,8 +753,9 @@ class Msg(models.Model):
         """
         Archives this message
         """
-        if self.direction != INCOMING:
-            raise ValueError("Can only archive incoming non-test messages")
+        # engage: allow for any kind of msg type
+        #if self.direction != INCOMING:
+        #    raise ValueError("Can only archive incoming non-test messages")
 
         self.visibility = Msg.VISIBILITY_ARCHIVED
         self.save(update_fields=("visibility", "modified_on"))
@@ -776,8 +777,9 @@ class Msg(models.Model):
         """
         Restores (i.e. un-archives) this message
         """
-        if self.direction != INCOMING:  # pragma: needs cover
-            raise ValueError("Can only restore incoming non-test messages")
+        # engage: allow for any kind of msg type
+        #if self.direction != INCOMING:  # pragma: needs cover
+        #    raise ValueError("Can only restore incoming non-test messages")
 
         self.visibility = Msg.VISIBILITY_VISIBLE
         self.save(update_fields=("visibility", "modified_on"))
@@ -1024,7 +1026,9 @@ class Label(TembaModel, DependencyMixin):
     """
 
     MAX_NAME_LEN = 64
-    MAX_ORG_LABELS = 250
+    #MAX_ORG_LABELS = 250
+    # engage: remove hard-coded limit in favor of settings-based max limit
+    MAX_ORG_LABELS = settings.MAX_ORG_LABELS
     MAX_ORG_FOLDERS = 250
 
     TYPE_FOLDER = "F"
@@ -1140,8 +1144,9 @@ class Label(TembaModel, DependencyMixin):
         changed = set()
 
         for msg in msgs:
-            if msg.direction != INCOMING:
-                raise ValueError("Can only apply labels to incoming messages")
+            # engage: allow for any kind of msg type
+            #if msg.direction != INCOMING:
+            #    raise ValueError("Can only apply labels to incoming messages")
 
             # if we are adding the label and this message doesnt have it, add it
             if add:
