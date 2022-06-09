@@ -90,7 +90,12 @@ def RunEngageOverrides():
     BaseMsgInboxView.__bases__ = (ListMsgContentMixin,) + BaseMsgInboxView.__bases__
 
     from temba.msgs.views import MsgCRUDL
-    setattr(MsgCRUDL.Failed, 'actions', ["resend", "delete"])
+    from engage.msgs.inbox_msgfailed import ViewInboxFailedMsgsMixin
+    # introduce anything "new" we wish to add from the Mixin by adding it first in __bases__ list.
+    MsgCRUDL.Failed.__bases__ = (ViewInboxFailedMsgsMixin,) + MsgCRUDL.Failed.__bases__
+    # override existing methods we need as local defs hide our mixin defs.
+    setattr(MsgCRUDL.Failed, 'get_bulk_actions', ViewInboxFailedMsgsMixin.get_bulk_actions)
+
     from engage.msgs.exporter import MsgExporter
     setattr(MsgCRUDL.Export, 'form_valid', MsgExporter.form_valid)
 
