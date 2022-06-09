@@ -1,0 +1,17 @@
+-extends "msgs/message_box.html"
+
+-block title-icon
+  %span.title-icon
+    .glyph.icon-bubble-notification
+
+-block post-content
+  %temba-dialog#delete-confirmation.hide(
+      header='{{ _("Delete Messages")|escapejs }}'
+      primaryButtonName='{{ _("Delete")|escapejs }}'
+      destructive='true'
+  )
+    .p-6.confirmation-body
+      %p
+        "Are you sure you want to delete the selected messages?"
+      %p
+        "Once deleted, the messages will be gone forever. There is no way to undo this operation."
