@@ -41,8 +41,10 @@
       {{ user_org.name }}
   {% endif %}
   {% if user_org.name %}
-    %a#btn-user-guide{href:'user_guide', target:'_blank', title:'User Guide'}
-      -# user guide icon
+    {% if brand.has_user_guide %}
+      %a#btn-user-guide{href:'user_guide', target:'_blank', title:'User Guide'}
+        -# user guide icon
+    {% endif %}
   {% endif %}
 
 -#OLD, CLUNKY PICKER

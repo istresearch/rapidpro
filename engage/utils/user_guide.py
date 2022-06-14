@@ -32,7 +32,7 @@ class UserGuideMixin:
             self.file_path: Optional[Path] = None
             if settings.USER_GUIDE_CONFIG.is_defined():
                 self.s3_config = settings.USER_GUIDE_CONFIG
-            elif settings.USER_GUIDE_CONFIG.FILEPATH:
+            elif len(settings.USER_GUIDE_CONFIG.FILEPATH) > 1:
                 self.file_path = Path(settings.USER_GUIDE_CONFIG.FILEPATH)
             #endif
 

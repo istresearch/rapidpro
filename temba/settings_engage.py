@@ -347,6 +347,9 @@ if env('KEYCLOAK_URL', None) is not None:
 #endif keycloak
 
 USER_GUIDE_CONFIG = AwsS3Config('USER_GUIDE_')
+DEFAULT_BRAND_OBJ.update({
+    'has_user_guide': USER_GUIDE_CONFIG.is_defined() or len(USER_GUIDE_CONFIG.FILEPATH) > 1,
+})
 
 MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
 
