@@ -1,15 +1,10 @@
-import io
-
-import boto3
-import gzip
 import logging
+from pathlib import Path
 from typing import Optional
-import zipfile
 
 from django.conf import settings
 from django.conf.urls import url
 from django.contrib.auth.models import AnonymousUser, User
-#from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpRequest, HttpResponse
 from rest_framework.views import View
 
@@ -17,6 +12,7 @@ from temba import settings
 from temba.orgs.views import OrgPermsMixin
 
 from engage.utils.logs import OrgPermLogInfoMixin
+from engage.utils.s3_config import AwsS3Config
 
 
 class UserGuideMixin:
@@ -32,19 +28,12 @@ class UserGuideMixin:
         def __init__(self):
             super().__init__()
             self.user: Optional[User] = None
-            self.aws_session: Optional[boto3.Session] = None
-            self.s3_config: bool = False
-            if settings.USER_GUIDE_CONFIG['AWS_S3_BUCKET']:
-                self.s3_config = True
-                self.s3_bucket: str = settings.USER_GUIDE_CONFIG['AWS_S3_BUCKET']
-                self.s3_access_key_id: str = settings.USER_GUIDE_CONFIG['AWS_S3_ACCESS_KEY_ID']
-                self.s3_secret_key: str = settings.USER_GUIDE_CONFIG['AWS_S3_SECRET_KEY']
-                self.s3_region: str = settings.USER_GUIDE_CONFIG['AWS_S3_REGION']
-                self.s3_endpoint_url: str = settings.USER_GUIDE_CONFIG['AWS_S3_ENDPOINT_URL']
-                self.s3_object_path: str = settings.USER_GUIDE_CONFIG['AWS_S3_PATH']
-                self.s3_object_name: str = settings.USER_GUIDE_CONFIG['FILENAME']
-                self.s3_object_key = f"{self.s3_object_path}/{self.s3_object_name}" \
-                    if self.s3_object_path else self.s3_object_name
+            self.s3_config: Optional[AwsS3Config] = None
+            self.file_path: Optional[Path] = None
+            if settings.USER_GUIDE_CONFIG.is_defined():
+                self.s3_config = settings.USER_GUIDE_CONFIG
+            elif settings.USER_GUIDE_CONFIG.FILEPATH:
+                self.file_path = Path(settings.USER_GUIDE_CONFIG.FILEPATH)
             #endif
 
         def dispatch(self, request: HttpRequest, *args, **kwargs):
@@ -64,33 +53,20 @@ class UserGuideMixin:
 
             try:
                 if self.s3_config:
-                    if self.aws_session is None:
-                        self.aws_session = boto3.session.Session(
-                            aws_access_key_id=self.s3_access_key_id,
-                            aws_secret_access_key=self.s3_secret_key,
-                        )
-                    #endif
-
-                    if self.s3_endpoint_url:
-                        s3client = self.aws_session.client('s3', endpoint_url=self.s3_endpoint_url, region_name=self.s3_region)
-                    else:
-                        s3client = self.aws_session.client('s3', region_name=self.s3_region)
-                    #endif
-                    s3obj = s3client.get_object(Bucket=self.s3_bucket, Key=self.s3_object_key)
-
-                    logger.debug("served user guide", extra=self.withLogInfo({
-                        'bucket': self.s3_bucket,
-                        'filepath': self.s3_object_key,
-                    }))
+                    s3obj = self.s3_config.get_obj()
                     return HttpResponse(s3obj["Body"], content_type='application/pdf')
 
                     #TODO: Compressing not neccessary, but may be desired someday; figure out how later.
+                    #import io
+                    #import gzip
+                    #import zipfile
+                    #from django.core.handlers.wsgi import WSGIRequest
                     # is_zip = True if request.GET.get('zip', '0') in ['1', 'true', 'True', 'T'] else False
                     # is_gz = True if request.GET.get('gzip', '0') in ['1', 'true', 'True', 'T'] else False
                     # if is_zip: # or request.accepts('zip'):
                     #     buffer = io.BytesIO()
                     #     theZip = zipfile.ZipFile(file=buffer, mode='wb')
-                    #     theZip.filename=self.s3_object_name
+                    #     theZip.filename=basename(self.s3_object_path)
                     #     theZip.writestr(data=s3obj["Body"])
                     #     theZip.close()
                     #     return HttpResponse(buffer.getvalue(), content_type='application/zip')
@@ -100,10 +76,12 @@ class UserGuideMixin:
                     # else:
                     #     return HttpResponse(s3obj["Body"], content_type='application/pdf')
                     # #endif
+                elif self.file_path and self.file_path.is_file():
+                    return HttpResponse(self.file_path.open(mode='rb'), content_type='application/pdf')
                 else:
-                    logger.error("user guide S3 not defined", extra=self.withLogInfo({
+                    logger.error("user guide: neither S3 nor filepath defined", extra=self.withLogInfo({
                     }))
-                    raise ValueError("User Guide S3 config not found.")
+                    raise ValueError("User Guide config not found.")
                 #endif
             except ValueError as vx:
                 return HttpResponse(vx, status=500)
