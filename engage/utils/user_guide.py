@@ -54,7 +54,10 @@ class UserGuideMixin:
             try:
                 if self.s3_config:
                     s3obj = self.s3_config.get_obj()
-                    return HttpResponse(s3obj["Body"], content_type='application/pdf')
+                    if s3obj is not None:
+                        return HttpResponse(s3obj["Body"], content_type='application/pdf')
+                    else:
+                        return HttpResponse('file not found', status=404)
 
                     #TODO: Compressing not neccessary, but may be desired someday; figure out how later.
                     #import io

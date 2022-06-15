@@ -57,12 +57,21 @@ class AwsS3Config:
     def get_obj(self, aObjPath: str = ''):
         logger = logging.getLogger(__name__)
         theObjKey = aObjPath if aObjPath and len(aObjPath) > 1 else self.FILEPATH
-        theObj = self.get_client().get_object(Bucket=self.AWS_S3_BUCKET, Key=theObjKey)
-        logger.debug("served user guide", extra={
-            'bucket': self.AWS_S3_BUCKET,
-            'filepath': theObjKey,
-        })
-        return theObj
+        try:
+            theObj = self.get_client().get_object(Bucket=self.AWS_S3_BUCKET, Key=theObjKey)
+            logger.debug("served user guide", extra={
+                'bucket': self.AWS_S3_BUCKET,
+                'filepath': theObjKey,
+            })
+            return theObj
+        except Exception as ex:
+            logger.error("get user guide from s3 failed", extra={
+                'bucket': self.AWS_S3_BUCKET,
+                'filepath': theObjKey,
+                'err_msg': ex,
+            })
+            return None
+        #endtry
     #enddef get_obj()
 
 #endclass AwsS3Config
