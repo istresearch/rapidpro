@@ -3,7 +3,12 @@ import logging
 from django.contrib.auth.models import User
 
 from temba.mailroom.events import (
-    _url_for_user, get_event_time, _msg_in, _msg_out, Event,
+    _url_for_user,
+    get_event_time,
+    _msg_in,
+    _msg_out,
+    Event,
+    ChannelEvent,
 )
 
 from temba.msgs.models import Msg
@@ -71,3 +76,19 @@ def getHistoryContentFromMsg(org: Org, user: User, obj: Msg) -> dict:
             }
 
         return msg_event
+    #endif
+#enddef getHistoryContentFromMsg()
+
+def getHistoryContentFromChannelEvent(org: Org, user: User, obj: ChannelEvent) -> dict:
+    """
+    Added channel as a key so we can show which scheme a call may have been received.
+    """
+    extra = obj.extra or {}
+    return {
+        "type": Event.TYPE_CHANNEL_EVENT,
+        "created_on": get_event_time(obj).isoformat(),
+        "channel_event_type": obj.event_type,
+        "duration": extra.get("duration"),
+        "channel": obj.channel,
+    }
+#enddef getHistoryContentFromChannelEvent

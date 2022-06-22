@@ -2,9 +2,18 @@
 
 -for event in events
   %tr(class="{{event|history_class}}")
-    %td.icon
-      %span.det(title='{% if event.obj.channel %}{{event.obj.channel.get_channel_type_name}} {{event.obj.channel.get_name}}{% endif %}')
-        {{ event|history_icon }}
+    %td.flex
+      .icon
+        %span.det(title='{% if event.channel %}{{event.channel.get_channel_type_name}} {{event.channel.get_name}}{% endif %}')
+          {{ event|history_icon }}
+      - if event.channel_event_type == 'mo_miss'
+        -for cmode in event.channel.schemes
+          -#.glyph.icon-phone
+          -if cmode != 'tel'
+            .pl-2.mode-icon{id:'mode-icon-{{ cmode }}'}
+              .mode-icon.hover-linked{class:"glyph {{ cmode|scheme_icon }}", style:"margin-top:0px"}
+                .tooltiptext
+                  Received via {{ cmode }}
 
     %td.details.wrapped.w-full
       -if event.type == 'airtime_transferred'
@@ -55,6 +64,8 @@
           ({{ event.duration|format_seconds }})
         -else
           -trans "Unknown/Unsupported"
+        %span
+          via {{ event.channel.name }}
 
       -elif event.type == 'contact_field_changed'
         -if event.value
