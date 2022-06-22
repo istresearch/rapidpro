@@ -100,6 +100,11 @@ def RunEngageOverrides():
     setattr(MsgCRUDL.Export, 'form_valid', MsgExporter.form_valid)
 
     from temba.mailroom.events import event_renderers
-    from engage.mailroom.events import getHistoryContentFromMsg
-    from temba.msgs.models import Msg
+    from engage.mailroom.events import getHistoryContentFromMsg, getHistoryContentFromChannelEvent
+    from temba.msgs.models import Msg, ChannelEvent
     event_renderers[Msg] = getHistoryContentFromMsg
+    event_renderers[ChannelEvent] = getHistoryContentFromChannelEvent
+
+    from temba.contacts.templatetags.contacts import register
+    from engage.contacts.templatetags import scheme_icon
+    register.filter(scheme_icon)

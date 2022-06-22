@@ -24,7 +24,7 @@ services:
       - ../engage:/opt/dev/rp/engage
       - ../temba:/opt/dev/rp/temba
     environment:
-      #- SUB_DIR=ist
+      #- SUB_DIR=UNSUPPORTED-since-4.0.12
       - SEND_CALLS=on
       - SEND_EMAILS=off
       - SEND_MESSAGES=on
@@ -36,7 +36,7 @@ services:
       - MANAGEPY_MIGRATE=off
       - DOMAIN_NAME=localhost
       - ALLOWED_HOSTS=*
-      - TEMBA_HOST=localhost
+      - TEMBA_HOST=engage.dev.local
       - DATABASE_URL=${RP_DB_URL}
       - REDIS_URL=redis://redis:6379/1
       - MAILROOM_URL=http://host.docker.internal:8091
@@ -70,8 +70,8 @@ services:
       - ADMIN_NAME=admin
       - ADMIN_EMAIL=admin@istresearch.com
       - ADMIN_PSWD=admin
-      - POST_MASTER_DL_URL=https://ist.app/beta
-      - POST_MASTER_DL_QRCODE="data:png;base64, iVBORw0KGgoAAAANSUhEUgAAAQAAAAEAAQMAAABmvDolAAAABlBMVEX///8AAABVwtN+AAABWUlEQVR42uyYu7HEIAxFr4dAISVQCq1taZRCCYQEHvRGCLzvY798ETfYj30ijT5XwtbW1tZ/4q7T6XcBgv56rQU0+XCnq1ThC4CQ5Uk0BxwSpitQPoccmJNVAFSp+gLrgOMKKlgX0LrQP1IYD4WzOjD7ZKVKxUtdPDTSxYEp4kryIj+Nx8WBhkMjowPDc0ZI8cfcXAHA0Y4TcBXExUsgekIkGAMObnCs4wCey3j97g9GgD4vZqOU/jAMozWgJ4wbdSO+OfQWERcDmLnJXCSxB70uEBJigkVgbAcSqdkgXsaAWRcSKN0OOMc/ftICoH1SDELRSHGK3+bFGsCQq8Q9IaQNWgQuV4yZDzmk2+1gbeA6kkCW4hEoi8DYmiVhfBmFg8iLAmIQxBbnvhSbBcYtyJeQ7+yiAWAeSUhPxWKKf62TJoD3kaQDvUHEdHss+mRga2vLor4CAAD//wP20XClmOsbAAAAAElFTkSuQmCC"
+      - POST_MASTER_DL_URL=
+      - POST_MASTER_DL_QRCODE=
       #create command $> openssl genrsa -out info/oidc.key 4096
       #convert to base64 str $> openssl enc -base64 < info/oidc.key
       # copy & paste the result in .env between the single quotes.

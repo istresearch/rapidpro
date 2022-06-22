@@ -10,9 +10,13 @@ from glob import glob
 import dj_database_url
 import django_cache_url
 
+from engage.utils.s3_config import AwsS3Config
+
 from temba.settings_common import *  # noqa
 
 SUB_DIR = env('SUB_DIR', required=False)
+# NOTE: we do not support SUB_DIR anymore, kits no longer use it. Feel free to rip out.
+
 COURIER_URL = env('COURIER_URL', 'http://localhost:8080')
 DEFAULT_TPS = env('DEFAULT_TPS', 10)    # Default Transactions Per Second for newly create Channels.
 MAX_TPS = env('MAX_TPS', 50)            # Max configurable Transactions Per Second for newly Created Channels and Updated Channels.
@@ -41,10 +45,9 @@ INSTALLED_APPS = (
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
 
-#nothing stand-alone new to add, yet
-#APP_URLS.append(
-#    'engage.channels.urls',
-#)
+APP_URLS.append(
+    'engage.utils.user_guide',
+)
 
 TEMPLATES[0]['DIRS'].insert(0,
     os.path.join(PROJECT_DIR, "../engage/hamls"),
@@ -170,14 +173,9 @@ if AWS_STORAGE_BUCKET_NAME:
         MEDIA_URL = f"{AWS_S3_URL}/media/"
 
 if not AWS_MEDIA:
-    if SUB_DIR is not None and len(SUB_DIR) > 0:
-        MEDIA_URL = f"{SUB_DIR}{MEDIA_URL}"
     STORAGE_URL = MEDIA_URL[:-1]
 
 if not AWS_STATIC:
-    if SUB_DIR is not None and len(SUB_DIR) > 0:
-        STATIC_URL = '/' + SUB_DIR + '/sitestatic/'
-
     # @see whitenoise middleware usage: https://whitenoise.evans.io/en/stable/django.html
     STATICFILES_STORAGE = 'engage.utils.storage.WhiteNoiseStaticFilesStorage'
     # insert just after security middleware (which is at idx 0)
@@ -226,7 +224,7 @@ EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
 
 BRANDING["rapidpro.io"].update({
-    "logo_link": env('BRANDING_LOGO_LINK', '/{}/'.format(SUB_DIR) if SUB_DIR is not None else '/'),
+    "logo_link": env('BRANDING_LOGO_LINK', '/'),
     "styles": ['fonts/style.css', ],
     "domain": HOSTNAME,
     "allow_signups": env('BRANDING_ALLOW_SIGNUPS', True),
@@ -234,13 +232,6 @@ BRANDING["rapidpro.io"].update({
     "version": None,
 })
 DEFAULT_BRAND_OBJ = BRANDING["rapidpro.io"]
-
-if 'SUB_DIR' in locals() and SUB_DIR is not None:
-    DEFAULT_BRAND_OBJ.update({"sub_dir": SUB_DIR})
-    LOGIN_URL = f"/{SUB_DIR}/users/login/"
-    LOGOUT_URL = f"/{SUB_DIR}/users/logout/"
-    LOGIN_REDIRECT_URL = f"/{SUB_DIR}/org/choose/"
-    LOGOUT_REDIRECT_URL = f"/{SUB_DIR}/"
 
 CHANNEL_TYPES = [
     "temba.channels.types.postmaster.PostmasterType",
@@ -340,28 +331,12 @@ GROUP_PERMISSIONS['Editors'] += (
 )
 
 #============== KeyCloak SSO ===================
-OAUTH2_PROVIDER = None
-KEYCLOAK_URL = env('KEYCLOAK_URL', None)
-if KEYCLOAK_URL is not None:
-    pkey = env('OIDC_RSA_PRIVATE_KEY', None)
-    if not pkey:
-        pkey64 = env('OIDC_RSA_PRIVATE_KEY_BASE64', None)
-        if pkey64:
-            import base64
-            pkey = base64.b64decode(pkey64)
-    # see https://django-oauth-toolkit.readthedocs.io/en/latest/oidc.html
-    OAUTH2_PROVIDER = {
-        'OIDC_ENABLED': True,
-        'OIDC_RSA_PRIVATE_KEY': pkey,
-        'SCOPES': {
-            'openid': "OpenID Connect scope",
-            'permissions': "permissions",
-        },
-        'KEYCLOAK_URL': KEYCLOAK_URL,
-        'KEYCLOAK_CLIENT_ID': env('KEYCLOAK_CLIENT_ID', 'engage'),
-        'KEYCLOAK_CLIENT_SECRET': env('KEYCLOAK_CLIENT_SECRET', 'NOT_A_SECRET'),
-        'OAUTH2_VALIDATOR_CLASS': "engage.auth.oauth_validator.EngageOAuth2Validator",
-    }
+OAUTH2_CONFIG = None
+if env('KEYCLOAK_URL', None) is not None:
+    from engage.auth.oauth_config import OAuthConfig
+    OAUTH2_CONFIG = OAuthConfig()
+    LOGIN_URL = OAUTH2_CONFIG.get_login_redirect()
+    LOGOUT_URL = OAUTH2_CONFIG.get_logout_redirect()
     INSTALLED_APPS += (
         'oauth2_provider',
         'corsheaders',
@@ -369,8 +344,12 @@ if KEYCLOAK_URL is not None:
     APP_URLS.append('engage.auth.urls')
     MIDDLEWARE = MIDDLEWARE[:1] + ('corsheaders.middleware.CorsMiddleware',) + MIDDLEWARE[1:]
     CORS_ORIGIN_ALLOW_ALL = True #TODO (replace with actual keycloak URL rather than all
+#endif keycloak
 
-ORG_SEARCH_CONTEXT = []
+USER_GUIDE_CONFIG = AwsS3Config('USER_GUIDE_')
+DEFAULT_BRAND_OBJ.update({
+    'has_user_guide': USER_GUIDE_CONFIG.is_defined() or len(USER_GUIDE_CONFIG.FILEPATH) > 1,
+})
 
 MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
 
