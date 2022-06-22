@@ -103,3 +103,7 @@ def RunEngageOverrides():
     from engage.mailroom.events import getHistoryContentFromMsg
     from temba.msgs.models import Msg
     event_renderers[Msg] = getHistoryContentFromMsg
+
+    from temba.contacts.templatetags.contacts import register
+    from engage.contacts.templatetags import scheme_icon
+    register.filter(scheme_icon)
