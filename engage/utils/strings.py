@@ -45,3 +45,7 @@ def str2bool( v: Union[str, bool] ) -> bool:
     else:
         return False
 #enddef str2bool
+
+def is_empty( s ) -> bool:
+    return not ( s and len(s) > 1 )
+#enddef is_empty

@@ -236,8 +236,9 @@ BRANDING["rapidpro.io"].update({
     "allow_signups": env('BRANDING_ALLOW_SIGNUPS', True),
     "tiers": dict(import_flows=0, multi_user=0, multi_org=0),
     "version": None,
-    'has_sso_login': False,
+    'has_sso': False,
     'sso_login_url': "",
+    'sso_logout_url': "",
 })
 DEFAULT_BRAND_OBJ = BRANDING["rapidpro.io"]
 
@@ -345,19 +346,26 @@ if env('KEYCLOAK_URL', None) is not None:
     OAUTH2_CONFIG = OAuthConfig()
     if OAUTH2_CONFIG.is_enabled:
         DEFAULT_BRAND_OBJ.update({
-            'has_sso_login': not OAUTH2_CONFIG.is_login_replaced,
+            'has_sso': not OAUTH2_CONFIG.is_login_replaced,
             'sso_login_url': OAUTH2_CONFIG.get_login_url(),
+            # once again, Blacklisted tokens db schema required for OP/total logout
+            #'sso_logout_url': OAUTH2_CONFIG.get_logout_url(),
+            'sso_logout_url': LOGOUT_URL,
         })
         if OAUTH2_CONFIG.is_login_replaced:
             LOGIN_URL = OAUTH2_CONFIG.get_login_url()
-            LOGOUT_URL = OAUTH2_CONFIG.get_logout_url()
         #endif login is replaced
+        if OAUTH2_CONFIG.KEYCLOAK_LOGOUT_REDIRECT:
+            LOGOUT_REDIRECT_URL = OAUTH2_CONFIG.KEYCLOAK_LOGOUT_REDIRECT
+        #endif logout redirect is defined
 
         INSTALLED_APPS += (
             'oauth2_authcodeflow',
         )
         APP_URLS.append('engage.auth.urls')
-        AUTHENTICATION_BACKENDS = ('oauth2_authcodeflow.auth.AuthenticationBackend',) + AUTHENTICATION_BACKENDS
+        AUTHENTICATION_BACKENDS = (
+            'oauth2_authcodeflow.auth.AuthenticationBackend',
+        ) + AUTHENTICATION_BACKENDS
 
         # cors middleware not required, yet
         #MIDDLEWARE = MIDDLEWARE[:1] + ('corsheaders.middleware.CorsMiddleware',) + MIDDLEWARE[1:]
@@ -368,13 +376,18 @@ if env('KEYCLOAK_URL', None) is not None:
         OIDC_RP_CLIENT_ID = OAUTH2_CONFIG.KEYCLOAK_CLIENT_ID
         OIDC_RP_CLIENT_SECRET = OAUTH2_CONFIG.KEYCLOAK_CLIENT_SECRET
         OIDC_RP_SCOPES = OAUTH2_CONFIG.SCOPES
-        OIDC_RP_SIGN_ALGOS_ALLOWED = 'RS256' if OAUTH2_CONFIG.OIDC_RSA_PRIVATE_KEY else 'HS256'
-        OIDC_CREATE_USER = False
+        #OIDC_RP_SIGN_ALGOS_ALLOWED = 'RS256' if OAUTH2_CONFIG.OIDC_RSA_PRIVATE_KEY else 'HS256'
+        #OIDC_CREATE_USER = False  #docs are wrong as this setting is ignored, a bug, no workaround.
         OIDC_TIMEOUT = 60  # seconds before giving up on OIDC
-        MIDDLEWARE += (
-            "oauth2_authcodeflow.middleware.RefreshAccessTokenMiddleware",
-            "oauth2_authcodeflow.middleware.RefreshSessionMiddleware"
-        )
+        # the middleware requires db changes for keeping track of blacklisted tokens, do not use.
+        # MIDDLEWARE += (
+        #     "oauth2_authcodeflow.middleware.RefreshAccessTokenMiddleware",
+        #     "oauth2_authcodeflow.middleware.RefreshSessionMiddleware"
+        # )
+
+        # callback to use email as the username, which is a non-standard thing for Django.
+        from engage.auth.oauth_utils import oauth_username_is_email
+        OIDC_DJANGO_USERNAME_FUNC = oauth_username_is_email
 
     #endif is_enabled
 #endif keycloak

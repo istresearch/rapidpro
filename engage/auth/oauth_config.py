@@ -2,7 +2,7 @@ from getenv import env
 from pathlib import Path
 import urllib.parse
 
-from engage.utils.strings import str2bool
+from engage.utils.strings import str2bool, is_empty
 
 class OAuthConfig:
     """
@@ -29,7 +29,7 @@ class OAuthConfig:
         }
 
         self.KEYCLOAK_URL: str = env('KEYCLOAK_URL', None)
-        if self.KEYCLOAK_URL is not None and not self.KEYCLOAK_URL.endswith('/'):
+        if not is_empty(self.KEYCLOAK_URL) and not self.KEYCLOAK_URL.endswith('/'):
             self.KEYCLOAK_URL += '/'
         #endif
         self.KEYCLOAK_REALM: str = env('KEYCLOAK_REALM', 'engage')
@@ -39,12 +39,12 @@ class OAuthConfig:
         self.OIDC_RSA_PRIVATE_KEY = env('OIDC_RSA_PRIVATE_KEY', None)
         if not self.OIDC_RSA_PRIVATE_KEY:
             pkey64 = env('OIDC_RSA_PRIVATE_KEY_BASE64', None)
-            if pkey64:
+            if not is_empty(pkey64):
                 import base64
                 self.OIDC_RSA_PRIVATE_KEY = base64.b64decode(pkey64)
             else:
                 pkeyfile = env('OIDC_RSA_PRIVATE_KEY_FILE', None)
-                if len(pkeyfile) > 1:
+                if not is_empty(pkeyfile):
                     pkeypath = Path(pkeyfile)
                     if pkeypath.is_file():
                         self.OIDC_RSA_PRIVATE_KEY = pkeypath.read_text()
@@ -54,50 +54,36 @@ class OAuthConfig:
         #endif rsa key found
 
         # maybe enabled only if key for it exists?
-        self.OIDC_ENABLED: bool = ( self.KEYCLOAK_URL is not None and len(self.KEYCLOAK_URL) > 1 )
+        self.OIDC_ENABLED: bool = not is_empty(self.KEYCLOAK_URL)
 
         self.KEYCLOAK_CLIENT_ID: str = env('KEYCLOAK_CLIENT_ID', 'engage')
         self.KEYCLOAK_CLIENT_SECRET: str = env('KEYCLOAK_CLIENT_SECRET', 'NOT_A_SECRET')
-        self.KEYCLOAK_LOGIN: str = env('KEYCLOAK_LOGIN', None)
+        self.KEYCLOAK_LOGOUT_REDIRECT: str = env('KEYCLOAK_LOGOUT_REDIRECT', None)
         self.KEYCLOAK_REPLACES_LOGIN: bool = str2bool(env('KEYCLOAK_REPLACES_LOGIN', False))
         self.REDIRECT_URL: str = env('BRANDING_LOGO_LINK', f"{self.KEYCLOAK_URL}splash")
 
         self.is_enabled = self.OIDC_ENABLED
         self.is_login_replaced = self.KEYCLOAK_REPLACES_LOGIN
-        self.sso_login_url = self.KEYCLOAK_LOGIN
     #enddef init
 
     def get_discovery_url(self):
-        return f"{self.KEYCLOAK_URL}.well-known/openid-configuration"
+        kc_host = self.KEYCLOAK_URL
+        kc_realm = self.KEYCLOAK_REALM
+        return f"{kc_host}realms/{kc_realm}/.well-known/openid-configuration"
     #enddef get_discovery_url
 
-    def get_login_redirect(self):
-        encodedRedirectUri = urllib.parse.quote(env('TEMBA_HOST'), 'localhost')
-        return encodedRedirectUri
-    #enddef get_login_redirect
-
     def get_login_url(self):
-        return f"/oidc/authenticate?next={self.get_login_redirect()}"
-        # login_url = self.KEYCLOAK_LOGIN
-        # if not login_url:
-        #     kc_host = self.KEYCLOAK_URL
-        #     kc_realm = self.KEYCLOAK_REALM
-        #     login_url = f"{kc_host}realms/{kc_realm}/protocol/openid-connect/auth"
-        # #endif
-        # return login_url + f"?redirect_uri={self.get_login_redirect()}"
+        url = '/oidc/authenticate'
+        next_url = '/sso_signin'
+        fail_url = '/?error={error}'  #docs said the error param was optional... nope.
+        return f"{url}?next={next_url}&fail={fail_url}"
     #enddef get_login_url
 
-    def get_logout_redirect(self):
-        encodedRedirectUri = urllib.parse.quote(self.REDIRECT_URL)
-        return encodedRedirectUri
-    #enddef get_logout_redirect
-
     def get_logout_url(self):
-        return f"/oidc/total_logout?next={self.get_login_redirect()}"
-        # kc_host = self.KEYCLOAK_URL
-        # kc_realm = self.KEYCLOAK_REALM
-        # encodedRedirectUri = urllib.parse.quote(self.REDIRECT_URL)
-        # return f"{kc_host}realms/{kc_realm}/protocol/openid-connect/logout?redirect_uri={self.get_logout_redirect()}"
+        url="/oidc/total_logout"
+        redurl = urllib.parse.quote(self.REDIRECT_URL)
+        fail_url = '/?error={error}'  #docs said the error param was optional... nope.
+        return f"{url}?next={redurl}&fail={fail_url}"
     #enddef get_logout_redirect
 
 #endclass OAuthConfig

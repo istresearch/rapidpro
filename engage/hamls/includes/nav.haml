@@ -243,14 +243,22 @@
               .title
                 -trans "end"
           -else
-            %a{href:"{% url 'users.user_logout' %}?next=/users/login"}
-              .circle
-                .icon-exit
-              .title.whitespace-nowrap
-                -trans "sign out"
+            {% if brand.has_sso %}
+              %a{href:'{{ brand.sso_logout_url }}'}
+                .circle
+                  .icon-exit
+                .title.whitespace-nowrap
+                  -trans "sign out"
+            {% else %}
+              %a{href:"{% url 'users.user_logout' %}?next=/users/login"}
+                .circle
+                  .icon-exit
+                .title.whitespace-nowrap
+                  -trans "sign out"
+            {% endif %}
   -else
     -block temba-login
-    {% if brand.has_sso_login %}
+    {% if brand.has_sso %}
       %a{href:'{{ brand.sso_login_url }}'}
         .circle
           .icon-user

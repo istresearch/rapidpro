@@ -40,11 +40,19 @@ class OrgPermLogInfoMixin:
                 'user': theUser.email,
             })
         theOrg = self.derive_org()
-        theLogInfo.update({
-            'org': theOrg,
-            'org_id': theOrg.id,
-            'org_uuid': theOrg.uuid,
-        })
+        if theOrg is not None:
+            theLogInfo.update({
+                'org': theOrg,
+                'org_id': theOrg.id,
+                'org_uuid': theOrg.uuid,
+            })
+        else:
+            theLogInfo.update({
+                'org': 'unknown',
+            })
         if type(extras) is dict:
             theLogInfo.update(extras)
         return theLogInfo
+    #enddef withLogInfo
+
+#endclass OrgPermLogInfoMixin
