@@ -1,15 +1,12 @@
-from django.conf import settings
+from temba import settings
 from django.conf.urls import include, url
 
 
 urlpatterns = [
 ]
 
-if settings.OAUTH2_CONFIG:
+if settings.OAUTH2_CONFIG.is_enabled:
     urlpatterns.append(
-        url(r"^oidc/", include('oauth2_provider.urls', namespace='oauth2_provider')),
+        url(r"^oidc/", include('oauth2_authcodeflow.urls', namespace='oauth2_authcodeflow')),
     )
-
-    #from .oauth_utils import ResetCredential
-
-#endif OAUTH2_CONFIG exists
+#endif

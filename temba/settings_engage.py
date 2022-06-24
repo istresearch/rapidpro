@@ -96,8 +96,14 @@ IS_PROD = env('IS_PROD', 'off') == 'on'
 # -----------------------------------------------------------------------------------
 HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
 TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
-#if TEMBA_HOST.lower().startswith('https://') or IS_PROD:
-#    from .security_settings import *  # noqa
+if TEMBA_HOST.lower().startswith('https://'):
+    #from .security_settings import *  # noqa
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_AGE = 1209600  # 2 weeks
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_PATH = '/'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+#endif
 SECURE_PROXY_SSL_HEADER = (env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 INTERNAL_IPS = ('*',)
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')
@@ -230,6 +236,8 @@ BRANDING["rapidpro.io"].update({
     "allow_signups": env('BRANDING_ALLOW_SIGNUPS', True),
     "tiers": dict(import_flows=0, multi_user=0, multi_org=0),
     "version": None,
+    'has_sso_login': False,
+    'sso_login_url': "",
 })
 DEFAULT_BRAND_OBJ = BRANDING["rapidpro.io"]
 
@@ -331,19 +339,44 @@ GROUP_PERMISSIONS['Editors'] += (
 )
 
 #============== KeyCloak SSO ===================
-OAUTH2_CONFIG = None
+OAUTH2_CONFIG = {'is_enabled': False,}
 if env('KEYCLOAK_URL', None) is not None:
     from engage.auth.oauth_config import OAuthConfig
     OAUTH2_CONFIG = OAuthConfig()
-    LOGIN_URL = OAUTH2_CONFIG.get_login_redirect()
-    LOGOUT_URL = OAUTH2_CONFIG.get_logout_redirect()
-    INSTALLED_APPS += (
-        'oauth2_provider',
-        'corsheaders',
-    )
-    APP_URLS.append('engage.auth.urls')
-    MIDDLEWARE = MIDDLEWARE[:1] + ('corsheaders.middleware.CorsMiddleware',) + MIDDLEWARE[1:]
-    CORS_ORIGIN_ALLOW_ALL = True #TODO (replace with actual keycloak URL rather than all
+    if OAUTH2_CONFIG.is_enabled:
+        DEFAULT_BRAND_OBJ.update({
+            'has_sso_login': not OAUTH2_CONFIG.is_login_replaced,
+            'sso_login_url': OAUTH2_CONFIG.get_login_url(),
+        })
+        if OAUTH2_CONFIG.is_login_replaced:
+            LOGIN_URL = OAUTH2_CONFIG.get_login_url()
+            LOGOUT_URL = OAUTH2_CONFIG.get_logout_url()
+        #endif login is replaced
+
+        INSTALLED_APPS += (
+            'oauth2_authcodeflow',
+        )
+        APP_URLS.append('engage.auth.urls')
+        AUTHENTICATION_BACKENDS = ('oauth2_authcodeflow.auth.AuthenticationBackend',) + AUTHENTICATION_BACKENDS
+
+        # cors middleware not required, yet
+        #MIDDLEWARE = MIDDLEWARE[:1] + ('corsheaders.middleware.CorsMiddleware',) + MIDDLEWARE[1:]
+        #CORS_ORIGIN_ALLOW_ALL = True #DEBUG-only (replace with actual keycloak URL rather than all
+
+        # plugin settings
+        OIDC_OP_DISCOVERY_DOCUMENT_URL = OAUTH2_CONFIG.get_discovery_url()
+        OIDC_RP_CLIENT_ID = OAUTH2_CONFIG.KEYCLOAK_CLIENT_ID
+        OIDC_RP_CLIENT_SECRET = OAUTH2_CONFIG.KEYCLOAK_CLIENT_SECRET
+        OIDC_RP_SCOPES = OAUTH2_CONFIG.SCOPES
+        OIDC_RP_SIGN_ALGOS_ALLOWED = 'RS256' if OAUTH2_CONFIG.OIDC_RSA_PRIVATE_KEY else 'HS256'
+        OIDC_CREATE_USER = False
+        OIDC_TIMEOUT = 60  # seconds before giving up on OIDC
+        MIDDLEWARE += (
+            "oauth2_authcodeflow.middleware.RefreshAccessTokenMiddleware",
+            "oauth2_authcodeflow.middleware.RefreshSessionMiddleware"
+        )
+
+    #endif is_enabled
 #endif keycloak
 
 USER_GUIDE_CONFIG = AwsS3Config('USER_GUIDE_')

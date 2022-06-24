@@ -119,10 +119,8 @@
 
            var successUrl = $(this).data('success-url');
            if (successUrl){
-             modal.addListener('onSuccess', function(){ document.location.href = successUrl; });
+             modal.addEventListener('onSuccess', function(){ document.location.href = successUrl; });
            }
 
            return false;
         });
-
-
