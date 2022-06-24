@@ -74,7 +74,7 @@ whitenoise = "^5.1"
 #django-oauth-toolkit = "^1.7.1"
 #django-cors-headers = "^3.11.0"
 #----- oidc _CLIENT_
-django-oauth2-authcodeflow = "0.6.0"
+django-oauth2-authcodeflow = "0.5.0"
 
 [tool.poetry.dev-dependencies]
 black = "^20.8b1"
