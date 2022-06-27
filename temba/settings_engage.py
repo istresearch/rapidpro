@@ -384,6 +384,8 @@ if env('KEYCLOAK_URL', None) is not None:
         #     "oauth2_authcodeflow.middleware.RefreshAccessTokenMiddleware",
         #     "oauth2_authcodeflow.middleware.RefreshSessionMiddleware"
         # )
+        # our API patterns are slightly different from normal django
+        OIDC_MIDDLEWARE_API_URL_PATTERNS = ['^/api/', '^/ext/api/']
 
         # callback to use email as the username, which is a non-standard thing for Django.
         from engage.auth.oauth_utils import oauth_username_is_email
