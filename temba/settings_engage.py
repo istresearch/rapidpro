@@ -10,6 +10,7 @@ from glob import glob
 import dj_database_url
 import django_cache_url
 
+from engage.utils.strings import is_empty
 from engage.utils.s3_config import AwsS3Config
 
 from temba.settings_common import *  # noqa
@@ -341,7 +342,7 @@ GROUP_PERMISSIONS['Editors'] += (
 
 #============== KeyCloak SSO ===================
 OAUTH2_CONFIG = {'is_enabled': False,}
-if env('KEYCLOAK_URL', None) is not None:
+if not is_empty(env('KEYCLOAK_URL', None)):
     from engage.auth.oauth_config import OAuthConfig
     OAUTH2_CONFIG = OAuthConfig()
     if OAUTH2_CONFIG.is_enabled:
