@@ -386,6 +386,8 @@ if env('KEYCLOAK_URL', None) is not None:
         # )
         # our API patterns are slightly different from normal django
         OIDC_MIDDLEWARE_API_URL_PATTERNS = ['^/api/', '^/ext/api/']
+        # the api uses tokens, avoid trying to use sso with api endpoints
+        OIDC_MIDDLEWARE_NO_AUTH_URL_PATTERNS = OIDC_MIDDLEWARE_API_URL_PATTERNS
 
         # callback to use email as the username, which is a non-standard thing for Django.
         from engage.auth.oauth_utils import oauth_username_is_email
