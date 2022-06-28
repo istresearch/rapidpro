@@ -209,7 +209,7 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
         }
     """
 
-    authentication_classes = [TokenAuthentication, SessionAuthentication]
+    #authentication_classes = [TokenAuthentication, SessionAuthentication]
     permission_classes = (SSLPermission, ExtAPIPermission)
     permission = "channels.channel_api"
     model = Channel
@@ -392,7 +392,7 @@ class ExtStatusEndpoint(ListAPIMixin, BaseAPIView):
         }
     """
 
-    authentication_classes = [TokenAuthentication, SessionAuthentication]
+    #authentication_classes = [TokenAuthentication, SessionAuthentication]
     permission_classes = (SSLPermission, APIPermission)
     permission = "channels.channel_claim"
     model = Channel
