@@ -23,6 +23,7 @@ def RunEngageOverrides():
     """
     from django.contrib.auth.models import AnonymousUser, User
     User.track_user = _TrackUser
+    User.using_token = False  # default optional property to False so it exists.
     AnonymousUser.track_user = _TrackUser
 
     from engage.channels.types.postmaster.schemes import PM_Schemes, PM_Scheme_Labels, PM_Scheme_Icons

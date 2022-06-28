@@ -1,6 +1,10 @@
-import logging
 import pytz
+
+from django.utils.translation import ugettext_lazy as _
+
 from rest_framework import serializers, status
+from rest_framework.authentication import TokenAuthentication, SessionAuthentication
+from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 from temba.api.support import InvalidQueryError
@@ -11,7 +15,6 @@ from temba.api.v2.views_base import (
     DeleteAPIMixin,
     WriteAPIMixin,
 )
-from rest_framework.response import Response
 from temba.channels.models import Channel
 from temba.ext.api.models import ExtAPIPermission
 from temba.api.models import SSLPermission, APIPermission
@@ -52,6 +55,12 @@ class ExtChannelReadSerializer(ReadSerializer):
 
 
 class ExtChannelWriteSerializer(WriteSerializer):
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
 
     def validate_unit(self, value):
         return self.UNITS[value]
@@ -200,6 +209,7 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
         }
     """
 
+    authentication_classes = [TokenAuthentication, SessionAuthentication]
     permission_classes = (SSLPermission, ExtAPIPermission)
     permission = "channels.channel_api"
     model = Channel
@@ -382,6 +392,7 @@ class ExtStatusEndpoint(ListAPIMixin, BaseAPIView):
         }
     """
 
+    authentication_classes = [TokenAuthentication, SessionAuthentication]
     permission_classes = (SSLPermission, APIPermission)
     permission = "channels.channel_claim"
     model = Channel

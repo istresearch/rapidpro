@@ -36,6 +36,7 @@ MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
     tuple(filter(lambda tup : tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
+        'temba.ext',
         'engage.api',
         'engage.auth',
         'engage.channels',
@@ -46,7 +47,9 @@ INSTALLED_APPS = (
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
 
-APP_URLS.append(
+APP_URLS += (
+    'temba.ext.urls',
+    'engage.auth.urls',
     'engage.utils.user_guide',
 )
 
@@ -97,15 +100,14 @@ IS_PROD = env('IS_PROD', 'off') == 'on'
 # -----------------------------------------------------------------------------------
 HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
 TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
-# interferes with PO using /ext/api
-# if TEMBA_HOST.lower().startswith('https://'):
-#     #from .security_settings import *  # noqa
-#     SESSION_COOKIE_SECURE = True
-#     SESSION_COOKIE_AGE = 1209600  # 2 weeks
-#     SESSION_COOKIE_HTTPONLY = True
-#     SESSION_COOKIE_PATH = '/'
-#     SESSION_COOKIE_SAMESITE = 'Lax'
-# #endif
+if TEMBA_HOST.lower().startswith('https://'):
+    #from .security_settings import *  # noqa
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_AGE = 1209600  # 2 weeks
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_PATH = '/'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+#endif
 SECURE_PROXY_SSL_HEADER = (env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 INTERNAL_IPS = ('*',)
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')
@@ -364,7 +366,6 @@ if not is_empty(env('KEYCLOAK_URL', None)):
         INSTALLED_APPS += (
             'oauth2_authcodeflow',
         )
-        APP_URLS.append('engage.auth.urls')
         AUTHENTICATION_BACKENDS = (
             'oauth2_authcodeflow.auth.AuthenticationBackend',
         ) + AUTHENTICATION_BACKENDS
@@ -386,10 +387,6 @@ if not is_empty(env('KEYCLOAK_URL', None)):
         #     "oauth2_authcodeflow.middleware.RefreshAccessTokenMiddleware",
         #     "oauth2_authcodeflow.middleware.RefreshSessionMiddleware"
         # )
-        # our API patterns are slightly different from normal django
-        OIDC_MIDDLEWARE_API_URL_PATTERNS = ['^/api/', '^/ext/api/']
-        # the api uses tokens, avoid trying to use sso with api endpoints
-        OIDC_MIDDLEWARE_NO_AUTH_URL_PATTERNS = OIDC_MIDDLEWARE_API_URL_PATTERNS
 
         # callback to use email as the username, which is a non-standard thing for Django.
         from engage.auth.oauth_utils import oauth_username_is_email
