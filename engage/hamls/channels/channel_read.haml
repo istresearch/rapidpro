@@ -78,6 +78,13 @@
           -trans "Activated"
           {{ object.created_on }}
 
+    .mb-4.text-base
+      -if object.channel_type == 'PSM'
+        -if object.last_seen
+          -trans "Last seen on"
+          {{ object.last_seen }}
+        -else
+          -trans "Not seen yet"
 
 -block top-form
 
