@@ -100,7 +100,7 @@ IS_PROD = env('IS_PROD', 'off') == 'on'
 # -----------------------------------------------------------------------------------
 HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
 TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
-if TEMBA_HOST.lower().startswith('https://'):
+if TEMBA_HOST.lower().startswith('https://') and env('USE_SECURE_COOKIES', False):
     #from .security_settings import *  # noqa
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_AGE = 1209600  # 2 weeks
