@@ -100,9 +100,8 @@ IS_PROD = env('IS_PROD', 'off') == 'on'
 # -----------------------------------------------------------------------------------
 HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
 TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
+
 if TEMBA_HOST.lower().startswith('https://') and str2bool(env('USE_SECURE_COOKIES', False)):
-    # in order to differentiate "local traffic" vs "external traffic", we need to utilize x_forwarded_host header.
-    USE_X_FORWARDED_HOST = True
     #from .security_settings import *  # noqa
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_AGE = 1209600  # 2 weeks
@@ -110,6 +109,15 @@ if TEMBA_HOST.lower().startswith('https://') and str2bool(env('USE_SECURE_COOKIE
     SESSION_COOKIE_PATH = '/'
     SESSION_COOKIE_SAMESITE = 'Lax'
 #endif
+
+# in order to differentiate "local traffic" vs "external traffic" in k8s,
+# we need to utilize x_forwarded_host header and compare it with an expected URL.
+HTTP_ALLOWED_URL = None
+if not is_empty(env('HTTP_ALLOWED_URL')):
+    USE_X_FORWARDED_HOST = True
+    HTTP_ALLOWED_URL = env('HTTP_ALLOWED_URL')
+#endif
+
 SECURE_PROXY_SSL_HEADER = (env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 INTERNAL_IPS = ('*',)
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')

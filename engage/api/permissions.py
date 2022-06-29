@@ -2,6 +2,7 @@ import logging
 from django.http import HttpRequest
 from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
+from temba.settings import HTTP_ALLOWED_URL
 
 
 class SSLorLocalTrafficPermission(BasePermission):  # pragma: no cover
@@ -14,6 +15,8 @@ class SSLorLocalTrafficPermission(BasePermission):  # pragma: no cover
         req: HttpRequest = request._request
         self.logger.debug("[TRACE] ssl or local has_perm", extra={
             'req': request,
+            'hau': HTTP_ALLOWED_URL,
+            'res': HTTP_ALLOWED_URL is None or request.is_secure() or HTTP_ALLOWED_URL == request.get_host(),
             'is_sec': req.is_secure(),
             'host': req.get_host(),
             'scheme': req.scheme,
@@ -21,7 +24,7 @@ class SSLorLocalTrafficPermission(BasePermission):  # pragma: no cover
             'meta': req.META,
             'view': view,
         })
-        return True
+        return HTTP_ALLOWED_URL is None or request.is_secure() or HTTP_ALLOWED_URL == request.get_host()
     #enddef has_permission
 
 #endclass SSLorLocalTrafficPermission
