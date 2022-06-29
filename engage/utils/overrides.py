@@ -109,7 +109,3 @@ def RunEngageOverrides():
     from temba.contacts.templatetags.contacts import register
     from engage.contacts.templatetags import scheme_icon
     register.filter(scheme_icon)
-
-    from temba.api import models
-    from engage.api.permissions import SSLPermission as EngageSSLPermission
-    models.SSLPermission = EngageSSLPermission

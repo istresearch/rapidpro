@@ -101,6 +101,8 @@ IS_PROD = env('IS_PROD', 'off') == 'on'
 HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
 TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
 if TEMBA_HOST.lower().startswith('https://') and str2bool(env('USE_SECURE_COOKIES', False)):
+    # in order to differentiate "local traffic" vs "external traffic", we need to utilize x_forwarded_host header.
+    USE_X_FORWARDED_HOST = True
     #from .security_settings import *  # noqa
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_AGE = 1209600  # 2 weeks
