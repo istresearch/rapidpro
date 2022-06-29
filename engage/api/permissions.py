@@ -18,6 +18,7 @@ class SSLorLocalTrafficPermission(BasePermission):  # pragma: no cover
             'host': req.get_host(),
             'scheme': req.scheme,
             'hdrs': req.headers,
+            'meta': req.META,
             'view': view,
         })
         return True
