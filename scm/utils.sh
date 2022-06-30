@@ -505,7 +505,7 @@ function parseVersionNumFromBranchNameOrTag
 function parseVersionKindFromBranchNameOrTag
 {
   VER_KIND="dev"
-  if [[ ${BRANCH_NAME} =~ (release|staging)-v([[:digit:]]\.)+ ]]; then
+  if [[ ${BRANCH_NAME} =~ (release|staging)[-/]v([[:digit:]]\.)+ ]]; then
     local theVerKindHint=
     if [[ -z ${BASH_REMATCH[1]} ]]; then
       if [[ ${CIRCLE_TAG} =~ (v|beta)([[:digit:]]\.)+ ]]; then
