@@ -71,7 +71,8 @@ def RunEngageOverrides():
     URN_SCHEME_ICONS.update(PM_Scheme_Icons)
 
     from django.contrib.auth.models import User
-    from engage.orgs.models import get_user_orgs
+    from engage.orgs.models import get_user_org, get_user_orgs
+    User.get_org = get_user_org
     User.get_user_orgs = get_user_orgs
 
     from engage.orgs.bandwidth import BandwidthOrgModelMixin
