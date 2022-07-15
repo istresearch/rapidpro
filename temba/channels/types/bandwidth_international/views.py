@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from smartmin.views import SmartFormView
 
-from temba.orgs.models import BWI_SENDER, BWI_ENCODING, BWI_USERNAME, BWI_PASSWORD
+from engage.orgs.bandwidth import BWI_SENDER, BWI_ENCODING, BWI_USERNAME, BWI_PASSWORD
 from temba.utils import analytics
 from ...models import Channel
 from ...views import (
@@ -35,12 +35,13 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         bwi_encoding = forms.ChoiceField(choices=[('gsm', "GSM"), ("ucs", "UCS"), ("auto", "Auto Detect")],
                                          label="Messaging Encoding")
 
-        def clean(self):
-            BWI_KEY = os.environ.get("BWI_KEY")
-            if not BWI_KEY or len(BWI_KEY) == 0:
-                raise ValidationError(_("The environment variable BWI_KEY must be a valid encryption key"))
-
-            return self.cleaned_data
+        # BWI unsupported
+        #def clean(self):
+        #    BWI_KEY = settings["BWI_KEY"]
+        #    if not BWI_KEY or len(BWI_KEY) == 0:
+        #        raise ValidationError(_("The environment variable BWI_KEY must be a valid encryption key"))
+        #
+        #    return self.cleaned_data
 
     def __init__(self, channel_type):
         super().__init__(channel_type)
@@ -58,7 +59,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
 
     def get_claim_url(self):
         return reverse("channels.types.bandwidth_international.claim")
-    
+
     def get_success_url(self):
             return reverse("channels.channel_read", args=[self.uuid])
 
@@ -98,7 +99,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
 
         channel = Channel.create(address=bwi_sender, org=org, user=user, channel_type="BWI", name=bwi_sender,
                                  role=role, config=config, uuid=self.uuid, country="")
-        
+
         channel.config[Channel.CONFIG_KEY] = channel.pk
         channel.save()
         return channel

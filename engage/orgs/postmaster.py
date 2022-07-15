@@ -15,7 +15,42 @@ from temba.orgs.views import (
     OrgPermsMixin,
 )
 
-class PostmasterChannelMixin:
+
+CONFIG_POSTMASTER_DEVICE_ID = "DEVICE_ID"
+CONFIG_POSTMASTER_CHAT_MODE = "CHAT_MODE"
+
+class PostmasterOrgModelMixin:
+
+    # def connect_postmaster(self, device_id, chat_mode, user):
+    #     """
+    #     While 'fixed', not sure if we really should update org config at all.
+    #     Orgs can have many PSM channels, not just one, so commenting this out.
+    #     :param device_id:
+    #     :param chat_mode:
+    #     :param user:
+    #     :return:
+    #     """
+    #     self.config.update({
+    #         CONFIG_POSTMASTER_DEVICE_ID: device_id,
+    #         CONFIG_POSTMASTER_CHAT_MODE: chat_mode,
+    #     })
+    #     self.modified_by = user
+    #     self.save(update_fields=("config", "modified_by", "modified_on"))
+    # #enddef connect_postmaster
+
+    def remove_postmaster_account(self, user):
+        if self.config and type is not None:
+            channel_type = "PSM"
+
+            for channel in self.channels.filter(is_active=True, channel_type__in=[channel_type]):
+                channel.release()
+
+            self.modified_by = user
+            self.save()
+
+#endclass PostmasterOrgModelMixin
+
+class PostmasterChannelViewsMixin:
 
     @classmethod
     def get_actions(cls):
@@ -56,8 +91,7 @@ class PostmasterChannelMixin:
             initial = super().derive_initial()
             org = self.get_object()
             config = org.config
-            initial["receiver_id"] = config.get(Org.CONFIG_POSTMASTER_RECEIVER_ID, "")
-            initial["chat_mode"] = config.get(Org.CONFIG_POSTMASTER_CHAT_MODE, "")
+            initial["chat_mode"] = config.get(CONFIG_POSTMASTER_CHAT_MODE, "")
             initial["disconnect"] = "false"
             return initial
 
@@ -87,6 +121,8 @@ class PostmasterChannelMixin:
                 context["chat_mode"] = config.get(Org.CONFIG_POSTMASTER_CHAT_MODE, "")
 
             return context
+
+    #endclass PostmasterAccount
 
     class PostmasterConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
         class PostmasterConnectForm(forms.Form):
@@ -120,3 +156,7 @@ class PostmasterChannelMixin:
             org.save()
 
             return HttpResponseRedirect(self.get_success_url())
+
+    #endclass PostmasterConnect
+
+#endclass PostmasterChannelViewsMixin

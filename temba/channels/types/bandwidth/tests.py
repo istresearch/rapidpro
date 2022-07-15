@@ -5,7 +5,7 @@ from bandwidth.messaging.api_exception_module import BandwidthMessageAPIExceptio
 from django.urls import reverse
 
 from temba.channels.models import Channel
-from temba.orgs.models import BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN
+from engage.orgs.bandwidth import BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN
 from temba.tests import TembaTest
 from temba.tests.bandwidth import MockRequestValidator
 
@@ -58,4 +58,3 @@ class BandwidthTypeTest(TembaTest):
         bandwidth_channel.role = Channel.ROLE_SEND + Channel.ROLE_RECEIVE + Channel.ROLE_ANSWER
         bandwidth_channel.save()
         self.assertEqual("BWD", bandwidth_channel.channel_type)
-

@@ -16,7 +16,6 @@ import pytz
 import stripe
 import stripe.error
 from django_redis import get_redis_connection
-from iris_sdk import Client
 from packaging.version import Version
 from requests import Session
 from smartmin.models import SmartModel
@@ -52,18 +51,6 @@ from temba.utils.uuid import uuid4
 
 logger = logging.getLogger(__name__)
 
-BW_APPLICATION_SID = "BW_APPLICATION_SID"
-BW_ACCOUNT_SID = "BW_ACCOUNT_SID"
-BW_ACCOUNT_TOKEN = "BW_ACCOUNT_TOKEN"
-BW_ACCOUNT_SECRET = "BW_ACCOUNT_SECRET"
-BW_PHONE_NUMBER = "BW_PHONE_NUMBER"
-BW_API_TYPE = "BW_API_TYPE"
-
-BWI_USERNAME = "BWI_USERNAME"
-BWI_PASSWORD = "BWI_PASSWORD"
-BWI_ENCODING = "BWI_ENCODING"
-BWI_SENDER = "BWI_SENDER"
-
 # cache keys and TTLs
 ORG_LOCK_KEY = "org:%d:lock:%s"
 ORG_CREDITS_TOTAL_CACHE_KEY = "org:%d:cache:credits_total"
@@ -76,7 +63,7 @@ ORG_LOW_CREDIT_THRESHOLD_CACHE_KEY = "org:%d:cache:low_credits_threshold"
 
 ORG_LOCK_TTL = 60  # 1 minute
 ORG_CREDITS_CACHE_TTL = 7 * 24 * 60 * 60  # 1 week
-PHONE_NUMBER = "PHONE_NUMBER"
+
 
 class DependencyMixin:
     """
@@ -257,9 +244,6 @@ class Org(SmartModel):
     CONFIG_TWILIO_TOKEN = "ACCOUNT_TOKEN"
     CONFIG_VONAGE_KEY = "NEXMO_KEY"
     CONFIG_VONAGE_SECRET = "NEXMO_SECRET"
-
-    CONFIG_POSTMASTER_DEVICE_ID = "DEVICE_ID"
-    CONFIG_POSTMASTER_CHAT_MODE = "CHAT_MODE"
 
     EARLIEST_IMPORT_VERSION = "3"
     CURRENT_EXPORT_VERSION = "13"
@@ -488,20 +472,6 @@ class Org(SmartModel):
 
         return [t for t in IntegrationType.get_all(category) if t.is_connected(self)]
 
-    @cached_property
-    def has_ticketer(self):
-        """
-        Gets whether this org has an active ticketer configured
-        """
-        return self.ticketers.filter(is_active=True)
-
-    @cached_property
-    def has_ticketer(self):
-        """
-        Gets whether this org has an active ticketer configured
-        """
-        return self.ticketers.filter(is_active=True)
-
     def clear_credit_cache(self):
         """
         Clears the given cache types (currently just credits) for this org. Returns number of keys actually deleted
@@ -547,6 +517,7 @@ class Org(SmartModel):
         """
         Imports previously exported JSON
         """
+
         from temba.campaigns.models import Campaign
         from temba.contacts.models import ContactField, ContactGroup
         from temba.flows.models import Flow
@@ -816,50 +787,6 @@ class Org(SmartModel):
             return self.config.get(Org.CONFIG_VONAGE_KEY) and self.config.get(Org.CONFIG_VONAGE_SECRET)
         return False
 
-    def connect_postmaster(self, receiver_id, chat_mode, user):
-        self.config.update({Org.CONFIG_POSTMASTER_RECEIVER_ID: receiver_id,
-                            Org.CONFIG_POSTMASTER_CHATMODE: chat_mode})
-        self.modified_by = user
-        self.save(update_fields=("config", "modified_by", "modified_on"))
-
-    def connect_dtone(self, account_login, airtime_api_token, user):
-        self.config.update(
-            {Org.CONFIG_DTONE_LOGIN: account_login.strip(), Org.CONFIG_DTONE_API_TOKEN: airtime_api_token.strip()}
-        )
-        self.modified_by = user
-        self.save(update_fields=("config", "modified_by", "modified_on"))
-
-    def connect_chatbase(self, agent_name, api_key, version, user):
-        self.config.update(
-            {
-                Org.CONFIG_CHATBASE_AGENT_NAME: agent_name,
-                Org.CONFIG_CHATBASE_API_KEY: api_key,
-                Org.CONFIG_CHATBASE_VERSION: version,
-            }
-        )
-        self.modified_by = user
-        self.save(update_fields=("config", "modified_by", "modified_on"))
-
-    def connect_bandwidth(self, account_sid, account_token, account_secret, application_sid, user):
-        self.config.update({
-            BW_ACCOUNT_SID: account_sid,
-            BW_ACCOUNT_TOKEN: account_token,
-            BW_ACCOUNT_SECRET: account_secret,
-            BW_APPLICATION_SID: application_sid,
-        })
-        self.modified_by = user
-        self.save(update_fields=("config", "modified_by", "modified_on"))
-
-    def connect_bandwidth_international(self, username, password, user):
-        from temba.utils.bandwidth import AESCipher
-        bwi_key = os.environ.get("BWI_KEY")
-        self.config.update({
-            BWI_USERNAME: AESCipher(username, bwi_key).encrypt(),
-            BWI_PASSWORD: AESCipher(password, bwi_key).encrypt(),
-        })
-        self.modified_by = user
-        self.save(update_fields=("config", "modified_by", "modified_on"))
-
     def is_connected_to_twilio(self):
         if self.config:
             return self.config.get(Org.CONFIG_TWILIO_SID) and self.config.get(Org.CONFIG_TWILIO_TOKEN)
@@ -876,26 +803,6 @@ class Org(SmartModel):
             self.modified_by = user
             self.save(update_fields=("config", "modified_by", "modified_on"))
 
-    def is_connected_to_dtone(self):
-        if self.config:
-            return self.config.get(Org.CONFIG_DTONE_LOGIN) and self.config.get(Org.CONFIG_DTONE_API_TOKEN)
-        return False
-
-    def is_connected_to_bandwidth(self):
-        if self.config:
-            bw_account_sid = self.config.get(BW_ACCOUNT_SID, None)
-            bw_account_token = self.config.get(BW_ACCOUNT_TOKEN, None)
-            if bw_account_sid and bw_account_token:
-                return True
-        return False
-
-    def is_connected_to_bandwidth_international(self):
-        bwi_username = self.config.get(BWI_USERNAME, None)
-        bwi_password = self.config.get(BWI_PASSWORD, None)
-        if bwi_username and bwi_password:
-            return True
-        return False
-
     def remove_twilio_account(self, user):
         if self.config:
             # release any Twilio and Twilio Messaging Service channels
@@ -907,61 +814,6 @@ class Org(SmartModel):
             self.modified_by = user
             self.save(update_fields=("config", "modified_by", "modified_on"))
 
-    def remove_bandwidth_account(self, user, international=False):
-        if self.config:
-            channel_type = "BWD"
-            if international:
-                channel_type = "BWI"
-
-            for channel in self.channels.filter(is_active=True, channel_type__in=[channel_type]):
-                channel.release()
-
-            if channel_type == "BWI":
-                self.config[BWI_USERNAME] = ""
-                self.config[BWI_PASSWORD] = ""
-            elif channel_type == "BWD":
-                self.config[BW_ACCOUNT_SID] = ""
-                self.config[BW_APPLICATION_SID] = ""
-                self.config[BW_ACCOUNT_TOKEN] = ""
-                self.config[BW_ACCOUNT_SECRET] = ""
-
-            self.modified_by = user
-            self.save()
-
-    def remove_postmaster_account(self, user):
-        if self.config and type is not None:
-            channel_type = "PSM"
-
-            for channel in self.channels.filter(is_active=True, channel_type__in=[channel_type]):
-                channel.release()
-
-            self.modified_by = user
-            self.save()
-
-    def remove_dtone_account(self, user):
-        if self.config:
-            self.config.pop(Org.CONFIG_DTONE_LOGIN, None)
-            self.config.pop(Org.CONFIG_DTONE_API_TOKEN, None)
-            self.config.pop(Org.CONFIG_DTONE_CURRENCY, None)
-            self.modified_by = user
-            self.save(update_fields=("config", "modified_by", "modified_on"))
-
-    def remove_chatbase_account(self, user):
-        if self.config:
-            self.config.pop(Org.CONFIG_CHATBASE_AGENT_NAME, None)
-            self.config.pop(Org.CONFIG_CHATBASE_API_KEY, None)
-            self.config.pop(Org.CONFIG_CHATBASE_VERSION, None)
-            self.modified_by = user
-            self.save(update_fields=("config", "modified_by", "modified_on"))
-
-    def refresh_dtone_account_currency(self):
-        client = self.get_dtone_client()
-        response = client.check_wallet()
-        account_currency = response.get("currency", "")
-
-        self.config.update({Org.CONFIG_DTONE_CURRENCY: account_currency})
-        self.save(update_fields=("config", "modified_on"))
-
     def get_twilio_client(self):
         account_sid = self.config.get(Org.CONFIG_TWILIO_SID)
         auth_token = self.config.get(Org.CONFIG_TWILIO_TOKEN)
@@ -971,36 +823,11 @@ class Org(SmartModel):
 
     def get_vonage_client(self):
         from temba.channels.types.vonage.client import VonageClient
+
         api_key = self.config.get(Org.CONFIG_VONAGE_KEY)
         api_secret = self.config.get(Org.CONFIG_VONAGE_SECRET)
         if api_key and api_secret:
             return VonageClient(api_key, api_secret)
-        return None
-
-    def get_bandwidth_messaging_client(self):
-        import bandwidth
-
-        if self.config:
-            bw_account_sid = self.config.get(BW_ACCOUNT_SID, None)
-            bw_account_token = self.config.get(BW_ACCOUNT_TOKEN, None)
-            bw_account_secret = self.config.get(BW_ACCOUNT_SECRET, None)
-
-            if bw_account_sid and bw_account_token and bw_account_secret:
-                return bandwidth.client('messaging', bw_account_sid, bw_account_token, bw_account_secret)
-        return None
-
-    def get_bandwidth_international_messaging_client(self):
-
-        if self.config:
-            bwi_username = self.config.get(BWI_USERNAME, None)
-            bwi_password = self.config.get(BWI_PASSWORD, None)
-
-            bwi_key = os.environ.get("BWI_KEY")
-            if bwi_key and bwi_username and bwi_password:
-                from temba.utils.bandwidth import AESCipher
-                return Client(url="https://bulksms.ia2p.bandwidth.com:12021/bulk/sendsms",
-                              username=AESCipher(bwi_username, bwi_key).decrypt(),
-                              password=AESCipher(bwi_password, bwi_key).decrypt())
         return None
 
     @property
@@ -2036,6 +1863,7 @@ def release(user, releasing_user, *, brand):
     # remove user from all roles on any org for our brand
     for org in user.get_user_orgs([brand]):
         org.remove_user(user)
+
 
 def get_user_orgs(user, brands=None):
     if user.is_superuser:

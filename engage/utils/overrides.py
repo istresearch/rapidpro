@@ -74,6 +74,10 @@ def RunEngageOverrides():
     from engage.orgs.models import get_user_orgs
     User.get_user_orgs = get_user_orgs
 
+    from engage.orgs.bandwidth import BandwidthOrgModelMixin
+    from temba.orgs.models import Org as BaseOrgModel
+    BaseOrgModel.__bases__ = (BandwidthOrgModelMixin,) + BaseOrgModel.__bases__
+
     # cannot use OrgHomeMixin due to circular unit reference; override def here.
     from temba.orgs.views import OrgCRUDL as TembaOrgViews
     from engage.orgs.home import OrgHomeMixin as EngageOrgViews
