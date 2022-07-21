@@ -10,6 +10,7 @@ from glob import glob
 import dj_database_url
 import django_cache_url
 
+from engage.auth.oauth_config import OAuthConfig
 from engage.utils.strings import is_empty, str2bool
 from engage.utils.s3_config import AwsS3Config
 
@@ -355,10 +356,8 @@ GROUP_PERMISSIONS['Editors'] += (
 )
 
 #============== KeyCloak SSO ===================
-OAUTH2_CONFIG = {'is_enabled': False,}
+OAUTH2_CONFIG = OAuthConfig()
 if not is_empty(env('KEYCLOAK_URL', None)):
-    from engage.auth.oauth_config import OAuthConfig
-    OAUTH2_CONFIG = OAuthConfig()
     if OAUTH2_CONFIG.is_enabled:
         DEFAULT_BRAND_OBJ.update({
             'has_sso': not OAUTH2_CONFIG.is_login_replaced,
@@ -410,6 +409,10 @@ USER_GUIDE_CONFIG = AwsS3Config('USER_GUIDE_')
 DEFAULT_BRAND_OBJ.update({
     'has_user_guide': USER_GUIDE_CONFIG.is_defined() or len(USER_GUIDE_CONFIG.FILEPATH) > 1,
 })
+
+POST_MASTER_FETCH_URL = env('POST_MASTER_FETCH_URL', None)
+POST_MASTER_FETCH_USER = env('POST_MASTER_FETCH_USER', None)
+POST_MASTER_FETCH_PSWD = env('POST_MASTER_FETCH_PSWD', None)
 
 MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
 
