@@ -1857,7 +1857,7 @@ def release(user, releasing_user, *, brand):
         user.save()
 
     # release any orgs we own on this brand
-    for org in user.get_owned_orgs([brand]):
+    for org in user.get_owned_orgs(brand=brand):
         org.release(releasing_user, release_users=False)
 
     # remove user from all roles on any org for our brand
@@ -1878,12 +1878,12 @@ def get_user_orgs(user, brands=None):
     return user_orgs.filter(is_active=True).distinct().order_by("name")
 
 
-def get_owned_orgs(user, brands=None):
+def get_owned_orgs(user, brand=None):
     """
     Gets all the orgs where this is the only user for the current brand
     """
     owned_orgs = []
-    for org in user.get_user_orgs(brands=brands):
+    for org in user.get_user_orgs(brands=[brand] if brand else None):
         if not org.get_users().exclude(id=user.id).exists():
             owned_orgs.append(org)
     return owned_orgs

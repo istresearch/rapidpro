@@ -1,0 +1,44 @@
+-extends "smartmin/update.html"
+
+-load smartmin i18n temba static
+
+-block title
+  -trans "Update User"
+
+-block post-content
+  - if org_perms.channels.channel_delete
+    %temba-dialog#delete-confirmation.hide(
+      header='{{ _("Delete User")|escapejs }}'
+      primaryButtonName='{{ _("Delete")|escapejs }}'
+      destructive='true'
+    )
+      .p-6.confirmation-body
+        %p
+          -trans "Delete this user?"
+        %p
+          -trans "Are you certain?"
+
+    %temba-dialog#delete-success.hide(
+      header='{{ _("Delete User")|escapejs }}'
+      primaryButtonName=''
+      cancelButtonName='Ok'
+    )
+      .p-6
+        -trans "Delete Successful"
+
+    %temba-dialog#delete-fail.hide(
+      header='{{ _("Delete User")|escapejs }}'
+      primaryButtonName=''
+      cancelButtonName='Ok'
+    )
+      .p-6.important
+        -trans "An error has occured:"
+      %p.fail-msg
+        "Unknown error"
+
+-block extra-script
+  {{ block.super }}
+
+  {% if perms.auth.user_update %}
+    <script type="text/javascript" src="{% static 'engage/js/user-update-ready.js' %}"></script>
+  {% endif %}
