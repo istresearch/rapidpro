@@ -114,8 +114,3 @@ def RunEngageOverrides():
     from temba.contacts.templatetags.contacts import register
     from engage.contacts.templatetags import scheme_icon
     register.filter(scheme_icon)
-
-    from smartmin.users.views import UserCRUDL
-    from engage.auth.users import UserViewsUpdateMixin
-    # introduce anything "new" we wish to add from the Mixin by adding it first in __bases__ list.
-    UserCRUDL.Update.__bases__ = (UserViewsUpdateMixin,) + UserCRUDL.Update.__bases__

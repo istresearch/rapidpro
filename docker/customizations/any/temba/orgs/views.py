@@ -660,19 +660,21 @@ class UserCRUDL(SmartCRUDL):
             return super().derive_queryset(**kwargs).filter(is_active=True).exclude(id=get_anonymous_user().id)
 
     class Delete(SmartUpdateView):
-        class DeleteForm(forms.ModelForm):
-            delete = forms.BooleanField()
-
-            class Meta:
-                model = User
-                fields = ("delete",)
-
-        form_class = DeleteForm
+        fields = ("id",)
         permission = "auth.user_update"
 
-        def form_valid(self, form):
+        def post(self, request, *args, **kwargs):
+            logger = logging.getLogger(__name__)
+
             user = self.get_object()
             username = user.username
+            logger.info("delete user", extra={
+                'user_id': user.id,
+                'user_name': username,
+                'user_email': user.email,
+                'fn': user.first_name,
+                'ln': user.last_name,
+            })
 
             brand = self.request.branding.get("brand")
             user.release(self.request.user, brand=brand)
