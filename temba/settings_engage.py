@@ -10,6 +10,8 @@ from glob import glob
 import dj_database_url
 import django_cache_url
 
+from engage.auth.oauth_config import OAuthConfig
+from engage.utils.strings import is_empty, str2bool
 from engage.utils.s3_config import AwsS3Config
 
 from temba.settings_common import *  # noqa
@@ -35,6 +37,8 @@ MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
     tuple(filter(lambda tup : tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
+        'flatpickr',
+        'temba.ext',
         'engage.api',
         'engage.auth',
         'engage.channels',
@@ -45,7 +49,9 @@ INSTALLED_APPS = (
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
 
-APP_URLS.append(
+APP_URLS += (
+    'temba.ext.urls',
+    'engage.auth.urls',
     'engage.utils.user_guide',
 )
 
@@ -96,8 +102,24 @@ IS_PROD = env('IS_PROD', 'off') == 'on'
 # -----------------------------------------------------------------------------------
 HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
 TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
-#if TEMBA_HOST.lower().startswith('https://') or IS_PROD:
-#    from .security_settings import *  # noqa
+
+if TEMBA_HOST.lower().startswith('https://') and str2bool(env('USE_SECURE_COOKIES', False)):
+    #from .security_settings import *  # noqa
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_AGE = 1209600  # 2 weeks
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_PATH = '/'
+    SESSION_COOKIE_SAMESITE = 'Lax'
+#endif
+
+# in order to differentiate "local traffic" vs "external traffic" in k8s,
+# we need to utilize x_forwarded_host header and compare it with an expected URL.
+HTTP_ALLOWED_URL = None
+if not is_empty(env('HTTP_ALLOWED_URL')):
+    USE_X_FORWARDED_HOST = True
+    HTTP_ALLOWED_URL = env('HTTP_ALLOWED_URL')
+#endif
+
 SECURE_PROXY_SSL_HEADER = (env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 INTERNAL_IPS = ('*',)
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')
@@ -230,6 +252,9 @@ BRANDING["rapidpro.io"].update({
     "allow_signups": env('BRANDING_ALLOW_SIGNUPS', True),
     "tiers": dict(import_flows=0, multi_user=0, multi_org=0),
     "version": None,
+    'has_sso': False,
+    'sso_login_url': "",
+    'sso_logout_url': "",
 })
 DEFAULT_BRAND_OBJ = BRANDING["rapidpro.io"]
 
@@ -331,19 +356,53 @@ GROUP_PERMISSIONS['Editors'] += (
 )
 
 #============== KeyCloak SSO ===================
-OAUTH2_CONFIG = None
-if env('KEYCLOAK_URL', None) is not None:
-    from engage.auth.oauth_config import OAuthConfig
-    OAUTH2_CONFIG = OAuthConfig()
-    LOGIN_URL = OAUTH2_CONFIG.get_login_redirect()
-    LOGOUT_URL = OAUTH2_CONFIG.get_logout_redirect()
-    INSTALLED_APPS += (
-        'oauth2_provider',
-        'corsheaders',
-    )
-    APP_URLS.append('engage.auth.urls')
-    MIDDLEWARE = MIDDLEWARE[:1] + ('corsheaders.middleware.CorsMiddleware',) + MIDDLEWARE[1:]
-    CORS_ORIGIN_ALLOW_ALL = True #TODO (replace with actual keycloak URL rather than all
+OAUTH2_CONFIG = OAuthConfig()
+if not is_empty(env('KEYCLOAK_URL', None)):
+    if OAUTH2_CONFIG.is_enabled:
+        DEFAULT_BRAND_OBJ.update({
+            'has_sso': not OAUTH2_CONFIG.is_login_replaced,
+            'sso_login_url': OAUTH2_CONFIG.get_login_url(),
+            # once again, Blacklisted tokens db schema required for OP/total logout
+            #'sso_logout_url': OAUTH2_CONFIG.get_logout_url(),
+            'sso_logout_url': LOGOUT_URL,
+        })
+        if OAUTH2_CONFIG.is_login_replaced:
+            LOGIN_URL = OAUTH2_CONFIG.get_login_url()
+        #endif login is replaced
+        if OAUTH2_CONFIG.KEYCLOAK_LOGOUT_REDIRECT:
+            LOGOUT_REDIRECT_URL = OAUTH2_CONFIG.KEYCLOAK_LOGOUT_REDIRECT
+        #endif logout redirect is defined
+
+        INSTALLED_APPS += (
+            'oauth2_authcodeflow',
+        )
+        AUTHENTICATION_BACKENDS = (
+            'oauth2_authcodeflow.auth.AuthenticationBackend',
+        ) + AUTHENTICATION_BACKENDS
+
+        # cors middleware not required, yet
+        #MIDDLEWARE = MIDDLEWARE[:1] + ('corsheaders.middleware.CorsMiddleware',) + MIDDLEWARE[1:]
+        #CORS_ORIGIN_ALLOW_ALL = True #DEBUG-only (replace with actual keycloak URL rather than all
+
+        # plugin settings
+        OIDC_OP_DISCOVERY_DOCUMENT_URL = OAUTH2_CONFIG.get_discovery_url()
+        OIDC_RP_CLIENT_ID = OAUTH2_CONFIG.KEYCLOAK_CLIENT_ID
+        OIDC_RP_CLIENT_SECRET = OAUTH2_CONFIG.KEYCLOAK_CLIENT_SECRET
+        OIDC_RP_SCOPES = OAUTH2_CONFIG.SCOPES
+        #OIDC_RP_SIGN_ALGOS_ALLOWED = 'RS256' if OAUTH2_CONFIG.OIDC_RSA_PRIVATE_KEY else 'HS256'
+        #OIDC_CREATE_USER = False  #docs are wrong as this setting is ignored, a bug, no workaround.
+        OIDC_TIMEOUT = 60  # seconds before giving up on OIDC
+        # the middleware requires db changes for keeping track of blacklisted tokens, do not use.
+        # MIDDLEWARE += (
+        #     "oauth2_authcodeflow.middleware.RefreshAccessTokenMiddleware",
+        #     "oauth2_authcodeflow.middleware.RefreshSessionMiddleware"
+        # )
+
+        # callback to use email as the username, which is a non-standard thing for Django.
+        from engage.auth.oauth_utils import oauth_username_is_email
+        OIDC_DJANGO_USERNAME_FUNC = oauth_username_is_email
+
+    #endif is_enabled
 #endif keycloak
 
 USER_GUIDE_CONFIG = AwsS3Config('USER_GUIDE_')
@@ -351,11 +410,11 @@ DEFAULT_BRAND_OBJ.update({
     'has_user_guide': USER_GUIDE_CONFIG.is_defined() or len(USER_GUIDE_CONFIG.FILEPATH) > 1,
 })
 
-MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
+POST_MASTER_FETCH_URL = env('POST_MASTER_FETCH_URL', None)
+POST_MASTER_FETCH_USER = env('POST_MASTER_FETCH_USER', None)
+POST_MASTER_FETCH_PSWD = env('POST_MASTER_FETCH_PSWD', None)
 
-# unset BWI key, causes exception if set and we no longer support it anyway
-BWI_KEY = None
-# above didn't seem to work, so set ENV var to "" for now, debug later.
+MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
 
 # set of ISO-639-3 codes of languages to allow in addition to all ISO-639-1 languages
 if env('NON_ISO6391_LANGUAGES_ALLOWED', None) is not None:

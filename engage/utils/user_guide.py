@@ -4,7 +4,7 @@ from typing import Optional
 
 from django.conf import settings
 from django.conf.urls import url
-from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest, HttpResponse
 from rest_framework.views import View
 
@@ -27,7 +27,6 @@ class UserGuideMixin:
 
         def __init__(self):
             super().__init__()
-            self.user: Optional[User] = None
             self.s3_config: Optional[AwsS3Config] = None
             self.file_path: Optional[Path] = None
             if settings.USER_GUIDE_CONFIG.is_defined():

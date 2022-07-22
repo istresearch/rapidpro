@@ -1,4 +1,5 @@
 import re
+from typing import Union
 
 def _mg_for_cap_words( aMatchGroup: re.Match[str] ) -> str:
     """
@@ -8,6 +9,7 @@ def _mg_for_cap_words( aMatchGroup: re.Match[str] ) -> str:
     :return: Return a string with the first letter in word capitalized.
     """
     return aMatchGroup.group(1) + aMatchGroup.group(2).upper()
+#enddef _mg_for_cap_words
 
 def cap_words( aString: str ):
     """
@@ -19,6 +21,7 @@ def cap_words( aString: str ):
     :return: Returns the string with words capitalized.
     """
     return re.sub("(^|\s)(\S)", _mg_for_cap_words, aString)
+#enddef cap_words
 
 def sanitize_text( aText: str) -> str:
     """
@@ -34,3 +37,15 @@ def sanitize_text( aText: str) -> str:
         # remove 0-width non-joiner characters near spaces
         aText = aText.replace(' '+u"\u200C", ' ').replace(' &zwnj;', ' ')
     return aText
+#enddef sanitize_text
+
+def str2bool( v: Union[str, bool] ) -> bool:
+    if v is not None:
+        return str(v).lower() in ('true', '1', 'on') if type(v) == str else bool(v)
+    else:
+        return False
+#enddef str2bool
+
+def is_empty( s ) -> bool:
+    return not ( s and len(s) > 1 )
+#enddef is_empty

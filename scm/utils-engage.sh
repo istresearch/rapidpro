@@ -246,6 +246,9 @@ function BuildImageForArch()
 
   if [[ "${IMG_STAGE}" != 'pyapp' ]]; then
     VERSION_TAG="$(cat workspace/info/version_tag.txt)"
+    if [[ "${IMG_STAGE}" == 'generic' ]]; then
+      VERSION_TAG+='-generic'
+    fi
     DOCKERFILE2USE="docker/final-${IMG_STAGE}.dockerfile"
   else
     VERSION_TAG="$(cat workspace/info/pyapp_tag.txt)"
@@ -286,6 +289,9 @@ function CreateManifestForImage()
 
   if [[ "${IMG_STAGE}" != 'pyapp' ]]; then
     VERSION_TAG="$(cat workspace/info/version_tag.txt)"
+    if [[ "${IMG_STAGE}" == 'generic' ]]; then
+      VERSION_TAG+='-generic'
+    fi
   else
     VERSION_TAG="$(cat workspace/info/pyapp_tag.txt)"
   fi
@@ -310,12 +316,5 @@ function CreateManifestForImage()
         --amend "${IMAGE_NAME}:${IMAGE_TAG}-arm64"
       docker manifest push "${IMAGE_NAME}:${VER_TAG}"
     fi
-  elif [[ "${IMG_STAGE}" == 'generic' ]]; then
-    VERSION_CI=$(GetImgStageTag version_ci)
-    VER_TAG=${VERSION_CI%-*}
-    docker manifest create "${IMAGE_NAME}:${VER_TAG}" \
-      --amend "${IMAGE_NAME}:${IMAGE_TAG}-amd64" \
-      --amend "${IMAGE_NAME}:${IMAGE_TAG}-arm64"
-    docker manifest push "${IMAGE_NAME}:${VER_TAG}"
   fi
 }

@@ -23,6 +23,7 @@ def RunEngageOverrides():
     """
     from django.contrib.auth.models import AnonymousUser, User
     User.track_user = _TrackUser
+    User.using_token = False  # default optional property to False so it exists.
     AnonymousUser.track_user = _TrackUser
 
     from engage.channels.types.postmaster.schemes import PM_Schemes, PM_Scheme_Labels, PM_Scheme_Icons
@@ -70,8 +71,13 @@ def RunEngageOverrides():
     URN_SCHEME_ICONS.update(PM_Scheme_Icons)
 
     from django.contrib.auth.models import User
-    from engage.orgs.models import get_user_orgs
+    from engage.orgs.models import get_user_org, get_user_orgs
+    User.get_org = get_user_org
     User.get_user_orgs = get_user_orgs
+
+    from engage.orgs.bandwidth import BandwidthOrgModelMixin
+    from temba.orgs.models import Org as BaseOrgModel
+    BaseOrgModel.__bases__ = (BandwidthOrgModelMixin,) + BaseOrgModel.__bases__
 
     # cannot use OrgHomeMixin due to circular unit reference; override def here.
     from temba.orgs.views import OrgCRUDL as TembaOrgViews

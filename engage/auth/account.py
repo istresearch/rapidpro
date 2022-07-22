@@ -71,11 +71,11 @@ class UserAcct:
         return user.get_org_group()
 
     @staticmethod
-    def get_owned_orgs(user, brands=None):
+    def get_owned_orgs(user, brand=None):
         """
         Gets all the orgs where this is the only user for the current brand
         """
-        return user.get_owned_orgs(brands)
+        return user.get_owned_orgs(brand)
 
     @staticmethod
     def has_org_perm(user, org, permission) -> bool:
