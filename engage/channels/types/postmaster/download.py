@@ -5,7 +5,6 @@ from typing import Match, Optional
 from urllib.parse import urlparse
 
 from django.conf import settings
-from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest, HttpResponse
 from rest_framework.views import View
 
@@ -25,6 +24,7 @@ class DownloadPostmasterMixin:
         )
 
     class DownloadPostmaster(OrgPermLogInfoMixin, OrgPermsMixin, View):  # pragma: no cover
+        url_nonce = settings.POST_MASTER_DL_URL_NONCE
 
         def __init__(self):
             super().__init__()
@@ -38,24 +38,11 @@ class DownloadPostmasterMixin:
 
         @classmethod
         def derive_url_pattern(cls, path, action):
-            return r"^dl-pm/$"
+            return rf"^dl-pm/{cls.url_nonce}/?$"
         #enddef derive_url_pattern
-
-        def dispatch(self, request: HttpRequest, *args, **kwargs):
-            # non authenticated users without orgs get an error (not the org chooser)
-            user = self.get_user()
-            if not user.is_authenticated:
-                return HttpResponse('Not authorized', status=401)
-            #endif
-            return super().dispatch(request, *args, **kwargs)
-        #enddef dispatch
 
         def get(self, request: HttpRequest, *args, **kwargs):
             logger = logging.getLogger(__name__)
-
-            user = self.get_user()
-            if not user or user is AnonymousUser:
-                return HttpResponse('Not authorized', status=401)
 
             if not is_empty(self.fetch_url):
                 apk_content_type = 'application/vnd.android.package-archive'

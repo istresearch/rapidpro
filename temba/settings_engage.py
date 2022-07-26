@@ -9,6 +9,7 @@ from getenv import env
 from glob import glob
 import dj_database_url
 import django_cache_url
+import uuid
 
 from engage.auth.oauth_config import OAuthConfig
 from engage.utils.strings import is_empty, str2bool
@@ -413,6 +414,8 @@ DEFAULT_BRAND_OBJ.update({
 POST_MASTER_FETCH_URL = env('POST_MASTER_FETCH_URL', None)
 POST_MASTER_FETCH_USER = env('POST_MASTER_FETCH_USER', None)
 POST_MASTER_FETCH_PSWD = env('POST_MASTER_FETCH_PSWD', None)
+# low-effort, easily changed, endpoint obfuscation
+POST_MASTER_DL_URL_NONCE = uuid.uuid4().hex  #.hex removes the dashes
 
 MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
 

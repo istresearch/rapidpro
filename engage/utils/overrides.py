@@ -4,8 +4,13 @@ the form of methods put into specific classes "after initialization, but before 
 
 Import this file just after all the urls in the main urls.py and run its overrides.
 """
+import logging
+
 from django.conf import settings
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
+
+from engage.utils.strings import is_empty
 
 def _TrackUser(self):  # pragma: no cover
     """
@@ -21,6 +26,9 @@ def RunEngageOverrides():
     """
     Overrides that need to be conducted at the tail end of temba/urls.py
     """
+    if getattr(settings, "ENGAGE_OVERRIDES_RAN", False):
+        return
+
     from django.contrib.auth.models import AnonymousUser, User
     User.track_user = _TrackUser
     User.using_token = False  # default optional property to False so it exists.
@@ -114,3 +122,5 @@ def RunEngageOverrides():
     from temba.contacts.templatetags.contacts import register
     from engage.contacts.templatetags import scheme_icon
     register.filter(scheme_icon)
+
+    settings.ENGAGE_OVERRIDES_RAN = True
