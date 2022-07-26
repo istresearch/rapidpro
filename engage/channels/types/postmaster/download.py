@@ -48,25 +48,17 @@ class DownloadPostmasterMixin:
                 apk_content_type = 'application/vnd.android.package-archive'
                 try:
                     resp: requests.Response = requests.get(self.fetch_url, auth=self.fetch_auth)
-                    logger.debug("pm fetch url", extra=self.withLogInfo({
-                        'url': self.fetch_url,
-                        'resp': resp,
-                        'content-type': resp.headers.get('Content-Type') if resp is not None else '',
-                    }))
                     if resp is not None and resp.ok:
                         ctype = resp.headers.get('Content-Type')
                         if ctype is not None and ctype.startswith('text/html'):
                             list_of_links = resp.text
-                            logger.debug("pm fetch list", extra=self.withLogInfo({
-                                'list': list_of_links,
-                            }))
                             pm_link_match: Optional[Match[str]] = None
                             # page may list ordered links, get last one: <a href="postmaster-4.0.15.alpha.2709.apk">
                             for pm_link_match in re.finditer(r'<a href="(.+\.apk)">', list_of_links):
                                 pass
-                            logger.debug("pm link parse", extra=self.withLogInfo({
+                            logger.debug("pm link parse", extra={
                                 'pm_link': pm_link_match.group(1) if pm_link_match else None,
-                            }))
+                            })
                             if pm_link_match:
                                 pm_filename = pm_link_match.group(1)
                                 if self.fetch_url.endswith('/'):
@@ -88,18 +80,18 @@ class DownloadPostmasterMixin:
                             return r
                         #endif
                     #endif
-                    logger.error("pm fetch url failed to fetch apk", extra=self.withLogInfo({
+                    logger.error("pm fetch url failed to fetch apk", extra={
                         'url': self.fetch_url,
                         'resp': resp,
                         'content-type': resp.headers.get('Content-Type') if resp is not None else '',
-                    }))
+                    })
                     return HttpResponse('file not found', status=404)
                 except ValueError as vx:
                     return HttpResponse(vx, status=500)
                 #endtry
             else:
-                logger.warning("POST_MASTER_FETCH_URL not defined", extra=self.withLogInfo({
-                }))
+                logger.warning("POST_MASTER_FETCH_URL not defined", extra={
+                })
                 raise ValueError("file not found.")
             #endif
         #enddef get

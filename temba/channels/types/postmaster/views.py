@@ -104,7 +104,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
             self.pm_app_url = request.build_absolute_uri(reverse('channels.channel_download_postmaster'))
             qrc = pyqrcode.create(self.pm_app_url)
             qrstream = io.BytesIO()
-            qrc.png(qrstream, scale=6)
+            qrc.png(qrstream, scale=4)
             self.pm_app_qrcode = f"data:image/png;base64, {base64.b64encode(qrstream.getvalue()).decode('ascii')}"
         #endif
     #enddef init_pm_app_dl
