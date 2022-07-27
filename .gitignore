@@ -133,4 +133,4 @@ _v*/
 
 # container build layers tag info
 workspace/info/
-!/engage/hamls/smartmin/list.haml
+!/engage/hamls/smartmin/*

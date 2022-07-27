@@ -660,19 +660,21 @@ class UserCRUDL(SmartCRUDL):
             return super().derive_queryset(**kwargs).filter(is_active=True).exclude(id=get_anonymous_user().id)
 
     class Delete(SmartUpdateView):
-        class DeleteForm(forms.ModelForm):
-            delete = forms.BooleanField()
-
-            class Meta:
-                model = User
-                fields = ("delete",)
-
-        form_class = DeleteForm
+        fields = ("id",)
         permission = "auth.user_update"
 
-        def form_valid(self, form):
+        def post(self, request, *args, **kwargs):
+            logger = logging.getLogger(__name__)
+
             user = self.get_object()
             username = user.username
+            logger.info("delete user", extra={
+                'user_id': user.id,
+                'user_name': username,
+                'user_email': user.email,
+                'fn': user.first_name,
+                'ln': user.last_name,
+            })
 
             brand = self.request.branding.get("brand")
             user.release(self.request.user, brand=brand)
@@ -1809,7 +1811,7 @@ class OrgCRUDL(EngageOrgCRUDMixin, SmartCRUDL):
                 super().__init__(*args, **kwargs)
 
                 # orgs see agent role choice if they have an internal ticketing enabled
-                has_internal = org.has_internal_ticketing()
+                has_internal = org.has_internal_ticketing() if org else False
                 role_choices = [(r.code, r.display) for r in OrgRole if r != OrgRole.AGENT or has_internal]
 
                 self.fields["invite_role"].choices = role_choices

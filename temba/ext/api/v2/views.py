@@ -1,6 +1,9 @@
-import logging
 import pytz
+
+from django.utils.translation import ugettext_lazy as _
+
 from rest_framework import serializers, status
+from rest_framework.response import Response
 from rest_framework.reverse import reverse
 
 from temba.api.support import InvalidQueryError
@@ -11,12 +14,13 @@ from temba.api.v2.views_base import (
     DeleteAPIMixin,
     WriteAPIMixin,
 )
-from rest_framework.response import Response
 from temba.channels.models import Channel
-from temba.ext.api.models import ExtAPIPermission
-from temba.api.models import SSLPermission, APIPermission
+from temba.api.models import APIPermission
 from temba.api.v2.serializers import (ReadSerializer, WriteSerializer)
 from temba.orgs.models import Org
+
+from engage.api.permissions import SSLorLocalTrafficPermission, SiteAdminPermission
+
 
 class ExtChannelReadSerializer(ReadSerializer):
     country = serializers.SerializerMethodField()
@@ -52,6 +56,12 @@ class ExtChannelReadSerializer(ReadSerializer):
 
 
 class ExtChannelWriteSerializer(WriteSerializer):
+
+    def create(self, validated_data):
+        pass
+
+    def update(self, instance, validated_data):
+        pass
 
     def validate_unit(self, value):
         return self.UNITS[value]
@@ -200,7 +210,7 @@ class ExtChannelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIVi
         }
     """
 
-    permission_classes = (SSLPermission, ExtAPIPermission)
+    permission_classes = (SSLorLocalTrafficPermission, SiteAdminPermission)
     permission = "channels.channel_api"
     model = Channel
     serializer_class = ExtChannelReadSerializer
@@ -382,7 +392,7 @@ class ExtStatusEndpoint(ListAPIMixin, BaseAPIView):
         }
     """
 
-    permission_classes = (SSLPermission, APIPermission)
+    permission_classes = (SSLorLocalTrafficPermission, APIPermission)
     permission = "channels.channel_claim"
     model = Channel
     serializer_class = ExtChannelReadSerializer

@@ -4,8 +4,13 @@ the form of methods put into specific classes "after initialization, but before 
 
 Import this file just after all the urls in the main urls.py and run its overrides.
 """
+import logging
+
 from django.conf import settings
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
+
+from engage.utils.strings import is_empty
 
 def _TrackUser(self):  # pragma: no cover
     """
@@ -21,8 +26,12 @@ def RunEngageOverrides():
     """
     Overrides that need to be conducted at the tail end of temba/urls.py
     """
+    if getattr(settings, "ENGAGE_OVERRIDES_RAN", False):
+        return
+
     from django.contrib.auth.models import AnonymousUser, User
     User.track_user = _TrackUser
+    User.using_token = False  # default optional property to False so it exists.
     AnonymousUser.track_user = _TrackUser
 
     from engage.channels.types.postmaster.schemes import PM_Schemes, PM_Scheme_Labels, PM_Scheme_Icons
@@ -70,8 +79,13 @@ def RunEngageOverrides():
     URN_SCHEME_ICONS.update(PM_Scheme_Icons)
 
     from django.contrib.auth.models import User
-    from engage.orgs.models import get_user_orgs
+    from engage.orgs.models import get_user_org, get_user_orgs
+    User.get_org = get_user_org
     User.get_user_orgs = get_user_orgs
+
+    from engage.orgs.bandwidth import BandwidthOrgModelMixin
+    from temba.orgs.models import Org as BaseOrgModel
+    BaseOrgModel.__bases__ = (BandwidthOrgModelMixin,) + BaseOrgModel.__bases__
 
     # cannot use OrgHomeMixin due to circular unit reference; override def here.
     from temba.orgs.views import OrgCRUDL as TembaOrgViews
@@ -90,11 +104,23 @@ def RunEngageOverrides():
     BaseMsgInboxView.__bases__ = (ListMsgContentMixin,) + BaseMsgInboxView.__bases__
 
     from temba.msgs.views import MsgCRUDL
-    setattr(MsgCRUDL.Failed, 'actions', ["resend", "delete"])
+    from engage.msgs.inbox_msgfailed import ViewInboxFailedMsgsMixin
+    # introduce anything "new" we wish to add from the Mixin by adding it first in __bases__ list.
+    MsgCRUDL.Failed.__bases__ = (ViewInboxFailedMsgsMixin,) + MsgCRUDL.Failed.__bases__
+    # override existing methods we need as local defs hide our mixin defs.
+    setattr(MsgCRUDL.Failed, 'get_bulk_actions', ViewInboxFailedMsgsMixin.get_bulk_actions)
+
     from engage.msgs.exporter import MsgExporter
     setattr(MsgCRUDL.Export, 'form_valid', MsgExporter.form_valid)
 
     from temba.mailroom.events import event_renderers
-    from engage.mailroom.events import getHistoryContentFromMsg
-    from temba.msgs.models import Msg
+    from engage.mailroom.events import getHistoryContentFromMsg, getHistoryContentFromChannelEvent
+    from temba.msgs.models import Msg, ChannelEvent
     event_renderers[Msg] = getHistoryContentFromMsg
+    event_renderers[ChannelEvent] = getHistoryContentFromChannelEvent
+
+    from temba.contacts.templatetags.contacts import register
+    from engage.contacts.templatetags import scheme_icon
+    register.filter(scheme_icon)
+
+    settings.ENGAGE_OVERRIDES_RAN = True

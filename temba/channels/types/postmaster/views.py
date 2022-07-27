@@ -1,3 +1,6 @@
+import base64
+import io
+import pyqrcode
 from uuid import uuid4
 
 from django import forms
@@ -21,13 +24,15 @@ from ...views import (
     ClaimViewMixin,
 )
 
+from engage.utils.strings import is_empty
+
 
 class ClaimView(BaseClaimNumberMixin, SmartFormView):
     code = "PSM"
     uuid = None
     extra_links = None
-    pm_app_url = getattr(settings, "POST_MASTER_DL_URL", ())
-    pm_app_qrcode = getattr(settings, "POST_MASTER_DL_QRCODE", ())
+    pm_app_url: str = getattr(settings, "POST_MASTER_DL_URL", '')
+    pm_app_qrcode: str = getattr(settings, "POST_MASTER_DL_QRCODE", '')
 
     class Form(ClaimViewMixin.Form):
         CHAT_MODE_CHOICES = getattr(settings, "CHAT_MODE_CHOICES", ())
@@ -39,7 +44,6 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         org_id = forms.IntegerField(label="Org ID", help_text=_("Org ID"))
 
         def clean(self):
-
             device_name = self.cleaned_data.get("device_name", None)
             device_id = self.cleaned_data.get("device_id", None)
             chat_mode = self.cleaned_data.get("chat_mode", None)
@@ -95,6 +99,16 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
     def get_claim_url(self):
         return reverse("channels.types.postmaster.claim")
 
+    def init_pm_app_dl(self, request):
+        if is_empty(self.pm_app_url) and not is_empty(settings.POST_MASTER_FETCH_URL):
+            self.pm_app_url = request.build_absolute_uri(reverse('channels.channel_download_postmaster'))
+            qrc = pyqrcode.create(self.pm_app_url)
+            qrstream = io.BytesIO()
+            qrc.png(qrstream, scale=4)
+            self.pm_app_qrcode = f"data:image/png;base64, {base64.b64encode(qrstream.getvalue()).decode('ascii')}"
+        #endif
+    #enddef init_pm_app_dl
+
     def get_gear_links(self):
         links = []
 
@@ -117,6 +131,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['po_qr'] = postoffice.fetch_qr_code(self.org)
+        self.init_pm_app_dl(self.request)
         context['pm_app_url'] = self.pm_app_url
         context['pm_app_qrcode'] = self.pm_app_qrcode
         return context
@@ -169,7 +184,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         scheme_to_check = '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[chat_mode]).upper()
 
         schemes = [getattr(Contacts.URN, scheme_to_check)]
-        
+
         name_with_scheme = '{} [{}]'.format(device_name, schemes[0])
 
         channel = Channel.create(

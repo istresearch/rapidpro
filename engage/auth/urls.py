@@ -1,11 +1,14 @@
-from django.conf.urls import include, url
-
 from temba import settings
+from django.conf.urls import include, url
+from .oauth_utils import SsoSignin
+
 
 urlpatterns = [
 ]
 
-if settings.KEYCLOAK_URL:
-    urlpatterns.append(
-        url(r"^oidc/", include('oauth2_provider.urls', namespace='oauth2_provider')),
+if settings.OAUTH2_CONFIG.is_enabled:
+    urlpatterns += (
+        url(r"^oidc/", include('oauth2_authcodeflow.urls')),
+        url(r"^sso_signin$", SsoSignin.as_view(), name="engage.sso_signin"),
     )
+#endif

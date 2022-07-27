@@ -10,7 +10,7 @@ from django.urls import reverse
 from temba.utils import analytics
 from django.utils.translation import ugettext_lazy as _
 
-from temba.orgs.models import BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_APPLICATION_SID, BW_ACCOUNT_SECRET
+from engage.orgs.bandwidth import BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_APPLICATION_SID, BW_ACCOUNT_SECRET
 
 from ...models import Channel
 from ...views import (

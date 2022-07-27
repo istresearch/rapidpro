@@ -48,6 +48,9 @@ class APIPermission(BasePermission):
             else:
                 return False
 
+            if not role_group:
+                return False
+
             codename = view.permission.split(".")[-1]
             has_perm = role_group.permissions.filter(codename=codename).exists()
 
