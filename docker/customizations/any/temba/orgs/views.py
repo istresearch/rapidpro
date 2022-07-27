@@ -1811,7 +1811,7 @@ class OrgCRUDL(EngageOrgCRUDMixin, SmartCRUDL):
                 super().__init__(*args, **kwargs)
 
                 # orgs see agent role choice if they have an internal ticketing enabled
-                has_internal = org.has_internal_ticketing()
+                has_internal = org.has_internal_ticketing() if org else False
                 role_choices = [(r.code, r.display) for r in OrgRole if r != OrgRole.AGENT or has_internal]
 
                 self.fields["invite_role"].choices = role_choices

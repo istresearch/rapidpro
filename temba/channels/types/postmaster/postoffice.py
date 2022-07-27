@@ -20,6 +20,7 @@ def fetch_qr_code(org):
             data=data,
             cookies=None,
             verify=False,
+            timeout=10,
         )
         if r.status_code == 200:
             return json.loads(r.content)["data"]
