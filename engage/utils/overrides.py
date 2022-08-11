@@ -123,4 +123,5 @@ def RunEngageOverrides():
     from engage.contacts.templatetags import scheme_icon
     register.filter(scheme_icon)
 
+    settings.PM_CONFIG.init_pm_nonce_for_po()
     settings.ENGAGE_OVERRIDES_RAN = True

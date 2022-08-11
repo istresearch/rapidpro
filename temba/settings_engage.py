@@ -412,7 +412,6 @@ DEFAULT_BRAND_OBJ.update({
 })
 
 PM_CONFIG: PMConfig = PMConfig(REDIS_URL, CACHES)
-PM_CONFIG.init_pm_nonce_for_po()
 
 MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
 
