@@ -21,16 +21,15 @@ class PMConfig:
         self.fetch_auth = (self.auth_user, self.auth_pswd) if not is_empty(self.auth_user) else None
 
         self.url_nonce_alias = 'dl-pm-nonces'
-        self.url_nonce_prefix = f"{self.url_nonce_alias}_"
+        self.url_nonce_prefix = f"{self.url_nonce_alias}"
         self.url_nonce_po_only = 'postoffice-only'
-        self.url_auth_key_po_only = env('POST_OFFICE_API_KEY', uuid4())
 
         if not is_empty(self.fetch_url) and not is_empty(REDIS_URL):
             CACHES[self.url_nonce_alias] = django_cache_url.parse(REDIS_URL)
             if CACHES[self.url_nonce_alias]['BACKEND'] == 'django_redis.cache.RedisCache':
                 CACHES[self.url_nonce_alias].update({
                     'TIMEOUT': 1800,  #in seconds
-                    'KEY_PREFIX': f"{self.url_nonce_alias}_",
+                    'KEY_PREFIX': self.url_nonce_prefix,
                 })
                 # if 'OPTIONS' not in CACHES[self.url_nonce_alias]:
                 #     CACHES[self.url_nonce_alias]['OPTIONS'] = {}
@@ -48,25 +47,34 @@ class PMConfig:
         return caches[self.url_nonce_alias]
     #enddef get_cache
 
-    def get_nonce(self):
+    def get_nonce_value(self):
         return uuid4().hex  #.hex removes the dashes
+    #enddef get_nonce_value
+
+    def get_nonce(self):
+        theCache = self.get_cache()
+        if not theCache:
+            return ''
+        theNonce = self.get_nonce_value()
+        theCache.set(theNonce, True)
+        return theNonce
     #enddef get_nonce
 
-    def init_pm_nonce_for_po(self):
-        theNonce = self.get_nonce()
-        self.get_cache().set(theNonce, self.url_nonce_po_only, timeout=None)
-    #enddef init_pm_nonce_for_po
+    def validate_nonce(self, nonce: str) -> bool:
+        """
+        Check to see if nonce is in redis cache.
+        :param nonce: the nonce to check.
+        :return: True|False if nonce is uuid and in cache or not; toss
+                 ValueError exception if it is po-only nonce that needs auth.
+        """
+        if nonce == self.url_nonce_po_only:
+            raise TypeError('check auth')
 
-    def validate_nonce(self, nonce: str, auth_key: str) -> bool:
         theCache = self.get_cache()
         if not theCache:
             return False
-        theVal = theCache.get(self.url_nonce_prefix + nonce) if nonce else None
-        if type(theVal) is bool and theVal:
-            return True
-        elif theVal == self.url_nonce_po_only and auth_key == self.url_auth_key_po_only:
-            return True
-        return False
+        theVal = theCache.get(nonce, None) if nonce else None
+        return theVal if type(theVal) is bool else False
     #enddef validate_nonce
 
 #endclass PMConfig

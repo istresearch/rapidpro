@@ -103,7 +103,7 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         if is_empty(self.pm_app_url) and not is_empty(settings.PM_CONFIG.fetch_url):
             theNonce = settings.PM_CONFIG.get_nonce()
             self.pm_app_url = request.build_absolute_uri(reverse('channels.channel_download_postmaster',
-                args=theNonce,
+                args=(theNonce,),
             ))
             qrc = pyqrcode.create(self.pm_app_url)
             qrstream = io.BytesIO()
