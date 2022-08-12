@@ -22,7 +22,7 @@ class PMConfig:
 
         self.url_nonce_alias = 'dl-pm-nonces'
         self.url_nonce_prefix = f"{self.url_nonce_alias}"
-        self.url_nonce_po_only = 'postoffice-only'
+        self.url_nonce_po_only = env('POST_MASTER_FETCH_NONCE4PO', 'postoffice-only')
 
         if not is_empty(self.fetch_url) and not is_empty(REDIS_URL):
             CACHES[self.url_nonce_alias] = django_cache_url.parse(REDIS_URL)
