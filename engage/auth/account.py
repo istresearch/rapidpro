@@ -28,7 +28,7 @@ class UserAcct:
         """
         if user.has_perm(permission):
             return True
-        org = user.get_org()
+        org = user.get_org() if hasattr(user, 'get_org') and callable(user.get_org) else None
         if org:
             return user.has_org_perm(org, permission)
         return False

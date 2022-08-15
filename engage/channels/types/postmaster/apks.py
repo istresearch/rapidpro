@@ -5,13 +5,16 @@ import requests
 from typing import Match, Optional, Union
 from urllib.parse import urlparse
 
+from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest, HttpResponse
 from django.urls import reverse
-from rest_framework.views import View
 
 from temba import settings
+from temba.api.v2.views_base import BaseAPIView
 from temba.orgs.views import OrgPermsMixin
 
+from engage.api.permissions import SSLorLocalTrafficPermission
+from engage.api.responses import HttpResponseNoContent
 from engage.auth.account import UserAcct
 from engage.utils import get_required_arg
 from engage.utils.logs import LogExtrasMixin
@@ -21,7 +24,7 @@ from engage.utils.strings import is_empty
 
 logger = logging.getLogger(__name__)
 
-class DownloadPostmasterMixin(LogExtrasMixin):
+class APIsForDownloadPostmaster(LogExtrasMixin):
     """
     Endpoints and methods used to enable short-lived public download links as
     well as protected long-lived links.
@@ -41,10 +44,11 @@ class DownloadPostmasterMixin(LogExtrasMixin):
         )
     #enddef get_actions
 
-    class PostmasterInfo(LogExtrasMixin, OrgPermsMixin, View):  # pragma: no cover
+    class PostmasterInfo(LogExtrasMixin, OrgPermsMixin, BaseAPIView):
         """
         Endpoint for non-public access for PO to get apk info and download link.
         """
+        permission_classes = (SSLorLocalTrafficPermission,)
         permission = "apks.apk_list"
 
         def __init__(self):
@@ -65,8 +69,17 @@ class DownloadPostmasterMixin(LogExtrasMixin):
         #enddef derive_url_pattern
 
         def get(self, request: HttpRequest, *args, **kwargs):
+            user = self.get_user()
+            logger.debug("user?", extra=self.with_log_extras({
+                'req.user': request.user,
+                'user': user,
+            }))
+            if not user.is_authenticated or user is AnonymousUser:
+                return HttpResponseNoContent('Not authorized', status=401)
+            if not UserAcct.is_allowed(user, self.permission):
+                return HttpResponseNoContent('Forbidden', status=403)
             try:
-                pm_info = DownloadPostmasterMixin.fetch_apk_link(self)
+                pm_info = APIsForDownloadPostmaster.fetch_apk_link(self)
                 if pm_info:
                     pm_info['link'] = request.build_absolute_uri(reverse('channels.channel_download_postmaster',
                         args=(self.pm_config.url_nonce_po_only,),
@@ -87,10 +100,12 @@ class DownloadPostmasterMixin(LogExtrasMixin):
 
     #endclass PostmasterInfo
 
-    class DownloadPostmaster(LogExtrasMixin, OrgPermsMixin, View):  # pragma: no cover
+    class DownloadPostmaster(LogExtrasMixin, OrgPermsMixin, BaseAPIView):
         """
         Endpoint for public access via random short-lived UUID in URL path to download pm APK.
         """
+        permission_classes = (SSLorLocalTrafficPermission,)
+        permission = "apks.apk_list"
 
         def __init__(self):
             super().__init__()
@@ -106,35 +121,42 @@ class DownloadPostmasterMixin(LogExtrasMixin):
 
         @classmethod
         def derive_url_pattern(cls, path, action):
-            return r"^dl-pm/(?P<url_nonce>[^/]+)/?$"
+            return r"^pm/dl-apk/(?P<url_nonce>[^/]+)/?$"
         #enddef derive_url_pattern
 
-        def dispatch(self, request: HttpRequest, *args, **kwargs):
+        def get(self, request: HttpRequest, *args, **kwargs):
             if not is_empty(self.pm_config.fetch_url):
                 theNonce = get_required_arg('url_nonce', kwargs)
                 try:
                     if self.pm_config.validate_nonce(theNonce):
-                        return super().dispatch(request, *args, **kwargs)
+                        return self.doDownload(request)
                     else:
                         return HttpResponse('resource not found', status=404)
                 except TypeError:
                     # special endpoint that requires auth
-                    if UserAcct.is_allowed(self.get_user(), DownloadPostmasterMixin.PostmasterInfo.permission):
-                        return super().dispatch(request, *args, **kwargs)
+                    user = self.get_user()
+                    logger.debug("user?", extra=self.with_log_extras({
+                        'req.user': request.user,
+                        'user': user,
+                    }))
+                    if not user.is_authenticated or user is AnonymousUser:
+                        return HttpResponseNoContent('Not authorized', status=401)
+                    if UserAcct.is_allowed(user, APIsForDownloadPostmaster.PostmasterInfo.permission):
+                        return self.doDownload(request)
                     else:
-                        return HttpResponse('Not authorized', status=401)
+                        return HttpResponseNoContent(status=403)
                     #endif
                 #endtry
             else:
                 logger.warning("POST_MASTER_FETCH_URL not defined", extra=self.with_log_extras({}))
-                raise ValueError("resource not found.")
+                return HttpResponse('resource not found', status=404)
             #endif pm fetch url defined
         #enddef dispatch
 
-        def get(self, request: HttpRequest, *args, **kwargs):
+        def doDownload(self, request: HttpRequest):
             apk_content_type = 'application/vnd.android.package-archive'
             try:
-                pm_info = DownloadPostmasterMixin.fetch_apk_link(self)
+                pm_info = APIsForDownloadPostmaster.fetch_apk_link(self)
                 if pm_info:
                     pm_link = pm_info['link']
                     pm_filename = pm_info['filename']
@@ -152,10 +174,6 @@ class DownloadPostmasterMixin(LogExtrasMixin):
                 return HttpResponse(vx, status=500)
             #endtry
         #enddef get
-
-        def post(self, request, *args, **kwargs):
-            return self.get(request, args, kwargs)
-        #enddef post
 
     #endclass DownloadPostmaster
 
@@ -208,4 +226,4 @@ class DownloadPostmasterMixin(LogExtrasMixin):
         return None
     #enddef fetch_apk_link
 
-#endclass DownloadPostmasterMixin
+#endclass APIsForDownloadPostmaster
