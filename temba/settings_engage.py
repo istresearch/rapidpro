@@ -9,10 +9,10 @@ from getenv import env
 from glob import glob
 import dj_database_url
 import django_cache_url
-import uuid
 
 from engage.auth.oauth_config import OAuthConfig
 from engage.utils.strings import is_empty, str2bool
+from engage.utils.pm_config import PMConfig
 from engage.utils.s3_config import AwsS3Config
 
 from temba.settings_common import *  # noqa
@@ -411,11 +411,7 @@ DEFAULT_BRAND_OBJ.update({
     'has_user_guide': USER_GUIDE_CONFIG.is_defined() or len(USER_GUIDE_CONFIG.FILEPATH) > 1,
 })
 
-POST_MASTER_FETCH_URL = env('POST_MASTER_FETCH_URL', None)
-POST_MASTER_FETCH_USER = env('POST_MASTER_FETCH_USER', None)
-POST_MASTER_FETCH_PSWD = env('POST_MASTER_FETCH_PSWD', None)
-# low-effort, easily changed, endpoint obfuscation
-POST_MASTER_DL_URL_NONCE = uuid.uuid4().hex  #.hex removes the dashes
+PM_CONFIG: PMConfig = PMConfig(REDIS_URL, CACHES)
 
 MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
 

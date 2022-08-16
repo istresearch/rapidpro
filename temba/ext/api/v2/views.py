@@ -1,5 +1,6 @@
 import pytz
 
+from django.http import HttpRequest
 from django.utils.translation import ugettext_lazy as _
 
 from rest_framework import serializers, status
@@ -399,9 +400,13 @@ class ExtStatusEndpoint(ListAPIMixin, BaseAPIView):
     write_serializer_class = ExtChannelWriteSerializer
     pagination_class = CreatedOnCursorPagination
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request: HttpRequest, *args, **kwargs):
         from temba.channels.types.postmaster import postoffice
-        nonce = request.query_params.get("api_key")
+        # header is newest means
+        nonce = request.headers.get('po-nonce')
+        # older code may still pass as GET param, check there if header not found.
+        if not nonce:
+            nonce = request.GET.get("api_key")
         r = postoffice.channel_status(nonce)
         if r is not None:
             return Response(r, status=status.HTTP_200_OK)
