@@ -10,10 +10,10 @@ from smartmin.views import SmartFormView
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 
+from temba import settings
 from temba.utils import analytics
 from django.utils.translation import ugettext_lazy as _
 
-from django.conf import settings
 from ...models import Org
 
 from . import postoffice
@@ -100,8 +100,11 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         return reverse("channels.types.postmaster.claim")
 
     def init_pm_app_dl(self, request):
-        if is_empty(self.pm_app_url) and not is_empty(settings.POST_MASTER_FETCH_URL):
-            self.pm_app_url = request.build_absolute_uri(reverse('channels.channel_download_postmaster'))
+        if is_empty(self.pm_app_url) and not is_empty(settings.PM_CONFIG.fetch_url):
+            theNonce = settings.PM_CONFIG.get_nonce()
+            self.pm_app_url = request.build_absolute_uri(reverse('channels.channel_download_postmaster',
+                args=(theNonce,),
+            ))
             qrc = pyqrcode.create(self.pm_app_url)
             qrstream = io.BytesIO()
             qrc.png(qrstream, scale=4)
