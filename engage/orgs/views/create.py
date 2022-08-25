@@ -8,7 +8,6 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
-from django.views.generic.edit import CreateView
 from smartmin.views import SmartCreateView
 
 from temba import settings
@@ -16,7 +15,6 @@ from temba.orgs.models import Org, OrgRole
 from temba.orgs.views import OrgCRUDL
 from temba.utils import languages
 from temba.utils.timezones import TimeZoneFormField
-from temba.utils.views import NonAtomicMixin
 
 logger = logging.getLogger(__name__)
 

@@ -24,7 +24,7 @@ class EngageOverrides:
         for a_class in class_list:
             for name in a_class.__dict__:
                 if not name.startswith("__") and name != 'override_ignore' and name not in ignore_attrs:
-                    logger.debug(f"[TRACE] setting {str(temba_cls)}.{name} to {getattr(a_class, name)}")
+                    logger.debug(f"override: set attr {str(temba_cls)}.{name} to {getattr(a_class, name)}")
                     setattr(temba_cls, name, getattr(a_class, name))
                 #endif
             #endfor each attr
