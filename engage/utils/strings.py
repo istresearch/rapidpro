@@ -41,7 +41,7 @@ def sanitize_text( aText: str) -> str:
 
 def str2bool( v: Union[str, bool] ) -> bool:
     if v is not None:
-        return str(v).lower() in ('true', '1', 'on') if type(v) == str else bool(v)
+        return str(v).lower() in ('true', '1', 'on', 'y', 'yes') if type(v) == str else bool(v)
     else:
         return False
 #enddef str2bool

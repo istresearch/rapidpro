@@ -1,0 +1,89 @@
+-extends "smartmin/list.html"
+
+-load compress temba smartmin humanize
+-load i18n
+
+-block extra-style
+  {{block.super}}
+
+  :css
+    .org-timezone, .owner-email {
+      font-size: 80%;
+    }
+
+    .plan-name {
+      text-transform: uppercase;
+      font-size: 80%;
+    }
+
+    .used-pct {
+      font-size: 80%;
+    }
+
+    #header-owner {
+
+    }
+
+    .field_created_on {
+      white-space: nowrap;
+      width: 64px;
+    }
+
+    .field_service {
+      width: 40px;
+    }
+
+-block title
+  {{ title }}
+
+-block pre-table
+  .flex.mb-4.items-center
+    .bg-gray-100.px-4.py-2.rounded-lg.inline-block.mr-4.self-center.-mb-1
+      -if search == ""
+        .font-normal.inline-block.px-1
+          All
+      -else
+        %a.inline-block.px-1(href='?search=')<
+          All
+      \ |
+      -if anon_query
+        .font-normal.inline-block.px-1
+          Anonymous
+      -else
+        %a.inline-block.px-1(href='?anon=1')<
+          Anonymous
+      \ |
+      -if flagged_query
+        .font-normal.inline-block.px-1
+          Flagged
+      -else
+        %a.inline-block.px-1(href='?flagged=1')<
+          Flagged
+      \ |
+      -if suspended_query
+        .font-normal.inline-block.px-1
+          Suspended
+      -else
+        %a.inline-block.px-1(href='?suspended=1')<
+          Suspended
+      \ |
+      -if inactive_query
+        .font-normal.inline-block.px-1
+          Inactive
+      -else
+        %a.inline-block.px-1(href='?inactive=1')<
+          Inactive
+
+      -for s in searches
+        |
+        -if search == s
+          .font-normal.inline-block.px-1
+            {{ s }}
+        -else
+          %a.inline-block.px-1(href='?search={{s}}')
+            {{ s }}
+
+    .search-box.flex-grow
+      %form#search-form(method='get')
+        {% csrf_token %}
+        %temba-textinput(name='search' value='{{search}}')

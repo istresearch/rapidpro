@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.conf.urls import include, url
 from django.conf.urls.static import static
-from django.contrib.auth.models import AnonymousUser, User
 from django.views.generic import RedirectView
 from django.views.i18n import JavaScriptCatalog
 
@@ -12,6 +11,10 @@ from temba.utils.analytics import init_analytics
 
 # javascript translation packages
 js_info_dict = {"packages": ()}  # this is empty due to the fact that all translation are in one folder
+
+# import our surgical overrides that required all Django apps and __init__.pys processed.
+from engage.utils.overrides import EngageOverrides
+EngageOverrides.RunEngageOverrides()
 
 VHOST_NAME = ""
 SUB_DIR = getattr(settings, 'SUB_DIR', None)
@@ -69,22 +72,6 @@ def configure_workers(sender=None, **kwargs):
     init_analytics()  # pragma: needs cover
 
 
-def track_user(self):  # pragma: no cover
-    """
-    Should the current user be tracked
-    """
-
-    # nothing to report if they haven't logged in
-    if not self.is_authenticated:
-        return False
-
-    return True
-
-
-User.track_user = track_user
-AnonymousUser.track_user = track_user
-
-
 def handler500(request):
     """
     500 error handler which includes ``request`` in the context.
@@ -97,7 +84,3 @@ def handler500(request):
 
     t = loader.get_template("500.html")
     return HttpResponseServerError(t.render({"request": request}))  # pragma: needs cover
-
-# import our surgical overrides that required all Django apps and __init__.pys processed.
-from engage.utils.overrides import RunEngageOverrides
-RunEngageOverrides()

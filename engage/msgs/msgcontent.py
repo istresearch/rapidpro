@@ -1,5 +1,6 @@
 from engage.utils.strings import sanitize_text
 
+
 class ListMsgContentMixin:
     """
     Sanitize the list of message contents to remove zero-width spaces and such.
@@ -37,8 +38,12 @@ class ListMsgContentMixin:
             #fi
         #rof
         return aList
+    #enddef _sanitizeMsgList
 
     def get_context_data(self, **kwargs):
         context = super(ListMsgContentMixin, self).get_context_data(**kwargs)
         context['object_list'] = self._sanitizeMsgList(context['object_list'])
         return context
+    #enddef get_context_data
+
+#endclass ListMsgContentMixin
