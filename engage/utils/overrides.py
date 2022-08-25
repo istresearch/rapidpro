@@ -104,6 +104,8 @@ class EngageOverrides:
         cls.setClassOverrides(HomeOverrides)
         from engage.orgs.views.manage_orgs import AdminManageOverrides
         cls.setClassOverrides(AdminManageOverrides)
+        from engage.orgs.views.create import OrgViewCreateOverride
+        cls.setClassOverrides(OrgViewCreateOverride)
 
         # override the date picker widget with one we like better
         import smartmin.widgets

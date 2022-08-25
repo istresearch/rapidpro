@@ -23,17 +23,16 @@ class AdminManageOverrides(LogExtrasMixin, OrgCRUDL.Manage):
     def get_gear_links(self) -> list:
         links = [
             dict(
-            #    id='btn-create-workspace',
-            #    title='Grant',
-            #    style='button-primary',
-            #    href=reverse("orgs.org_grant"),
-            #    as_btn=True,
-            #), dict(
                 id='btn-create-workspace',
                 title='New Workspace',
                 style='button-primary',
-                href=reverse("orgs.org_grant"),
+                href=reverse("orgs.org_create"),
                 as_btn=True,
+            ), dict(
+                id='btn-grant-workspace',
+                title='Grant',
+                style='button-primary',
+                href=reverse("orgs.org_grant"),
             ),
         ]
         return links
