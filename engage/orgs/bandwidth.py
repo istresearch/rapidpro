@@ -19,6 +19,9 @@ BWI_SENDER = "BWI_SENDER"
 
 
 class BandwidthOrgModelOverrides(Org):
+    # fake model, tell Django to ignore so it does not try to create/migrate schema.
+    class Meta:
+        abstract = True
     override_ignore = ignoreDjangoModelAttrs(Org)
 
     def connect_bandwidth(self, account_sid, account_token, account_secret, application_sid, user):

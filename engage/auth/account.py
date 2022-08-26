@@ -146,6 +146,9 @@ def _TrackUser(self):  # pragma: no cover
 
 
 class UserOverrides(User):
+    # fake model, tell Django to ignore so it does not try to create/migrate schema.
+    class Meta:
+        abstract = True
     override_ignore = ignoreDjangoModelAttrs(User)
     track_user = _TrackUser
     # default optional property to False so it exists.

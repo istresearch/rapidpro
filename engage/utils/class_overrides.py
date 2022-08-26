@@ -9,6 +9,7 @@ def ignoreDjangoModelAttrs(aDjangoModelClass: type[Model]):
     :return: Returns a list of attributes to ignore when calling setClassOverrides().
     """
     return (
+        'Meta',
         '_meta',
         'DoesNotExist',
         'MultipleObjectsReturned',
