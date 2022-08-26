@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from engage.utils.logs import OrgPermLogInfoMixin
 
@@ -15,21 +15,22 @@ from smartmin.views import (
 
 from temba.api.models import APIToken
 from temba.orgs.models import Org, OrgRole
-from temba.orgs.views import OrgPermsMixin
+from temba.orgs.views import OrgPermsMixin, OrgCRUDL
 
 
 logger = logging.getLogger(__name__)
 
-class AssignUserMixin:
+class OrgViewAssignUserMixin(OrgCRUDL):
 
-    @classmethod
-    def get_actions(cls):
-        return (
-            "assign_user",
-        )
+    @staticmethod
+    def on_apply_overrides() -> None:
+        OrgCRUDL.actions += ('assign_user',)
 
     class AssignUser(OrgPermLogInfoMixin, OrgPermsMixin, SmartFormView):
         permission = "orgs.org_manage_accounts"
+
+        def as_json(self, context):
+            pass
 
         def has_permission(self, request, *args, **kwargs):
             user = request.user
@@ -44,9 +45,10 @@ class AssignUserMixin:
         class AssignUserForm(forms.Form):
             user = None
             organization = forms.ModelChoiceField(
-                queryset=Org.objects.all().order_by("name", "slug"),
+                queryset=Org.objects.all(),
                 required=True,
-                empty_label=None,
+                label=_("Workspace"),
+                empty_label=_("Choose Workspace"),
             )
             user_group = forms.ChoiceField(
                 choices=(
@@ -66,10 +68,12 @@ class AssignUserMixin:
                 self.user = user
                 #self.organization.choices = self.user.get_user_orgs() ### O.o "'AssignUserForm' object has no attribute 'organization'"
                 self.fields['organization'].choices = self.get_org_choices()
+            #enddef init
 
             def get_org_choices(self):
                 admin_orgs = OrgRole.ADMINISTRATOR.get_orgs(self.user)
                 return admin_orgs.filter(is_active=True).distinct().order_by("name", "slug")
+            #enddef get_org_choices
 
             # do not need the conversion of org_pk choice to Org class when using ModelChoiceField() type of form field.
             # def clean_organization(self):
@@ -78,11 +82,13 @@ class AssignUserMixin:
             #     if org_pk:
             #         org = Org.objects.filter(id=org_pk).first()
             #     return org
+        #endclass AssignUserForm
 
         def get_form_kwargs(self):
             kwargs = super().get_form_kwargs()
             kwargs["user"] = self.request.user
             return kwargs
+        #enddef get_form_kwargs
 
         form_class = AssignUserForm
         title = _("Assign User to Organization")
@@ -113,6 +119,7 @@ class AssignUserMixin:
                     user.email, org.name, role.display
                 )
             )
+        #enddef assign_user
 
         def form_valid(self, form):
             org = form.cleaned_data["organization"]
@@ -151,3 +158,6 @@ class AssignUserMixin:
 
             success_url = reverse("orgs.org_assign_user")
             return HttpResponseRedirect(success_url)
+        #enddef form_valid
+    #endclass AssignUser
+#endclass OrgViewAssignUserMixin
