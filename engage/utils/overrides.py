@@ -93,6 +93,10 @@ class EngageOverrides:
         from engage.msgs.datepicker import DatePickerMedia
         smartmin.widgets.DatePickerWidget.Media = DatePickerMedia
 
+        from engage.msgs.models import MsgModelOverride, LabelModelOverride
+        MsgModelOverride.setClassOverrides()
+        LabelModelOverride.setClassOverrides()
+
         from engage.msgs.msgcontent import ListMsgContentMixin
         from temba.msgs.views import InboxView as BaseMsgInboxView
         BaseMsgInboxView.__bases__ = (ListMsgContentMixin,) + BaseMsgInboxView.__bases__

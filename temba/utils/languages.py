@@ -34,7 +34,8 @@ def reload():
 
     for lang in pycountry.languages:
         is_iso6391 = getattr(lang, "alpha_2", None)
-        if is_iso6391 or lang.alpha_3 in settings.NON_ISO6391_LANGUAGES:
+        #engage: altered to handle None setting
+        if is_iso6391 or settings.NON_ISO6391_LANGUAGES is None or lang.alpha_3 in settings.NON_ISO6391_LANGUAGES:
             NAMES[lang.alpha_3] = NAME_OVERRIDES.get(lang.alpha_3, lang.name)
 
     # sort by name
