@@ -12,6 +12,6 @@ class ContactFieldOverrides(ClassOverrideMixinMustBeFirst, ContactField):
         except ValueError as ex:
             raise ValueError( str(ex).replace('campaigns', 'scenarios') )
         #endtry
-    #enddef
+    #enddef get_or_create
 
 #endclass ContactFieldOverrides

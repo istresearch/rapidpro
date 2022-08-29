@@ -122,6 +122,13 @@ class EngageOverrides:
         from engage.archives.models import ArchiveOverrides
         ArchiveOverrides.setClassOverrides()
 
+        from engage.channels.models import ChannelOverrides, AndroidTypeOverrides
+        ChannelOverrides.setClassOverrides()
+        AndroidTypeOverrides.setClassOverrides()
+        from engage.channels.types.vonage_client import VonageClientOverrides
+        VonageClientOverrides.setClassOverrides()
+
+
         cls.ENGAGE_OVERRIDES_RAN = True
     #enddef RunEngageOverrides
 #endclass EngageOverrides
