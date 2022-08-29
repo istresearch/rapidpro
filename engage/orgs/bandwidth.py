@@ -1,6 +1,6 @@
 import bandwidth
 
-from engage.utils.class_overrides import ignoreDjangoModelAttrs
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
 
 from temba.orgs.models import Org
 
@@ -18,7 +18,7 @@ BWI_ENCODING = "BWI_ENCODING"
 BWI_SENDER = "BWI_SENDER"
 
 
-class BandwidthOrgModelOverrides(Org):
+class BandwidthOrgModelOverrides(ClassOverrideMixinMustBeFirst, Org):
     # fake model, tell Django to ignore so it does not try to create/migrate schema.
     class Meta:
         abstract = True

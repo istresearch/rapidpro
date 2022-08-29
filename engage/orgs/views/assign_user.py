@@ -7,6 +7,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 from engage.utils.logs import OrgPermLogInfoMixin
 
 from smartmin.views import (
@@ -20,11 +21,12 @@ from temba.orgs.views import OrgPermsMixin, OrgCRUDL
 
 logger = logging.getLogger(__name__)
 
-class OrgViewAssignUserMixin(OrgCRUDL):
+class OrgViewAssignUserMixin(ClassOverrideMixinMustBeFirst, OrgCRUDL):
 
     @staticmethod
     def on_apply_overrides() -> None:
         OrgCRUDL.actions += ('assign_user',)
+    #enddef on_apply_overrides
 
     class AssignUser(OrgPermLogInfoMixin, OrgPermsMixin, SmartFormView):
         permission = "orgs.org_manage_accounts"
@@ -160,4 +162,5 @@ class OrgViewAssignUserMixin(OrgCRUDL):
             return HttpResponseRedirect(success_url)
         #enddef form_valid
     #endclass AssignUser
+
 #endclass OrgViewAssignUserMixin

@@ -1,19 +1,16 @@
 from django.db.models import Sum
 from django.urls import reverse
 
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 from engage.utils.logs import LogExtrasMixin
 from engage.utils.strings import str2bool
 
 from temba.orgs.views import OrgCRUDL
 
 
-class AdminManageOverrides(LogExtrasMixin, OrgCRUDL.Manage):
-    mySuperType = OrgCRUDL.Manage
+class AdminManageOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRUDL.Manage):
     title = "Workspaces"
     default_order = 'name'
-
-    def as_json(self, context):
-        pass
 
     def get_gear_links(self) -> list:
         links = [
@@ -34,7 +31,7 @@ class AdminManageOverrides(LogExtrasMixin, OrgCRUDL.Manage):
     #enddef get_gear_links
 
     def derive_queryset(self, **kwargs):
-        queryset = super(self.mySuperType, self).derive_queryset(**kwargs)
+        queryset = super(OrgCRUDL.Manage, self).derive_queryset(**kwargs)
         bActiveFilter = not self.request.GET.get("inactive")
         queryset = queryset.filter(is_active=bActiveFilter)
 
@@ -61,7 +58,7 @@ class AdminManageOverrides(LogExtrasMixin, OrgCRUDL.Manage):
     #enddef derive_queryset
 
     def get_context_data(self, **kwargs):
-        context = super(self.mySuperType, self).get_context_data(**kwargs)
+        context = super(OrgCRUDL.Manage, self).get_context_data(**kwargs)
         context["searches"] = []
         context["anon_query"] = str2bool(self.request.GET.get("anon"))
         context["flagged_query"] = str2bool(self.request.GET.get("flagged"))

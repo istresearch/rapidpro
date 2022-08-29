@@ -4,35 +4,11 @@ the form of methods put into specific classes "after initialization, but before 
 
 Import this file just after all the urls in the main urls.py and run its overrides.
 """
-import logging
-
 from django.utils.translation import gettext_lazy as _
 
 
-logger = logging.getLogger(__name__)
-
 class EngageOverrides:
     ENGAGE_OVERRIDES_RAN: bool = False
-
-    @staticmethod
-    def setClassOverrides(engage_cls) -> None:
-        ignore_attrs = getattr(engage_cls, 'override_ignore', ())
-        parents = engage_cls.__bases__
-        temba_cls = parents[-1]
-        # stuff all mixins into temba_cls, too
-        class_list = parents[:-1] + (engage_cls,)
-        for a_class in class_list:
-            for name in a_class.__dict__:
-                if not name.startswith("__") and name != 'override_ignore' and name not in ignore_attrs:
-                    logger.debug(f"override: set attr {str(temba_cls)}.{name} to {getattr(a_class, name)}")
-                    setattr(temba_cls, name, getattr(a_class, name))
-                #endif
-            #endfor each attr
-        #endfor each parent
-        if getattr(engage_cls, 'on_apply_overrides', None) and callable(getattr(engage_cls, 'on_apply_overrides')):
-            engage_cls.on_apply_overrides()
-        #endif
-    #enddef setClassOverrides
 
     @classmethod
     def RunEngageOverrides(cls):
@@ -44,8 +20,8 @@ class EngageOverrides:
             return
 
         from engage.auth.account import UserOverrides, AnonUserOverrides
-        cls.setClassOverrides(UserOverrides)
-        cls.setClassOverrides(AnonUserOverrides)
+        UserOverrides.setClassOverrides()
+        AnonUserOverrides.setClassOverrides()
 
         from engage.channels.types.postmaster.schemes import PM_Schemes, PM_Scheme_Labels, PM_Scheme_Icons
         #from engage.utils.strings import cap_words
@@ -94,18 +70,18 @@ class EngageOverrides:
         URN_SCHEME_ICONS.update(PM_Scheme_Icons)
 
         from engage.orgs.bandwidth import BandwidthOrgModelOverrides
-        cls.setClassOverrides(BandwidthOrgModelOverrides)
+        BandwidthOrgModelOverrides.setClassOverrides()
 
         from engage.orgs.views.assign_user import OrgViewAssignUserMixin
-        cls.setClassOverrides(OrgViewAssignUserMixin)
+        OrgViewAssignUserMixin.setClassOverrides()
         from engage.orgs.views.bandwidth import BandwidthChannelViewsMixin
-        cls.setClassOverrides(BandwidthChannelViewsMixin)
+        BandwidthChannelViewsMixin.setClassOverrides()
         from engage.orgs.views.home import HomeOverrides
-        cls.setClassOverrides(HomeOverrides)
+        HomeOverrides.setClassOverrides()
         from engage.orgs.views.manage_orgs import AdminManageOverrides
-        cls.setClassOverrides(AdminManageOverrides)
+        AdminManageOverrides.setClassOverrides()
         from engage.orgs.views.create import OrgViewCreateOverride
-        cls.setClassOverrides(OrgViewCreateOverride)
+        OrgViewCreateOverride.setClassOverrides()
 
         # override the date picker widget with one we like better
         import smartmin.widgets
@@ -117,9 +93,9 @@ class EngageOverrides:
         BaseMsgInboxView.__bases__ = (ListMsgContentMixin,) + BaseMsgInboxView.__bases__
 
         from engage.msgs.inbox_msgfailed import ViewInboxFailedMsgsOverrides
-        cls.setClassOverrides(ViewInboxFailedMsgsOverrides)
+        ViewInboxFailedMsgsOverrides.setClassOverrides()
         from engage.msgs.exporter import MsgExporterOverrides
-        cls.setClassOverrides(MsgExporterOverrides)
+        MsgExporterOverrides.setClassOverrides()
 
         from temba.mailroom.events import event_renderers
         from engage.mailroom.events import getHistoryContentFromMsg, getHistoryContentFromChannelEvent

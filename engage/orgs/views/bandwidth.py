@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from engage.utils.bandwidth import BandwidthRestClient
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 from engage.orgs.bandwidth import (
     BW_APPLICATION_SID,
     BW_ACCOUNT_SID,
@@ -28,7 +29,7 @@ from temba.orgs.views import (
 )
 
 
-class BandwidthChannelViewsMixin(OrgCRUDL):
+class BandwidthChannelViewsMixin(ClassOverrideMixinMustBeFirst, OrgCRUDL):
 
     @staticmethod
     def on_apply_overrides() -> None:
@@ -38,6 +39,7 @@ class BandwidthChannelViewsMixin(OrgCRUDL):
             "bandwidth_account",
             "bandwidth_international_account",
         )
+    #enddef on_apply_overrides
 
     class BandwidthConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
 

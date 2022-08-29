@@ -14,7 +14,7 @@ from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 
 from engage.orgs.models import get_user_org, get_user_orgs
-from engage.utils.class_overrides import ignoreDjangoModelAttrs
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
 
 class UserAcct:
     """
@@ -145,7 +145,7 @@ def _TrackUser(self):  # pragma: no cover
 #enddef _TrackUser
 
 
-class UserOverrides(User):
+class UserOverrides(ClassOverrideMixinMustBeFirst, User):
     # fake model, tell Django to ignore so it does not try to create/migrate schema.
     class Meta:
         abstract = True
@@ -155,9 +155,9 @@ class UserOverrides(User):
     using_token = False
     get_org = get_user_org
     get_user_orgs = get_user_orgs
-#endclass EngageUser
+#endclass UserOverrides
 
 
-class AnonUserOverrides(AnonymousUser):
+class AnonUserOverrides(ClassOverrideMixinMustBeFirst, AnonymousUser):
     track_user = _TrackUser
-#endclass EngageAnonUser
+#endclass AnonUserOverrides

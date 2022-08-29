@@ -1,5 +1,10 @@
+import logging
+from typing import Type, Any, Callable
+
 from django.db.models import Model
 
+
+logger = logging.getLogger(__name__)
 
 def ignoreDjangoModelAttrs(aDjangoModelClass: type[Model]):
     """
@@ -17,3 +22,41 @@ def ignoreDjangoModelAttrs(aDjangoModelClass: type[Model]):
         f"{aDjangoModelClass.__name__.lower()}_ptr",
     )
 #enddef ignoreDjangoModelAttrs
+
+class ClassOverrideMixinMustBeFirst:
+    override_ignore: list  #only define if your overridden obj contains class vars like Django Models.
+    myClassType: Type[Any]
+    origattrs: dict
+    on_apply_overrides: Callable  #only define if you have merges rather than overrides.
+
+    @classmethod
+    def getOrigClsAttr(cls, attr_name: str):
+        return cls.origattrs.get(attr_name)
+    #enddef getOrigAttr
+
+    @classmethod
+    def setClassOverrides(cls) -> None:
+        ignore_attrs = getattr(cls, 'override_ignore', ())
+        parents = cls.__bases__
+        under_cls = parents[-1]
+        under_cls.myClassType = under_cls
+        under_cls.origattrs = {}
+        under_cls.getOrigClsAttr = cls.getOrigClsAttr
+        # stuff all mixins into temba_cls, too
+        class_list = parents[1:-1] + (cls,)
+        for a_class in class_list:
+            for name in a_class.__dict__:
+                if not name.startswith("__") and name != 'override_ignore' and name not in ignore_attrs:
+                    logger.debug(f"override: set attr {str(under_cls)}.{name} to {getattr(a_class, name)}")
+                    orig_attr = getattr(under_cls, name, None)
+                    under_cls.origattrs.update({name: orig_attr})
+                    setattr(under_cls, name, getattr(a_class, name))
+                #endif
+            #endfor each attr
+        #endfor each parent
+        if getattr(cls, 'on_apply_overrides', None) and callable(getattr(cls, 'on_apply_overrides')):
+            cls.on_apply_overrides()
+        #endif
+    #enddef setClassOverrides
+
+#endclass ClassOverrideMixinMustBeFirst
