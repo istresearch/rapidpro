@@ -116,6 +116,9 @@ class EngageOverrides:
         from engage.contacts.templatetags import scheme_icon
         register.filter(scheme_icon)
 
+        from engage.contacts.models import ContactFieldOverrides
+        ContactFieldOverrides.setClassOverrides()
+
         cls.ENGAGE_OVERRIDES_RAN = True
     #enddef RunEngageOverrides
 #endclass EngageOverrides
