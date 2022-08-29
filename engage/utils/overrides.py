@@ -119,6 +119,9 @@ class EngageOverrides:
         from engage.contacts.models import ContactFieldOverrides
         ContactFieldOverrides.setClassOverrides()
 
+        from engage.archives.models import ArchiveOverrides
+        ArchiveOverrides.setClassOverrides()
+
         cls.ENGAGE_OVERRIDES_RAN = True
     #enddef RunEngageOverrides
 #endclass EngageOverrides
