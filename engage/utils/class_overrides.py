@@ -1,6 +1,7 @@
 import logging
-from typing import Type, Any, Callable
+from typing import Any, Callable
 
+from django import forms
 from django.db.models import Model
 
 
@@ -23,9 +24,25 @@ def ignoreDjangoModelAttrs(aDjangoModelClass: type[Model]):
     )
 #enddef ignoreDjangoModelAttrs
 
+def ignoreDjangoModelFormAttrs(aDjangoModelFormsClass: type[forms.ModelForm]):
+    """
+    Django Forms based on models contain some class attributes we should avoid stomping when
+    we define MyClassOverrides class containers.
+    :param aDjangoModelFormsClass: a form model class we will be expanding/overriding.
+    :return: Returns a list of attributes to ignore when calling setClassOverrides().
+    """
+    return (
+        'Meta',
+        '_meta',
+        'base_fields',
+        'declared_fields',
+        'media',
+    )
+#enddef ignoreDjangoModelFormAttrs
+
 class ClassOverrideMixinMustBeFirst:
     override_ignore: list  #only define if your overridden obj contains class vars like Django Models.
-    myClassType: Type[Any]
+    myClassType: type[Any]
     origattrs: dict
     on_apply_overrides: Callable  #only define if you have merges rather than overrides.
 
@@ -36,7 +53,7 @@ class ClassOverrideMixinMustBeFirst:
 
     @classmethod
     def setClassOverrides(cls) -> None:
-        ignore_attrs = getattr(cls, 'override_ignore', ())
+        ignore_attrs = getattr(cls, 'override_ignore', ()) + ('on_apply_overrides',)
         parents = cls.__bases__
         under_cls = parents[-1]
         under_cls.myClassType = under_cls

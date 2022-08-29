@@ -72,8 +72,10 @@ class EngageOverrides:
         from engage.orgs.bandwidth import BandwidthOrgModelOverrides
         BandwidthOrgModelOverrides.setClassOverrides()
 
-        from engage.orgs.views.assign_user import OrgViewAssignUserMixin
+        from engage.orgs.views.user_assign import OrgViewAssignUserMixin
         OrgViewAssignUserMixin.setClassOverrides()
+        from engage.orgs.views.user_delete import UserViewDeleteOverride
+        UserViewDeleteOverride.setClassOverrides()
         from engage.orgs.views.bandwidth import BandwidthChannelViewsMixin
         BandwidthChannelViewsMixin.setClassOverrides()
         from engage.orgs.views.home import HomeOverrides
@@ -82,6 +84,9 @@ class EngageOverrides:
         AdminManageOverrides.setClassOverrides()
         from engage.orgs.views.create import OrgViewCreateOverride
         OrgViewCreateOverride.setClassOverrides()
+        from engage.orgs.views.resthooks import ResthooksOverrides, ResthookFormOverrides
+        ResthooksOverrides.setClassOverrides()
+        ResthookFormOverrides.setClassOverrides()
 
         # override the date picker widget with one we like better
         import smartmin.widgets
