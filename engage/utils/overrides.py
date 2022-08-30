@@ -127,6 +127,16 @@ class EngageOverrides:
         AndroidTypeOverrides.setClassOverrides()
         from engage.channels.types.vonage_client import VonageClientOverrides
         VonageClientOverrides.setClassOverrides()
+        from engage.channels.update_channel_form import UpdateChannelFormOverrides
+        UpdateChannelFormOverrides.setClassOverrides()
+        from engage.channels.views import ChannelCRUDLOverrides
+        ChannelCRUDLOverrides.setClassOverrides()
+        from engage.channels.views import ChannelReadOverrides
+        ChannelReadOverrides.setClassOverrides()
+        from engage.channels.views import ChannelClaimOverrides
+        ChannelClaimOverrides.setClassOverrides()
+        from engage.channels.views import ChannelClaimAllOverrides
+        ChannelClaimAllOverrides.setClassOverrides()
 
 
         cls.ENGAGE_OVERRIDES_RAN = True

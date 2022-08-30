@@ -1,9 +1,14 @@
 from django import forms
 from django.contrib.postgres.forms import JSONField
 
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelFormAttrs
 from temba.channels.models import Channel
+from temba.channels.views import UpdateChannelForm
 
-class UpdateChannelFormMixin:
+
+class UpdateChannelFormOverrides(ClassOverrideMixinMustBeFirst, UpdateChannelForm):
+    override_ignore = ignoreDjangoModelFormAttrs(UpdateChannelForm)
+
     # needed for added fields in Meta sub-class
     tps = forms.IntegerField(label="Maximum Transactions per Second", required=False)
     config = JSONField(required=False)
