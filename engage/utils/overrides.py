@@ -118,6 +118,8 @@ class EngageOverrides:
 
         from engage.contacts.models import ContactFieldOverrides
         ContactFieldOverrides.setClassOverrides()
+        from engage.contacts.views import ContactListOverrides
+        ContactListOverrides.setClassOverrides()
 
         from engage.archives.models import ArchiveOverrides
         ArchiveOverrides.setClassOverrides()
