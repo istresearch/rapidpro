@@ -46,7 +46,7 @@ class ChannelReadOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Read):
             )
         )
 
-
+        return links
     #enddef get_gear_links
 
 #endclass ChannelRead

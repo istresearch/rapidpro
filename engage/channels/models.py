@@ -28,7 +28,7 @@ class ChannelOverrides(ClassOverrideMixinMustBeFirst, Channel):
         if URN.TEL_SCHEME in schemes:
             config[Channel.CONFIG_ALLOW_INTERNATIONAL] = True
         #endif
-        cls.getOrigClsAttr('create')(cls, org, user, country, channel_type, name, address, config, role, schemes, **kwargs)
+        cls.getOrigClsAttr('create')(org, user, country, channel_type, name, address, config, role, schemes, **kwargs)
     #enddef create
 
 #endclass ChannelOverrides
