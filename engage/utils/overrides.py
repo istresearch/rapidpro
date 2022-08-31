@@ -97,10 +97,6 @@ class EngageOverrides:
         MsgModelOverride.setClassOverrides()
         LabelModelOverride.setClassOverrides()
 
-        from engage.msgs.msgcontent import ListMsgContentMixin
-        from temba.msgs.views import InboxView as BaseMsgInboxView
-        BaseMsgInboxView.__bases__ = (ListMsgContentMixin,) + BaseMsgInboxView.__bases__
-
         from engage.msgs.inbox_msgfailed import ViewInboxFailedMsgsOverrides
         ViewInboxFailedMsgsOverrides.setClassOverrides()
         from engage.msgs.views.exporter import MsgExporterOverrides
