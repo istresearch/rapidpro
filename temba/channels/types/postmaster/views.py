@@ -1,18 +1,20 @@
 import base64
 import io
+import logging
 import pyqrcode
+import traceback
 from uuid import uuid4
 
 from django import forms
 from django.core.exceptions import ValidationError
 from smartmin.views import SmartFormView
 
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseServerError
 from django.urls import reverse
 
 from temba import settings
 from temba.utils import analytics
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from ...models import Org
 
@@ -24,10 +26,13 @@ from ...views import (
     ClaimViewMixin,
 )
 
+from engage.utils.logs import LogExtrasMixin
 from engage.utils.strings import is_empty
 
 
-class ClaimView(BaseClaimNumberMixin, SmartFormView):
+logger = logging.getLogger(__name__)
+
+class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
     code = "PSM"
     uuid = None
     extra_links = None
@@ -154,12 +159,18 @@ class ClaimView(BaseClaimNumberMixin, SmartFormView):
         chat_mode = form.cleaned_data["chat_mode"]
         claim_code = form.cleaned_data["claim_code"]
         org_id = form.cleaned_data["org_id"]
-
-        channel = self.create_channel(self.request.user, org_id, Channel.ROLE_SEND + Channel.ROLE_CALL, device_id,
-                                      device_name, chat_mode, claim_code)
-
-        self.uuid = channel.uuid
-        return HttpResponseRedirect(self.get_success_url())
+        try:
+            channel = self.create_channel(self.request.user, org_id, Channel.ROLE_SEND + Channel.ROLE_CALL, device_id,
+                                          device_name, chat_mode, claim_code)
+            self.uuid = channel.uuid
+            return HttpResponseRedirect(self.get_success_url())
+        except Exception as ex:
+            logger.error("creating channel failed", extra=self.with_log_extras({
+                'ex': ex,
+                'tb': traceback.format_tb(ex.__traceback__),
+            }))
+            return HttpResponseServerError("Registration failed, please contact a server admin.")
+        #endtry
 
     def claim_number(self, user, phone_number, country, role):
         analytics.track(user, "temba.channel_claim_postmaster",
