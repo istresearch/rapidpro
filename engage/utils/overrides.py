@@ -110,10 +110,6 @@ class EngageOverrides:
         event_renderers[Msg] = getHistoryContentFromMsg
         event_renderers[ChannelEvent] = getHistoryContentFromChannelEvent
 
-        from temba.contacts.templatetags.contacts import register
-        from engage.contacts.templatetags import scheme_icon
-        register.filter(scheme_icon)
-
         from engage.contacts.models import ContactFieldOverrides
         ContactFieldOverrides.setClassOverrides()
         from engage.contacts.views import ContactListOverrides
