@@ -41,6 +41,7 @@ INSTALLED_APPS = (
         'flatpickr',
         'temba.ext',
         'engage.api',
+        'engage.archives',
         'engage.auth',
         'engage.channels',
         'engage.contacts',

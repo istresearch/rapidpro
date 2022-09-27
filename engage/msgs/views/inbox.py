@@ -1,14 +1,23 @@
+import logging
+
+from django.urls import reverse
+
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 from engage.utils.strings import sanitize_text
 
+from temba.msgs.views import InboxView
 
-class ListMsgContentMixin:
+
+logger = logging.getLogger(__name__)
+
+class MsgInboxViewOverrides(ClassOverrideMixinMustBeFirst, InboxView):
     """
     Sanitize the list of message contents to remove zero-width spaces and such.
     """
 
     """
     def pre_process(self, request, *args, **kwargs):
-        super(ListMsgContentMixin, self).pre_process(request, *args, **kwargs)
+        self.getOrigClsAttr('pre_process')(self, request, *args, **kwargs)
         # give us the ability to override the pagination (super helpful in debugging)
         if 'r' in self.request.GET:
             self.refresh = self.request.GET['r']
@@ -41,9 +50,21 @@ class ListMsgContentMixin:
     #enddef _sanitizeMsgList
 
     def get_context_data(self, **kwargs):
-        context = super(ListMsgContentMixin, self).get_context_data(**kwargs)
+        context = self.getOrigClsAttr('get_context_data')(self, **kwargs)
         context['object_list'] = self._sanitizeMsgList(context['object_list'])
         return context
     #enddef get_context_data
 
-#endclass ListMsgContentMixin
+    def get_gear_links(self):
+        links = self.getOrigClsAttr('get_gear_links')(self)
+        links.append(
+            dict(
+                title="Get PM",
+                as_btn=True,
+                href=reverse("channels.types.postmaster.claim"),
+            )
+        )
+        return links
+    #enddef get_gear_links
+
+#endclass MsgInboxViewOverrides

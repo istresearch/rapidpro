@@ -6,15 +6,11 @@ from temba.orgs.models import IntegrationType
 from temba.orgs.views import OrgCRUDL
 from temba.settings import ORG_PLAN_TOPUP
 
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 from engage.utils.logs import LogExtrasMixin
 
 
-class HomeOverrides(LogExtrasMixin, OrgCRUDL.Home):
-    # overrides.py stomps methods, if wish to reference them, keep track manually.
-    orig_get_gear_links = OrgCRUDL.Home.get_gear_links
-
-    def as_json(self, context):
-        pass
+class HomeOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRUDL.Home):
 
     def get_gear_links(self):
         links = []
@@ -25,7 +21,8 @@ class HomeOverrides(LogExtrasMixin, OrgCRUDL.Home):
         if self.has_org_perm("channels.channel_configuration"):
             links.append(dict(title=_("Manage Channels"), href=reverse("channels.channel_manage"), as_btn=True))
 
-        links.extend(self.orig_get_gear_links())
+        #call original overridden function, not super(), so we don't have to re-write it here.
+        links.extend(self.getOrigClsAttr('get_gear_links')(self))
 
         theAddChannelUrl = reverse("channels.channel_claim")
         for item in links:

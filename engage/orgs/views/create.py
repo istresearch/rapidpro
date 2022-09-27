@@ -8,6 +8,9 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
+
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+
 from smartmin.views import SmartCreateView
 
 from temba import settings
@@ -84,11 +87,12 @@ class OrgCreateForm(forms.ModelForm):
 
 #endclass OrgCreateForm
 
-class OrgViewCreateOverride(OrgCRUDL):
+class OrgViewCreateOverride(ClassOverrideMixinMustBeFirst, OrgCRUDL):
 
     @staticmethod
     def on_apply_overrides() -> None:
         OrgCRUDL.actions += ('create',)
+    #enddef on_apply_overrides
 
     class Create(SmartCreateView):
         title = _("Create Workspace")
