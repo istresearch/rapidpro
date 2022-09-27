@@ -1,4 +1,4 @@
--load public
+-load public gear_items
 
 :css
   .gear-flag {
@@ -12,19 +12,27 @@
 -with gear_links=view.get_gear_links
   -if gear_links
 
-    -for link in gear_links
-      -if link.modax
+    {% with modax_links=gear_links|gear_modax_items %}
+      {% for link in modax_links %}
         %temba-modax{ header:'{{link.modax}}', endpoint:"{{link.href}}", id:"{{link.id}}"}
+      {% endfor %}
+    {% endwith %}
 
     #gear-container.flex.items-center.text-gray-700
-      -if gear_links|length == 1
-        -with link=gear_links|first
+      {% with btn_links=gear_links|gear_btn_items %}
+        {% for link in btn_links %}
           -if link.modax
-            .button-light{onclick:'showModax("{{link.id}}")', class:'{{ link|gear_link_classes:True }}'}
+            .button-light{onclick:'showModax("{{link.id}}")', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
               {{link.title}}
               %span{class:'gear-flag'}
                 {{link.flag}}
-
+          -elif link.js_class
+            -if link.id
+              .button-light{id:'{{link.id}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+                {{link.title}}
+            -else
+              .button-light{class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+                {{link.title}}
           -else
             -if link.id
               .button-light{id:'{{link.id}}', onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}' }
@@ -32,95 +40,71 @@
             -else
               .button-light{onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}' }
                 {{link.title}}
+        {% endfor %}
+      {% endwith %}
 
-      -else
-        -# instead of forcing only the first gear link as a button, check for "first or as_btn and not as_gear_item"
-        -for link in gear_links
-          -if forloop.first or link.as_btn
-            -if not link.as_gear_item
-              -if link.modax
-                .button-light{onclick:'javascript:showModax("{{link.id}}")', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
-                  {{link.title}}
-                    %span{class:'gear-flag'}
-                      {{link.flag}}
-
-              -else
-                -if link.js_class
-                  -if link.id
-                    .button-light{id:'{{link.id}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
-                      {{link.title}}
-                  -else
-                    .button-light{class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
-                      {{link.title}}
-
+      {% with menu_links=gear_links|gear_menu_items %}
+        {% if menu_links %}
+          .btn-group.gear-menu.ml-3
+            .button-light.p-icon.dropdown-toggle.text-center{ data-toggle:"dropdown" }
+              .icon-menu.text-gray-500(style="margin-left:-2px;margin-top:1px")
+            %ul.dropdown-menu.label-menu.rounded-lg.border-none.px-4.py-3{'role':'menu', 'aria-labelledby':'dlabel'}
+              {% for link in menu_links %}
+                -if link.divider
+                  %li.separator.-mx-4.border-b.my-3.border-gray-200
                 -else
-                  -if link.id
-                    .button-light{id:'{{link.id}}', onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
-                      {{link.title}}
-                  -else
-                    .button-light{onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
-                      {{link.title}}
+                  %li.py-1
+                    -if link.ngClick
+                      .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', ng-click:'{{link.ngClick}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                        {{link.title}}
+                        .gear-flag
+                          {{link.flag}}
+                    -elif link.modax
+                      .hover-linked.font-normal{onclick:'javascript:showModax("{{link.id}}")', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                        {{link.title}}
+                        %span{class:'gear-flag'}
+                          {{link.flag}}
 
-        .btn-group.gear-menu.ml-3
-          .button-light.p-icon.dropdown-toggle.text-center{ data-toggle:"dropdown" }
-            .icon-menu.text-gray-500(style="margin-left:-2px;margin-top:1px")
-          %ul.dropdown-menu.label-menu.rounded-lg.border-none.px-4.py-3{'role':'menu', 'aria-labelledby':'dlabel'}
-            -for link in gear_links
-              -if not forloop.first
-                -if not link.as_btn
-                  -if link.divider
-                    %li.separator.-mx-4.border-b.my-3.border-gray-200
-                  -else
-                    %li.py-1
-                      -if link.ngClick
-                        .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', ng-click:'{{link.ngClick}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
-                          {{link.title}}
-                          .gear-flag
-                            {{link.flag}}
-                      -elif link.modax
-                        .hover-linked.font-normal{onclick:'javascript:showModax("{{link.id}}")', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                    -else
+                      -if link.js_class
+                        .hover-linked.font-normal{class:'{{ link|gear_link_classes }}', href:'{{link.href}}', data-success-url:'{{ link.success_url }}'}
                           {{link.title}}
                           %span{class:'gear-flag'}
                             {{link.flag}}
-
                       -else
-                        -if link.js_class
-                          .hover-linked.font-normal{class:'{{ link|gear_link_classes }}', href:'{{link.href}}', data-success-url:'{{ link.success_url }}'}
-                            {{link.title}}
-                            %span{class:'gear-flag'}
-                              {{link.flag}}
-                        -else
-                          .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
-                            {{link.title}}
-                            %span{class:'gear-flag'}
-                              {{link.flag}}
+                        .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                          {{link.title}}
+                          %span{class:'gear-flag'}
+                            {{link.flag}}
+              {% endfor %}
+        {% endif %}
+      {% endwith %}
 
-
-      :javascript
-        function showModax(endpoint) {
-          const modax = document.querySelector("temba-modax[id='" + endpoint + "']");
-          if(modax) {
-            modax.setAttribute("open", "true");
-          }
+    :javascript
+      function showModax(endpoint) {
+        const modax = document.querySelector("temba-modax[id='" + endpoint + "']");
+        if(modax) {
+          modax.setAttribute("open", "true");
         }
+      }
 
-        $("#gear-container .gear-delete").on('click', function(e){
-           $("#delete-form").attr('href', $(this).attr('href'));
-           e.stopPropagation();
+      $("#gear-container .gear-delete").on('click', function(e){
+         $("#delete-form").attr('href', $(this).attr('href'));
+         e.stopPropagation();
 
-           var modal = new ConfirmationModal($('.deletion > .title').html(), $('.deletion > .body').html());
-           modal.addClass('alert');
-           modal.setListeners({ onPrimary: function(){
-             $('#delete-form').click();
-           }}, false);
+         var modal = new ConfirmationModal($('.deletion > .title').html(), $('.deletion > .body').html());
+         modal.addClass('alert');
+         modal.setListeners({ onPrimary: function(){
+           $('#delete-form').click();
+         }}, false);
 
-           modal.setPrimaryButton('Remove');
-           modal.show();
+         modal.setPrimaryButton('Remove');
+         modal.show();
 
-           var successUrl = $(this).data('success-url');
-           if (successUrl){
-             modal.addEventListener('onSuccess', function(){ document.location.href = successUrl; });
-           }
+         var successUrl = $(this).data('success-url');
+         if (successUrl){
+           modal.addEventListener('onSuccess', function(){ document.location.href = successUrl; });
+         }
 
-           return false;
-        });
+         return false;
+      });

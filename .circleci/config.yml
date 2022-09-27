@@ -266,7 +266,7 @@ jobs:
           command: |-
             IMAGE_NAME="${CIRCLE_PROJECT_USERNAME}/p4-engage"
             IMAGE_TAG="$(cat workspace/info/version_tag.txt)"
-            K8_URL=https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/dev/engage-vars
+            K8_URL=https://circleci.com/api/v1.1/project/github/$CIRCLE_PROJECT_USERNAME/p4-deploy/tree/develop
             echo "Deploy to K8s: ${IMAGE_NAME}:${IMAGE_TAG}"
             curl -XPOST --user "${oCI_API_TOKEN}:" \
               --data build_parameters[CIRCLE_JOB]=eks_deploy \

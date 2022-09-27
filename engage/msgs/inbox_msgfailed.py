@@ -1,4 +1,8 @@
-class ViewInboxFailedMsgsMixin:
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+
+from temba.msgs.views import MsgCRUDL
+
+class ViewInboxFailedMsgsOverrides(ClassOverrideMixinMustBeFirst, MsgCRUDL.Failed):
     """
     Inbox view override for Failed messages.
     """
@@ -8,4 +12,4 @@ class ViewInboxFailedMsgsMixin:
         return self.bulk_actions
     #enddef get_bulk_actions
 
-#endclass ViewInboxFailedMsgsMixin
+#endclass ViewInboxFailedMsgsOverrides

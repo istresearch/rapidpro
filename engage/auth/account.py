@@ -10,6 +10,11 @@ the appropriate method on the User object directly, or you can use these
 static methods: e.g. user_obj.get_org() vs UserAcct.get_org(user_obj)
 """
 
+from django.conf import settings
+from django.contrib.auth.models import AnonymousUser, User
+
+from engage.orgs.models import get_user_org, get_user_orgs
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
 
 class UserAcct:
     """
@@ -123,3 +128,36 @@ class UserAcct:
     @staticmethod
     def name_of(user) -> str:
         return user.name
+
+#endclass UserAcct
+
+
+def _TrackUser(self):  # pragma: no cover
+    """
+    Should the current user be tracked
+    """
+    # track if "is logged in" and not DEV instance
+    if self.is_authenticated and not self.is_anonymous and settings.IS_PROD:
+        return True
+    else:
+        return False
+    #endif
+#enddef _TrackUser
+
+
+class UserOverrides(ClassOverrideMixinMustBeFirst, User):
+    # fake model, tell Django to ignore so it does not try to create/migrate schema.
+    class Meta:
+        abstract = True
+    override_ignore = ignoreDjangoModelAttrs(User)
+    track_user = _TrackUser
+    # default optional property to False so it exists.
+    using_token = False
+    get_org = get_user_org
+    get_user_orgs = get_user_orgs
+#endclass UserOverrides
+
+
+class AnonUserOverrides(ClassOverrideMixinMustBeFirst, AnonymousUser):
+    track_user = _TrackUser
+#endclass AnonUserOverrides

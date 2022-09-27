@@ -5,16 +5,20 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
+
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 
 from temba.utils import on_transaction_commit
 
 from temba.msgs.models import ExportMessagesTask
 from temba.msgs.tasks import export_messages_task
+from temba.msgs.views import MsgCRUDL
+
 
 logger = logging.getLogger(__name__)
 
-class MsgExporter:
+class MsgExporterOverrides(ClassOverrideMixinMustBeFirst, MsgCRUDL.Export):
     """
     Export messages override to allow for ASYNC/SYNC behavior.
     """
@@ -102,3 +106,6 @@ class MsgExporter:
             response = self.render_modal_response(form)
             response["REDIRECT"] = self.get_success_url()
             return response
+    #enddef form_valid
+
+#endclass MsgExporterOverrides

@@ -41,6 +41,7 @@ INSTALLED_APPS = (
         'flatpickr',
         'temba.ext',
         'engage.api',
+        'engage.archives',
         'engage.auth',
         'engage.channels',
         'engage.contacts',
@@ -425,3 +426,8 @@ else:
 #Use CHAT_MODE_CHOICES to configure the chatmodes that are available to the Postmaster channel
 from engage.channels.types.postmaster.schemes import PM_Scheme_Default_Chats
 CHAT_MODE_CHOICES = PM_Scheme_Default_Chats
+
+ORG_PLAN_TOPUP = TOPUP_PLAN
+ORG_PLAN_ENGAGE = 'managed'
+# Default plan for new orgs
+DEFAULT_PLAN = ORG_PLAN_ENGAGE
