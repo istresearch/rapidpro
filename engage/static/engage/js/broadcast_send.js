@@ -25,8 +25,8 @@ $(document).ready(function() {
     if ( selector ) {
         let bIsAskingUser = false; //code might take a brief moment, prevent mutli-click-dialogs
         $(selector).on("click", function (e) {
-            let bUserChoseOK = undefined;
-            if ( !bIsAskingUser && bUserChoseOK === undefined ) {
+            let bUserChoseOK = false;
+            if ( !bIsAskingUser ) {
                 bIsAskingUser = true;
 
                 let theText = $(document.querySelector(rootSelectorName)
@@ -48,12 +48,12 @@ $(document).ready(function() {
                 });
 
                 bUserChoseOK = confirm(`Are you sure you want to send the message:\n${theText}\n\nto ${theRecipients.join(', ')}?`);
-                bIsAskingUser = false;
             }
             if ( !bUserChoseOK ) {
                 e.preventDefault();
                 e.stopPropagation();
             }
+            bIsAskingUser = false;
         });
     }
 });
