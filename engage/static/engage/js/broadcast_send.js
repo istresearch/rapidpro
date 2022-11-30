@@ -1,6 +1,9 @@
 $(document).ready(function() {
     let rootSelectorName = "#send-message";
-    if ( $(document.querySelector('temba-modax')
+    if ( $(document.querySelector("#send-message-modal") ) !== undefined ) {
+        rootSelectorName = "#send-message-modal";
+    }
+    else if ( $(document.querySelector("temba-modax")
         .shadowRoot.querySelector("temba-dialog")
         .shadowRoot.querySelector(".dialog-footer")
         .querySelector("temba-button[primary]"))[0] !== undefined )
