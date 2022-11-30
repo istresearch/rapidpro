@@ -1,7 +1,7 @@
 $(document).ready(function() {
     let rootSelectorName = "#send-message";
     if ( $(document.querySelector("#send-message-modal") ) !== undefined ) {
-        rootSelectorName = "#send-message-modal";
+        rootSelectorName = "skip-already-handled";
     }
     else if ( $(document.querySelector("temba-modax")
         .shadowRoot.querySelector("temba-dialog")
