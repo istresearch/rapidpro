@@ -1,6 +1,9 @@
 $(document).ready(function() {
-    let rootSelectorName = "#send-message";
-    if ( $(document.querySelector("#send-message-modal") ) !== undefined ) {
+    let rootSelectorName = "#send-msg";
+    if ( $(document.querySelector("#send-message") ) !== undefined ) {
+        rootSelectorName = "#send-message";
+    }
+    else if ( $(document.querySelector("#send-message-modal") ) !== undefined ) {
         rootSelectorName = "#send-message-modal";
     }
     else if ( $(document.querySelector("temba-modax")
