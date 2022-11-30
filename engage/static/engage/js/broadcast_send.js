@@ -11,13 +11,18 @@ $(document).ready(function() {
         rootSelectorName = "temba-modax";
     }
 
-    let selector = $(document.querySelector(rootSelectorName)
-        .shadowRoot.querySelector("temba-dialog")
-        .shadowRoot.querySelector(".dialog-footer")
-        .querySelector("temba-button[primary]")
-        .shadowRoot.querySelector("div")
-    );
-    if (selector) {
+    let selector;
+    try {
+        selector = $(document.querySelector(rootSelectorName)
+            .shadowRoot.querySelector("temba-dialog")
+            .shadowRoot.querySelector(".dialog-footer")
+            .querySelector("temba-button[primary]")
+            .shadowRoot.querySelector("div")
+        );
+    } catch (e) {
+        selector = null;
+    }
+    if ( selector ) {
         let bIsAskingUser = false; //code might take a brief moment, prevent mutli-click-dialogs
         $(selector).on("click", function (e) {
             let bUserChoseOK = false;
