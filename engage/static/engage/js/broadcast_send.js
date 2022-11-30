@@ -1,7 +1,7 @@
 $(document).ready(function() {
     let rootSelectorName = "#send-message";
     if ( $(document.querySelector("#send-message-modal") ) !== undefined ) {
-        rootSelectorName = "skip-already-handled";
+        rootSelectorName = "#send-message-modal";
     }
     else if ( $(document.querySelector("temba-modax")
         .shadowRoot.querySelector("temba-dialog")
@@ -25,8 +25,8 @@ $(document).ready(function() {
     if ( selector ) {
         let bIsAskingUser = false; //code might take a brief moment, prevent mutli-click-dialogs
         $(selector).on("click", function (e) {
-            let bUserChoseOK = false;
-            if ( !bIsAskingUser ) {
+            let bUserChoseOK = undefined;
+            if ( !bIsAskingUser && bUserChoseOK === undefined ) {
                 bIsAskingUser = true;
 
                 let theText = $(document.querySelector(rootSelectorName)
