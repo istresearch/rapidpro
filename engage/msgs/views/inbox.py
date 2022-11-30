@@ -50,7 +50,8 @@ class MsgInboxViewOverrides(ClassOverrideMixinMustBeFirst, InboxView):
     #enddef _sanitizeMsgList
 
     def get_context_data(self, **kwargs):
-        context = self.getOrigClsAttr('get_context_data')(self, **kwargs)
+        context = self.getOrigClsAttr('get_context_data')(self, **kwargs) \
+                if self.getOrigClsAttr('get_context_data') else super().get_context_data(**kwargs)
         context['object_list'] = self._sanitizeMsgList(context['object_list'])
         return context
     #enddef get_context_data
