@@ -97,12 +97,13 @@ class EngageOverrides:
         MsgModelOverride.setClassOverrides()
         LabelModelOverride.setClassOverrides()
 
+        from engage.msgs.views.inbox import MsgInboxViewOverrides
+        MsgInboxViewOverrides.setClassOverrides()
+        # override base inbox class before child classes
         from engage.msgs.inbox_msgfailed import ViewInboxFailedMsgsOverrides
         ViewInboxFailedMsgsOverrides.setClassOverrides()
         from engage.msgs.views.exporter import MsgExporterOverrides
         MsgExporterOverrides.setClassOverrides()
-        from engage.msgs.views.inbox import MsgInboxViewOverrides
-        MsgInboxViewOverrides.setClassOverrides()
 
         from temba.mailroom.events import event_renderers
         from engage.mailroom.events import getHistoryContentFromMsg, getHistoryContentFromChannelEvent
