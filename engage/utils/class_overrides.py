@@ -72,6 +72,7 @@ class ClassOverrideMixinMustBeFirst:
             #endfor each attr
         #endfor each parent
         if getattr(cls, 'on_apply_overrides', None) and callable(getattr(cls, 'on_apply_overrides')):
+            logger.debug(f"calling {str(cls)}.on_apply_overrides()")
             cls.on_apply_overrides()
         #endif
     #enddef setClassOverrides
