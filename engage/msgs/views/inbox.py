@@ -51,19 +51,18 @@ class MsgInboxViewOverrides(ClassOverrideMixinMustBeFirst, InboxView):
 
     @staticmethod
     def on_apply_overrides(under_cls) -> None:
-        # child class wonky super() makes this workaround necessary
-        setattr(under_cls, 'get_orig_context_data', under_cls.getOrigClsAttr('get_context_data'))
-        logger.debug(f"override: set attr {str(under_cls)}.{'get_orig_context_data'} to {getattr(InboxView, 'get_context_data')}")
+        ClassOverrideMixinMustBeFirst.setOrigMethod(under_cls, 'get_context_data')
+        ClassOverrideMixinMustBeFirst.setOrigMethod(under_cls, 'get_gear_links')
     #enddef on_apply_overrides
 
     def get_context_data(self, **kwargs):
-        context = self.get_orig_context_data(**kwargs)
+        context = self.orig_get_context_data(**kwargs)
         context['object_list'] = self._sanitizeMsgList(context['object_list'])
         return context
     #enddef get_context_data
 
     def get_gear_links(self):
-        links = self.getOrigClsAttr('get_gear_links')(self)
+        links = self.orig_get_gear_links()
         links.append(
             dict(
                 title="Get PM",
