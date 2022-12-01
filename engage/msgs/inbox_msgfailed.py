@@ -12,4 +12,10 @@ class ViewInboxFailedMsgsOverrides(ClassOverrideMixinMustBeFirst, MsgCRUDL.Faile
         return self.bulk_actions
     #enddef get_bulk_actions
 
+    def get_context_data(self, **kwargs):
+        context = super(self.myClassType).origattrs.get('get_context_data')(self, **kwargs)
+        context['object_list'] = self._sanitizeMsgList(context['object_list'])
+        return context
+    #enddef get_context_data
+
 #endclass ViewInboxFailedMsgsOverrides
