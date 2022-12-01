@@ -32,8 +32,8 @@ from temba.orgs.views import (
 class BandwidthChannelViewsMixin(ClassOverrideMixinMustBeFirst, OrgCRUDL):
 
     @staticmethod
-    def on_apply_overrides() -> None:
-        OrgCRUDL.actions += (
+    def on_apply_overrides(under_cls) -> None:
+        under_cls.actions += (
             "bandwidth_connect",
             "bandwidth_international_connect",
             "bandwidth_account",

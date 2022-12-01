@@ -16,8 +16,8 @@ class ChannelCRUDLOverrides(ClassOverrideMixinMustBeFirst, ManageChannelMixin,
     override_ignore = ('get_actions',)
 
     @staticmethod
-    def on_apply_overrides():
-        ChannelCRUDL.actions += \
+    def on_apply_overrides(under_cls):
+        under_cls.actions += \
            ManageChannelMixin.get_actions() + \
            PurgeOutboxMixin.get_actions() + \
            APIsForDownloadPostmaster.get_actions()

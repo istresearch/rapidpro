@@ -49,11 +49,11 @@ class MsgInboxViewOverrides(ClassOverrideMixinMustBeFirst, InboxView):
         return aList
     #enddef _sanitizeMsgList
 
-    @classmethod
-    def on_apply_overrides(cls) -> None:
+    @staticmethod
+    def on_apply_overrides(under_cls) -> None:
         # child class wonky super() makes this workaround necessary
-        setattr(cls, 'get_orig_context_data', getattr(InboxView, 'get_context_data'))
-        logger.debug(f"override: set attr {str(cls)}.{'get_orig_context_data'} to {getattr(InboxView, 'get_context_data')}")
+        setattr(under_cls, 'get_orig_context_data', getattr(InboxView, 'get_context_data'))
+        logger.debug(f"override: set attr {str(under_cls)}.{'get_orig_context_data'} to {getattr(InboxView, 'get_context_data')}")
     #enddef on_apply_overrides
 
     def get_context_data(self, **kwargs):
