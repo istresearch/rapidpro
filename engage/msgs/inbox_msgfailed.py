@@ -1,6 +1,6 @@
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 
-from temba.msgs.views import MsgCRUDL
+from temba.msgs.views import MsgCRUDL, InboxView
 
 class ViewInboxFailedMsgsOverrides(ClassOverrideMixinMustBeFirst, MsgCRUDL.Failed):
     """
@@ -12,13 +12,13 @@ class ViewInboxFailedMsgsOverrides(ClassOverrideMixinMustBeFirst, MsgCRUDL.Faile
         return self.bulk_actions
     #enddef get_bulk_actions
 
-    def get_context_data(self, **kwargs):
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.debug(str(MsgCRUDL.Failed) + "child of " + str(super(MsgCRUDL.Failed, self)))
-        context = super(MsgCRUDL.Failed, self).get_context_data(**kwargs)
-        context['object_list'] = self._sanitizeMsgList(context['object_list'])
-        return context
-    #enddef get_context_data
+    # def get_context_data(self, **kwargs):
+    #     import logging
+    #     logger = logging.getLogger(__name__)
+    #     logger.debug(str(MsgCRUDL.Failed) + "child of " + str(super(InboxView, self)))
+    #     context = super(InboxView, self).get_context_data(**kwargs)
+    #     context['object_list'] = self._sanitizeMsgList(context['object_list'])
+    #     return context
+    # #enddef get_context_data
 
 #endclass ViewInboxFailedMsgsOverrides
