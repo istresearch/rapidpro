@@ -15,7 +15,7 @@ class ViewInboxFailedMsgsOverrides(ClassOverrideMixinMustBeFirst, MsgCRUDL.Faile
     def get_context_data(self, **kwargs):
         import logging
         logger = logging.getLogger(__name__)
-        logger.debug(self.myClassType + "child of " + super(self.myClassType))
+        logger.debug(str(self.myClassType) + "child of " + str(super(self.myClassType)))
         context = super(self.myClassType).get_context_data(**kwargs)
         context['object_list'] = self._sanitizeMsgList(context['object_list'])
         return context
