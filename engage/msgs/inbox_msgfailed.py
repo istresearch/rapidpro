@@ -1,11 +1,11 @@
-import logging
+#import logging
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 
-from temba.msgs.views import MsgCRUDL, InboxView
+from temba.msgs.views import MsgCRUDL
 
 
-logger = logging.getLogger(__name__)
+#logger = logging.getLogger(__name__)
 
 class ViewInboxFailedMsgsOverrides(ClassOverrideMixinMustBeFirst, MsgCRUDL.Failed):
     """
@@ -16,27 +16,5 @@ class ViewInboxFailedMsgsOverrides(ClassOverrideMixinMustBeFirst, MsgCRUDL.Faile
     def get_bulk_actions(self):
         return self.bulk_actions
     #enddef get_bulk_actions
-
-    # def get_context_data(self, **kwargs):
-    #     import logging
-    #     logger = logging.getLogger(__name__)
-    #     logger.debug(str(MsgCRUDL.Failed) + "child of " + str(super(InboxView, self)))
-    #     context = super(InboxView, self).get_context_data(**kwargs)
-    #     context['object_list'] = self._sanitizeMsgList(context['object_list'])
-    #     return context
-    # #enddef get_context_data
-
-    # @staticmethod
-    # def on_apply_overrides(under_cls) -> None:
-    #     # child class wonky super() makes this workaround necessary
-    #     setattr(under_cls, 'get_orig_context_data', getattr(InboxView, 'get_context_data'))
-    #     logger.debug(f"override: set attr {str(under_cls)}.{'get_orig_context_data'} to {getattr(InboxView, 'get_context_data')}")
-    # #enddef on_apply_overrides
-    #
-    # def get_context_data(self, **kwargs):
-    #     context = self.get_orig_context_data(**kwargs)
-    #     context['object_list'] = self._sanitizeMsgList(context['object_list'])
-    #     return context
-    # #enddef get_context_data
 
 #endclass ViewInboxFailedMsgsOverrides
