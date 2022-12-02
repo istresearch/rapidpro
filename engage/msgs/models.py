@@ -9,6 +9,10 @@ from temba.msgs.models import Msg, Label
 class MsgModelOverride(ClassOverrideMixinMustBeFirst, Msg):
     override_ignore = ignoreDjangoModelAttrs(Msg)
 
+    # we do not want Django to perform any magic inheritance
+    class Meta:
+        abstract = True
+
     def archive(self):
         """
         Archives this message
@@ -35,8 +39,13 @@ class MsgModelOverride(ClassOverrideMixinMustBeFirst, Msg):
 
 #endclass MsgModelOverride
 
+
 class LabelModelOverride(ClassOverrideMixinMustBeFirst, Label):
     override_ignore = ignoreDjangoModelAttrs(Label)
+
+    # we do not want Django to perform any magic inheritance
+    class Meta:
+        abstract = True
 
     #MAX_ORG_LABELS = 250
     # remove hard-coded limit in favor of settings-based max limit

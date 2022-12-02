@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 class OrgViewAssignUserMixin(ClassOverrideMixinMustBeFirst, OrgCRUDL):
 
     @staticmethod
-    def on_apply_overrides() -> None:
-        OrgCRUDL.actions += ('assign_user',)
+    def on_apply_overrides(under_cls) -> None:
+        under_cls.actions += ('assign_user',)
     #enddef on_apply_overrides
 
     class AssignUser(OrgPermLogInfoMixin, OrgPermsMixin, SmartFormView):

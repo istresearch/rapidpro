@@ -90,8 +90,8 @@ class OrgCreateForm(forms.ModelForm):
 class OrgViewCreateOverride(ClassOverrideMixinMustBeFirst, OrgCRUDL):
 
     @staticmethod
-    def on_apply_overrides() -> None:
-        OrgCRUDL.actions += ('create',)
+    def on_apply_overrides(under_cls) -> None:
+        under_cls.actions += ('create',)
     #enddef on_apply_overrides
 
     class Create(SmartCreateView):

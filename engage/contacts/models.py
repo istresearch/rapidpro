@@ -2,8 +2,13 @@ from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDj
 
 from temba.contacts.models import ContactField
 
+
 class ContactFieldOverrides(ClassOverrideMixinMustBeFirst, ContactField):
     override_ignore = ignoreDjangoModelAttrs(ContactField)
+
+    # we do not want Django to perform any magic inheritance
+    class Meta:
+        abstract = True
 
     @classmethod
     def get_or_create(cls, org, user, key, label=None, show_in_table=None, value_type=None, priority=None):
