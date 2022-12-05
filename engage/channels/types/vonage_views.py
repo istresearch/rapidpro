@@ -32,9 +32,12 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
                     #endif shortcode
 
                     # mark accounts used/unused by checking the db for uuid
-                    # 'moHttpUrl': 'https://engage.dev.istresearch.com/c/nx/742c11f1-72fb-4994-8156-8848e8a63e55/receive',
-                    match = re.search(uuid_pattern, number["moHttpUrl"])
-                    channel_uuid = match.group(1) if match else '1'
+                    channel_uuid = '1'
+                    if 'moHttpUrl' in number:
+                        # 'moHttpUrl': 'https://engage.dev.istresearch.com/c/nx/742c11f1-72fb-4994-8156-8848e8a63e55/receive',
+                        match = re.search(uuid_pattern, number["moHttpUrl"])
+                        channel_uuid = match.group(1) if match else '1'
+                    #endif key in list
                     account_uuids.append(channel_uuid)
 
                     numbers.append(dict(
