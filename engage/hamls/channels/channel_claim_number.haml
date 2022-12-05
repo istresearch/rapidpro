@@ -63,11 +63,13 @@
           .lbl.mt-3.mr-2.linked{class:"phone-number", data-number:"{{ number.number}}", data-country:"{{ number.country}}" }
             {{ number.number }}
             (<span class="country">{{ number.country }}</span>)
-            - if in_use in number
-              - if number.in_use
+            {% if in_use in number %}
+              {% if number.in_use %}
                 <span class="num_in_use"></span>
-              - else
+              {% else %}
                 <span class="num_not_in_use"></span>
+              {% endif %}
+            {% endif %}
         - else
           .lbl.mt-3.mr-2{class:"unsupported-number", data-number:"{{ number.number}}", data-country:"{{ number.country}}" }
             {{ number.number }}

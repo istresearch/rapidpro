@@ -54,9 +54,9 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
                 qs = Channel.objects.filter(
                     channel_type=VonageType.code,
                     uuid__in=account_uuids,
-                )
-                for channel in qs:
-                    idx = account_uuids.index(channel.uuid)
+                ).values_list('uuid', flat=True)
+                for channel_uuid in qs:
+                    idx = account_uuids.index(channel_uuid)
                     numbers[idx]['in_use'] = True
                 #endfor each channel found
                 logger.debug(' TRACE[nums]='+str(numbers))
