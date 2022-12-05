@@ -47,7 +47,7 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
                         in_use=False,
                     ))
                 #endfor numbers
-                logger.debug(' TRACE[numbers]='+str(account_numbers))
+                logger.debug(' TRACE[numbers]='+str(numbers))
 
                 logger.debug(' TRACE[qs]')
                 # query db for "in use" numbers
@@ -57,9 +57,9 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
                 )
                 for channel in qs:
                     idx = account_uuids.index(channel.uuid)
-                    account_numbers[idx].in_use = True
+                    numbers[idx]['in_use'] = True
                 #endfor each channel found
-                logger.debug(' TRACE[nums]='+str(account_numbers))
+                logger.debug(' TRACE[nums]='+str(numbers))
             except Exception as e:
                 logger.error(f"fail: {str(e)}", exc_info=True)
                 raise e
