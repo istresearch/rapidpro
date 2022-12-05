@@ -56,7 +56,7 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
                     idx = account_uuids.index(channel_uuid)
                     numbers[idx]['in_use'] = True
                 #endfor each channel found
-                logger.debug(' TRACE[nums]='+str(numbers))
+                #logger.debug(' TRACE[nums]='+str(numbers))
             except Exception as e:
                 logger.error(f"fail: {str(e)}", exc_info=True)
                 raise e
