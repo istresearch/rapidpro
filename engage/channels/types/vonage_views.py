@@ -43,14 +43,14 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
             #endfor numbers
 
             # query db for "in use" numbers
-            for channel in Channel.objects.filter(
+            qs = Channel.objects.filter(
                 channel_type=VonageType.code,
                 uuid__in=account_uuids,
-            ):
+            )
+            for channel in qs:
                 idx = account_uuids.index(channel.uuid)
-                account_numbers[idx]['in_use'] = True
+                account_numbers[idx].in_use = True
             #endfor each channel found
-
             logger.debug(' TRACE='+str(account_numbers))
 
         #endif client

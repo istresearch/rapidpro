@@ -61,7 +61,7 @@ class VonageClientOverrides(ClassOverrideMixinMustBeFirst, VonageClient):
         if pattern:
             params["pattern"] = str(pattern).strip("+")
         response = self._with_retry(self.base.get_account_numbers, params=params)
-        logger.debug('TRACE[get_numbers]='+str(response))
+        #logger.debug('TRACE[get_numbers]='+str(response))
         return response["numbers"] if int(response.get("count", 0)) else []
     #enddef get_numbers
 
