@@ -33,7 +33,7 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
                 # mark accounts used/unused by checking the db for uuid
                 # 'moHttpUrl': 'https://engage.dev.istresearch.com/c/nx/742c11f1-72fb-4994-8156-8848e8a63e55/receive',
                 logger.debug(' TRACE[matching]='+number["moHttpUrl"])
-                match = re.match(uuid_pattern, number["moHttpUrl"])
+                match = re.search(uuid_pattern, number["moHttpUrl"])
                 if match:
                     logger.debug(' TRACE[match]='+match.group())
                 else:
