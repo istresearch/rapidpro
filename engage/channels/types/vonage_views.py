@@ -19,6 +19,7 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
         client = org.get_vonage_client()
         if client:
             account_numbers = client.get_numbers(size=100)
+            logger.debug(' TRACE[account_numbers]='+str(account_numbers))
             uuid_pattern = re.compile(r"(?<=c/nx/).{8}-.{4}-.{4}-.{4}-.{12}(?=/receive)")
             account_uuids = []
             for number in account_numbers:
@@ -33,7 +34,7 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
                 # 'moHttpUrl': 'https://engage.dev.istresearch.com/c/nx/742c11f1-72fb-4994-8156-8848e8a63e55/receive',
                 match = uuid_pattern.match(number["moHttpUrl"])
                 if match:
-                    logger.debug(' TRACE[match]='+match.string)
+                    logger.debug(' TRACE[match]='+str(match))
                 else:
                     logger.debug(' TRACE[match]=None')
                 channel_uuid = match.string if match else None
