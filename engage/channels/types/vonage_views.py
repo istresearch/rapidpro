@@ -45,7 +45,7 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
             # query db for "in use" numbers
             for channel in Channel.objects.filter(
                 channel_type=VonageType.code,
-                uuid=account_uuids,
+                uuid__in=account_uuids,
             ):
                 idx = account_uuids.index(channel.uuid)
                 account_numbers[idx]['in_use'] = True
