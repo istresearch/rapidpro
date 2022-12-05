@@ -20,7 +20,6 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
             try:
                 account_numbers = client.get_numbers(size=100)
                 #logger.debug(' TRACE[account_numbers]='+str(account_numbers))
-                #uuid_pattern = r"(?<=c/nx/)(.{8}-.{4}-.{4}-.{4}-.{12})(?=/receive)"
                 uuid_pattern = r"(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})/receive$"
                 account_uuids = []
                 for number in account_numbers:
@@ -47,9 +46,7 @@ class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
                         in_use=False,
                     ))
                 #endfor numbers
-                logger.debug(' TRACE[numbers]='+str(numbers))
 
-                logger.debug(' TRACE[qs]')
                 # query db for "in use" numbers
                 qs = Channel.objects.filter(
                     channel_type=VonageType.code,
