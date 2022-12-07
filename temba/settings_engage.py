@@ -431,3 +431,5 @@ ORG_PLAN_TOPUP = TOPUP_PLAN
 ORG_PLAN_ENGAGE = 'managed'
 # Default plan for new orgs
 DEFAULT_PLAN = ORG_PLAN_ENGAGE
+
+MIDDLEWARE += ("engage.utils.middleware.RedirectMiddleware",)
