@@ -49,7 +49,7 @@ class EngageOverrides:
             (TembaURN.VK_SCHEME, _("VK Identifier")),
             (TembaURN.ROCKETCHAT_SCHEME, _("RocketChat Identifier")),
             (TembaURN.DISCORD_SCHEME, _("Discord Identifier")),
-        ) + tuple([ t[1] for t in sorted((lambda x: [[y[1].split(" ")[1], y] for y in x])(PM_Scheme_Labels)) ]) # Sort PM alphabetically
+        ) + tuple([t[1] for t in sorted((lambda x: [[y[1].split(" ")[1], y] for y in x])(PM_Scheme_Labels))])  # Sort PM alphabetically
 
         # URN is a static-only class, add in our needs
         from temba.contacts.models import URN as TembaURN
@@ -71,7 +71,8 @@ class EngageOverrides:
 
         from engage.orgs.bandwidth import BandwidthOrgModelOverrides
         BandwidthOrgModelOverrides.setClassOverrides()
-
+        from engage.orgs.models import OrgModelOverride
+        OrgModelOverride.setClassOverrides()
         from engage.orgs.views.user_assign import OrgViewAssignUserMixin
         OrgViewAssignUserMixin.setClassOverrides()
         from engage.orgs.views.user_delete import UserViewDeleteOverride
@@ -136,7 +137,6 @@ class EngageOverrides:
         ChannelClaimOverrides.setClassOverrides()
         from engage.channels.views import ChannelClaimAllOverrides
         ChannelClaimAllOverrides.setClassOverrides()
-
 
         cls.ENGAGE_OVERRIDES_RAN = True
     #enddef RunEngageOverrides
