@@ -9,9 +9,15 @@ def redirect_to(url):
 
 class RedirectMiddleware:
 
-    def process_exception(self, request, exception):
-        if isinstance(exception, RedirectTo):
-            return shortcuts.redirect(exception.url)
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        return self.get_response(request)
+
+    def process_exception(self, request, ex):
+        if isinstance(ex, RedirectTo):
+            return shortcuts.redirect(ex.url)
         #endif
     #enddef process_exception
 
