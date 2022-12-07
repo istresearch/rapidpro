@@ -44,7 +44,7 @@ class OrgViewListUserOverrides(ClassOverrideMixinMustBeFirst, UserCRUDL.List):
                 theSortOrderFlag = '-' if theSortOrder == 'desc' else ''
                 theOrderByColumn = "{}{}".format(theSortOrderFlag, self.sort_field)
 
-        return queryset.filter(is_active=True).order_by(theOrderByColumn, 'name').exclude(id=get_anonymous_user().id)
+        return queryset.filter(is_active=True).order_by(theOrderByColumn, 'username').exclude(id=get_anonymous_user().id)
 
 
 #endclass OrgViewListUserOverrides
