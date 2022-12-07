@@ -18,11 +18,16 @@ class OrgViewListUserOverrides(ClassOverrideMixinMustBeFirst, UserCRUDL.List):
     non_sort_fields = ('orgs',)
     sort_order = None
 
+    @staticmethod
+    def on_apply_overrides(under_cls) -> None:
+        ClassOverrideMixinMustBeFirst.setOrigMethod(under_cls, 'get_queryset')
+    #enddef on_apply_overrides
+
     def get_queryset(self, **kwargs):
         """
         override to fix sort order bug (descending uses a leading "-" which fails "if in fields" check.
         """
-        queryset = super().get_queryset(**kwargs)
+        queryset = self.orig_get_queryset(**kwargs)
 
         # org users see channels for their org, superuser sees all
         if not self.request.user.is_superuser:
