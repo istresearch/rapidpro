@@ -3,10 +3,12 @@ import logging
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 
 from temba.orgs.views import UserCRUDL
+
 
 class UserViewDeleteOverride(ClassOverrideMixinMustBeFirst, UserCRUDL.Delete):
     fields = ("id",)
