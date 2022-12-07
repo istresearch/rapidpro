@@ -259,9 +259,11 @@ function DockerImageTagExists
 {
   TOKEN=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'${DOCKER_USER}'", "password": "'${DOCKER_PASS}'"}' https://hub.docker.com/v2/users/login/ | jq -r .token)
   sleep 1
-  EXISTS=$(curl -s -H "Authorization: JWT ${TOKEN}" https://hub.docker.com/v2/repositories/$1/tags/?page_size=10000 | jq -r "[.results | .[] | .name == \"$2\"] | any")
+  EXISTS=$(curl -s -H "Authorization: JWT ${TOKEN}" "https://hub.docker.com/v2/repositories/$1/tags/$2" | jq ".id != null" )
   test $EXISTS = true
 }
+#  EXISTS=$(curl -s -H "Authorization: JWT ${TOKEN}" "https://hub.docker.com/v2/repositories/istresearch/p4-engage/tags/pylibs-amd64-89f9051bac77ad72551766325fb1f42d" | jq -r ".id | any")
+
 
 ####################
 # Create a new commit and push it up to GitHub.
