@@ -77,6 +77,8 @@ class EngageOverrides:
         OrgViewAssignUserMixin.setClassOverrides()
         from engage.orgs.views.user_delete import UserViewDeleteOverride
         UserViewDeleteOverride.setClassOverrides()
+        from engage.orgs.views.user_list import OrgViewListUserMixin
+        OrgViewListUserMixin.setClassOverrides()
         from engage.orgs.views.bandwidth import BandwidthChannelViewsMixin
         BandwidthChannelViewsMixin.setClassOverrides()
         from engage.orgs.views.home import HomeOverrides
