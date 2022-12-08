@@ -38,14 +38,6 @@
       background-position: 98% 50%;
     }
 
--block page-title
-  -block title-icon
-    %span.title-icon
-      .glyph.icon-users-2
-  -block title-text
-    .title-text
-      {{title}}
-
 -block page-top
 
 -block content
@@ -53,6 +45,10 @@
   .lp-frame
     .right
       .flex.w-full.items-end.mb-4
+        .flex-grow.ml-2.items-center
+          -block title-text
+            .page-title.leading-tight
+              {{title}}
         .gear-links
           -include "gear_links_include.haml"
 
