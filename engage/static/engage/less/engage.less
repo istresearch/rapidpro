@@ -1,7 +1,6 @@
 /****************************************************************************
  styles layered over site as "2nd to last loaded" (final.less loads this)
  ****************************************************************************/
-{% load static %}
 
 body {
   font-weight: 300;
@@ -313,8 +312,7 @@ temba-modax#send-via-pm_signal > div.send-via-btn {
     margin-left: 1em;
     margin-right: 0.7em;
     cursor: pointer;
-    /*background-image: url("../../../engage/img/user-guide-solid.svg");*/
-    background-image: url('{% static "/img/user-guide-solid.svg" %}');
+    background-image: url("../../../engage/img/user-guide-solid.svg");
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
@@ -382,35 +380,4 @@ temba-modax#send-via-pm_signal > div.send-via-btn {
   &:after {
     content: "🔵";
   }
-}
-
-tr:nth-child(even) {background: #FFF}
-.button-light{
-  padding-bottom: 8px;
-  padding-top: 8px;
-  padding-left: 18px;
-  padding-right: 18px;
-}
-
-.list_channels_channel {
-  width:100%;
-}
-tr {
-  text-align: left;
-}
-table .headerSortUp, table .headerSortDown {
-  background-color: rgba(141, 192, 219, 0.25);
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
-}
-
-table .headerSortDown {
-  background-image: url('{% static "/img/sort_dsc.png" %}');
-  background-repeat: no-repeat;
-  background-position: 98% 50%;
-}
-
-table .headerSortUp {
-  background-image: url('{% static "/img/sort_asc.png" %}');
-  background-repeat: no-repeat;
-  background-position: 98% 50%;
 }
