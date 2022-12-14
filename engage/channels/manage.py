@@ -144,8 +144,8 @@ class ManageChannelMixin:
         def render_to_response(self, context, **response_kwargs):
             search_sesskey = 'channels.manage.search'
             arg_search = self.request.GET.get('search', None)
-            if arg_search is None and self.request.session[search_sesskey]:
-                return redirect(self.request.META.get('HTTP_REFERER'), search=arg_search)
+            if arg_search is None and self.request.session.get(search_sesskey, None):
+                return redirect(self.request.META.get('HTTP_REFERER'), search=self.request.session[search_sesskey])
             elif arg_search != '':
                 self.request.session[search_sesskey] = arg_search
             else:
