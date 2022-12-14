@@ -139,6 +139,8 @@ class EngageOverrides:
         ChannelClaimOverrides.setClassOverrides()
         from engage.channels.views import ChannelClaimAllOverrides
         ChannelClaimAllOverrides.setClassOverrides()
+        from engage.channels.views import ChannelDeleteOverrides
+        ChannelDeleteOverrides.setClassOverrides()
 
         cls.ENGAGE_OVERRIDES_RAN = True
     #enddef RunEngageOverrides
