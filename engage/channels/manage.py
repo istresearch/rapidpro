@@ -144,12 +144,12 @@ class ManageChannelMixin:
         def render_to_response(self, context, **response_kwargs):
             search_sesskey = 'channels.manage.search'
             arg_search = self.request.GET.get('search', None)
-            if arg_search is None and self.request[search_sesskey]:
+            if arg_search is None and self.request.session[search_sesskey]:
                 return redirect(self.request.META.get('HTTP_REFERER'), search=arg_search)
             elif arg_search != '':
-                self.request[search_sesskey] = arg_search
+                self.request.session[search_sesskey] = arg_search
             else:
-                del self.request[search_sesskey]
+                del self.request.session[search_sesskey]
             #endif search is part of request
             return super(ManageChannelMixin.Manage, self).render_to_response(context, **response_kwargs)
         #enddef render_to_response
