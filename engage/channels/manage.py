@@ -145,7 +145,7 @@ class ManageChannelMixin:
             search_sesskey = 'channels.manage.search'
             arg_search = self.request.GET.get('search', None)
             if arg_search is None and self.request.session.get(search_sesskey, None):
-                return redirect(reverse('channels.channel_manage'), search=self.request.session[search_sesskey])
+                return redirect(f"{reverse('channels.channel_manage')}?search={self.request.session[search_sesskey]}")
             elif arg_search != '':
                 self.request.session[search_sesskey] = arg_search
             else:
