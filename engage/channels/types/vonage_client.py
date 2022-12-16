@@ -1,8 +1,13 @@
+import logging
+
 from django.urls import reverse
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 
 from temba.channels.types.vonage.client import VonageClient
+
+
+logger = logging.getLogger(__name__)
 
 class VonageClientOverrides(ClassOverrideMixinMustBeFirst, VonageClient):
 

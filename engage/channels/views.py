@@ -1,5 +1,7 @@
 from collections import defaultdict
 
+from django.urls import reverse
+
 from .manage import ManageChannelMixin
 from .purge_outbox import PurgeOutboxMixin
 from .types.postmaster.apks import APIsForDownloadPostmaster
@@ -49,7 +51,7 @@ class ChannelReadOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Read):
         return links
     #enddef get_gear_links
 
-#endclass ChannelRead
+#endclass ChannelReadOverrides
 
 
 class ChannelClaimOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Claim):
@@ -103,3 +105,17 @@ class ChannelClaimAllOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Claim
     #enddef channel_types_groups
 
 #endclass ChannelClaimAllOverrides
+
+
+class ChannelDeleteOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Delete):
+
+    def get_success_url(self):
+        # if we're deleting a child channel, redirect to parent afterwards
+        channel = self.get_object()
+        if channel.parent:
+            return reverse("channels.channel_read", args=[channel.parent.uuid])
+
+        return reverse("channels.channel_manage")
+    #enddef get_success_url
+
+#endclass ChannelDeleteOverrides

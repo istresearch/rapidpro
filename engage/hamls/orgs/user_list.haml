@@ -1,0 +1,114 @@
+-extends "smartmin/list.html"
+-load smartmin sms temba compress contacts i18n humanize
+
+-block extra-style
+  {{block.super}}
+  :css
+    temba-button {
+      display: block;
+    }
+    tr:nth-child(even) {background: #FFF}
+    .button-light{
+      padding-bottom: 8px;
+      padding-top: 8px;
+      padding-left: 18px;
+      padding-right: 18px;
+    }
+
+    .list_channels_channel {
+      width:100%;
+    }
+    tr {
+      text-align: left;
+    }
+    table .headerSortUp, table .headerSortDown {
+      background-color: rgba(141, 192, 219, 0.25);
+      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+    }
+
+    table .headerSortDown {
+      background-image: url({{STATIC_URL}}img/sort_dsc.png);
+      background-repeat: no-repeat;
+      background-position: 98% 50%;
+    }
+
+    table .headerSortUp {
+      background-image: url({{STATIC_URL}}img/sort_asc.png);
+      background-repeat: no-repeat;
+      background-position: 98% 50%;
+    }
+
+-block page-top
+
+-block content
+
+  .lp-frame
+    .right
+      .flex.w-full.items-end.mb-4
+        .flex-grow.ml-2.items-center
+          -block title-text
+            .page-title.leading-tight
+              {{title}}
+        .gear-links
+          -include "gear_links_include.haml"
+
+      %form#search-form.mb-4(method="get")
+        %temba-textinput.w-full(placeholder='{% trans "Search" %}' name="search" value="{{search}}")
+
+      -block user-list
+        %table.list.object-list.lined
+          %thead
+            -# extra: sortable header clickies!
+            %tr
+              - for field in fields
+                %th{ class:'{% if field not in view.non_sort_fields %}header{% if field == view.sort_field %} {% if not view.sort_order or view.sort_order == "asc" %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}', id:'header-{{field}}' }
+                  - if field not in view.non_sort_fields
+                    <a href="?sort_on={{field}}{% if field == view.sort_field %}&sort_order={% if view.sort_order == "desc" %}asc{% else %}desc{% endif %}{% endif %}{% if search is not null %}&search={{search}}{% endif %}">{% get_label field %}</a>
+                  - else
+                    {% get_label field %}
+          %tbody
+            -for object in object_list
+              %tr.object-row{id: 'id-row-{{object.id}}', data-object-id:'{{ object.id }}'}
+                %td.whitespace-nowrap
+                  {% get_value object 'username' %}
+                %td.w-full
+                  .flex.flex-wrap.flex-end.items-center.justify-end
+                    .flex-grow.inline
+                      {% get_value object 'orgs' %}
+                %td
+                  .flex.w-full.items-end.justify-end.pr-4
+                    .time.whitespace-nowrap
+                      {% format_datetime object.date_joined %}
+
+        - block paginator
+          -if object_list.count
+            -block search-details
+              .flex.mx-4.mt-3.mb-16
+                .text-gray-700
+                  -if not paginator or paginator.num_pages <= 1
+                    -if search
+                      -blocktrans trimmed with results_count=paginator.count|intcomma count cc=paginator.count
+                        Found {{ results_count }} user matching <i>{{search}}</i>.
+                        -plural
+                          Found {{ results_count }} users matching <i>{{search}}</i>.
+                    -else
+                      -blocktrans trimmed with results_count=paginator.count|intcomma count cc=paginator.count
+                        {{ results_count }} user.
+                        -plural
+                          {{ results_count }} users.
+
+                  - else
+
+                    -if search
+                      -blocktrans trimmed with results_count=paginator.count|intcomma start=page_obj.start_index|intcomma end=page_obj.end_index|intcomma count cc=paginator.count
+                        Found {{ results_count }} user matching <i>{{search}}</i>.
+                        -plural
+                          {{ start }} - {{ end }} of {{ results_count }} results for <i>{{search}}</i>.
+                    -else
+                      -blocktrans trimmed with results_count=paginator.count|intcomma start=page_obj.start_index|intcomma end=page_obj.end_index|intcomma count cc=paginator.count
+                        {{ results_count }} user.
+                        -plural
+                          {{ start }} - {{ end }} of {{ results_count }} users.
+
+                .flex-grow
+                  -include "includes/pages.html"

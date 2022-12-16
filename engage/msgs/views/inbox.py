@@ -56,6 +56,11 @@ class MsgInboxViewOverrides(ClassOverrideMixinMustBeFirst, InboxView):
     #enddef on_apply_overrides
 
     def get_context_data(self, **kwargs):
+        org = self.request.user.get_org()
+        if not org:
+            from engage.utils.middleware import redirect_to
+            redirect_to('/')
+        #endif superuser
         context = self.orig_get_context_data(**kwargs)
         context['object_list'] = self._sanitizeMsgList(context['object_list'])
         return context

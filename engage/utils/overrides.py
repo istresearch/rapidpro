@@ -49,7 +49,7 @@ class EngageOverrides:
             (TembaURN.VK_SCHEME, _("VK Identifier")),
             (TembaURN.ROCKETCHAT_SCHEME, _("RocketChat Identifier")),
             (TembaURN.DISCORD_SCHEME, _("Discord Identifier")),
-        ) + tuple([ t[1] for t in sorted((lambda x: [[y[1].split(" ")[1], y] for y in x])(PM_Scheme_Labels)) ]) # Sort PM alphabetically
+        ) + tuple([t[1] for t in sorted((lambda x: [[y[1].split(" ")[1], y] for y in x])(PM_Scheme_Labels))])  # Sort PM alphabetically
 
         # URN is a static-only class, add in our needs
         from temba.contacts.models import URN as TembaURN
@@ -71,11 +71,14 @@ class EngageOverrides:
 
         from engage.orgs.bandwidth import BandwidthOrgModelOverrides
         BandwidthOrgModelOverrides.setClassOverrides()
-
+        from engage.orgs.models import OrgModelOverride
+        OrgModelOverride.setClassOverrides()
         from engage.orgs.views.user_assign import OrgViewAssignUserMixin
         OrgViewAssignUserMixin.setClassOverrides()
         from engage.orgs.views.user_delete import UserViewDeleteOverride
         UserViewDeleteOverride.setClassOverrides()
+        from engage.orgs.views.user_list import OrgViewListUserOverrides
+        OrgViewListUserOverrides.setClassOverrides()
         from engage.orgs.views.bandwidth import BandwidthChannelViewsMixin
         BandwidthChannelViewsMixin.setClassOverrides()
         from engage.orgs.views.home import HomeOverrides
@@ -124,6 +127,8 @@ class EngageOverrides:
         AndroidTypeOverrides.setClassOverrides()
         from engage.channels.types.vonage_client import VonageClientOverrides
         VonageClientOverrides.setClassOverrides()
+        from engage.channels.types.vonage_views import ClaimViewOverrides
+        ClaimViewOverrides.setClassOverrides()
         from engage.channels.update_channel_form import UpdateChannelFormOverrides
         UpdateChannelFormOverrides.setClassOverrides()
         from engage.channels.views import ChannelCRUDLOverrides
@@ -134,7 +139,8 @@ class EngageOverrides:
         ChannelClaimOverrides.setClassOverrides()
         from engage.channels.views import ChannelClaimAllOverrides
         ChannelClaimAllOverrides.setClassOverrides()
-
+        from engage.channels.views import ChannelDeleteOverrides
+        ChannelDeleteOverrides.setClassOverrides()
 
         cls.ENGAGE_OVERRIDES_RAN = True
     #enddef RunEngageOverrides
