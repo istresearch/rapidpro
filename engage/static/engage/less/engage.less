@@ -370,3 +370,14 @@ temba-modax#send-via-pm_signal > div.send-via-btn {
 #assign-user-name .controls {
   display: inline-block;
 }
+
+.num_in_use {
+  &:after {
+    content: "☎❌";
+  }
+}
+.num_not_in_use {
+  &:after {
+    content: "🔵";
+  }
+}

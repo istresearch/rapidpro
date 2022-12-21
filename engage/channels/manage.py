@@ -1,8 +1,9 @@
 from datetime import timedelta
 
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from smartmin.views import SmartListView
 from temba import settings
@@ -130,5 +131,29 @@ class ManageChannelMixin:
                                 channel.last_sync = latest_sync_event
                                 if seconds > 3600:
                                     channel.delayed_sync_event = latest_sync_event
+                                #endif
+                            #endif channel.id matches
+                        #endfor each sync event
+                    #endif sync events defined
+                #endif channel created more than 1 hour ago
+            #endfor each channel in list
             context['sort_field'] = self.sort_field
             return context
+        #enddef get_context_data
+
+        def render_to_response(self, context, **response_kwargs):
+            search_sesskey = 'channels.manage.search'
+            arg_search = self.request.GET.get('search', None)
+            if arg_search is None and self.request.session.get(search_sesskey, None):
+                return redirect(f"{reverse('channels.channel_manage')}?search={self.request.session[search_sesskey]}")
+            elif arg_search != '':
+                self.request.session[search_sesskey] = arg_search
+            else:
+                del self.request.session[search_sesskey]
+            #endif search is part of request
+            return super(ManageChannelMixin.Manage, self).render_to_response(context, **response_kwargs)
+        #enddef render_to_response
+
+    #endclass Manage
+
+#endclass ManageChannelMixin

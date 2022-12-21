@@ -1,6 +1,12 @@
 $(document).ready(function() {
-    let rootSelectorName = "#send-message";
-    if ( $(document.querySelector('temba-modax')
+    let rootSelectorName = "#send-msg";
+    if ( $(document.querySelector("#send-message") ) !== undefined ) {
+        rootSelectorName = "#send-message";
+    }
+    else if ( $(document.querySelector("#send-message-modal") ) !== undefined ) {
+        rootSelectorName = "#send-message-modal";
+    }
+    else if ( $(document.querySelector("temba-modax")
         .shadowRoot.querySelector("temba-dialog")
         .shadowRoot.querySelector(".dialog-footer")
         .querySelector("temba-button[primary]"))[0] !== undefined )
@@ -8,15 +14,20 @@ $(document).ready(function() {
         rootSelectorName = "temba-modax";
     }
 
-    let selector = $(document.querySelector(rootSelectorName)
-        .shadowRoot.querySelector("temba-dialog")
-        .shadowRoot.querySelector(".dialog-footer")
-        .querySelector("temba-button[primary]")
-        .shadowRoot.querySelector("div")
-    );
-    if (selector) {
+    let selector;
+    try {
+        selector = $(document.querySelector(rootSelectorName)
+            .shadowRoot.querySelector("temba-dialog")
+            .shadowRoot.querySelector(".dialog-footer")
+            .querySelector("temba-button[primary]")
+            .shadowRoot.querySelector("div")
+        );
+    } catch (e) {
+        selector = null;
+    }
+    if ( selector && !selector.hasClass("confirm-click-handler") ) {
         let bIsAskingUser = false; //code might take a brief moment, prevent mutli-click-dialogs
-        $(selector).on("click", function (e) {
+        $(selector).addClass("confirm-click-handler").on("click", function (e) {
             let bUserChoseOK = false;
             if ( !bIsAskingUser ) {
                 bIsAskingUser = true;

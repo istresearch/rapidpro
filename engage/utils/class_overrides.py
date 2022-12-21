@@ -51,6 +51,13 @@ class ClassOverrideMixinMustBeFirst:
         return cls.origattrs.get(attr_name)
     #enddef getOrigAttr
 
+    @staticmethod
+    def setOrigMethod(under_cls, method_name: str) -> None:
+        # child class wonky super() makes this workaround necessary
+        setattr(under_cls, 'orig_'+method_name, under_cls.getOrigClsAttr(method_name))
+        logger.debug(f"override: set attr {str(under_cls)}.orig_{method_name} to {str(under_cls.getOrigClsAttr(method_name))}")
+    #enddef setOrigMethod
+
     @classmethod
     def setClassOverrides(cls) -> None:
         ignore_attrs = getattr(cls, 'override_ignore', ()) + ('on_apply_overrides',)
@@ -72,7 +79,8 @@ class ClassOverrideMixinMustBeFirst:
             #endfor each attr
         #endfor each parent
         if getattr(cls, 'on_apply_overrides', None) and callable(getattr(cls, 'on_apply_overrides')):
-            cls.on_apply_overrides()
+            logger.debug(f"calling {str(cls)}.on_apply_overrides({under_cls})")
+            cls.on_apply_overrides(under_cls)
         #endif
     #enddef setClassOverrides
 

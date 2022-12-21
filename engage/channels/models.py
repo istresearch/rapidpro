@@ -7,6 +7,10 @@ from temba.contacts.models import URN
 class ChannelOverrides(ClassOverrideMixinMustBeFirst, Channel):
     override_ignore = ignoreDjangoModelAttrs(Channel)
 
+    # we do not want Django to perform any magic inheritance
+    class Meta:
+        abstract = True
+
     @classmethod
     def create(
             cls,
@@ -25,13 +29,14 @@ class ChannelOverrides(ClassOverrideMixinMustBeFirst, Channel):
             config = {}
         #endif
         # P4-3462
-        if URN.TEL_SCHEME in schemes:
+        if schemes and URN.TEL_SCHEME in schemes:
             config[Channel.CONFIG_ALLOW_INTERNATIONAL] = True
         #endif
         return cls.getOrigClsAttr('create')(org, user, country, channel_type, name, address, config, role, schemes, **kwargs)
     #enddef create
 
 #endclass ChannelOverrides
+
 
 from temba.channels.types.android.type import AndroidType
 class AndroidTypeOverrides(ClassOverrideMixinMustBeFirst, AndroidType):
