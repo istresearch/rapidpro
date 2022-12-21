@@ -433,3 +433,5 @@ ORG_PLAN_ENGAGE = 'managed'
 DEFAULT_PLAN = ORG_PLAN_ENGAGE
 
 MIDDLEWARE += ("engage.utils.middleware.RedirectMiddleware",)
+
+ALT_CALLBACK_DOMAIN = env('ALT_CALLBACK_DOMAIN', None)
