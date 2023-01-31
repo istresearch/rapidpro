@@ -67,7 +67,7 @@ jobs:
       - name: Set BUILD_STAGE output
         id: is_building
         run: |-
-          if [[ ${{ needs.check_image_exist.outputs.err_msg }} != '' ]]; then
+          if [[ -n ${{ needs.check_image_exist.outputs.err_msg }} ]]; then
             echo "${{ needs.check_image_exist.outputs.err_msg }}"
             exit 1
           fi
