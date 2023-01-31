@@ -47,14 +47,10 @@ jobs:
   #endjob build_cfg
 
   check_image_exist:
-    runs-on: ubuntu-20.04
-    needs: [build_cfg]
-    environment: default
-    steps:
-      - uses: ./.github/workflows/util-docker-image-exists.yml
-        with:
-          name: ${{ env.IMAGE_NAME }}
-          tag: ${{ steps.build_cfg.outputs.IMAGE_TAG }}
+    uses: ./.github/workflows/util-docker-image-exists.yml
+    with:
+      name: ${{ env.IMAGE_NAME }}
+      tag: ${{ needs.build_cfg.outputs.IMAGE_TAG }}
   #endjob check_image_exist
 
   check_build_image:
