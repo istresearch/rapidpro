@@ -50,7 +50,7 @@ jobs:
 
   check_image_exist:
     needs: [build_cfg]
-    uses: istresearch/ci-docker/.github/workflows/util-docker-image-exists.yml@v1
+    uses: ./.github/workflows/util-docker-image-exists.yml
     secrets: inherit
     with:
       name: ${{ needs.build_cfg.outputs.IMAGE_NAME }}
