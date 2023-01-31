@@ -1,0 +1,100 @@
+name: build-container
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - master
+    tags:
+      - 'v*'
+
+env:
+  IMAGE_NAME: ${{ github.repository_owner }}/p4-engage
+  IMAGE_STAGE: base
+  DOCKERFILE2USE: docker/dfstage-base.dockerfile
+
+jobs:
+  build_cfg:
+    runs-on: ubuntu-20.04
+    environment: default
+    outputs:
+      VERSION_STR: ${{ steps.config_step.outputs.VERSION_STR }}
+      REPO_BRANCH: ${{ steps.config_step.outputs.REPO_BRANCH }}
+      REPO_TAG: ${{ steps.config_step.outputs.REPO_TAG }}
+      BUILD_STAGE: ${{ steps.config_step.outputs.BUILD_STAGE }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: "Determine Tag To Use"
+        id: config_step
+        run: |-
+          source scm/utils-engage.sh; IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
+          VERSION_STR="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
+          echo "::notice::Version STR=${VERSION_STR}"
+          echo "VERSION_STR=${VERSION_STR}" >> $GITHUB_OUTPUT
+          
+          source scm/utils.sh
+          if ! DockerImageTagExists "${IMAGE_NAME}" "${VERSION_STR}"; then
+            BUILD_STAGE=1
+          else
+            BUILD_STAGE=0
+          fi
+          echo "::notice::Build Stage?=${BUILD_STAGE}"
+          echo "BUILD_STAGE=${BUILD_STAGE}" >> $GITHUB_OUTPUT        
+          
+          if [[ ${{ github.ref_type }} == 'tag' ]]; then
+            REPO_BRANCH=
+            REPO_TAG=${{ github.ref_name }}
+          else
+            REPO_BRANCH=${{ github.ref_name }}
+            REPO_TAG=
+          fi
+          echo "::notice::Repo Branch=${REPO_BRANCH}"
+          echo "REPO_BRANCH=${REPO_BRANCH}" >> $GITHUB_OUTPUT
+          echo "::notice::Repo Tag=${REPO_TAG}"
+          echo "REPO_TAG=${REPO_TAG}" >> $GITHUB_OUTPUT
+  #endjob build_cfg
+
+  trigger-build:
+    if: needs.build_cfg.outputs.BUILD_STAGE == 1
+    runs-on: ubuntu-20.04
+    needs: [build_cfg]
+    environment: default
+    env:
+      VERSION_TAG: ${{ needs.build_cfg.outputs.VERSION_STR }}
+    steps:
+      - name: Trigger Container Build and Deploy
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.CI_WEBHOOK_TOKEN }}
+          repository: istresearch/ci-docker
+          event-type: build-repo
+          client-payload: |-
+            {
+              "repo": "${{ github.repository }}",
+              "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
+              "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}",
+              "version": "${{ env.VERSION_TAG }}",
+              "dockerfile": "${{ env.DOCKERFILE2USE }}",
+              "build_args": ["VERSION=${{ env.VERSION_TAG }}"],
+              "container_name": "${{ github.repository_owner }}/p4-engage",
+            }
+  #endjob trigger-build
+
+  trigger-next-stage:
+    if: needs.build_cfg.outputs.BUILD_STAGE == 0
+    runs-on: ubuntu-20.04
+    needs: [build_cfg]
+    environment: default
+    steps:
+      - name: Trigger Next Stage
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.CI_WEBHOOK_TOKEN }}
+          repository: ${{ github.repository }}
+          event-type: build-layer2
+          client-payload: |-
+            {
+              "layer1": "${{ needs.build_cfg.outputs.VERSION_STR }}",
+            }
+  #endjob trigger-next-stage
