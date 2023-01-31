@@ -50,16 +50,16 @@ jobs:
         uses: ./.github/workflows/util-docker-image-exists.yml
         with:
           name: ${{ env.IMAGE_NAME }}
-          tag: ${{ build_cfg.outputs.IMAGE_TAG }}
+          tag: ${{ steps.config_step.outputs.IMAGE_TAG }}
 
       - name: Set BUILD_STAGE output
         id: is_building
         run: |-
-          if [[ ${{ is_exist.outputs.err_msg }} != '' ]]; then
-            echo "${{ is_exist.outputs.err_msg }}"
+          if [[ ${{ steps.is_exist.outputs.err_msg }} != '' ]]; then
+            echo "${{ steps.is_exist.outputs.err_msg }}"
             exit 1
           fi
-          if [[ ${{ is_exist.outputs.exists }} == 0 ]]; then
+          if [[ ${{ steps.is_exist.outputs.exists }} == 0 ]]; then
             BUILD_STAGE=1
           else
             BUILD_STAGE=0
