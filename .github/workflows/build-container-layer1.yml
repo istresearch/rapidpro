@@ -21,7 +21,6 @@ jobs:
       REPO_TAG: ${{ steps.config_step.outputs.REPO_TAG }}
       IMAGE_NAME: ${{ github.repository_owner }}/p4-engage
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
-      BUILD_STAGE: ${{ steps.is_building.outputs.BUILD_STAGE }}
     steps:
       - uses: actions/checkout@v3
 
@@ -50,7 +49,7 @@ jobs:
 
   check_image_exist:
     needs: [build_cfg]
-    uses: ./.github/workflows/util-docker-image-exists.yml
+    uses: istresearch/ci-docker/.github/workflows/util-docker-image-exists.yml@v1
     secrets: inherit
     with:
       name: ${{ needs.build_cfg.outputs.IMAGE_NAME }}
@@ -81,7 +80,7 @@ jobs:
   #endjob check_build_image
 
   trigger-build:
-    if: needs.check_build_image.outputs.BUILD_STAGE == 3
+    if: needs.check_build_image.outputs.BUILD_STAGE == 1
     runs-on: ubuntu-20.04
     needs: [check_build_image]
     environment: default
