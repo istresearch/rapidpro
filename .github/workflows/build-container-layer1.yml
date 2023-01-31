@@ -44,34 +44,46 @@ jobs:
           echo "REPO_BRANCH=${REPO_BRANCH}" >> $GITHUB_OUTPUT
           echo "::notice::Repo Tag=${REPO_TAG}"
           echo "REPO_TAG=${REPO_TAG}" >> $GITHUB_OUTPUT
+  #endjob build_cfg
 
-      - name: Does Layer Already Exist?
-        id: is_exist
-        uses: ./.github/workflows/util-docker-image-exists.yml
+  check_image_exist:
+    runs-on: ubuntu-20.04
+    needs: [build_cfg]
+    environment: default
+    steps:
+      - uses: ./.github/workflows/util-docker-image-exists.yml
         with:
           name: ${{ env.IMAGE_NAME }}
-          tag: ${{ steps.config_step.outputs.IMAGE_TAG }}
+          tag: ${{ steps.build_cfg.outputs.IMAGE_TAG }}
+  #endjob check_image_exist
 
+  check_build_image:
+    runs-on: ubuntu-20.04
+    needs: [check_build_image]
+    environment: default
+    outputs:
+      BUILD_STAGE: ${{ steps.is_building.outputs.BUILD_STAGE }}
+    steps:
       - name: Set BUILD_STAGE output
         id: is_building
         run: |-
-          if [[ ${{ steps.is_exist.outputs.err_msg }} != '' ]]; then
-            echo "${{ steps.is_exist.outputs.err_msg }}"
+          if [[ ${{ check_image_exist.outputs.err_msg }} != '' ]]; then
+            echo "${{ check_image_exist.outputs.err_msg }}"
             exit 1
           fi
-          if [[ ${{ steps.is_exist.outputs.exists }} == 0 ]]; then
+          if [[ ${{ check_image_exist.outputs.exists }} == 0 ]]; then
             BUILD_STAGE=1
           else
             BUILD_STAGE=0
           fi
           echo "::notice::Build Stage?=${BUILD_STAGE}"
           echo "BUILD_STAGE=${BUILD_STAGE}" >> $GITHUB_OUTPUT
-  #endjob build_cfg
+  #endjob check_build_image
 
   trigger-build:
-    if: needs.build_cfg.outputs.BUILD_STAGE == 3
+    if: needs.check_build_image.outputs.BUILD_STAGE == 3
     runs-on: ubuntu-20.04
-    needs: [build_cfg]
+    needs: [check_build_image]
     environment: default
     steps:
       - name: Trigger Container Build and Deploy
@@ -94,7 +106,7 @@ jobs:
   trigger-next-stage:
     if: needs.build_cfg.outputs.BUILD_STAGE == 0
     runs-on: ubuntu-20.04
-    needs: [build_cfg]
+    needs: [check_build_image]
     environment: default
     steps:
       - name: Trigger Next Stage
