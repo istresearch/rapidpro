@@ -9,7 +9,6 @@ on:
       - 'v*'
 
 env:
-  IMAGE_NAME: ${{ github.repository_owner }}/p4-engage
   IMAGE_STAGE: base
   DOCKERFILE2USE: docker/dfstage-base.dockerfile
 
@@ -20,6 +19,7 @@ jobs:
     outputs:
       REPO_BRANCH: ${{ steps.config_step.outputs.REPO_BRANCH }}
       REPO_TAG: ${{ steps.config_step.outputs.REPO_TAG }}
+      IMAGE_NAME: ${{ github.repository_owner }}/p4-engage
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
       BUILD_STAGE: ${{ steps.is_building.outputs.BUILD_STAGE }}
     steps:
@@ -28,9 +28,11 @@ jobs:
       - name: "Determine Tag To Use"
         id: config_step
         run: |-
+          IMAGE_NAME=${{ github.repository_owner }}/p4-engage
           source scm/utils-engage.sh; IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
           IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
-          echo "::notice::IMAGE_TAG=${IMAGE_TAG}"
+          echo "::notice::Layer1: ${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           
           if [[ ${{ github.ref_type }} == 'tag' ]]; then
@@ -47,9 +49,10 @@ jobs:
   #endjob build_cfg
 
   check_image_exist:
+    needs: [build_cfg]
     uses: ./.github/workflows/util-docker-image-exists.yml
     with:
-      name: ${{ env.IMAGE_NAME }}
+      name: ${{ needs.build_cfg.outputs.IMAGE_NAME }}
       tag: ${{ needs.build_cfg.outputs.IMAGE_TAG }}
   #endjob check_image_exist
 
@@ -95,7 +98,7 @@ jobs:
               "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}",
               "version": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
               "dockerfile": "${{ env.DOCKERFILE2USE }}",
-              "container_name": "${{ github.repository_owner }}/p4-engage"
+              "container_name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}"
             }
   #endjob trigger-build
 
@@ -113,6 +116,6 @@ jobs:
           event-type: build-layer2
           client-payload: |-
             {
-              "layer1": "${{ needs.build_cfg.outputs.VERSION_STR }}"
+              "layer1": "${{ needs.build_cfg.outputs.IMAGE_TAG }}"
             }
   #endjob trigger-next-stage
