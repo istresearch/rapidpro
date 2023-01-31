@@ -83,7 +83,7 @@ jobs:
   trigger-build:
     if: needs.check_build_image.outputs.BUILD_STAGE == 1
     runs-on: ubuntu-20.04
-    needs: [check_build_image]
+    needs: [build_cfg, check_build_image]
     environment: default
     steps:
       - name: Trigger Container Build
@@ -106,7 +106,7 @@ jobs:
   trigger-next-stage:
     if: needs.build_cfg.outputs.BUILD_STAGE == 0
     runs-on: ubuntu-20.04
-    needs: [check_build_image]
+    needs: [build_cfg, check_build_image]
     environment: default
     steps:
       - name: Trigger Next Stage
