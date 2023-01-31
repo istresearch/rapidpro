@@ -1,14 +1,10 @@
-name: build-container
+name: build-container-layer2
 
 on:
-  workflow_call:
-    inputs:
-      layer1:
-        required: true
-        type: string
+  repository_dispatch:
+    types: build-layer2
 
 env:
-  IMAGE_NAME: ${{ github.repository_owner }}/p4-engage
   IMAGE_STAGE: pylibs
   DOCKERFILE2USE: docker/dfstage-pylibs.dockerfile
 
@@ -17,29 +13,24 @@ jobs:
     runs-on: ubuntu-20.04
     environment: default
     outputs:
-      VERSION_STR: ${{ steps.config_step.outputs.VERSION_STR }}
       REPO_BRANCH: ${{ steps.config_step.outputs.REPO_BRANCH }}
       REPO_TAG: ${{ steps.config_step.outputs.REPO_TAG }}
-      BUILD_STAGE: ${{ steps.config_step.outputs.BUILD_STAGE }}
+      IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
+      IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
     steps:
       - uses: actions/checkout@v3
 
       - name: "Determine Tag To Use"
         id: config_step
         run: |-
-          source scm/utils-engage.sh; IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
-          VERSION_STR="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
-          echo "::notice::Version STR=${VERSION_STR}"
-          echo "VERSION_STR=${VERSION_STR}" >> $GITHUB_OUTPUT
-          
-          source scm/utils.sh
-          if ! DockerImageTagExists "${IMAGE_NAME}" "${VERSION_STR}"; then
-            BUILD_STAGE=1
-          else
-            BUILD_STAGE=0
-          fi
-          echo "::notice::Build Stage?=${BUILD_STAGE}"
-          echo "BUILD_STAGE=${BUILD_STAGE}" >> $GITHUB_OUTPUT        
+          IMAGE_NAME=${{ github.repository_owner }}/p4-engage
+          echo "${{ inputs.name }}" > prev-image-tag.txt
+          source scm/utils-engage.sh
+          IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "prev-image-tag.txt" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json")
+          IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
+          echo "::notice::Layer2: ${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           
           if [[ ${{ github.ref_type }} == 'tag' ]]; then
             REPO_BRANCH=
@@ -54,15 +45,45 @@ jobs:
           echo "REPO_TAG=${REPO_TAG}" >> $GITHUB_OUTPUT
   #endjob build_cfg
 
-  trigger-build:
-    if: needs.build_cfg.outputs.BUILD_STAGE == 1
-    runs-on: ubuntu-20.04
+  check_image_exist:
     needs: [build_cfg]
+    uses: istresearch/ci-docker/.github/workflows/util-docker-image-exists.yml@v1
+    secrets: inherit
+    with:
+      name: ${{ needs.build_cfg.outputs.IMAGE_NAME }}
+      tag: ${{ needs.build_cfg.outputs.IMAGE_TAG }}
+  #endjob check_image_exist
+
+  check_build_image:
+    runs-on: ubuntu-20.04
+    needs: [check_image_exist]
     environment: default
-    env:
-      VERSION_TAG: ${{ needs.build_cfg.outputs.VERSION_STR }}
+    outputs:
+      BUILD_STAGE: ${{ steps.is_building.outputs.BUILD_STAGE }}
     steps:
-      - name: Trigger Container Build and Deploy
+      - name: Set BUILD_STAGE output
+        id: is_building
+        run: |-
+          if [[ -n "${{ needs.check_image_exist.outputs.err_msg }}" ]]; then
+            echo "${{ needs.check_image_exist.outputs.err_msg }}"
+            exit 1
+          fi
+          if [[ ${{ needs.check_image_exist.outputs.exists }} == 0 ]]; then
+            BUILD_STAGE=1
+          else
+            BUILD_STAGE=0
+          fi
+          echo "::notice::Build Stage?=${BUILD_STAGE}"
+          echo "BUILD_STAGE=${BUILD_STAGE}" >> $GITHUB_OUTPUT
+  #endjob check_build_image
+
+  trigger-build:
+    if: needs.check_build_image.outputs.BUILD_STAGE == 1
+    runs-on: ubuntu-20.04
+    needs: [check_build_image]
+    environment: default
+    steps:
+      - name: Trigger Container Build
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.CI_WEBHOOK_TOKEN }}
@@ -73,17 +94,16 @@ jobs:
               "repo": "${{ github.repository }}",
               "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
               "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}",
-              "version": "${{ env.VERSION_TAG }}",
+              "version": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
               "dockerfile": "${{ env.DOCKERFILE2USE }}",
-              "build_args": ["VERSION=${{ env.VERSION_TAG }}"],
-              "container_name": "${{ github.repository_owner }}/p4-engage",
+              "container_name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}"
             }
   #endjob trigger-build
 
   trigger-next-stage:
     if: needs.build_cfg.outputs.BUILD_STAGE == 0
     runs-on: ubuntu-20.04
-    needs: [build_cfg]
+    needs: [check_build_image]
     environment: default
     steps:
       - name: Trigger Next Stage
@@ -91,9 +111,9 @@ jobs:
         with:
           token: ${{ secrets.CI_WEBHOOK_TOKEN }}
           repository: ${{ github.repository }}
-          event-type: build-layer2
+          event-type: build-layer3
           client-payload: |-
             {
-              "layer1": "${{ needs.build_cfg.outputs.VERSION_STR }}",
+              "layer2": "${{ needs.build_cfg.outputs.IMAGE_TAG }}"
             }
   #endjob trigger-next-stage

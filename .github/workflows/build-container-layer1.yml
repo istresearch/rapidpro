@@ -1,4 +1,4 @@
-name: build-container
+name: build-container-layer1
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
     outputs:
       REPO_BRANCH: ${{ steps.config_step.outputs.REPO_BRANCH }}
       REPO_TAG: ${{ steps.config_step.outputs.REPO_TAG }}
-      IMAGE_NAME: ${{ github.repository_owner }}/p4-engage
+      IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
     steps:
       - uses: actions/checkout@v3
@@ -28,7 +28,8 @@ jobs:
         id: config_step
         run: |-
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
-          source scm/utils-engage.sh; IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
+          source scm/utils-engage.sh
+          IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
           IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
           echo "::notice::Layer1: ${IMAGE_NAME}:${IMAGE_TAG}"
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
@@ -85,7 +86,7 @@ jobs:
     needs: [check_build_image]
     environment: default
     steps:
-      - name: Trigger Container Build and Deploy
+      - name: Trigger Container Build
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.CI_WEBHOOK_TOKEN }}
