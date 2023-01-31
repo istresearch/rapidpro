@@ -51,6 +51,7 @@ jobs:
   check_image_exist:
     needs: [build_cfg]
     uses: ./.github/workflows/util-docker-image-exists.yml
+    secrets: inherit
     with:
       name: ${{ needs.build_cfg.outputs.IMAGE_NAME }}
       tag: ${{ needs.build_cfg.outputs.IMAGE_TAG }}
