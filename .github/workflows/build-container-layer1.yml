@@ -112,8 +112,6 @@ jobs:
       - name: Trigger Next Stage
         uses: peter-evans/repository-dispatch@v2
         with:
-          token: ${{ secrets.CI_WEBHOOK_TOKEN }}
-          repository: ${{ github.repository }}
           event-type: build-layer2
           client-payload: |-
             {
