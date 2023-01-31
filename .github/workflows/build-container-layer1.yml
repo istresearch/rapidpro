@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-20.04
     environment: default
     outputs:
-      VERSION_STR: ${{ steps.config_step.outputs.VERSION_STR }}
       REPO_BRANCH: ${{ steps.config_step.outputs.REPO_BRANCH }}
       REPO_TAG: ${{ steps.config_step.outputs.REPO_TAG }}
-      BUILD_STAGE: ${{ steps.config_step.outputs.BUILD_STAGE }}
+      IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
+      BUILD_STAGE: ${{ steps.is_building.outputs.BUILD_STAGE }}
     steps:
       - uses: actions/checkout@v3
 
@@ -29,18 +29,9 @@ jobs:
         id: config_step
         run: |-
           source scm/utils-engage.sh; IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
-          VERSION_STR="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
-          echo "::notice::Version STR=${VERSION_STR}"
-          echo "VERSION_STR=${VERSION_STR}" >> $GITHUB_OUTPUT
-          
-          source scm/utils.sh
-          if ! DockerImageTagExists "${IMAGE_NAME}" "${VERSION_STR}"; then
-            BUILD_STAGE=1
-          else
-            BUILD_STAGE=0
-          fi
-          echo "::notice::Build Stage?=${BUILD_STAGE}"
-          echo "BUILD_STAGE=${BUILD_STAGE}" >> $GITHUB_OUTPUT        
+          IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
+          echo "::notice::IMAGE_TAG=${IMAGE_TAG}"
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           
           if [[ ${{ github.ref_type }} == 'tag' ]]; then
             REPO_BRANCH=
@@ -53,15 +44,35 @@ jobs:
           echo "REPO_BRANCH=${REPO_BRANCH}" >> $GITHUB_OUTPUT
           echo "::notice::Repo Tag=${REPO_TAG}"
           echo "REPO_TAG=${REPO_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Does Layer Already Exist?
+        id: is_exist
+        uses: ./.github/workflows/util-docker-image-exists.yml
+        with:
+          name: ${{ env.IMAGE_NAME }}
+          tag: ${{ build_cfg.outputs.IMAGE_TAG }}
+
+      - name: Set BUILD_STAGE output
+        id: is_building
+        run: |-
+          if [[ ${{ is_exist.outputs.err_msg }} != '' ]]; then
+            echo "${{ is_exist.outputs.err_msg }}"
+            exit 1
+          fi
+          if [[ ${{ is_exist.outputs.exists }} == 0 ]]; then
+            BUILD_STAGE=1
+          else
+            BUILD_STAGE=0
+          fi
+          echo "::notice::Build Stage?=${BUILD_STAGE}"
+          echo "BUILD_STAGE=${BUILD_STAGE}" >> $GITHUB_OUTPUT
   #endjob build_cfg
 
   trigger-build:
-    if: needs.build_cfg.outputs.BUILD_STAGE == 1
+    if: needs.build_cfg.outputs.BUILD_STAGE == 3
     runs-on: ubuntu-20.04
     needs: [build_cfg]
     environment: default
-    env:
-      VERSION_TAG: ${{ needs.build_cfg.outputs.VERSION_STR }}
     steps:
       - name: Trigger Container Build and Deploy
         uses: peter-evans/repository-dispatch@v2
@@ -74,10 +85,9 @@ jobs:
               "repo": "${{ github.repository }}",
               "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
               "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}",
-              "version": "${{ env.VERSION_TAG }}",
+              "version": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
               "dockerfile": "${{ env.DOCKERFILE2USE }}",
-              "build_args": ["VERSION=${{ env.VERSION_TAG }}"],
-              "container_name": "${{ github.repository_owner }}/p4-engage",
+              "container_name": "${{ github.repository_owner }}/p4-engage"
             }
   #endjob trigger-build
 
@@ -95,6 +105,6 @@ jobs:
           event-type: build-layer2
           client-payload: |-
             {
-              "layer1": "${{ needs.build_cfg.outputs.VERSION_STR }}",
+              "layer1": "${{ needs.build_cfg.outputs.VERSION_STR }}"
             }
   #endjob trigger-next-stage
