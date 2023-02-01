@@ -1,4 +1,4 @@
-name: build-container-layer1
+name: build image layer1
 
 on:
   push:
@@ -120,7 +120,7 @@ jobs:
       - name: Trigger Next Stage
         uses: peter-evans/repository-dispatch@v2
         with:
-          event-type: build-layer2
+          event-type: build_layer2
           client-payload: |-
             {
               "layer1": "${{ needs.build_cfg.outputs.IMAGE_TAG }}"

@@ -1,8 +1,8 @@
-name: build-container-layer2
+name: build image layer2
 
 on:
   repository_dispatch:
-    types: build-layer2
+    types: build_layer2
 
 env:
   IMAGE_STAGE: pylibs
