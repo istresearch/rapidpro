@@ -14,7 +14,7 @@ env:
 
 jobs:
   build_cfg:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     environment: default
     outputs:
       REPO_BRANCH: ${{ steps.config_step.outputs.REPO_BRANCH }}
@@ -58,17 +58,19 @@ jobs:
   #endjob check_image_exist
 
   check_build_image:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [check_image_exist]
     environment: default
+    env:
+      BUILD_ERR_MSG: ${{ needs.check_image_exist.outputs.err_msg }}
     outputs:
       BUILD_STAGE: ${{ steps.is_building.outputs.BUILD_STAGE }}
     steps:
       - name: Set BUILD_STAGE output
         id: is_building
         run: |-
-          if [[ -n "${{ needs.check_image_exist.outputs.err_msg }}" ]]; then
-            echo "${{ needs.check_image_exist.outputs.err_msg }}"
+          if [[ -n "${BUILD_ERR_MSG}" ]]; then
+            echo "${BUILD_ERR_MSG}"
             exit 1
           fi
           if [[ ${{ needs.check_image_exist.outputs.exists }} == 0 ]]; then
@@ -82,7 +84,7 @@ jobs:
 
   trigger-build:
     if: needs.check_build_image.outputs.BUILD_STAGE == 1
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [build_cfg, check_build_image]
     environment: default
     steps:
@@ -94,24 +96,33 @@ jobs:
           event-type: build-repo
           client-payload: |-
             {
-              "repo": "${{ github.repository }}",
-              "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
-              "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}",
-              "version": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-              "dockerfile": "${{ env.DOCKERFILE2USE }}",
-              "container_name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}"
+              "repo": {
+                "name": "${{ github.repository }}",
+                "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
+                "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}"
+              },
+              "image": {
+                "dockerfile": "${{ env.DOCKERFILE2USE }}",
+                "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
+                "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+                "build_args": [
+                ]
+              }
             }
   #endjob trigger-build
 
   trigger-next-stage:
     if: needs.build_cfg.outputs.BUILD_STAGE == 0
+    runs-on: ubuntu-latest
     needs: [build_cfg, check_build_image]
     environment: default
-    uses: peter-evans/repository-dispatch@v2
-    with:
-      event-type: build-layer2
-      client-payload: |-
-        {
-          "layer1": "${{ needs.build_cfg.outputs.IMAGE_TAG }}"
-        }
+    steps:
+      - name: Trigger Next Stage
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          event-type: build-layer2
+          client-payload: |-
+            {
+              "layer1": "${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+            }
   #endjob trigger-next-stage
