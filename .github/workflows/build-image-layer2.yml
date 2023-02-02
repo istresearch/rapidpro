@@ -2,19 +2,32 @@ name: build image layer2
 
 on:
   repository_dispatch:
-    types: [build_layer2]
+    types: [build_layer2, build_layer1_error]
 
 env:
+  REPO_BRANCH: ${{ github.event.client_payload.repo.branch }}
+  REPO_TAG: ${{ github.event.client_payload.repo.tag }}
   IMAGE_STAGE: pylibs
   DOCKERFILE2USE: docker/dfstage-pylibs.dockerfile
+  FROM_LAYER: ${{ github.event.client_payload.layer1 }}
+  FROM_LAYER_TAG: ${{ github.event.client_payload.layer1tag }}
 
 jobs:
+  layer1_error:
+    if: github.event.client_payload.error_msg != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display Msg
+        run: |-
+          echo "${{ github.event.client_payload.error_msg }}"
+          exit 1
+  #endjob layer1_error
+
   build_cfg:
+    if: github.event.client_payload.error_msg == ''
     runs-on: ubuntu-latest
     environment: default
     outputs:
-      REPO_BRANCH: ${{ steps.config_step.outputs.REPO_BRANCH }}
-      REPO_TAG: ${{ steps.config_step.outputs.REPO_TAG }}
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
     steps:
@@ -24,30 +37,18 @@ jobs:
         id: config_step
         run: |-
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
-          echo "${{ inputs.name }}" > prev-image-tag.txt
-          source scm/utils-engage.sh
+          echo "${FROM_LAYER#**/}" > prev-image-tag.txt
+          source scm/utils.sh
           IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "prev-image-tag.txt" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json")
           IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
           echo "::notice::Layer2: ${IMAGE_NAME}:${IMAGE_TAG}"
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          
-          if [[ ${{ github.ref_type }} == 'tag' ]]; then
-            REPO_BRANCH=
-            REPO_TAG=${{ github.ref_name }}
-          else
-            REPO_BRANCH=${{ github.ref_name }}
-            REPO_TAG=
-          fi
-          echo "::notice::Repo Branch=${REPO_BRANCH}"
-          echo "REPO_BRANCH=${REPO_BRANCH}" >> $GITHUB_OUTPUT
-          echo "::notice::Repo Tag=${REPO_TAG}"
-          echo "REPO_TAG=${REPO_TAG}" >> $GITHUB_OUTPUT
   #endjob build_cfg
 
   check_image_exist:
     needs: [build_cfg]
-    uses: istresearch/ci-docker/.github/workflows/util-docker-image-exists.yml@v1
+    uses: ./.github/workflows/util-docker-image-exists.yml
     secrets: inherit
     with:
       name: ${{ needs.build_cfg.outputs.IMAGE_NAME }}
@@ -95,31 +96,50 @@ jobs:
             {
               "repo": {
                 "name": "${{ github.repository }}",
-                "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
-                "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}"
+                "branch": "${{ env.REPO_BRANCH }}",
+                "tag": "${{ env.REPO_TAG }}"
               },
               "image": {
                 "dockerfile": "${{ env.DOCKERFILE2USE }}",
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
+                  "FROM_STAGE=${{ env.FROM_LAYER }}"
                 ]
+              },
+              "callback": {
+                "repository": "${{ github.repository }}",
+                "event_type": "build_layer3",
+                "error_type": "build_layer2_error",
+                "payload": {
+                  "repo": {
+                    "branch": "${{ env.REPO_BRANCH }}",
+                    "tag": "${{ env.REPO_TAG }}"
+                  },
+                  "layer2tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+                  "layer2": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                }
               }
             }
   #endjob trigger-build
 
   trigger-next-stage:
     if: needs.build_cfg.outputs.BUILD_STAGE == 0
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [build_cfg, check_build_image]
     environment: default
     steps:
       - name: Trigger Next Stage
         uses: peter-evans/repository-dispatch@v2
         with:
-          event-type: build-layer3
+          event-type: build_layer3
           client-payload: |-
             {
-              "layer2": "${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+              "repo": {
+                "branch": "${{ env.REPO_BRANCH }}",
+                "tag": "${{ env.REPO_TAG }}"
+              },
+              "layer2tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+              "layer2": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
             }
   #endjob trigger-next-stage

@@ -28,7 +28,7 @@ jobs:
         id: config_step
         run: |-
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
-          source scm/utils-engage.sh
+          source scm/utils.sh
           IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
           IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
           echo "::notice::Layer1: ${IMAGE_NAME}:${IMAGE_TAG}"
@@ -107,6 +107,19 @@ jobs:
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
                 ]
+              },
+              "callback": {
+                "repository": "${{ github.repository }}",
+                "event_type": "build_layer2",
+                "error_type": "build_layer1_error",
+                "payload": {
+                  "repo": {
+                    "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
+                    "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}"
+                  },
+                  "layer1tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+                  "layer1": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                }
               }
             }
   #endjob trigger-build
@@ -123,6 +136,11 @@ jobs:
           event-type: build_layer2
           client-payload: |-
             {
-              "layer1": "${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+              "repo": {
+                "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
+                "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}"
+              },
+              "layer1tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+              "layer1": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
             }
   #endjob trigger-next-stage

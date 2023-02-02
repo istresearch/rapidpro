@@ -1,0 +1,241 @@
+name: build image layer4
+
+on:
+  repository_dispatch:
+    types: [build_layer4, build_layer3_error]
+
+env:
+  REPO_BRANCH: ${{ github.event.client_payload.repo.branch }}
+  REPO_TAG: ${{ github.event.client_payload.repo.tag }}
+  VERSION_STR: ${{ github.event.client_payload.tag }}
+  VER_NUM: ${{ github.event.client_payload.ver_num }}
+  FROM_LAYER: ${{ github.event.client_payload.layer3 }}
+  FROM_LAYER_TAG: ${{ github.event.client_payload.layer3tag }}
+
+jobs:
+  layer3_error:
+    if: github.event.client_payload.error_msg != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display Msg
+        run: |-
+          echo "${{ github.event.client_payload.error_msg }}"
+          exit 1
+  #endjob layer3_error
+
+  build_cfg_engage:
+    if: github.event.client_payload.error_msg == ''
+    runs-on: ubuntu-latest
+    environment: default
+    outputs:
+      DOCKERFILE2USE: ${{ steps.config_step.outputs.DOCKERFILE2USE }}
+      IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
+      IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: "Config For Engage Build"
+        id: config_step
+        run: |-
+          DOCKERFILE2USE="docker/final-engage.dockerfile"
+          echo "DOCKERFILE2USE=${DOCKERFILE2USE}" >> $GITHUB_OUTPUT
+
+          IMAGE_NAME=${{ github.repository_owner }}/p4-engage
+          IMAGE_TAG=${VERSION_STR}
+          echo "::notice::Build: ${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+  #endjob build_cfg_engage
+
+  trigger-build-engage:
+    runs-on: ubuntu-latest
+    needs: [build_cfg_engage]
+    environment: default
+    steps:
+      - name: "Trigger Container Build For Engage"
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.CI_WEBHOOK_TOKEN }}
+          repository: istresearch/ci-docker
+          event-type: build-repo
+          client-payload: |-
+            {
+              "repo": {
+                "name": "${{ github.repository }}",
+                "branch": "${{ env.REPO_BRANCH }}",
+                "tag": "${{ env.REPO_TAG }}"
+              },
+              "image": {
+                "dockerfile": "${{ needs.build_cfg_engage.outputs.DOCKERFILE2USE }}",
+                "name": "${{ needs.build_cfg_engage.outputs.IMAGE_NAME }}",
+                "tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
+                "build_args": [
+                  "FROM_STAGE=${{ env.FROM_LAYER }}",
+                  "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
+                  "VERSION_CI=${{ env.VER_NUM }}",
+                  "VERSION_TAG=${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}"
+                ]
+              },
+              "callback": {
+                "repository": "${{ github.repository }}",
+                "event_type": "build_layer4_engage",
+                "error_type": "build_layer4_error",
+                "payload": {
+                  "name": "engage",
+                  "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"
+                }
+              }
+            }
+  #endjob trigger-build-engage
+
+  build_cfg_generic:
+    if: github.event.client_payload.error_msg == ''
+    runs-on: ubuntu-latest
+    environment: default
+    outputs:
+      DOCKERFILE2USE: ${{ steps.config_step.outputs.DOCKERFILE2USE }}
+      IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
+      IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
+      BUILD_FLAG: ${{ steps.config_step.outputs.BUILD_FLAG }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: "Config For Generic Build"
+        id: config_step
+        run: |-
+          DOCKERFILE2USE="docker/final-generic.dockerfile"
+          echo "DOCKERFILE2USE=${DOCKERFILE2USE}" >> $GITHUB_OUTPUT
+
+          IMAGE_NAME=${{ github.repository_owner }}/rapidpro
+          IMAGE_TAG=${VERSION_STR}-generic
+          echo "::notice::Build: ${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          
+          if [[ -n "${REPO_TAG}" ]]; then
+            BUILD_FLAG=1
+          elif [[ "${REPO_BRANCH}" == "develop" ]]; then
+            BUILD_FLAG=1
+          elif [[ ${REPO_BRANCH} =~ dev[-\/].* ]]; then
+            BUILD_FLAG=1
+          else
+            BUILD_FLAG=0
+          fi
+          echo "BUILD_FLAG=${BUILD_FLAG}" >> $GITHUB_OUTPUT
+  #endjob build_cfg_generic
+
+  trigger-build-generic:
+    if: needs.build_cfg_generic.outputs.BUILD_FLAG == 1
+    runs-on: ubuntu-latest
+    needs: [build_cfg_generic]
+    environment: default
+    steps:
+      - name: "Trigger Container Build For Engage"
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.CI_WEBHOOK_TOKEN }}
+          repository: istresearch/ci-docker
+          event-type: build-repo
+          client-payload: |-
+            {
+              "repo": {
+                "name": "${{ github.repository }}",
+                "branch": "${{ env.REPO_BRANCH }}",
+                "tag": "${{ env.REPO_TAG }}"
+              },
+              "image": {
+                "dockerfile": "${{ needs.build_cfg_generic.outputs.DOCKERFILE2USE }}",
+                "name": "${{ needs.build_cfg_generic.outputs.IMAGE_NAME }}",
+                "tag": "${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}",
+                "build_args": [
+                  "FROM_STAGE=${{ env.FROM_LAYER }}",
+                  "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
+                  "VERSION_CI=${{ env.VER_NUM }}",
+                  "VERSION_TAG=${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}"
+                ]
+              },
+              "callback": {
+                "repository": "${{ github.repository }}",
+                "event_type": "build_layer4_generic",
+                "error_type": "build_layer4_error",
+                "payload": {
+                  "name": "generic",
+                  "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"
+                }
+              }
+            }
+  #endjob trigger-build-generic
+
+  build_cfg_rp:
+    if: github.event.client_payload.error_msg == ''
+    runs-on: ubuntu-latest
+    environment: default
+    outputs:
+      DOCKERFILE2USE: ${{ steps.config_step.outputs.DOCKERFILE2USE }}
+      IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
+      IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
+      BUILD_FLAG: ${{ steps.config_step.outputs.BUILD_FLAG }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: "Config For RP Build"
+        id: config_step
+        run: |-
+          DOCKERFILE2USE="docker/final-rp.dockerfile"
+          echo "DOCKERFILE2USE=${DOCKERFILE2USE}" >> $GITHUB_OUTPUT
+
+          IMAGE_NAME=${{ github.repository_owner }}/rapidpro
+          IMAGE_TAG=${VERSION_STR}
+          echo "::notice::Build: ${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          
+          if [[ -n "${REPO_TAG}" ]]; then
+            BUILD_FLAG=1
+          else
+            BUILD_FLAG=0
+          fi
+          echo "BUILD_FLAG=${BUILD_FLAG}" >> $GITHUB_OUTPUT
+  #endjob build_cfg_rp
+
+  trigger-build-rp:
+    if: needs.build_cfg_rp.outputs.BUILD_FLAG == 1
+    runs-on: ubuntu-latest
+    needs: [build_cfg_rp]
+    environment: default
+    steps:
+      - name: "Trigger Container Build For RP"
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.CI_WEBHOOK_TOKEN }}
+          repository: istresearch/ci-docker
+          event-type: build-repo
+          client-payload: |-
+            {
+              "repo": {
+                "name": "${{ github.repository }}",
+                "branch": "${{ env.REPO_BRANCH }}",
+                "tag": "${{ env.REPO_TAG }}"
+              },
+              "image": {
+                "dockerfile": "${{ needs.build_cfg_rp.outputs.DOCKERFILE2USE }}",
+                "name": "${{ needs.build_cfg_rp.outputs.IMAGE_NAME }}",
+                "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}",
+                "build_args": [
+                  "FROM_STAGE=${{ env.FROM_LAYER }}",
+                  "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
+                  "VERSION_CI=${{ env.VER_NUM }}",
+                  "VERSION_TAG=${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"
+                ]
+              },
+              "callback": {
+                "repository": "${{ github.repository }}",
+                "event_type": "build_layer4_rp",
+                "error_type": "build_layer4_error",
+                "payload": {
+                  "name": "rp",
+                  "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"
+                }
+              }
+            }
+  #endjob trigger-build-rp
