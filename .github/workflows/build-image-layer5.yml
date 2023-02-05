@@ -1,4 +1,4 @@
-name: build image layer4
+name: Display Build Conclusions
 
 on:
   repository_dispatch:

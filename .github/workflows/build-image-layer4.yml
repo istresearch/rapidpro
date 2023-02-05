@@ -76,6 +76,22 @@ jobs:
                   "VERSION_TAG=${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}"
                 ]
               },
+              "deployment": {
+                "deploy_flag": "${{ github.ref_type == 'branch' }}",
+                "k8s": [ {
+                  "project": "pulse-engage",
+                  "container": "pulse-engage",
+                  "deploy_msg": ""
+                }, {
+                  "project": "pulse-engage-celery",
+                  "container": "celery-base",
+                  "deploy_msg": ""
+                }, {
+                  "project": "pulse-engage-celery",
+                  "container": "celery-msgs",
+                  "deploy_msg": ""
+                } ]
+              },
               "callback": {
                 "repository": "${{ github.repository }}",
                 "event_type": "build_layer4_engage",

@@ -73,7 +73,7 @@ jobs:
             echo "${BUILD_ERR_MSG}"
             exit 1
           fi
-          if [[ ${{ needs.check_image_exist.outputs.exists }} == 0 ]]; then
+          if [[ '${{ needs.check_image_exist.outputs.exists }}' == '0' ]]; then
             BUILD_STAGE=1
           else
             BUILD_STAGE=0
