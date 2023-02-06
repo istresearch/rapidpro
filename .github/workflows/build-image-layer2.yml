@@ -37,10 +37,15 @@ jobs:
         id: config_step
         run: |-
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
-          echo "${FROM_LAYER#**/}" > base_tag.txt
+          #FROM_LAYER=istresearch/p4-engage:base-3f3aaac55651ad15680cd3644dc396d5
+          echo "${FROM_LAYER#**:}" > base_tag.txt
+          #cci: base-3f3aaac55651ad15680cd3644dc396d5
+          #gha: base-3f3aaac55651ad15680cd3644dc396d5
           source scm/utils.sh
           IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "base_tag.txt" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json")
           IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
+          #cci: pylibs-89f9051bac77ad72551766325fb1f42d
+          #gha: pylibs-868b4a3daab80ff00499b7adc6a7752c
           echo "::notice::Layer2: ${IMAGE_NAME}:${IMAGE_TAG}"
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
