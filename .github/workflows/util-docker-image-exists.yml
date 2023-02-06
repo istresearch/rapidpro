@@ -32,7 +32,7 @@ jobs:
           IMAGE_NAME: ${{ inputs.name }}
           IMAGE_TAG: ${{ inputs.tag }}
         run: |-
-          R=$(curl -u ${DOCKER_UN}:${DOCKER_PW} "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${IMAGE_NAME}:pull&account=$DOCKER_UN")
+          R=$(curl -s -u ${DOCKER_UN}:${DOCKER_PW} "https://auth.docker.io/token?service=registry.docker.io&scope=repository:${IMAGE_NAME}:pull&account=$DOCKER_UN")
           S=$? #non-0 means error
           if [ $S -eq 0 ]; then
             TOKEN=$(echo "${R}" | jq -r .token)
@@ -45,7 +45,7 @@ jobs:
           DH_URL=https://registry-1.docker.io/v2/${IMAGE_NAME}/manifests/${IMAGE_TAG}
           R=$(curl -s -H "Authorization: Bearer ${TOKEN}" "${DH_URL}" 2>&1)
           if [ $S -eq 0 ]; then
-            EXISTS=$(echo "$R" | jq -r jq -r ".tag == \"${IMAGE_TAG}\"")
+            EXISTS=$(echo "$R" | jq -r ".tag == \"${IMAGE_TAG}\"")
           else
             ERR_MSG="::error::DockerHub tag curl failed: ${R}"
             echo "ERR_MSG=${ERR_MSG}" >> $GITHUB_OUTPUT
