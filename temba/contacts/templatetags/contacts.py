@@ -24,7 +24,6 @@ URN_SCHEME_ICONS = {
     URN.FCM_SCHEME: "icon-fcm",
     URN.FRESHCHAT_SCHEME: "icon-freshchat",
     URN.WHATSAPP_SCHEME: "icon-whatsapp",
-    URN.SESSION_SCHEME: "icon-session",
 }
 
 ACTIVITY_ICONS = {
