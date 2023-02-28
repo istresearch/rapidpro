@@ -353,6 +353,7 @@ LOGGING = {
 }
 LOGGING['root']['level'] = env('LOG_LEVEL', env('DJANGO_LOG_LEVEL', 'INFO'))
 
+# any changes to permissions requires container script ./db-update.sh be run.
 GROUP_PERMISSIONS['Editors'] += (
     "channels.channellog_read",
 )
