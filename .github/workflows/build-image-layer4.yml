@@ -67,6 +67,7 @@ jobs:
               },
               "image": {
                 "dockerfile": "${{ needs.build_cfg_engage.outputs.DOCKERFILE2USE }}",
+                "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg_engage.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
                 "build_args": [
@@ -161,6 +162,7 @@ jobs:
               },
               "image": {
                 "dockerfile": "${{ needs.build_cfg_generic.outputs.DOCKERFILE2USE }}",
+                "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg_generic.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}",
                 "build_args": [
@@ -235,6 +237,7 @@ jobs:
               },
               "image": {
                 "dockerfile": "${{ needs.build_cfg_rp.outputs.DOCKERFILE2USE }}",
+                "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg_rp.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}",
                 "build_args": [
