@@ -1,4 +1,4 @@
-name: Display Build Conclusions
+name: "Display Build Conclusions"
 
 on:
   repository_dispatch:

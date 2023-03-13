@@ -1,4 +1,4 @@
-name: build image layer4
+name: "Build Branding Layer (4 of 4)"
 
 on:
   repository_dispatch:

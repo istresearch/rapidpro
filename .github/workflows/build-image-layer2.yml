@@ -1,4 +1,4 @@
-name: build image layer2
+name: "Build Lib Layer (2 of 4)"
 
 on:
   repository_dispatch:

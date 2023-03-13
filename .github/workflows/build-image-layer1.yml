@@ -1,4 +1,4 @@
-name: build image layer1
+name: "Build Base OS Layer (1 of 4)"
 
 on:
   push:
