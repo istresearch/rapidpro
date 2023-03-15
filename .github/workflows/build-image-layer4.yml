@@ -33,6 +33,8 @@ jobs:
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.client_payload.repo.ref_name }}
 
       - name: "Config For Engage Build"
         id: config_step
@@ -116,6 +118,8 @@ jobs:
       BUILD_FLAG: ${{ steps.config_step.outputs.BUILD_FLAG }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.client_payload.repo.ref_name }}
 
       - name: "Config For Generic Build"
         id: config_step
@@ -147,7 +151,7 @@ jobs:
     needs: [build_cfg_generic]
     environment: default
     steps:
-      - name: "Trigger Container Build For Engage"
+      - name: "Trigger Container Build"
         uses: peter-evans/repository-dispatch@v2
         with:
           token: ${{ secrets.CI_WEBHOOK_TOKEN }}
@@ -195,6 +199,8 @@ jobs:
       BUILD_FLAG: ${{ steps.config_step.outputs.BUILD_FLAG }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.client_payload.repo.ref_name }}
 
       - name: "Config For RP Build"
         id: config_step

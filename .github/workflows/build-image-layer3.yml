@@ -33,6 +33,8 @@ jobs:
       VER_NUM: ${{ steps.config_step.outputs.VER_NUM }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.client_payload.repo.ref_name }}
 
       - name: "Determine Tag To Use"
         id: config_step
@@ -93,6 +95,8 @@ jobs:
                 "error_type": "build_layer3_error",
                 "payload": {
                   "repo": {
+                    "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
+                    "ref_name": "${{ github.event.client_payload.repo.ref_name }}",
                     "branch": "${{ env.REPO_BRANCH }}",
                     "tag": "${{ env.REPO_TAG }}"
                   },

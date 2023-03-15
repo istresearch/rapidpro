@@ -115,6 +115,8 @@ jobs:
                 "error_type": "build_layer1_error",
                 "payload": {
                   "repo": {
+                    "ref_type": "${{ github.ref_type }}",
+                    "ref_name": "${{ github.ref_name }}",
                     "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
                     "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}"
                   },
@@ -138,6 +140,8 @@ jobs:
           client-payload: |-
             {
               "repo": {
+                "ref_type": "${{ github.ref_type }}",
+                "ref_name": "${{ github.ref_name }}",
                 "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
                 "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}"
               },
