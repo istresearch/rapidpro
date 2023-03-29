@@ -1,4 +1,4 @@
-name: Display Build Conclusions
+name: "Display Build Conclusions"
 
 on:
   repository_dispatch:
@@ -13,7 +13,7 @@ jobs:
     if: github.event.client_payload.error_msg == ''
     runs-on: ubuntu-latest
     steps:
-      - name: Display Msg
+      - name: "Display Msg"
         run: |-
           echo "::notice::${{ github.event.client_payload.name }} image built with tag [${{ github.event.client_payload.tag }}]"
   #endjob layer4_success
@@ -22,8 +22,8 @@ jobs:
     if: github.event.client_payload.error_msg != ''
     runs-on: ubuntu-latest
     steps:
-      - name: Display Msg
+      - name: "Display Err Msg"
         run: |-
-          echo "${{ github.event.client_payload.error_msg }}"
+          echo "::error::${{ github.event.client_payload.error_msg }}"
           exit 1
   #endjob layer4_error

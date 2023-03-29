@@ -1,4 +1,4 @@
-name: build image layer1
+name: "Build Base OS Layer (1 of 4)"
 
 on:
   push:
@@ -103,6 +103,7 @@ jobs:
               },
               "image": {
                 "dockerfile": "${{ env.DOCKERFILE2USE }}",
+                "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
@@ -114,6 +115,8 @@ jobs:
                 "error_type": "build_layer1_error",
                 "payload": {
                   "repo": {
+                    "ref_type": "${{ github.ref_type }}",
+                    "ref_name": "${{ github.ref_name }}",
                     "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
                     "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}"
                   },
@@ -125,7 +128,7 @@ jobs:
   #endjob trigger-build
 
   trigger-next-stage:
-    if: needs.build_cfg.outputs.BUILD_STAGE == 0
+    if: needs.check_build_image.outputs.BUILD_STAGE == 0
     runs-on: ubuntu-latest
     needs: [build_cfg, check_build_image]
     environment: default
@@ -137,6 +140,8 @@ jobs:
           client-payload: |-
             {
               "repo": {
+                "ref_type": "${{ github.ref_type }}",
+                "ref_name": "${{ github.ref_name }}",
                 "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
                 "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}"
               },

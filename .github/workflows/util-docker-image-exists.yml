@@ -51,7 +51,7 @@ jobs:
             echo "ERR_MSG=${ERR_MSG}" >> $GITHUB_OUTPUT
             exit 1
           fi
-          if [ EXISTS ]; then
+          if [ $EXISTS == true ]; then
             #echo "::notice::Docker image already exists"
             echo "EXISTS=1" >> $GITHUB_OUTPUT
           else
