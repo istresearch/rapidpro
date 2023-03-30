@@ -19,6 +19,9 @@ from temba.settings_common import *  # noqa
 
 SUB_DIR = env('SUB_DIR', required=False)
 # NOTE: we do not support SUB_DIR anymore, kits no longer use it. Feel free to rip out.
+if not is_empty(SUB_DIR):
+    MIDDLEWARE += ("engage.utils.middleware.SubdirMiddleware",)
+#endif
 
 COURIER_URL = env('COURIER_URL', 'http://localhost:8080')
 DEFAULT_TPS = env('DEFAULT_TPS', 10)    # Default Transactions Per Second for newly create Channels.
@@ -26,7 +29,8 @@ MAX_TPS = env('MAX_TPS', 50)            # Max configurable Transactions Per Seco
 
 MAX_ORG_LABELS = int(env('MAX_ORG_LABELS', 500))
 
-POST_OFFICE_QR_URL = env('POST_OFFICE_QR_URL', 'http://localhost:8088/postoffice/engage/claim')
+POST_OFFICE_API_URL = env('POST_OFFICE_API_URL', 'http://postoffice:8088/postoffice')
+POST_OFFICE_QR_URL = env('POST_OFFICE_QR_URL', f"{POST_OFFICE_API_URL}/engage/claim")
 POST_OFFICE_API_KEY = env('POST_OFFICE_API_KEY', 'abc123')
 
 POST_MASTER_DL_URL = env('POST_MASTER_DL_URL', required=False)
@@ -53,6 +57,7 @@ INSTALLED_APPS = (
 
 APP_URLS += (
     'temba.ext.urls',
+    'engage.api.urls',
     'engage.auth.urls',
     'engage.utils.user_guide',
 )
@@ -353,9 +358,37 @@ LOGGING = {
 }
 LOGGING['root']['level'] = env('LOG_LEVEL', env('DJANGO_LOG_LEVEL', 'INFO'))
 
-# any changes to permissions requires container script ./db-update.sh be run.
+PERMISSIONS['*'] += (
+    "read_list",  # can read an object, viewing its details
+)
+PERMISSIONS['orgs.org'] += (
+    "assign_user",
+    "transfer_to_account",
+    "bandwidth_account",
+    "bandwidth_connect",
+    "postmaster_connect",
+    "postmaster_account",
+)
+PERMISSIONS['msgs.msg'] += (
+    "test",
+)
+
+# any changes to group permissions requires container script ./db-update.sh be run.
+GROUP_PERMISSIONS['Administrators'] += (
+    "apks.apk_create",
+    "apks.apk_list",
+    "apks.apk_update",
+    "orgs.org_transfer_to_account",
+    "orgs.org_bandwidth_account",
+    "orgs.org_bandwidth_connect",
+    "orgs.org_postmaster_account",
+    "orgs.org_postmaster_connect",
+)
 GROUP_PERMISSIONS['Editors'] += (
     "channels.channellog_read",
+)
+GROUP_PERMISSIONS['Editors'] -= (
+    "channels.channel_delete",
 )
 
 #============== KeyCloak SSO ===================
@@ -416,6 +449,11 @@ DEFAULT_BRAND_OBJ.update({
 PM_CONFIG: PMConfig = PMConfig(REDIS_URL, CACHES)
 
 MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
+PAGINATE_CHANNELS_COUNT = int(env("PAGINATE_CHANNELS_COUNT", 25))
+# -----------------------------------------------------------------------------------
+# Installs can also choose how long to keep SyncEvents around. Default is 7 days.
+# -----------------------------------------------------------------------------------
+SYNC_EVENT_TRIM_DAYS = 7
 
 # set of ISO-639-3 codes of languages to allow in addition to all ISO-639-1 languages
 if env('NON_ISO6391_LANGUAGES_ALLOWED', None) is not None:
@@ -436,3 +474,5 @@ DEFAULT_PLAN = ORG_PLAN_ENGAGE
 MIDDLEWARE += ("engage.utils.middleware.RedirectMiddleware",)
 
 ALT_CALLBACK_DOMAIN = env('ALT_CALLBACK_DOMAIN', None)
+
+ASYNC_MESSAGE_EXPORT = env('ASYNC_MESSAGE_EXPORT', 'on') == 'on'

@@ -1,5 +1,6 @@
 from collections import defaultdict
 
+from django.conf import settings
 from django.urls import reverse
 
 from .manage import ManageChannelMixin
@@ -119,3 +120,39 @@ class ChannelDeleteOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Delete)
     #enddef get_success_url
 
 #endclass ChannelDeleteOverrides
+
+class ChannelUpdateOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Update):
+
+    def pre_save(self, obj):
+        obj = self.getOrigClsAttr('pre_save')(self, obj)
+        if hasattr(obj, 'tps'):
+            max_tps = getattr(settings, "MAX_TPS", 50)
+            def_tps = getattr(settings, "DEFAULT_TPS", 10)
+            if obj.tps is None:
+                obj.tps = def_tps
+            elif obj.tps <= 0:
+                obj.tps = def_tps
+            elif obj.tps > max_tps:
+                obj.tps = max_tps
+            #endif
+        #endif obj.tps
+        return obj
+    #enddef pre_save
+
+#endclass ChannelUpdateOverrides
+
+class ChannelListOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.List):
+    link_url = 'uuid@channels.channel_read'
+
+    def get_queryset(self, **kwargs):
+        queryset = self.getOrigClsAttr('get_queryset')(self, **kwargs)
+
+        req = self.request
+        if req and req.user and req.user.is_superuser and not req.GET.get("showall"):
+            queryset = queryset.filter(org__isnull=False)
+        #endif
+
+        return queryset
+    #enddef get_queryset
+
+#endclass ChannelListOverrides

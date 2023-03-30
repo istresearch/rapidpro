@@ -2,6 +2,10 @@ import logging
 from rest_framework import serializers
 from rest_framework.exceptions import ParseError
 
+from temba.api.v2.serializers import MsgBulkActionSerializer
+
+from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+
 from .exceptions import FinancialException
 
 class WriteSerializer(serializers.Serializer):
@@ -35,3 +39,19 @@ class WriteSerializer(serializers.Serializer):
             )
         # since we will be overriding a diff class with this method, be explicit with super().
         return super(serializers.Serializer, self).run_validation(data)
+    #enddef run_validation
+
+#endclass WriteSerializer
+
+
+class MsgBulkActionSerializerOverride(ClassOverrideMixinMustBeFirst, MsgBulkActionSerializer):
+
+    def validate_messages(self, value):
+        if 'request' in self.context and 'action' in self.context['request'].data:
+            return value
+        else:
+            return self.getOrigClsAttr('validate_messages')(self, value)
+        #endif
+    #enddef validate_messages
+
+#endclass MsgBulkActionSerializerOverride

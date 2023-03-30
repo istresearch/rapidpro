@@ -12,7 +12,7 @@ ALTER TABLE "msgs_msg_labels" ALTER COLUMN "msg_id" TYPE bigint USING "msg_id"::
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("sql", "0001_initial"),
+        ("sql", "0002_updates"),
     ]
 
     operations = [migrations.RunSQL(SQL)]

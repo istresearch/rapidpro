@@ -5,7 +5,7 @@
   {{object.name}}
 -block subtitle
   -trans "Results"
-
+  
 -block extra-less
 
   -compress css inline
@@ -35,7 +35,7 @@
           border-color: inherit;
           border-bottom: 1px solid #fff;
         }
-
+         
         .after {
           position: relative;
         }
@@ -604,15 +604,15 @@
   .bg-white.p-4.rounded-lg
     %ul.nav.nav-tabs.mb-0
       %li.active
-        %a{href: '#overview', data-toggle:'tab'}
+        %a(href="#overview" data-toggle="tab")
           -trans "Overview"
 
       %li
-        %a{href: '#analytics', data-toggle:'tab'}
+        %a(href="#analytics" data-toggle="tab")
           -trans "Analytics"
 
       %li
-        %a{href: '#runs', data-toggle:'tab', onclick:"updateColumnSelect();"}
+        %a(href="#runs" data-toggle="tab" onclick="updateColumnSelect();")
           -trans "Runs"
 
     .tab-content
@@ -644,7 +644,7 @@
                                         ic-target:"#results_run_table",
                                         ic-indicator:"#indicator"}
               -trans "Responded"
-
+              
             .flex-grow
             .add-columns.select.flex-grow.pl-12.pr-4
               .selection
@@ -671,8 +671,8 @@
                       {{result_field.name}}
                     .remove.icon-close{ onclick: 'hideColumn({{forloop.counter0}});' }
 
-            %tbody{id:"results_run_table"}
-              %tr{ic-append-from:"/flow/run_table/{{object.id}}", ic-trigger-on:"load", ic-target:"#results_run_table", ic-indicator:"#indicator"}
+            %tbody(id="results_run_table")
+              %tr(ic-append-from="/flow/run_table/{{object.id}}/" ic-trigger-on="load" ic-target="#results_run_table" ic-indicator="#indicator")
 
   #indicator{style:"display:none"}
     .loader

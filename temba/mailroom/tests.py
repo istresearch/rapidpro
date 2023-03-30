@@ -10,6 +10,7 @@ from django.utils import timezone
 from temba.campaigns.models import Campaign, CampaignEvent, EventFire
 from temba.channels.models import ChannelEvent, ChannelLog
 from temba.flows.models import FlowRun, FlowStart
+from temba.ivr.models import IVRCall
 from temba.mailroom.client import ContactSpec, MailroomException, get_client
 from temba.msgs.models import Broadcast, Msg
 from temba.tests import MockResponse, TembaTest, matchers, mock_mailroom
@@ -17,7 +18,7 @@ from temba.tests.engine import MockSessionWriter
 from temba.tickets.models import Ticketer, TicketEvent
 from temba.utils import json
 
-from . import modifiers, queue_interrupt
+from . import QueryExclusions, QueryInclusions, QueryMetadata, StartPreview, modifiers, queue_interrupt
 from .events import Event
 
 
@@ -93,6 +94,63 @@ class MailroomClientTest(TembaTest):
         self.assertEqual(("http://localhost:8090/mr/flow/change_language",), call[0])
         self.assertEqual({"User-Agent": "Temba", "Content-Type": "application/json"}, call[1]["headers"])
         self.assertEqual({"flow": flow_def, "language": "spa"}, json.loads(call[1]["data"]))
+
+    def test_flow_preview_start(self):
+        with patch("requests.post") as mock_post:
+            mock_resp = {
+                "query": 'group = "Farmers" AND status = "active"',
+                "total": 2345,
+                "sample_ids": [123, 234],
+                "metadata": {"attributes": ["group", "status"], "fields": [], "allow_as_group": False},
+            }
+            mock_post.return_value = MockResponse(200, json.dumps(mock_resp))
+            preview = get_client().flow_preview_start(
+                self.org.id,
+                flow_id=12,
+                include=QueryInclusions(
+                    group_uuids=["1e42a9dd-3683-477d-a3d8-19db951bcae0"],
+                    contact_uuids=["ad32f9a9-e26e-4628-b39b-a54f177abea8"],
+                ),
+                exclude=QueryExclusions(non_active=True, not_seen_since_days=30),
+                sample_size=3,
+            )
+
+            self.assertEqual(
+                StartPreview(
+                    query='group = "Farmers" AND status = "active"',
+                    total=2345,
+                    sample_ids=[123, 234],
+                    metadata=QueryMetadata(attributes=["group", "status"], allow_as_group=False),
+                ),
+                preview,
+            )
+
+        call = mock_post.call_args
+
+        self.maxDiff = None
+
+        self.assertEqual(("http://localhost:8090/mr/flow/preview_start",), call[0])
+        self.assertEqual({"User-Agent": "Temba", "Content-Type": "application/json"}, call[1]["headers"])
+        self.assertEqual(
+            {
+                "org_id": self.org.id,
+                "flow_id": 12,
+                "include": {
+                    "group_uuids": ["1e42a9dd-3683-477d-a3d8-19db951bcae0"],
+                    "contact_uuids": ["ad32f9a9-e26e-4628-b39b-a54f177abea8"],
+                    "urns": [],
+                    "query": "",
+                },
+                "exclude": {
+                    "non_active": True,
+                    "in_a_flow": False,
+                    "started_previously": False,
+                    "not_seen_since_days": 30,
+                },
+                "sample_size": 3,
+            },
+            json.loads(call[1]["data"]),
+        )
 
     def test_contact_modify(self):
         with patch("requests.post") as mock_post:
@@ -186,7 +244,7 @@ class MailroomClientTest(TembaTest):
         mock_post.assert_called_once_with(
             "http://localhost:8090/mr/po/export",
             headers={"User-Agent": "Temba"},
-            json={"org_id": self.org.id, "flow_ids": [123, 234], "language": "spa", "exclude_arguments": False},
+            json={"org_id": self.org.id, "flow_ids": [123, 234], "language": "spa"},
         )
 
     def test_po_import(self):
@@ -205,14 +263,18 @@ class MailroomClientTest(TembaTest):
 
     @patch("requests.post")
     def test_parse_query(self, mock_post):
-        mock_post.return_value = MockResponse(200, '{"query":"name ~ \\"frank\\"","fields":["name"]}')
-        response = get_client().parse_query(self.org.id, "frank")
+        mock_post.return_value = MockResponse(
+            200, '{"query":"name ~ \\"frank\\"", "elastic_query": {}, "metadata": {"attributes":["name"]}}'
+        )
+        parsed = get_client().parse_query(self.org.id, "frank")
 
-        self.assertEqual('name ~ "frank"', response["query"])
+        self.assertEqual('name ~ "frank"', parsed.query)
+        self.assertEqual({}, parsed.elastic_query)
+        self.assertEqual(["name"], parsed.metadata.attributes)
         mock_post.assert_called_once_with(
             "http://localhost:8090/mr/contact/parse_query",
             headers={"User-Agent": "Temba"},
-            json={"query": "frank", "org_id": self.org.id, "group_uuid": ""},
+            json={"query": "frank", "org_id": self.org.id, "parse_only": False, "group_uuid": ""},
         )
 
         mock_post.return_value = MockResponse(400, '{"error":"no such field age"}')
@@ -294,15 +356,16 @@ class MailroomClientTest(TembaTest):
             {
               "query":"name ~ \\"frank\\"",
               "contact_ids":[1,2],
-              "fields":["name"],
               "total": 2,
-              "offset": 0
+              "offset": 0,
+              "metadata": {"attributes":["name"]}
             }
             """,
         )
         response = get_client().contact_search(1, "2752dbbc-723f-4007-8bc5-b3720835d3a9", "frank", "-created_on")
 
-        self.assertEqual('name ~ "frank"', response["query"])
+        self.assertEqual('name ~ "frank"', response.query)
+        self.assertEqual(["name"], response.metadata.attributes)
         mock_post.assert_called_once_with(
             "http://localhost:8090/mr/contact/search",
             headers={"User-Agent": "Temba"},
@@ -333,28 +396,40 @@ class MailroomClientTest(TembaTest):
                 json={"org_id": 1, "user_id": 12, "ticket_ids": [123, 345], "assignee_id": 4, "note": "please handle"},
             )
 
-    def test_ticket_note(self):
+    def test_ticket_add_note(self):
         with patch("requests.post") as mock_post:
             mock_post.return_value = MockResponse(200, '{"changed_ids": [123]}')
-            response = get_client().ticket_note(1, 12, [123, 345], "please handle")
+            response = get_client().ticket_add_note(1, 12, [123, 345], "please handle")
 
             self.assertEqual({"changed_ids": [123]}, response)
             mock_post.assert_called_once_with(
-                "http://localhost:8090/mr/ticket/note",
+                "http://localhost:8090/mr/ticket/add_note",
                 headers={"User-Agent": "Temba"},
                 json={"org_id": 1, "user_id": 12, "ticket_ids": [123, 345], "note": "please handle"},
+            )
+
+    def test_ticket_change_topic(self):
+        with patch("requests.post") as mock_post:
+            mock_post.return_value = MockResponse(200, '{"changed_ids": [123]}')
+            response = get_client().ticket_change_topic(1, 12, [123, 345], 67)
+
+            self.assertEqual({"changed_ids": [123]}, response)
+            mock_post.assert_called_once_with(
+                "http://localhost:8090/mr/ticket/change_topic",
+                headers={"User-Agent": "Temba"},
+                json={"org_id": 1, "user_id": 12, "ticket_ids": [123, 345], "topic_id": 67},
             )
 
     def test_ticket_close(self):
         with patch("requests.post") as mock_post:
             mock_post.return_value = MockResponse(200, '{"changed_ids": [123]}')
-            response = get_client().ticket_close(1, 12, [123, 345])
+            response = get_client().ticket_close(1, 12, [123, 345], force=True)
 
             self.assertEqual({"changed_ids": [123]}, response)
             mock_post.assert_called_once_with(
                 "http://localhost:8090/mr/ticket/close",
                 headers={"User-Agent": "Temba"},
-                json={"org_id": 1, "user_id": 12, "ticket_ids": [123, 345]},
+                json={"org_id": 1, "user_id": 12, "ticket_ids": [123, 345], "force": True},
             )
 
     def test_ticket_reopen(self):
@@ -439,7 +514,7 @@ class MailroomQueueTest(TembaTest):
         r = get_redis_connection()
 
         # noop, this event isn't handled by mailroom
-        self.assertEqual(0, r.zcard(f"handler:active"))
+        self.assertEqual(0, r.zcard("handler:active"))
         self.assertEqual(0, r.zcard(f"handler:{self.org.id}"))
         self.assertEqual(0, r.llen(f"c:{self.org.id}:{event.contact_id}"))
 
@@ -507,6 +582,7 @@ class MailroomQueueTest(TembaTest):
                     "broadcast_id": bcast.id,
                     "org_id": self.org.id,
                     "ticket_id": ticket.id,
+                    "created_by_id": self.admin.id,
                 },
                 "queued_on": matchers.ISODate(),
             },
@@ -540,7 +616,6 @@ class MailroomQueueTest(TembaTest):
                     "start_id": start.id,
                     "start_type": "M",
                     "org_id": self.org.id,
-                    "created_by": self.admin.username,
                     "created_by_id": self.admin.id,
                     "flow_id": flow.id,
                     "flow_type": "M",
@@ -636,7 +711,7 @@ class MailroomQueueTest(TembaTest):
 
         run = FlowRun.objects.get(contact=jim)
         session = run.session
-        run.release("U")
+        run.delete()
 
         self.assert_org_queued(self.org, "batch")
         self.assert_queued_batch_task(
@@ -706,7 +781,7 @@ class EventTest(TembaTest):
         contact1 = self.create_contact("Jim", phone="0979111111")
         contact2 = self.create_contact("Bob", phone="0979222222")
 
-        msg_in = self.create_incoming_msg(contact1, "Hello", external_id="12345")
+        msg_in = self.create_incoming_msg(contact1, "Hello", external_id="12345", attachments=["image:http://a.jpg"])
 
         self.assertEqual(
             {
@@ -717,10 +792,58 @@ class EventTest(TembaTest):
                     "id": msg_in.id,
                     "urn": "tel:+250979111111",
                     "text": "Hello",
+                    "attachments": ["image:http://a.jpg"],
                     "channel": {"uuid": str(self.channel.uuid), "name": "Test Channel"},
                     "external_id": "12345",
                 },
                 "msg_type": "I",
+                "visibility": "V",
+                "logs_url": None,
+            },
+            Event.from_msg(self.org, self.admin, msg_in),
+        )
+
+        msg_in.visibility = Msg.VISIBILITY_DELETED_BY_USER
+        msg_in.save(update_fields=("visibility",))
+
+        self.assertEqual(
+            {
+                "type": "msg_received",
+                "created_on": matchers.ISODate(),
+                "msg": {
+                    "uuid": str(msg_in.uuid),
+                    "id": msg_in.id,
+                    "urn": "tel:+250979111111",
+                    "text": "",
+                    "attachments": [],
+                    "channel": {"uuid": str(self.channel.uuid), "name": "Test Channel"},
+                    "external_id": "12345",
+                },
+                "msg_type": "I",
+                "visibility": "D",
+                "logs_url": None,
+            },
+            Event.from_msg(self.org, self.admin, msg_in),
+        )
+
+        msg_in.visibility = Msg.VISIBILITY_DELETED_BY_SENDER
+        msg_in.save(update_fields=("visibility",))
+
+        self.assertEqual(
+            {
+                "type": "msg_received",
+                "created_on": matchers.ISODate(),
+                "msg": {
+                    "uuid": str(msg_in.uuid),
+                    "id": msg_in.id,
+                    "urn": "tel:+250979111111",
+                    "text": "",
+                    "attachments": [],
+                    "channel": {"uuid": str(self.channel.uuid), "name": "Test Channel"},
+                    "external_id": "12345",
+                },
+                "msg_type": "I",
+                "visibility": "X",
                 "logs_url": None,
             },
             Event.from_msg(self.org, self.admin, msg_in),
@@ -745,7 +868,30 @@ class EventTest(TembaTest):
                     "quick_replies": ["yes", "no"],
                 },
                 "status": "E",
-                "logs_url": f"/channels/channellog/read/{log.id}/",
+                "logs_url": f"/channels/channellog/read/{log.channel.uuid}/{log.id}/",
+            },
+            Event.from_msg(self.org, self.admin, msg_out),
+        )
+
+        msg_out = self.create_outgoing_msg(
+            contact1, "Hello", channel=self.channel, status="F", failed_reason=Msg.FAILED_NO_DESTINATION
+        )
+
+        self.assertEqual(
+            {
+                "type": "msg_created",
+                "created_on": matchers.ISODate(),
+                "msg": {
+                    "uuid": str(msg_out.uuid),
+                    "id": msg_out.id,
+                    "urn": "tel:+250979111111",
+                    "text": "Hello",
+                    "channel": {"uuid": str(self.channel.uuid), "name": "Test Channel"},
+                },
+                "status": "F",
+                "failed_reason": "D",
+                "failed_reason_display": "No suitable channel found",
+                "logs_url": None,
             },
             Event.from_msg(self.org, self.admin, msg_out),
         )
@@ -847,7 +993,7 @@ class EventTest(TembaTest):
             {
                 "type": "campaign_fired",
                 "created_on": fire.fired.isoformat(),
-                "campaign": {"id": campaign.id, "name": "Welcomes"},
+                "campaign": {"id": campaign.id, "name": "Welcomes", "uuid": campaign.uuid},
                 "campaign_event": {
                     "id": event.id,
                     "offset_display": "1 week after",
@@ -861,14 +1007,14 @@ class EventTest(TembaTest):
     def test_from_ticket_event(self):
         ticketer = Ticketer.create(self.org, self.user, "mailgun", "Email (bob@acme.com)", {})
         contact = self.create_contact("Jim", phone="0979111111")
-        ticket = self.create_ticket(ticketer, contact, "Problem", body="Where my shoes?")
+        ticket = self.create_ticket(ticketer, contact, "Where my shoes?")
 
         # event with a user
         event1 = TicketEvent.objects.create(
             org=self.org,
             contact=contact,
             ticket=ticket,
-            event_type=TicketEvent.TYPE_NOTE,
+            event_type=TicketEvent.TYPE_NOTE_ADDED,
             created_by=self.agent,
             note="this is important",
         )
@@ -877,18 +1023,24 @@ class EventTest(TembaTest):
             {
                 "type": "ticket_note_added",
                 "note": "this is important",
+                "topic": None,
                 "assignee": None,
                 "ticket": {
                     "uuid": str(ticket.uuid),
                     "opened_on": matchers.ISODate(),
                     "closed_on": None,
                     "status": "O",
-                    "subject": "Problem",
+                    "topic": {"uuid": str(self.org.default_ticket_topic.uuid), "name": "General"},
                     "body": "Where my shoes?",
                     "ticketer": {"uuid": str(ticketer.uuid), "name": "Email (bob@acme.com)"},
                 },
                 "created_on": matchers.ISODate(),
-                "created_by": {"id": self.agent.id, "first_name": "", "last_name": "", "email": "Agent@nyaruka.com"},
+                "created_by": {
+                    "id": self.agent.id,
+                    "first_name": "Agnes",
+                    "last_name": "",
+                    "email": "agent@nyaruka.com",
+                },
             },
             Event.from_ticket_event(self.org, self.user, event1),
         )
@@ -902,13 +1054,14 @@ class EventTest(TembaTest):
             {
                 "type": "ticket_closed",
                 "note": None,
+                "topic": None,
                 "assignee": None,
                 "ticket": {
                     "uuid": str(ticket.uuid),
                     "opened_on": matchers.ISODate(),
                     "closed_on": None,
                     "status": "O",
-                    "subject": "Problem",
+                    "topic": {"uuid": str(self.org.default_ticket_topic.uuid), "name": "General"},
                     "body": "Where my shoes?",
                     "ticketer": {"uuid": str(ticketer.uuid), "name": "Email (bob@acme.com)"},
                 },
@@ -916,4 +1069,47 @@ class EventTest(TembaTest):
                 "created_by": None,
             },
             Event.from_ticket_event(self.org, self.user, event2),
+        )
+
+    def test_from_ivr_call(self):
+        contact = self.create_contact("Jim", phone="0979111111")
+
+        call1 = IVRCall.objects.create(
+            org=self.org,
+            contact=contact,
+            status=IVRCall.STATUS_IN_PROGRESS,
+            channel=self.channel,
+            contact_urn=contact.urns.all().first(),
+            error_count=0,
+        )
+        call2 = IVRCall.objects.create(
+            org=self.org,
+            contact=contact,
+            status=IVRCall.STATUS_ERRORED,
+            error_reason=IVRCall.ERROR_BUSY,
+            channel=self.channel,
+            contact_urn=contact.urns.all().first(),
+            error_count=0,
+        )
+
+        self.assertEqual(
+            {
+                "type": "call_started",
+                "status": "I",
+                "status_display": "In Progress",
+                "created_on": matchers.ISODate(),
+                "logs_url": None,
+            },
+            Event.from_ivr_call(self.org, self.user, call1),
+        )
+
+        self.assertEqual(
+            {
+                "type": "call_started",
+                "status": "E",
+                "status_display": "Errored (Busy)",
+                "created_on": matchers.ISODate(),
+                "logs_url": None,
+            },
+            Event.from_ivr_call(self.org, self.user, call2),
         )

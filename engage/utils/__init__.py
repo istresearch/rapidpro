@@ -1,4 +1,5 @@
 from django.apps import AppConfig as BaseAppConfig
+from engage.api.exceptions import ValueException
 
 default_app_config = 'engage.utils.AppConfig'
 
@@ -9,8 +10,6 @@ class AppConfig(BaseAppConfig):
     name = "engage.utils"
     label = "engage_utils"
     verbose_name = "Engage Utilities"
-
-from engage.api.exceptions import ValueException
 
 def _var_dump( obj ):
     """

@@ -19,9 +19,8 @@ class EngageOverrides:
         if cls.ENGAGE_OVERRIDES_RAN:
             return
 
-        from engage.auth.account import UserOverrides, AnonUserOverrides
+        from engage.auth.account import UserOverrides
         UserOverrides.setClassOverrides()
-        AnonUserOverrides.setClassOverrides()
 
         from engage.channels.types.postmaster.schemes import PM_Schemes, PM_Scheme_Labels, PM_Scheme_Icons
         #from engage.utils.strings import cap_words
@@ -69,6 +68,9 @@ class EngageOverrides:
         from temba.contacts.templatetags.contacts import URN_SCHEME_ICONS
         URN_SCHEME_ICONS.update(PM_Scheme_Icons)
 
+        from engage.api.serializers import MsgBulkActionSerializerOverride
+        MsgBulkActionSerializerOverride.setClassOverrides()
+
         from engage.orgs.bandwidth import BandwidthOrgModelOverrides
         BandwidthOrgModelOverrides.setClassOverrides()
         from engage.orgs.models import OrgModelOverride
@@ -99,6 +101,8 @@ class EngageOverrides:
         from engage.msgs.models import MsgModelOverride, LabelModelOverride
         MsgModelOverride.setClassOverrides()
         LabelModelOverride.setClassOverrides()
+        from engage.msgs.tests import LabelCRUDLTestOverrides
+        LabelCRUDLTestOverrides.setClassOverrides()
 
         from engage.msgs.views.inbox import MsgInboxViewOverrides
         MsgInboxViewOverrides.setClassOverrides()
@@ -125,6 +129,14 @@ class EngageOverrides:
         from engage.channels.models import ChannelOverrides, AndroidTypeOverrides
         ChannelOverrides.setClassOverrides()
         AndroidTypeOverrides.setClassOverrides()
+        from engage.channels.types.telegram.type import TelegramTypeOverrides
+        TelegramTypeOverrides.setClassOverrides()
+        from engage.channels.types.twilio.type import TwilioTypeOverrides
+        TwilioTypeOverrides.setClassOverrides()
+        from engage.channels.types.twitter.views import TwitterUpdateFormMetaOverrides
+        TwitterUpdateFormMetaOverrides.setClassOverrides()
+        from engage.channels.types.viber_public.views import ViberPublicUpdateFormMetaOverrides
+        ViberPublicUpdateFormMetaOverrides.setClassOverrides()
         from engage.channels.types.vonage_client import VonageClientOverrides
         VonageClientOverrides.setClassOverrides()
         from engage.channels.types.vonage_views import ClaimViewOverrides
@@ -141,6 +153,24 @@ class EngageOverrides:
         ChannelClaimAllOverrides.setClassOverrides()
         from engage.channels.views import ChannelDeleteOverrides
         ChannelDeleteOverrides.setClassOverrides()
+        from engage.channels.views import ChannelUpdateOverrides
+        ChannelUpdateOverrides.setClassOverrides()
+        from engage.channels.views import ChannelListOverrides
+        ChannelListOverrides.setClassOverrides()
+
+        from engage.flows.models import FlowOverrides
+        FlowOverrides.setClassOverrides()
+        from engage.flows.views import FlowCRUDLOverrides
+        FlowCRUDLOverrides.setClassOverrides()
+
+        from engage.schedules.tests import ScheduleTestOverrides
+        ScheduleTestOverrides.setClassOverrides()
+
+        from engage.utils.views import BaseListViewOverrides
+        BaseListViewOverrides.setClassOverrides()
+        from engage.utils.views import MultipleObjectMixinOverrides
+        MultipleObjectMixinOverrides.setClassOverrides()
+
 
         cls.ENGAGE_OVERRIDES_RAN = True
     #enddef RunEngageOverrides

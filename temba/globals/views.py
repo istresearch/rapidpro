@@ -1,12 +1,11 @@
 from gettext import gettext as _
 
-from smartmin.views import SmartCreateView, SmartCRUDL, SmartListView, SmartReadView, SmartUpdateView
+from smartmin.views import SmartCreateView, SmartCRUDL, SmartListView, SmartUpdateView
 
 from django import forms
 from django.urls import reverse
 
-from temba.orgs.models import Org
-from temba.orgs.views import DependencyDeleteModal, ModalMixin, OrgObjPermsMixin, OrgPermsMixin
+from temba.orgs.views import DependencyDeleteModal, DependencyUsagesModal, ModalMixin, OrgObjPermsMixin, OrgPermsMixin
 from temba.utils.fields import InputWidget
 
 from .models import Global
@@ -22,10 +21,14 @@ class CreateGlobalForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
-        org_active_globals_limit = self.org.get_limit(Org.LIMIT_GLOBALS)
-        if self.org.globals.filter(is_active=True).count() >= org_active_globals_limit:
+        count, limit = Global.get_org_limit_progress(self.org)
+        if limit is not None and count >= limit:
             raise forms.ValidationError(
-                _("Cannot create a new global as limit is %(limit)s."), params={"limit": org_active_globals_limit}
+                _(
+                    "This workspace has reached its limit of %(limit)d globals. "
+                    "You must delete existing ones before you can create new ones."
+                ),
+                params={"limit": limit},
             )
 
         return cleaned_data
@@ -72,7 +75,7 @@ class UpdateGlobalForm(forms.ModelForm):
 
 class GlobalCRUDL(SmartCRUDL):
     model = Global
-    actions = ("create", "update", "delete", "list", "unused", "detail")
+    actions = ("create", "update", "delete", "list", "unused", "usages")
 
     class Create(ModalMixin, OrgPermsMixin, SmartCreateView):
         form_class = CreateGlobalForm
@@ -143,10 +146,5 @@ class GlobalCRUDL(SmartCRUDL):
         def get_queryset(self, **kwargs):
             return super().get_queryset(**kwargs).filter(usage_count=0)
 
-    class Detail(OrgObjPermsMixin, SmartReadView):
-        template_name = "globals/global_detail.haml"
-
-        def get_context_data(self, **kwargs):
-            context = super().get_context_data(**kwargs)
-            context["dep_flows"] = list(self.object.dependent_flows.filter(is_active=True))
-            return context
+    class Usages(DependencyUsagesModal):
+        permission = "globals.global_read"

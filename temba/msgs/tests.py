@@ -5,25 +5,15 @@ import pytz
 from openpyxl import load_workbook
 
 from django.conf import settings
+from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from temba.archives.models import Archive
-from temba.channels.models import Channel, ChannelCount, ChannelEvent, ChannelLog
+from temba.channels.models import ChannelCount, ChannelEvent, ChannelLog
 from temba.contacts.models import URN, ContactURN
 from temba.contacts.search.omnibox import omnibox_serialize
 from temba.msgs.models import (
-    DELIVERED,
-    ERRORED,
-    FAILED,
-    FLOW,
-    HANDLED,
-    INBOX,
-    INCOMING,
-    OUTGOING,
-    PENDING,
-    QUEUED,
-    SENT,
     Attachment,
     Broadcast,
     ExportMessagesTask,
@@ -36,10 +26,9 @@ from temba.msgs.models import (
 from temba.schedules.models import Schedule
 from temba.tests import AnonymousOrg, CRUDLTestMixin, TembaTest
 from temba.tests.engine import MockSessionWriter
-from temba.tests.s3 import MockS3Client
-from temba.utils.uuid import uuid4
+from temba.tests.s3 import MockS3Client, jsonlgz_encode
 
-from .tasks import retry_errored_messages, squash_msgcounts
+from .tasks import squash_msgcounts
 from .templatetags.sms import as_icon
 
 
@@ -57,13 +46,15 @@ class MsgTest(TembaTest):
         self.joe_and_frank = self.create_group("Joe and Frank", [self.joe, self.frank])
 
     def test_msg_as_archive_json(self):
-        msg1 = self.create_incoming_msg(self.joe, "i'm having a problem")
+        flow = self.create_flow("Color Flow")
+        msg1 = self.create_incoming_msg(self.joe, "i'm having a problem", flow=flow)
         self.assertEqual(
             msg1.as_archive_json(),
             {
                 "id": msg1.id,
                 "contact": {"uuid": str(self.joe.uuid), "name": "Joe Blow"},
                 "channel": {"uuid": str(self.channel.uuid), "name": "Test Channel"},
+                "flow": {"uuid": str(flow.uuid), "name": "Color Flow"},
                 "urn": "tel:123",
                 "direction": "in",
                 "type": "inbox",
@@ -78,8 +69,7 @@ class MsgTest(TembaTest):
         )
 
         # label first message
-        folder = Label.get_or_create_folder(self.org, self.user, "Folder")
-        label = Label.get_or_create(self.org, self.user, "la\02bel1", folder=folder)
+        label = self.create_label("la\02bel1")
         label.toggle_label([msg1], add=True)
 
         self.assertEqual(
@@ -88,6 +78,7 @@ class MsgTest(TembaTest):
                 "id": msg1.id,
                 "contact": {"uuid": str(self.joe.uuid), "name": "Joe Blow"},
                 "channel": {"uuid": str(self.channel.uuid), "name": "Test Channel"},
+                "flow": {"uuid": str(flow.uuid), "name": "Color Flow"},
                 "urn": "tel:123",
                 "direction": "in",
                 "type": "inbox",
@@ -111,6 +102,7 @@ class MsgTest(TembaTest):
                 "id": msg2.id,
                 "contact": {"uuid": str(self.joe.uuid), "name": "Joe Blow"},
                 "channel": {"uuid": str(self.channel.uuid), "name": "Test Channel"},
+                "flow": None,
                 "urn": "tel:123",
                 "direction": "in",
                 "type": "inbox",
@@ -124,34 +116,34 @@ class MsgTest(TembaTest):
             },
         )
 
-    def test_deletes(self):
-
+    def test_delete(self):
         # create some incoming messages
-        msg1 = self.create_incoming_msg(self.joe, "i'm having a problem")
-        msg2 = self.create_incoming_msg(self.frank, "ignore joe, he's a liar")
+        msg1 = self.create_incoming_msg(self.joe, "i'm having a problem", attachments=["image:http://a.jpg"])
+        msg2 = self.create_incoming_msg(self.frank, "ignore joe, he's a liar", attachments=["image:http://b.jpg"])
 
-        # create a channel log for msg2
+        # create a channel logs for both
+        ChannelLog.objects.create(channel=self.channel, msg=msg1, is_error=False)
         ChannelLog.objects.create(channel=self.channel, msg=msg2, is_error=False)
 
-        # create a channel log for msg2
-        ChannelLog.objects.create(channel=self.channel, msg=msg2, is_error=False)
-
-        # we've used two credits
+        # we've used 2 credits
         self.assertEqual(2, Msg.objects.all().count())
         self.assertEqual(self.org._calculate_credits_used()[0], 2)
 
-        # a hard delete on a message should reduce credits used
-        msg1.delete()
+        # a soft delete should keep credits the same and clear text
+        msg1.delete(soft=True)
+        msg1.refresh_from_db()
+        self.assertEqual(2, Msg.objects.all().count())
+        self.assertEqual(self.org._calculate_credits_used()[0], 2)
+        self.assertEqual(Msg.VISIBILITY_DELETED_BY_USER, msg1.visibility)
+        self.assertEqual("", msg1.text)
+        self.assertEqual([], msg1.attachments)
+        self.assertEqual(1, msg1.channel_logs.count())  # logs still there
+
+        # test a hard delete as part of a contact removal
+        msg2.delete()
         self.assertEqual(1, Msg.objects.all().count())
-        self.assertEqual(self.org._calculate_credits_used()[0], 1)
-
-        # a purge delete on a message should keep credits the same
-        msg2.release(Msg.DELETE_FOR_USER)
-        self.assertEqual(0, Msg.objects.all().count())
-        self.assertEqual(self.org._calculate_credits_used()[0], 1)
-
-        # log should be gone
-        self.assertEqual(0, ChannelLog.objects.filter(channel=self.channel).count())
+        self.assertEqual(self.org._calculate_credits_used()[0], 2)  # used credits unchanged
+        self.assertEqual(0, msg2.channel_logs.count())  # logs should be gone
 
     def test_get_sync_commands(self):
         msg1 = self.create_outgoing_msg(self.joe, "Hello, we heard from you.")
@@ -206,7 +198,7 @@ class MsgTest(TembaTest):
 
     def test_archive_and_release(self):
         msg1 = self.create_incoming_msg(self.joe, "Incoming")
-        label = Label.get_or_create(self.org, self.admin, "Spam")
+        label = self.create_label("Spam")
         label.toggle_label([msg1], add=True)
 
         msg1.archive()
@@ -220,19 +212,19 @@ class MsgTest(TembaTest):
         msg1 = Msg.objects.get(pk=msg1.id)
         self.assertEqual(msg1.visibility, Msg.VISIBILITY_VISIBLE)
 
-        msg1.release()
+        msg1.delete()
         self.assertFalse(Msg.objects.filter(pk=msg1.pk).exists())
 
-        label = Label.label_objects.filter(pk=label.pk).first()
+        label.refresh_from_db()
         self.assertEqual(0, label.get_messages().count())  # do remove labels
         self.assertIsNotNone(label)
 
         # can't archive outgoing messages
         msg2 = self.create_outgoing_msg(self.joe, "Outgoing")
-        self.assertRaises(ValueError, msg2.archive)
+        self.assertRaises(AssertionError, msg2.archive)
 
     def assertReleaseCount(self, direction, status, visibility, msg_type, label):
-        if direction == OUTGOING:
+        if direction == Msg.DIRECTION_OUT:
             msg = self.create_outgoing_msg(self.joe, "Whattup Joe")
         else:
             msg = self.create_incoming_msg(self.joe, "Hey hey")
@@ -245,21 +237,29 @@ class MsgTest(TembaTest):
         counts = SystemLabel.get_counts(self.org)
         self.assertEqual(counts[label], 1)
 
-        # release the msg, count should now be 0
-        msg.release()
+        # delete the msg, count should now be 0
+        msg.delete()
         counts = SystemLabel.get_counts(self.org)
         self.assertEqual(counts[label], 0)
 
     def test_release_counts(self):
         # outgoing labels
-        self.assertReleaseCount(OUTGOING, SENT, Msg.VISIBILITY_VISIBLE, INBOX, SystemLabel.TYPE_SENT)
-        self.assertReleaseCount(OUTGOING, QUEUED, Msg.VISIBILITY_VISIBLE, INBOX, SystemLabel.TYPE_OUTBOX)
-        self.assertReleaseCount(OUTGOING, FAILED, Msg.VISIBILITY_VISIBLE, INBOX, SystemLabel.TYPE_FAILED)
+        self.assertReleaseCount("O", Msg.STATUS_SENT, Msg.VISIBILITY_VISIBLE, Msg.TYPE_INBOX, SystemLabel.TYPE_SENT)
+        self.assertReleaseCount(
+            "O", Msg.STATUS_QUEUED, Msg.VISIBILITY_VISIBLE, Msg.TYPE_INBOX, SystemLabel.TYPE_OUTBOX
+        )
+        self.assertReleaseCount(
+            "O", Msg.STATUS_FAILED, Msg.VISIBILITY_VISIBLE, Msg.TYPE_INBOX, SystemLabel.TYPE_FAILED
+        )
 
         # incoming labels
-        self.assertReleaseCount(INCOMING, HANDLED, Msg.VISIBILITY_VISIBLE, INBOX, SystemLabel.TYPE_INBOX)
-        self.assertReleaseCount(INCOMING, HANDLED, Msg.VISIBILITY_ARCHIVED, INBOX, SystemLabel.TYPE_ARCHIVED)
-        self.assertReleaseCount(INCOMING, HANDLED, Msg.VISIBILITY_VISIBLE, FLOW, SystemLabel.TYPE_FLOWS)
+        self.assertReleaseCount(
+            "I", Msg.STATUS_HANDLED, Msg.VISIBILITY_VISIBLE, Msg.TYPE_INBOX, SystemLabel.TYPE_INBOX
+        )
+        self.assertReleaseCount(
+            "I", Msg.STATUS_HANDLED, Msg.VISIBILITY_ARCHIVED, Msg.TYPE_INBOX, SystemLabel.TYPE_ARCHIVED
+        )
+        self.assertReleaseCount("I", Msg.STATUS_HANDLED, Msg.VISIBILITY_VISIBLE, Msg.TYPE_FLOW, SystemLabel.TYPE_FLOWS)
 
     def test_broadcast_metadata(self):
         self.create_channel("TT", "Twitter", "nyaruka")
@@ -293,42 +293,10 @@ class MsgTest(TembaTest):
             {"quick_replies": [{"eng": "Yes", "fra": "Oui"}, {"eng": "No"}], "template_state": "legacy"},
         )
 
-    def test_retry_errored(self):
-        # change our default channel to external
-        self.channel.channel_type = "EX"
-        self.channel.save()
-
-        android_channel = self.create_channel(
-            "A",
-            "Android Channel",
-            "+250785551414",
-            country="RW",
-            secret="12345678",
-            config={Channel.CONFIG_FCM_ID: "123"},
-        )
-
-        msg1 = self.create_outgoing_msg(self.joe, "errored", status="E", channel=self.channel)
-        msg1.next_attempt = timezone.now()
-        msg1.save(update_fields=["next_attempt"])
-
-        msg2 = self.create_outgoing_msg(self.joe, "android", status="E", channel=android_channel)
-        msg2.next_attempt = None
-        msg2.save(update_fields=["next_attempt"])
-
-        msg3 = self.create_outgoing_msg(self.joe, "failed", status="F", channel=self.channel)
-
-        retry_errored_messages()
-
-        msg1.refresh_from_db()
-        msg2.refresh_from_db()
-        msg3.refresh_from_db()
-
-        self.assertEqual("W", msg1.status)
-        self.assertEqual("E", msg2.status)
-        self.assertEqual("F", msg3.status)
-
     @patch("temba.utils.email.send_temba_email")
     def test_message_export_from_archives(self, mock_send_temba_email):
+        export_url = reverse("msgs.msg_export")
+
         self.clear_storage()
         self.login(self.admin)
 
@@ -338,7 +306,11 @@ class MsgTest(TembaTest):
         self.org.created_on = datetime(2017, 1, 1, 9, tzinfo=pytz.UTC)
         self.org.save()
 
-        msg1 = self.create_incoming_msg(self.joe, "hello 1", created_on=datetime(2017, 1, 1, 10, tzinfo=pytz.UTC))
+        flow = self.create_flow("Color Flow")
+
+        msg1 = self.create_incoming_msg(
+            self.joe, "hello 1", created_on=datetime(2017, 1, 1, 10, tzinfo=pytz.UTC), flow=flow
+        )
         msg2 = self.create_incoming_msg(
             self.frank, "hello 2", msg_type="F", created_on=datetime(2017, 1, 2, 10, tzinfo=pytz.UTC)
         )
@@ -359,23 +331,22 @@ class MsgTest(TembaTest):
 
         # create some outbound messages with different statuses
         msg6 = self.create_outgoing_msg(
-            self.joe, "Hey out 6", status=SENT, created_on=datetime(2017, 1, 6, 10, tzinfo=pytz.UTC)
+            self.joe, "Hey out 6", status=Msg.STATUS_SENT, created_on=datetime(2017, 1, 6, 10, tzinfo=pytz.UTC)
         )
         msg7 = self.create_outgoing_msg(
-            self.joe, "Hey out 7", status=DELIVERED, created_on=datetime(2017, 1, 7, 10, tzinfo=pytz.UTC)
+            self.joe, "Hey out 7", status=Msg.STATUS_DELIVERED, created_on=datetime(2017, 1, 7, 10, tzinfo=pytz.UTC)
         )
         msg8 = self.create_outgoing_msg(
-            self.joe, "Hey out 8", status=ERRORED, created_on=datetime(2017, 1, 8, 10, tzinfo=pytz.UTC)
+            self.joe, "Hey out 8", status=Msg.STATUS_ERRORED, created_on=datetime(2017, 1, 8, 10, tzinfo=pytz.UTC)
         )
         msg9 = self.create_outgoing_msg(
-            self.joe, "Hey out 9", status=FAILED, created_on=datetime(2017, 1, 9, 10, tzinfo=pytz.UTC)
+            self.joe, "Hey out 9", status=Msg.STATUS_FAILED, created_on=datetime(2017, 1, 9, 10, tzinfo=pytz.UTC)
         )
 
         self.assertEqual(msg5.get_attachments(), [Attachment("audio", "http://rapidpro.io/audio/sound.mp3")])
 
         # label first message
-        folder = Label.get_or_create_folder(self.org, self.user, "Folder")
-        label = Label.get_or_create(self.org, self.user, "la\02bel1", folder=folder)
+        label = self.create_label("la\02bel1")
         label.toggle_label([msg1], add=True)
 
         # archive last message
@@ -383,63 +354,56 @@ class MsgTest(TembaTest):
         msg3.save()
 
         # archive 5 msgs
+        mock_s3 = MockS3Client()
+        body, md5, size = jsonlgz_encode([m.as_archive_json() for m in (msg1, msg2, msg3, msg4, msg5, msg6)])
+        mock_s3.put_object("test-bucket", "archive1.jsonl.gz", body)
+
         Archive.objects.create(
             org=self.org,
             archive_type=Archive.TYPE_MSG,
-            size=10,
-            hash=uuid4().hex,
+            size=size,
+            hash=md5,
             url="http://test-bucket.aws.com/archive1.jsonl.gz",
             record_count=6,
             start_date=msg5.created_on.date(),
             period="D",
             build_time=23425,
         )
-        mock_s3 = MockS3Client()
-        mock_s3.put_jsonl(
-            "test-bucket",
-            "archive1.jsonl.gz",
-            [
-                msg1.as_archive_json(),
-                msg2.as_archive_json(),
-                msg3.as_archive_json(),
-                msg4.as_archive_json(),
-                msg5.as_archive_json(),
-                msg6.as_archive_json(),
-            ],
-        )
 
-        msg2.release()
-        msg3.release()
-        msg4.release()
-        msg5.release()
-        msg6.release()
+        msg2.delete()
+        msg3.delete()
+        msg4.delete()
+        msg5.delete()
+        msg6.delete()
 
         # create an archive earlier than our flow created date so we check that it isn't included
+        body, md5, size = jsonlgz_encode([msg7.as_archive_json()])
         Archive.objects.create(
             org=self.org,
             archive_type=Archive.TYPE_MSG,
-            size=10,
-            hash=uuid4().hex,
+            size=size,
+            hash=md5,
             url="http://test-bucket.aws.com/archive2.jsonl.gz",
             record_count=1,
             start_date=self.org.created_on - timedelta(days=2),
             period="D",
             build_time=5678,
         )
-        mock_s3.put_jsonl("test-bucket", "archive2.jsonl.gz", [msg7.as_archive_json()])
+        mock_s3.put_object("test-bucket", "archive2.jsonl.gz", body)
 
-        msg7.release()
+        msg7.delete()
 
         def request_export(query, data=None):
-            response = self.client.post(reverse("msgs.msg_export") + query, data)
+            with self.mockReadOnly():
+                response = self.client.post(export_url + query, data)
             self.assertEqual(response.status_code, 302)
             task = ExportMessagesTask.objects.order_by("-id").first()
             filename = "%s/test_orgs/%d/message_exports/%s.xlsx" % (settings.MEDIA_ROOT, self.org.id, task.uuid)
             return load_workbook(filename=filename)
 
         # export all visible messages (i.e. not msg3) using export_all param
-        with self.assertNumQueries(29):
-            with patch("temba.archives.models.Archive.s3_client", return_value=mock_s3):
+        with self.assertNumQueries(30):
+            with patch("temba.utils.s3.client", return_value=mock_s3):
                 workbook = request_export("?l=I", {"export_all": 1})
 
         self.assertExcelSheet(
@@ -451,6 +415,7 @@ class MsgTest(TembaTest):
                     "Name",
                     "URN",
                     "URN Type",
+                    "Flow",
                     "Direction",
                     "Text",
                     "Attachments",
@@ -464,6 +429,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "Color Flow",
                     "IN",
                     "hello 1",
                     "",
@@ -477,6 +443,7 @@ class MsgTest(TembaTest):
                     "Frank Blow",
                     "321",
                     "tel",
+                    "",
                     "IN",
                     "hello 2",
                     "",
@@ -484,13 +451,14 @@ class MsgTest(TembaTest):
                     "Test Channel",
                     "",
                 ],
-                [msg4.created_on, msg1.contact.uuid, "Joe Blow", "", "", "IN", "hello 4", "", "handled", "", ""],
+                [msg4.created_on, msg1.contact.uuid, "Joe Blow", "", "", "", "IN", "hello 4", "", "handled", "", ""],
                 [
                     msg5.created_on,
                     msg5.contact.uuid,
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "IN",
                     "Media message",
                     "http://rapidpro.io/audio/sound.mp3",
@@ -504,6 +472,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "OUT",
                     "Hey out 6",
                     "",
@@ -517,6 +486,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "OUT",
                     "Hey out 8",
                     "",
@@ -530,6 +500,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "OUT",
                     "Hey out 9",
                     "",
@@ -541,7 +512,7 @@ class MsgTest(TembaTest):
             self.org.timezone,
         )
 
-        with patch("temba.archives.models.Archive.s3_client", return_value=mock_s3):
+        with patch("temba.utils.s3.client", return_value=mock_s3):
             workbook = request_export(
                 "?l=I",
                 {
@@ -560,6 +531,7 @@ class MsgTest(TembaTest):
                     "Name",
                     "URN",
                     "URN Type",
+                    "Flow",
                     "Direction",
                     "Text",
                     "Attachments",
@@ -573,6 +545,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "IN",
                     "Media message",
                     "http://rapidpro.io/audio/sound.mp3",
@@ -584,7 +557,7 @@ class MsgTest(TembaTest):
             self.org.timezone,
         )
 
-        with patch("temba.archives.models.Archive.s3_client", return_value=mock_s3):
+        with patch("temba.utils.s3.client", return_value=mock_s3):
             workbook = request_export("?l=I", {"export_all": 1, "groups": [self.just_joe.id]})
 
         self.assertExcelSheet(
@@ -596,6 +569,7 @@ class MsgTest(TembaTest):
                     "Name",
                     "URN",
                     "URN Type",
+                    "Flow",
                     "Direction",
                     "Text",
                     "Attachments",
@@ -609,6 +583,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "Color Flow",
                     "IN",
                     "hello 1",
                     "",
@@ -616,13 +591,14 @@ class MsgTest(TembaTest):
                     "Test Channel",
                     "label1",
                 ],
-                [msg4.created_on, msg1.contact.uuid, "Joe Blow", "", "", "IN", "hello 4", "", "handled", "", ""],
+                [msg4.created_on, msg1.contact.uuid, "Joe Blow", "", "", "", "IN", "hello 4", "", "handled", "", ""],
                 [
                     msg5.created_on,
                     msg5.contact.uuid,
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "IN",
                     "Media message",
                     "http://rapidpro.io/audio/sound.mp3",
@@ -636,6 +612,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "OUT",
                     "Hey out 6",
                     "",
@@ -649,6 +626,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "OUT",
                     "Hey out 8",
                     "",
@@ -662,6 +640,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "OUT",
                     "Hey out 9",
                     "",
@@ -673,7 +652,7 @@ class MsgTest(TembaTest):
             self.org.timezone,
         )
 
-        with patch("temba.archives.models.Archive.s3_client", return_value=mock_s3):
+        with patch("temba.utils.s3.client", return_value=mock_s3):
             workbook = request_export("?l=S", {"export_all": 0})
 
         self.assertExcelSheet(
@@ -685,6 +664,7 @@ class MsgTest(TembaTest):
                     "Name",
                     "URN",
                     "URN Type",
+                    "Flow",
                     "Direction",
                     "Text",
                     "Attachments",
@@ -698,6 +678,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "OUT",
                     "Hey out 6",
                     "",
@@ -709,7 +690,7 @@ class MsgTest(TembaTest):
             self.org.timezone,
         )
 
-        with patch("temba.archives.models.Archive.s3_client", return_value=mock_s3):
+        with patch("temba.utils.s3.client", return_value=mock_s3):
             workbook = request_export("?l=X", {"export_all": 0})
 
         self.assertExcelSheet(
@@ -721,6 +702,7 @@ class MsgTest(TembaTest):
                     "Name",
                     "URN",
                     "URN Type",
+                    "Flow",
                     "Direction",
                     "Text",
                     "Attachments",
@@ -734,6 +716,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "OUT",
                     "Hey out 9",
                     "",
@@ -745,7 +728,7 @@ class MsgTest(TembaTest):
             self.org.timezone,
         )
 
-        with patch("temba.archives.models.Archive.s3_client", return_value=mock_s3):
+        with patch("temba.utils.s3.client", return_value=mock_s3):
             workbook = request_export("?l=W", {"export_all": 0})
 
         self.assertExcelSheet(
@@ -757,6 +740,7 @@ class MsgTest(TembaTest):
                     "Name",
                     "URN",
                     "URN Type",
+                    "Flow",
                     "Direction",
                     "Text",
                     "Attachments",
@@ -770,6 +754,7 @@ class MsgTest(TembaTest):
                     "Frank Blow",
                     "321",
                     "tel",
+                    "",
                     "IN",
                     "hello 2",
                     "",
@@ -781,7 +766,7 @@ class MsgTest(TembaTest):
             self.org.timezone,
         )
 
-        with patch("temba.archives.models.Archive.s3_client", return_value=mock_s3):
+        with patch("temba.utils.s3.client", return_value=mock_s3):
             workbook = request_export(f"?l={label.uuid}", {"export_all": 0})
 
         self.assertExcelSheet(
@@ -793,6 +778,7 @@ class MsgTest(TembaTest):
                     "Name",
                     "URN",
                     "URN Type",
+                    "Flow",
                     "Direction",
                     "Text",
                     "Attachments",
@@ -806,6 +792,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "Color Flow",
                     "IN",
                     "hello 1",
                     "",
@@ -819,13 +806,18 @@ class MsgTest(TembaTest):
 
     @patch("temba.utils.email.send_temba_email")
     def test_message_export(self, mock_send_temba_email):
+        export_url = reverse("msgs.msg_export")
+
         self.clear_storage()
         self.login(self.admin)
 
         self.joe.name = "Jo\02e Blow"
         self.joe.save(update_fields=("name",))
 
-        msg1 = self.create_incoming_msg(self.joe, "hello 1", created_on=datetime(2017, 1, 1, 10, tzinfo=pytz.UTC))
+        flow = self.create_flow("Color Flow")
+        msg1 = self.create_incoming_msg(
+            self.joe, "hello 1", created_on=datetime(2017, 1, 1, 10, tzinfo=pytz.UTC), flow=flow
+        )
         msg2 = self.create_incoming_msg(self.joe, "hello 2", created_on=datetime(2017, 1, 2, 10, tzinfo=pytz.UTC))
         msg3 = self.create_incoming_msg(self.joe, "hello 3", created_on=datetime(2017, 1, 3, 10, tzinfo=pytz.UTC))
 
@@ -844,23 +836,25 @@ class MsgTest(TembaTest):
 
         # create some outbound messages with different statuses
         msg6 = self.create_outgoing_msg(
-            self.joe, "Hey out 6", status=SENT, created_on=datetime(2017, 1, 6, 10, tzinfo=pytz.UTC)
+            self.joe, "Hey out 6", status=Msg.STATUS_SENT, created_on=datetime(2017, 1, 6, 10, tzinfo=pytz.UTC)
         )
         msg7 = self.create_outgoing_msg(
-            self.joe, "Hey out 7", status=DELIVERED, created_on=datetime(2017, 1, 7, 10, tzinfo=pytz.UTC)
+            self.joe, "Hey out 7", status=Msg.STATUS_DELIVERED, created_on=datetime(2017, 1, 7, 10, tzinfo=pytz.UTC)
         )
         msg8 = self.create_outgoing_msg(
-            self.joe, "Hey out 8", status=ERRORED, created_on=datetime(2017, 1, 8, 10, tzinfo=pytz.UTC)
+            self.joe, "Hey out 8", status=Msg.STATUS_ERRORED, created_on=datetime(2017, 1, 8, 10, tzinfo=pytz.UTC)
         )
         msg9 = self.create_outgoing_msg(
-            self.joe, "Hey out 9", status=FAILED, created_on=datetime(2017, 1, 9, 10, tzinfo=pytz.UTC)
+            self.joe, "Hey out 9", status=Msg.STATUS_FAILED, created_on=datetime(2017, 1, 9, 10, tzinfo=pytz.UTC)
         )
 
         self.assertEqual(msg5.get_attachments(), [Attachment("audio", "http://rapidpro.io/audio/sound.mp3")])
 
         # label first message
-        folder = Label.get_or_create_folder(self.org, self.user, "Folder")
-        label = Label.get_or_create(self.org, self.user, "la\02bel1", folder=folder)
+        folder = Label.objects.create(
+            org=self.org, name="Folder", label_type=Label.TYPE_FOLDER, created_by=self.user, modified_by=self.user
+        )
+        label = self.create_label("la\02bel1", folder=folder)
         label.toggle_label([msg1], add=True)
 
         # archive last message
@@ -876,14 +870,16 @@ class MsgTest(TembaTest):
         self.assertContains(response, "already an export in progress")
 
         # perform the export manually, assert how many queries
-        self.assertNumQueries(11, lambda: blocking_export.perform())
+        with self.mockReadOnly():
+            self.assertNumQueries(15, lambda: blocking_export.perform())
 
         blocking_export.refresh_from_db()
         # after performing the export `modified_on` should be updated
         self.assertNotEqual(old_modified_on, blocking_export.modified_on)
 
         def request_export(query, data=None):
-            response = self.client.post(reverse("msgs.msg_export") + query, data)
+            with self.mockReadOnly(assert_models={Msg}):
+                response = self.client.post(export_url + query, data)
             self.assertEqual(response.status_code, 302)
             task = ExportMessagesTask.objects.order_by("-id").first()
             filename = "%s/test_orgs/%d/message_exports/%s.xlsx" % (settings.MEDIA_ROOT, self.org.id, task.uuid)
@@ -898,7 +894,7 @@ class MsgTest(TembaTest):
                 # make sure that we trigger logger
                 log_info_threshold.return_value = 5
 
-                with self.assertNumQueries(29):
+                with self.assertNumQueries(30):
                     self.assertExcelSheet(
                         request_export("?l=I", {"export_all": 1}),
                         [
@@ -908,6 +904,7 @@ class MsgTest(TembaTest):
                                 "Name",
                                 "URN",
                                 "URN Type",
+                                "Flow",
                                 "Direction",
                                 "Text",
                                 "Attachments",
@@ -921,6 +918,7 @@ class MsgTest(TembaTest):
                                 "Joe Blow",
                                 "123",
                                 "tel",
+                                "Color Flow",
                                 "IN",
                                 "hello 1",
                                 "",
@@ -934,6 +932,7 @@ class MsgTest(TembaTest):
                                 "Joe Blow",
                                 "123",
                                 "tel",
+                                "",
                                 "IN",
                                 "hello 2",
                                 "",
@@ -945,6 +944,7 @@ class MsgTest(TembaTest):
                                 msg4.created_on,
                                 msg4.contact.uuid,
                                 "Joe Blow",
+                                "",
                                 "",
                                 "",
                                 "IN",
@@ -960,6 +960,7 @@ class MsgTest(TembaTest):
                                 "Joe Blow",
                                 "123",
                                 "tel",
+                                "",
                                 "IN",
                                 "Media message",
                                 "http://rapidpro.io/audio/sound.mp3",
@@ -973,6 +974,7 @@ class MsgTest(TembaTest):
                                 "Joe Blow",
                                 "123",
                                 "tel",
+                                "",
                                 "OUT",
                                 "Hey out 6",
                                 "",
@@ -986,6 +988,7 @@ class MsgTest(TembaTest):
                                 "Joe Blow",
                                 "123",
                                 "tel",
+                                "",
                                 "OUT",
                                 "Hey out 7",
                                 "",
@@ -999,6 +1002,7 @@ class MsgTest(TembaTest):
                                 "Joe Blow",
                                 "123",
                                 "tel",
+                                "",
                                 "OUT",
                                 "Hey out 8",
                                 "",
@@ -1012,6 +1016,7 @@ class MsgTest(TembaTest):
                                 "Joe Blow",
                                 "123",
                                 "tel",
+                                "",
                                 "OUT",
                                 "Hey out 9",
                                 "",
@@ -1028,14 +1033,14 @@ class MsgTest(TembaTest):
                 self.assertTrue("found 8 msgs in database to export" in captured_logger.output[1])
                 self.assertTrue("exported 8 in" in captured_logger.output[2])
 
-        # check email was sent correctly
-        email_args = mock_send_temba_email.call_args[0]  # all positional args
-        export = ExportMessagesTask.objects.order_by("-id").first()
-        self.assertEqual(email_args[0], "Your messages export from %s is ready" % self.org.name)
-        self.assertIn("https://app.rapidpro.io/assets/download/message_export/%d/" % export.id, email_args[1])
-        self.assertNotIn("{{", email_args[1])
-        self.assertIn("https://app.rapidpro.io/assets/download/message_export/%d/" % export.id, email_args[2])
-        self.assertNotIn("{{", email_args[2])
+        # check that notifications were created
+        export = ExportMessagesTask.objects.order_by("id").last()
+        self.assertEqual(
+            1,
+            self.admin.notifications.filter(
+                notification_type="export:finished", message_export=export, email_status="P"
+            ).count(),
+        )
 
         # export just archived messages
         self.assertExcelSheet(
@@ -1047,6 +1052,7 @@ class MsgTest(TembaTest):
                     "Name",
                     "URN",
                     "URN Type",
+                    "Flow",
                     "Direction",
                     "Text",
                     "Attachments",
@@ -1060,6 +1066,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "IN",
                     "hello 3",
                     "",
@@ -1085,6 +1092,7 @@ class MsgTest(TembaTest):
                     "Name",
                     "URN",
                     "URN Type",
+                    "Flow",
                     "Direction",
                     "Text",
                     "Attachments",
@@ -1098,6 +1106,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "Color Flow",
                     "IN",
                     "hello 1",
                     "",
@@ -1119,6 +1128,7 @@ class MsgTest(TembaTest):
                     "Name",
                     "URN",
                     "URN Type",
+                    "Flow",
                     "Direction",
                     "Text",
                     "Attachments",
@@ -1132,6 +1142,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "Color Flow",
                     "IN",
                     "hello 1",
                     "",
@@ -1160,6 +1171,7 @@ class MsgTest(TembaTest):
                     "Name",
                     "URN",
                     "URN Type",
+                    "Flow",
                     "Direction",
                     "Text",
                     "Attachments",
@@ -1173,6 +1185,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "IN",
                     "Media message",
                     "http://rapidpro.io/audio/sound.mp3",
@@ -1186,6 +1199,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "OUT",
                     "Hey out 6",
                     "",
@@ -1199,6 +1213,7 @@ class MsgTest(TembaTest):
                     "Joe Blow",
                     "123",
                     "tel",
+                    "",
                     "OUT",
                     "Hey out 7",
                     "",
@@ -1228,6 +1243,7 @@ class MsgTest(TembaTest):
                         "Name",
                         "ID",
                         "URN Type",
+                        "Flow",
                         "Direction",
                         "Text",
                         "Attachments",
@@ -1241,6 +1257,7 @@ class MsgTest(TembaTest):
                         "Joe Blow",
                         joe_anon_id,
                         "",
+                        "Color Flow",
                         "IN",
                         "hello 1",
                         "",
@@ -1253,6 +1270,7 @@ class MsgTest(TembaTest):
                         msg2.contact.uuid,
                         "Joe Blow",
                         joe_anon_id,
+                        "",
                         "",
                         "IN",
                         "hello 2",
@@ -1267,6 +1285,7 @@ class MsgTest(TembaTest):
                         "Joe Blow",
                         joe_anon_id,
                         "",
+                        "",
                         "IN",
                         "hello 4",
                         "",
@@ -1279,6 +1298,7 @@ class MsgTest(TembaTest):
                         msg5.contact.uuid,
                         "Joe Blow",
                         joe_anon_id,
+                        "",
                         "",
                         "IN",
                         "Media message",
@@ -1293,6 +1313,7 @@ class MsgTest(TembaTest):
                         "Joe Blow",
                         joe_anon_id,
                         "",
+                        "",
                         "OUT",
                         "Hey out 6",
                         "",
@@ -1305,6 +1326,7 @@ class MsgTest(TembaTest):
                         msg7.contact.uuid,
                         "Joe Blow",
                         joe_anon_id,
+                        "",
                         "",
                         "OUT",
                         "Hey out 7",
@@ -1319,6 +1341,7 @@ class MsgTest(TembaTest):
                         "Joe Blow",
                         joe_anon_id,
                         "",
+                        "",
                         "OUT",
                         "Hey out 8",
                         "",
@@ -1331,6 +1354,7 @@ class MsgTest(TembaTest):
                         msg9.contact.uuid,
                         "Joe Blow",
                         joe_anon_id,
+                        "",
                         "",
                         "OUT",
                         "Hey out 9",
@@ -1363,7 +1387,7 @@ class MsgTest(TembaTest):
             created_on=timezone.now(),
         )
         ChannelLog.objects.create(id=3_000_000_000, channel=msg.channel, msg=msg, is_error=True, description="Boom")
-        spam = Label.get_or_create(self.org, self.admin, "Spam")
+        spam = self.create_label("Spam")
         msg.labels.add(spam)
 
 
@@ -1376,7 +1400,7 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
         msg3 = self.create_incoming_msg(contact2, "message number 3")
         msg4 = self.create_incoming_msg(contact2, "message number 4")
         msg5 = self.create_incoming_msg(contact2, "message number 5", visibility="A")
-        self.create_incoming_msg(contact2, "message number 6", status=PENDING)
+        self.create_incoming_msg(contact2, "message number 6", status=Msg.STATUS_PENDING)
         ChannelLog.objects.create(channel=self.channel, msg=msg1, description="Success")
         ChannelLog.objects.create(channel=self.channel, msg=msg2, description="Success")
 
@@ -1384,7 +1408,7 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # check query count
         self.login(self.admin)
-        with self.assertNumQueries(36):
+        with self.assertNumQueries(28):
             self.client.get(inbox_url)
 
         response = self.assertListFetch(
@@ -1398,7 +1422,7 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertContains(response, "function refresh")
 
         self.assertEqual(20000, response.context["refresh"])
-        self.assertEqual(("archive", "label"), response.context["actions"])
+        self.assertEqual(("archive", "label", "send"), response.context["actions"])
         self.assertEqual({"count": 4, "label": "Inbox", "url": "/msg/inbox/"}, response.context["folders"][0])
 
         # test searching
@@ -1406,10 +1430,9 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual([msg2, msg1], list(response.context_data["object_list"]))
 
         # add some labels
-        folder = Label.get_or_create_folder(self.org, self.user, "folder")
-        label1 = Label.get_or_create(self.org, self.user, "label1", folder)
-        Label.get_or_create(self.org, self.user, "label2", folder)
-        label3 = Label.get_or_create(self.org, self.user, "label3")
+        label1 = self.create_label("label1")
+        self.create_label("label2")
+        label3 = self.create_label("label3")
 
         # viewers can't label messages
         response = self.requestView(
@@ -1431,6 +1454,14 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
             inbox_url,
             self.editor,
             post_data={"action": "label", "objects": [msg2.id], "label": label1.id, "add": False},
+        )
+        self.assertEqual({msg1}, set(label1.msgs.all()))
+
+        # can't label without a label object
+        response = self.requestView(
+            inbox_url,
+            self.editor,
+            post_data={"action": "label", "objects": [msg2.id], "add": False},
         )
         self.assertEqual({msg1}, set(label1.msgs.all()))
 
@@ -1463,16 +1494,16 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
             flows_url, allow_viewers=True, allow_editors=True, context_objects=[msg2, msg1]
         )
 
-        self.assertEqual(("label",), response.context["actions"])
+        self.assertEqual(("archive", "label", "send"), response.context["actions"])
 
     def test_archived(self):
         contact1 = self.create_contact("Joe Blow", phone="+250788000001")
         contact2 = self.create_contact("Frank", phone="+250788000002")
-        msg1 = self.create_incoming_msg(contact1, "message number 1", visibility="A")
-        msg2 = self.create_incoming_msg(contact1, "message number 2", visibility="A")
-        msg3 = self.create_incoming_msg(contact2, "message number 3", visibility="A")
-        self.create_incoming_msg(contact2, "message number 4", visibility="D")
-        self.create_incoming_msg(contact2, "message number 5", status=PENDING)
+        msg1 = self.create_incoming_msg(contact1, "message number 1", visibility=Msg.VISIBILITY_ARCHIVED)
+        msg2 = self.create_incoming_msg(contact1, "message number 2", visibility=Msg.VISIBILITY_ARCHIVED)
+        msg3 = self.create_incoming_msg(contact2, "message number 3", visibility=Msg.VISIBILITY_ARCHIVED)
+        msg4 = self.create_incoming_msg(contact2, "message number 4", visibility=Msg.VISIBILITY_DELETED_BY_USER)
+        self.create_incoming_msg(contact2, "message number 5", status=Msg.STATUS_PENDING)
         ChannelLog.objects.create(channel=self.channel, msg=msg1, description="Success")
         ChannelLog.objects.create(channel=self.channel, msg=msg2, description="Success")
 
@@ -1480,14 +1511,14 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # check query count
         self.login(self.admin)
-        with self.assertNumQueries(36):
+        with self.assertNumQueries(28):
             self.client.get(archived_url)
 
         response = self.assertListFetch(
             archived_url + "?refresh=10000", allow_viewers=True, allow_editors=True, context_objects=[msg3, msg2, msg1]
         )
 
-        self.assertEqual(("restore", "label", "delete"), response.context["actions"])
+        self.assertEqual(("restore", "label", "delete", "send"), response.context["actions"])
         self.assertEqual({"count": 3, "label": "Archived", "url": "/msg/archived/"}, response.context["folders"][2])
 
         # test searching
@@ -1506,6 +1537,7 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
         # can also permanently delete messages
         response = self.requestView(archived_url, self.admin, post_data={"action": "delete", "objects": [msg2.id]})
         self.assertEqual(200, response.status_code)
+        self.assertEqual({msg2, msg4}, set(Msg.objects.filter(visibility=Msg.VISIBILITY_DELETED_BY_USER)))
         self.assertEqual({msg3}, set(Msg.objects.filter(visibility=Msg.VISIBILITY_ARCHIVED)))
 
     def test_outbox(self):
@@ -1515,14 +1547,14 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # create a single message broadcast and put message back into pending state
         broadcast1 = self.create_broadcast(self.admin, "How is it going?", contacts=[contact1])
-        Msg.objects.filter(broadcast=broadcast1).update(status=PENDING)
+        Msg.objects.filter(broadcast=broadcast1).update(status=Msg.STATUS_PENDING)
         msg1 = broadcast1.msgs.get()
 
         outbox_url = reverse("msgs.msg_outbox")
 
         # check query count
         self.login(self.admin)
-        with self.assertNumQueries(39):
+        with self.assertNumQueries(31):
             self.client.get(outbox_url)
 
         # messages sorted by created_on
@@ -1535,14 +1567,14 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
         contact4 = self.create_contact("Kevin", phone="+250788000003")
         group = self.create_group("Testers", contacts=[contact2, contact3])
         broadcast2 = self.create_broadcast(self.admin, "kLab is awesome", contacts=[contact4], groups=[group])
-        broadcast2.msgs.update(status=PENDING)
+        broadcast2.msgs.update(status=Msg.STATUS_PENDING)
         msg4, msg3, msg2 = broadcast2.msgs.order_by("-id")
 
         broadcast3 = Broadcast.create(
-            self.channel.org, self.admin, "Pending broadcast", contacts=[contact4], status=QUEUED
+            self.channel.org, self.admin, "Pending broadcast", contacts=[contact4], status=Msg.STATUS_QUEUED
         )
         broadcast4 = Broadcast.create(
-            self.channel.org, self.admin, "Scheduled broadcast", contacts=[contact4], status=QUEUED
+            self.channel.org, self.admin, "Scheduled broadcast", contacts=[contact4], status=Msg.STATUS_QUEUED
         )
 
         broadcast4.schedule = Schedule.create_schedule(self.org, self.admin, timezone.now(), Schedule.REPEAT_DAILY)
@@ -1574,9 +1606,9 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
     def test_sent(self):
         contact1 = self.create_contact("Joe Blow", phone="+250788000001")
         contact2 = self.create_contact("Frank Blow", phone="+250788000002")
-        msg1 = self.create_outgoing_msg(contact1, "Hi", status="W")
-        msg2 = self.create_outgoing_msg(contact1, "Hi", status="S")
-        msg3 = self.create_outgoing_msg(contact2, "Hi", status="D", sent_on=timezone.now() - timedelta(hours=1))
+        msg1 = self.create_outgoing_msg(contact1, "Hi 1", status="W", sent_on=timezone.now() - timedelta(hours=1))
+        msg2 = self.create_outgoing_msg(contact1, "Hi 2", status="S", sent_on=timezone.now() - timedelta(hours=3))
+        msg3 = self.create_outgoing_msg(contact2, "Hi 3", status="D", sent_on=timezone.now() - timedelta(hours=2))
         ChannelLog.objects.create(channel=self.channel, msg=msg1, description="Success")
         ChannelLog.objects.create(channel=self.channel, msg=msg2, description="Success")
 
@@ -1584,14 +1616,14 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # check query count
         self.login(self.admin)
-        with self.assertNumQueries(39):
+        with self.assertNumQueries(33):
             self.client.get(sent_url)
 
-        # messages sorted by created_on
-        self.assertListFetch(sent_url, allow_viewers=True, allow_editors=True, context_objects=[msg3, msg2, msg1])
+        # messages sorted by sent_on
+        self.assertListFetch(sent_url, allow_viewers=True, allow_editors=True, context_objects=[msg1, msg3, msg2])
 
         response = self.client.get(sent_url + "?search=joe")
-        self.assertEqual([msg2, msg1], list(response.context_data["object_list"]))
+        self.assertEqual([msg1, msg2], list(response.context_data["object_list"]))
 
     @patch("temba.mailroom.client.MailroomClient.msg_resend")
     def test_failed(self, mock_msg_resend):
@@ -1611,7 +1643,7 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
 
         # check query count
         self.login(self.admin)
-        with self.assertNumQueries(39):
+        with self.assertNumQueries(32):
             self.client.get(failed_url)
 
         response = self.assertListFetch(
@@ -1619,12 +1651,12 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
         )
 
         self.assertEqual(("resend",), response.context["actions"])
-        self.assertContains(response, reverse("channels.channellog_read", args=[log.id]))
+        self.assertContains(response, reverse("channels.channellog_read", args=[log.channel.uuid, log.id]))
 
         # make the org anonymous
         with AnonymousOrg(self.org):
             response = self.requestView(failed_url, self.admin)
-            self.assertNotContains(response, reverse("channels.channellog_read", args=[log.id]))
+            self.assertNotContains(response, reverse("channels.channellog_read", args=[log.channel.uuid, log.id]))
 
         # resend some messages
         self.client.post(failed_url, {"action": "resend", "objects": [msg2.id]})
@@ -1644,17 +1676,19 @@ class MsgCRUDLTest(TembaTest, CRUDLTestMixin):
         billy = self.create_contact("Billy Bob", urns=["twitter:billy_bob"])
 
         # create some folders and labels
-        folder = Label.get_or_create_folder(self.org, self.user, "folder")
-        label1 = Label.get_or_create(self.org, self.user, "label1", folder)
-        label2 = Label.get_or_create(self.org, self.user, "label2", folder)
-        label3 = Label.get_or_create(self.org, self.user, "label3")
+        folder = Label.objects.create(
+            org=self.org, name="folder", label_type=Label.TYPE_FOLDER, created_by=self.user, modified_by=self.user
+        )
+        label1 = self.create_label("label1", folder=folder)
+        label2 = self.create_label("label2", folder=folder)
+        label3 = self.create_label("label3")
 
         # create some messages
         msg1 = self.create_incoming_msg(joe, "test1")
         msg2 = self.create_incoming_msg(frank, "test2")
         msg3 = self.create_incoming_msg(billy, "test3")
         msg4 = self.create_incoming_msg(joe, "test4", visibility=Msg.VISIBILITY_ARCHIVED)
-        msg5 = self.create_incoming_msg(joe, "test5", visibility=Msg.VISIBILITY_DELETED)
+        msg5 = self.create_incoming_msg(joe, "test5", visibility=Msg.VISIBILITY_DELETED_BY_USER)
         msg6 = self.create_incoming_msg(joe, "flow test", msg_type="F")
 
         # apply the labels
@@ -1725,15 +1759,15 @@ class BroadcastTest(TembaTest):
         # a Twitter channel
         self.twitter = self.create_channel("TT", "Twitter", "nyaruka")
 
-    def run_msg_release_test(self, tc):
-        label = Label.get_or_create(self.org, self.user, "Labeled")
+    def test_delete(self):
+        label = self.create_label("Labeled")
 
         # create some incoming messages
         msg_in1 = self.create_incoming_msg(self.joe, "Hello")
         self.create_incoming_msg(self.frank, "Bonjour")
 
         # create a broadcast which is a response to an incoming message
-        self.create_broadcast(self.user, "Noted", contacts=[self.joe], response_to=msg_in1)
+        self.create_broadcast(self.user, "Noted", contacts=[self.joe])
 
         # create a broadcast which is to several contacts
         broadcast2 = self.create_broadcast(
@@ -1765,130 +1799,35 @@ class BroadcastTest(TembaTest):
         self.assertEqual(ChannelCount.get_day_count(self.twitter, ChannelCount.OUTGOING_MSG_TYPE, today), 1)
 
         self.org.clear_credit_cache()
-        self.assertEqual(self.org.get_credits_used(), 10)
-        self.assertEqual(self.org.get_credits_remaining(), 990)
+        self.assertEqual(10, self.org.get_credits_used())
+        self.assertEqual(990, self.org.get_credits_remaining())
 
-        # archive all our messages save for our flow incoming message
+        # delete all our messages save for our flow incoming message
         for m in Msg.objects.exclude(id=msg_in3.id):
-            m.release(tc["delete_reason"])
+            m.delete()
 
         # broadcasts should be unaffected
-        self.assertEqual(Broadcast.objects.count(), tc["broadcast_count"])
+        self.assertEqual(2, Broadcast.objects.count())
 
         # credit usage remains the same
         self.org.clear_credit_cache()
-        self.assertEqual(self.org.get_credits_used(), tc["credits_used"])
-        self.assertEqual(self.org.get_credits_remaining(), tc["credits_remaining"])
+        self.assertEqual(10, self.org.get_credits_used())
+        self.assertEqual(990, self.org.get_credits_remaining())
 
         # check system label counts have been updated
-        self.assertEqual(SystemLabel.get_counts(self.org)[SystemLabel.TYPE_INBOX], tc["inbox_count"])
-        self.assertEqual(SystemLabel.get_counts(self.org)[SystemLabel.TYPE_FLOWS], tc["flow_count"])
-        self.assertEqual(SystemLabel.get_counts(self.org)[SystemLabel.TYPE_SENT], tc["sent_count"])
-        self.assertEqual(SystemLabel.get_counts(self.org)[SystemLabel.TYPE_FAILED], tc["failed_count"])
+        self.assertEqual(0, SystemLabel.get_counts(self.org)[SystemLabel.TYPE_INBOX])
+        self.assertEqual(1, SystemLabel.get_counts(self.org)[SystemLabel.TYPE_FLOWS])
+        self.assertEqual(0, SystemLabel.get_counts(self.org)[SystemLabel.TYPE_SENT])
+        self.assertEqual(0, SystemLabel.get_counts(self.org)[SystemLabel.TYPE_FAILED])
 
-        # check our archived counts as well
-        self.assertEqual(
-            SystemLabelCount.get_totals(self.org, True)[SystemLabel.TYPE_INBOX], tc["archived_inbox_count"]
-        )
-        self.assertEqual(
-            SystemLabelCount.get_totals(self.org, True)[SystemLabel.TYPE_FLOWS], tc["archived_flow_count"]
-        )
-        self.assertEqual(SystemLabelCount.get_totals(self.org, True)[SystemLabel.TYPE_SENT], tc["archived_sent_count"])
-        self.assertEqual(
-            SystemLabelCount.get_totals(self.org, True)[SystemLabel.TYPE_FAILED], tc["archived_failed_count"]
-        )
-
-        # check user labels
-        self.assertEqual(LabelCount.get_totals([label])[label], tc["label_count"])
-        self.assertEqual(LabelCount.get_totals([label], True)[label], tc["archived_label_count"])
+        # check user label
+        self.assertEqual(0, LabelCount.get_totals([label])[label])
 
         # but daily channel counts should be unchanged
-        self.assertEqual(
-            ChannelCount.get_day_count(self.channel, ChannelCount.INCOMING_MSG_TYPE, today), tc["sms_incoming_count"]
-        )
-        self.assertEqual(
-            ChannelCount.get_day_count(self.channel, ChannelCount.OUTGOING_MSG_TYPE, today), tc["sms_outgoing_count"]
-        )
-        self.assertEqual(
-            ChannelCount.get_day_count(self.twitter, ChannelCount.INCOMING_MSG_TYPE, today),
-            tc["twitter_incoming_count"],
-        )
-        self.assertEqual(
-            ChannelCount.get_day_count(self.twitter, ChannelCount.OUTGOING_MSG_TYPE, today),
-            tc["twitter_outgoing_count"],
-        )
-
-    def test_archive_release(self):
-        self.run_msg_release_test(
-            {
-                "delete_reason": Msg.DELETE_FOR_ARCHIVE,
-                "broadcast_count": 2,
-                "label_count": 0,
-                "archived_label_count": 1,
-                "inbox_count": 0,
-                "flow_count": 1,
-                "sent_count": 0,
-                "failed_count": 0,
-                "archived_inbox_count": 2,
-                "archived_flow_count": 0,
-                "archived_sent_count": 6,
-                "archived_failed_count": 1,
-                "credits_used": 10,
-                "credits_remaining": 990,
-                "sms_incoming_count": 3,
-                "sms_outgoing_count": 6,
-                "twitter_incoming_count": 0,
-                "twitter_outgoing_count": 1,
-            }
-        )
-
-    def test_user_release(self):
-        self.run_msg_release_test(
-            {
-                "delete_reason": Msg.DELETE_FOR_USER,
-                "broadcast_count": 2,
-                "label_count": 0,
-                "archived_label_count": 0,
-                "inbox_count": 0,
-                "flow_count": 1,
-                "sent_count": 0,
-                "failed_count": 0,
-                "archived_inbox_count": 0,
-                "archived_flow_count": 0,
-                "archived_sent_count": 0,
-                "archived_failed_count": 0,
-                "credits_used": 10,
-                "credits_remaining": 990,
-                "sms_incoming_count": 3,
-                "sms_outgoing_count": 6,
-                "twitter_incoming_count": 0,
-                "twitter_outgoing_count": 1,
-            }
-        )
-
-    def test_delete_release(self):
-        self.run_msg_release_test(
-            {
-                "delete_reason": None,
-                "broadcast_count": 2,
-                "label_count": 0,
-                "archived_label_count": 0,
-                "inbox_count": 0,
-                "flow_count": 1,
-                "sent_count": 0,
-                "failed_count": 0,
-                "archived_inbox_count": 0,
-                "archived_flow_count": 0,
-                "archived_sent_count": 0,
-                "archived_failed_count": 0,
-                "credits_used": 1,
-                "credits_remaining": 999,
-                "sms_incoming_count": 1,
-                "sms_outgoing_count": 0,
-                "twitter_incoming_count": 0,
-                "twitter_outgoing_count": 0,
-            }
-        )
+        self.assertEqual(3, ChannelCount.get_day_count(self.channel, ChannelCount.INCOMING_MSG_TYPE, today))
+        self.assertEqual(6, ChannelCount.get_day_count(self.channel, ChannelCount.OUTGOING_MSG_TYPE, today))
+        self.assertEqual(0, ChannelCount.get_day_count(self.twitter, ChannelCount.INCOMING_MSG_TYPE, today))
+        self.assertEqual(1, ChannelCount.get_day_count(self.twitter, ChannelCount.OUTGOING_MSG_TYPE, today))
 
     def test_model(self):
         broadcast1 = Broadcast.create(
@@ -1949,157 +1888,6 @@ class BroadcastTest(TembaTest):
 
         self.assertEqual("Hola a todos", broadcast.get_text(self.joe))  # but only if it's allowed
 
-    @patch("temba.mailroom.queue_broadcast")
-    def test_send(self, mock_queue_broadcast):
-        # remove all channels first
-        for channel in Channel.objects.all():
-            channel.release(self.admin)
-
-        send_url = reverse("msgs.broadcast_send")
-        self.login(self.admin)
-
-        # initialize broadcast form based on a message
-        msg = self.create_outgoing_msg(self.joe, "A test message to joe")
-        response = self.client.get(f"{send_url}?m={msg.id}")
-        omnibox = response.context["form"]["omnibox"]
-        self.assertEqual("Joe Blow", omnibox.value()[0]["name"])
-
-        # initialize a broadcast form based on a contact
-        response = self.client.get(f"{send_url}?c={self.joe.uuid}")
-        omnibox = response.context["form"]["omnibox"]
-        self.assertEqual("Joe Blow", omnibox.value()[0]["name"])
-
-        # initialize a broadcast form based on an urn
-        response = self.client.get(f"{send_url}?u={msg.contact_urn.id}")
-        omnibox = response.context["form"]["omnibox"]
-        self.assertEqual("tel:123", omnibox.value()[0]["id"])
-
-        # initialize a broadcast form based on a step uuid
-        response = self.client.get(f"{send_url}?step_node=step")
-        self.assertEqual(["text", "step_node", "loc"], list(response.context["form"].fields.keys()))
-
-        # try with no channel
-        omnibox = omnibox_serialize(self.org, [], [self.joe], True)
-        response = self.client.post(send_url, {"text": "some text", "omnibox": omnibox}, follow=True)
-        self.assertContains(response, "You must add a phone number before sending messages", status_code=400)
-
-        # test when we have many channels
-        self.create_channel(
-            "A", "Android 1", "+2345", secret=Channel.generate_secret(), config={Channel.CONFIG_FCM_ID: "1234"}
-        )
-        self.create_channel(
-            "A", "Android 2", "+3456", secret=Channel.generate_secret(), config={Channel.CONFIG_FCM_ID: "123"}
-        )
-        self.create_channel("TT", "Twitter", "nyaruka")
-
-        response = self.client.get(send_url)
-
-        self.assertEqual(["omnibox", "text", "schedule", "step_node"], response.context["fields"])
-
-        omnibox = omnibox_serialize(self.org, [self.joe_and_frank], [self.joe, self.lucy], True)
-        self.client.post(send_url, {"text": "message #1", "omnibox": omnibox}, follow=True)
-
-        broadcast = Broadcast.objects.get()
-        self.assertEqual({"base": "message #1"}, broadcast.text)
-        self.assertEqual("message #1", broadcast.get_text())
-        self.assertEqual(1, broadcast.groups.count())
-        self.assertEqual(2, broadcast.contacts.count())
-
-        mock_queue_broadcast.assert_called_once_with(broadcast)
-
-        # test with one channel now
-        for channel in Channel.objects.all():
-            channel.release(self.admin)
-
-        self.create_channel(
-            "A", "Android", "+1234", secret=Channel.generate_secret(), config={Channel.CONFIG_FCM_ID: "123"}
-        )
-
-        response = self.client.get(send_url)
-        self.assertEqual(["omnibox", "text", "schedule", "step_node"], response.context["fields"])
-
-        omnibox = omnibox_serialize(self.org, [self.joe_and_frank], [self.kevin], True)
-        self.client.post(send_url, {"text": "message #2", "omnibox": omnibox}, follow=True)
-
-        broadcast = Broadcast.objects.order_by("id").last()
-        self.assertEqual({"base": "message #2"}, broadcast.text)
-        self.assertEqual(1, broadcast.groups.count())
-        self.assertEqual(1, broadcast.contacts.count())
-
-        # directly on user page
-        omnibox = omnibox_serialize(self.org, [], [self.kevin], True)
-        response = self.client.post(send_url, {"text": "contact send", "omnibox": omnibox})
-
-        self.assertEqual(3, Broadcast.objects.all().count())
-
-        # test sending to an arbitrary user
-        self.client.post(
-            send_url, {"text": "message content", "omnibox": '{"type": "urn", "id":"tel:2065551212"}'}, follow=True
-        )
-
-        self.assertEqual(4, Broadcast.objects.all().count())
-
-        bcast = Broadcast.objects.order_by("id").last()
-        self.assertEqual(["tel:2065551212"], bcast.raw_urns)
-
-        # test missing senders
-        response = self.client.post(send_url, {"text": "message content"}, follow=True)
-
-        self.assertContains(response, "At least one recipient is required")
-
-        response = self.client.post(
-            send_url, {"text": "message content", "omnibox": omnibox_serialize(self.org, [], [], True)}, follow=True
-        )
-
-        self.assertContains(response, "At least one recipient is required")
-
-        omnibox = omnibox_serialize(self.org, [], [self.kevin], True)
-        response = self.client.post(
-            send_url, {"text": "this is a test message", "omnibox": omnibox, "_format": "json"}, follow=True
-        )
-
-        self.assertContains(response, "success")
-
-        # give Joe a flow run that has stopped on a node
-        flow = self.get_flow("color_v13")
-        flow_nodes = flow.get_definition()["nodes"]
-        color_prompt = flow_nodes[0]
-        color_split = flow_nodes[4]
-        (
-            MockSessionWriter(self.joe, flow)
-            .visit(color_prompt)
-            .send_msg("What is your favorite color?", self.channel)
-            .visit(color_split)
-            .wait()
-            .save()
-        ).session.runs.get()
-
-        # no error if we are sending to a flow node
-        omnibox = omnibox_serialize(self.org, [], [self.kevin], True)
-        payload = {"text": "message content", "omnibox": omnibox, "step_node": color_split["uuid"]}
-        response = self.client.post(send_url, payload, follow=True)
-
-        self.assertContains(response, "success")
-
-        response = self.client.post(send_url, payload)
-
-        self.assertRedirect(response, reverse("msgs.msg_inbox"))
-
-        broadcast = Broadcast.objects.order_by("id").last()
-        self.assertEqual(broadcast.text, {"base": "message content"})
-        self.assertEqual(broadcast.groups.count(), 0)
-        self.assertEqual({self.joe}, set(broadcast.contacts.all()))
-
-        self.assertEqual(7, Broadcast.objects.count())
-
-        # if there are no contacts at that node, we don't actually create a broadcast
-        self.joe.runs.update(is_active=False)
-
-        response = self.client.post(send_url, payload, follow=True)
-        self.assertContains(response, "success")
-
-        self.assertEqual(7, Broadcast.objects.count())
-
     def test_message_parts(self):
         contact = self.create_contact("Matt", phone="+12067778811")
 
@@ -2137,50 +1925,162 @@ class BroadcastTest(TembaTest):
         self.assertEqual(40, len(parts[3]))
 
 
-class BroadcastCRUDLTest(TembaTest):
+class BroadcastCRUDLTest(TembaTest, CRUDLTestMixin):
     def setUp(self):
         super().setUp()
 
-        self.joe = self.create_contact("Joe Blow", phone="123")
-        self.frank = self.create_contact("Frank Blow", phone="1234")
+        self.joe = self.create_contact("Joe Blow", urns=["tel:+12025550149"])
+        self.frank = self.create_contact("Frank Blow", urns=["tel:+12025550195"])
         self.joe_and_frank = self.create_group("Joe and Frank", [self.joe, self.frank])
 
-    def test_send(self):
-        url = reverse("msgs.broadcast_send")
+    @patch("temba.mailroom.queue_broadcast")
+    def test_send(self, mock_queue_broadcast):
+        send_url = reverse("msgs.broadcast_send")
 
         # can't send if you're not logged in
-        omnibox = omnibox_serialize(self.org, [], [self.joe], True)
-        response = self.client.post(url, dict(text="Test", omnibox=omnibox))
+        response = self.client.get(send_url)
+        self.assertLoginRedirect(response)
+
+        response = self.client.post(
+            send_url, {"text": "Test", "omnibox": omnibox_serialize(self.org, [], [self.joe], json_encode=True)}
+        )
         self.assertLoginRedirect(response)
 
         # or just a viewer user
         self.login(self.user)
-        response = self.client.post(url, dict(text="Test", omnibox=omnibox))
+
+        response = self.client.get(send_url)
         self.assertLoginRedirect(response)
 
         # but editors can
         self.login(self.editor)
 
-        just_joe = self.create_group("Just Joe")
-        just_joe.contacts.add(self.joe)
+        response = self.client.get(send_url)
+        self.assertEqual(
+            ["omnibox", "text", "schedule", "step_node", "loc"], list(response.context["form"].fields.keys())
+        )
 
-        omnibox = omnibox_serialize(self.org, [just_joe], [self.frank], True)
-        omnibox.append('{"type": "urn", "id": "tel:0780000001"}')
+        # initialize form based on a contact
+        response = self.client.get(f"{send_url}?c={self.joe.uuid}")
+        omnibox = response.context["form"]["omnibox"]
+        self.assertEqual(
+            [{"id": str(self.joe.uuid), "name": "Joe Blow", "type": "contact", "urn": "(202) 555-0149"}],
+            omnibox.value(),
+        )
 
+        # initialize form based on an existing URN
+        response = self.client.get(f"{send_url}?u={self.joe.get_urn().id}")
+        omnibox = response.context["form"]["omnibox"]
+        self.assertEqual(
+            [
+                {
+                    "id": "tel:+12025550149",
+                    "name": "(202) 555-0149",
+                    "type": "urn",
+                    "contact": "Joe Blow",
+                    "scheme": "tel",
+                }
+            ],
+            omnibox.value(),
+        )
+
+        # submit with a send to a group, a contact, an existing URN and a raw URN
         response = self.client.post(
-            url, {"omnibox": omnibox, "text": "Hey Joe, where you goin' with that gun in your hand?"}
+            send_url,
+            {
+                "text": "Hey Joe, where you goin?",
+                "omnibox": omnibox_serialize(
+                    self.org,
+                    [self.joe_and_frank],
+                    [self.frank],
+                    urns=[self.joe.get_urn()],
+                    raw_urns=["tel:0780000001"],
+                    json_encode=True,
+                ),
+            },
         )
         self.assertEqual(302, response.status_code)
 
         broadcast = Broadcast.objects.get()
-        self.assertEqual({"base": "Hey Joe, where you goin' with that gun in your hand?"}, broadcast.text)
-        self.assertEqual({just_joe}, set(broadcast.groups.all()))
+        self.assertEqual({"base": "Hey Joe, where you goin?"}, broadcast.text)
+        self.assertEqual({self.joe_and_frank}, set(broadcast.groups.all()))
         self.assertEqual({self.frank}, set(broadcast.contacts.all()))
-        self.assertEqual(["tel:0780000001"], broadcast.raw_urns)
+        self.assertEqual(["tel:+12025550149", "tel:0780000001"], broadcast.raw_urns)
+
+        mock_queue_broadcast.assert_called_once_with(broadcast)
+
+        # try to submit a send to nobody
+        response = self.client.post(
+            send_url, {"text": "Broken", "omnibox": omnibox_serialize(self.org, [], [], json_encode=True)}
+        )
+        self.assertFormError(response, "form", "omnibox", "At least one recipient is required.")
+
+        # try to submit with an invalid URN
+        response = self.client.post(
+            send_url,
+            {
+                "text": "Broken",
+                "omnibox": omnibox_serialize(self.org, [], [], raw_urns=["tel:$$$$$$"], json_encode=True),
+            },
+        )
+        self.assertFormError(response, "form", "omnibox", "'tel:$$$$$$' is not a valid URN.")
+
+        # if we release our send channel we also can't start send
+        self.channel.release(self.admin)
+
+        response = self.requestView(send_url, self.admin)
+        self.assertContains(
+            response, 'To get started you need to <a href="/channels/channel/claim/">add a channel</a>'
+        )
+        self.assertNotContains(response, "Send")
+
+    @patch("temba.mailroom.queue_broadcast")
+    def test_send_to_node(self, mock_queue_broadcast):
+        send_url = reverse("msgs.broadcast_send")
+
+        self.login(self.editor)
+
+        # give Joe a flow run that has stopped on a node
+        flow = self.get_flow("color_v13")
+        flow_nodes = flow.get_definition()["nodes"]
+        color_prompt = flow_nodes[0]
+        color_split = flow_nodes[4]
+        (
+            MockSessionWriter(self.joe, flow)
+            .visit(color_prompt)
+            .send_msg("What is your favorite color?", self.channel)
+            .visit(color_split)
+            .wait()
+            .save()
+        ).session.runs.get()
+
+        # initialize form based on a flow node UUID
+        response = self.client.get(f"{send_url}?step_node={color_split['uuid']}")
+
+        # no omnibox...
+        self.assertEqual(["text", "step_node", "loc"], list(response.context["form"].fields.keys()))
+
+        response = self.client.post(send_url, {"text": "Hurry up", "step_node": color_split["uuid"]})
+        self.assertRedirect(response, reverse("msgs.msg_inbox"))
+
+        broadcast = Broadcast.objects.get()
+        self.assertEqual(broadcast.text, {"base": "Hurry up"})
+        self.assertEqual(broadcast.groups.count(), 0)
+        self.assertEqual({self.joe}, set(broadcast.contacts.all()))
+
+        mock_queue_broadcast.assert_called_once_with(broadcast)
+
+        # if there are no contacts at the given node, we don't actually create a broadcast
+        response = self.client.post(
+            send_url, {"text": "Hurry up", "step_node": "36b2c697-a1d9-47a9-9553-d07d6a725877"}
+        )
+        self.assertRedirect(response, reverse("msgs.msg_inbox"))
+
+        self.assertEqual(1, Broadcast.objects.count())
 
     def test_update(self):
         self.login(self.editor)
-        omnibox = omnibox_serialize(self.org, [], [self.joe], True)
+        omnibox = omnibox_serialize(self.org, [], [self.joe], json_encode=True)
         self.client.post(reverse("msgs.broadcast_send"), dict(omnibox=omnibox, text="Lunch reminder", schedule=True))
         broadcast = Broadcast.objects.get()
         url = reverse("msgs.broadcast_update", args=[broadcast.pk])
@@ -2188,7 +2088,7 @@ class BroadcastCRUDLTest(TembaTest):
         response = self.client.get(url)
         self.assertEqual(list(response.context["form"].fields.keys()), ["message", "omnibox", "loc"])
 
-        omnibox = omnibox_serialize(self.org, [], [self.frank], True)
+        omnibox = omnibox_serialize(self.org, [], [self.frank], json_encode=True)
         response = self.client.post(url, dict(message="Dinner reminder", omnibox=omnibox))
         self.assertEqual(response.status_code, 302)
 
@@ -2198,28 +2098,32 @@ class BroadcastCRUDLTest(TembaTest):
         self.assertEqual(set(broadcast.contacts.all()), {self.frank})
 
     def test_schedule_list(self):
-        url = reverse("msgs.broadcast_schedule_list")
+        list_url = reverse("msgs.broadcast_schedule_list")
 
-        # can't view if you're not logged in
-        response = self.client.get(url)
-        self.assertLoginRedirect(response)
+        self.assertListFetch(list_url, allow_viewers=True, allow_editors=True, context_objects=[])
 
-        self.login(self.editor)
+        bc1 = self.create_broadcast(
+            self.admin,
+            "good morning",
+            contacts=[self.joe],
+            schedule=Schedule.create_schedule(self.org, self.admin, timezone.now(), Schedule.REPEAT_DAILY),
+        )
+        bc2 = self.create_broadcast(
+            self.admin,
+            "good evening",
+            contacts=[self.frank],
+            schedule=Schedule.create_schedule(self.org, self.admin, timezone.now(), Schedule.REPEAT_DAILY),
+        )
+        self.create_broadcast(self.admin, "not scheduled", groups=[self.joe_and_frank])
 
-        # send some messages - one immediately, one scheduled
-        omnibox = omnibox_serialize(self.org, [], [self.joe], True)
-        self.client.post(reverse("msgs.broadcast_send"), dict(omnibox=omnibox, text="See you later"))
-        self.client.post(reverse("msgs.broadcast_send"), dict(omnibox=omnibox, text="Lunch reminder", schedule=True))
+        self.assertListFetch(list_url, allow_viewers=True, allow_editors=True, context_objects=[bc2, bc1])
 
-        scheduled = Broadcast.objects.exclude(schedule=None).first()
-
-        response = self.client.get(url)
-        self.assertEqual(set(response.context["object_list"]), {scheduled})
+        self.assertListFetch(list_url + "?search=MORN", allow_viewers=True, allow_editors=True, context_objects=[bc1])
 
     def test_schedule_read(self):
         self.login(self.editor)
 
-        omnibox = omnibox_serialize(self.org, [self.joe_and_frank], [self.joe], True)
+        omnibox = omnibox_serialize(self.org, [self.joe_and_frank], [self.joe], json_encode=True)
         self.client.post(reverse("msgs.broadcast_send"), dict(omnibox=omnibox, text="Lunch reminder", schedule=True))
         broadcast = Broadcast.objects.get()
 
@@ -2231,11 +2135,11 @@ class BroadcastCRUDLTest(TembaTest):
     def test_missing_contacts(self):
         self.login(self.editor)
 
-        omnibox = omnibox_serialize(self.org, [self.joe_and_frank], [self.joe], True)
+        omnibox = omnibox_serialize(self.org, [self.joe_and_frank], [self.joe], json_encode=True)
         self.client.post(reverse("msgs.broadcast_send"), dict(omnibox=omnibox, text="Lunch reminder", schedule=True))
         broadcast = Broadcast.objects.get()
 
-        omnibox = omnibox_serialize(self.org, [], [], True)
+        omnibox = omnibox_serialize(self.org, [], [], json_encode=True)
         response = self.client.post(
             reverse("msgs.broadcast_update", args=[broadcast.pk]),
             dict(omnibox=omnibox, message="Empty contacts", schedule=True),
@@ -2250,61 +2154,19 @@ class LabelTest(TembaTest):
         self.joe = self.create_contact("Joe Blow", phone="073835001")
         self.frank = self.create_contact("Frank", phone="073835002")
 
-    def test_get_or_create(self):
-        label1 = Label.get_or_create(self.org, self.user, "Spam")
+    def test_create(self):
+        label1 = Label.create(self.org, self.user, "Spam")
         self.assertEqual("Spam", label1.name)
         self.assertIsNone(label1.folder)
 
-        followup = Label.get_or_create_folder(self.org, self.user, "Follow up")
-        label2 = Label.get_or_create(self.org, self.user, "Complaints", followup)
-        self.assertEqual("Complaints", label2.name)
-        self.assertEqual(followup, label2.folder)
-
-        label2.release(self.admin)
-
-        # will return existing label by name and strip whitespace
-        self.assertEqual(label1, Label.get_or_create(self.org, self.user, "Spam"))
-        self.assertEqual(label1, Label.get_or_create(self.org, self.user, "  Spam   "))
-
-        # but only if it's active
-        self.assertNotEqual(label2, Label.get_or_create(self.org, self.user, "Complaints"))
-
         # don't allow invalid name
-        self.assertRaises(ValueError, Label.get_or_create, self.org, self.user, "+Important")
+        self.assertRaises(AssertionError, Label.create, self.org, self.user, '"Hi"')
 
-        # can't use a non-folder as a folder
-        self.assertRaises(AssertionError, Label.get_or_create, self.org, self.user, "Important", label1)
-
-    def test_get_or_create_folder(self):
-        folder1 = Label.get_or_create_folder(self.org, self.user, "Spam")
-        self.assertEqual("Spam", folder1.name)
-        self.assertIsNone(folder1.folder)
-
-        # will return existing label by name and strip whitespace
-        self.assertEqual(folder1, Label.get_or_create_folder(self.org, self.user, "Spam"))
-        self.assertEqual(folder1, Label.get_or_create_folder(self.org, self.user, "  Spam   "))
-
-        folder1.release(self.admin)
-
-        # but only if it's active
-        self.assertNotEqual(folder1, Label.get_or_create_folder(self.org, self.user, "Spam"))
-
-        # don't allow invalid name
-        self.assertRaises(ValueError, Label.get_or_create_folder, self.org, self.user, "+Important")
-
-    def test_is_valid_name(self):
-        self.assertTrue(Label.is_valid_name("x"))
-        self.assertTrue(Label.is_valid_name("1"))
-        self.assertTrue(Label.is_valid_name("x" * 64))
-        self.assertFalse(Label.is_valid_name(" "))
-        self.assertFalse(Label.is_valid_name(" x"))
-        self.assertFalse(Label.is_valid_name("x "))
-        self.assertFalse(Label.is_valid_name("+x"))
-        self.assertFalse(Label.is_valid_name("@x"))
-        self.assertFalse(Label.is_valid_name("x" * 65))
+        # don't allow duplicate name
+        self.assertRaises(AssertionError, Label.create, self.org, self.user, "Spam")
 
     def test_toggle_label(self):
-        label = Label.get_or_create(self.org, self.user, "Spam")
+        label = self.create_label("Spam")
         msg1 = self.create_incoming_msg(self.joe, "Message 1")
         msg2 = self.create_incoming_msg(self.joe, "Message 2")
         msg3 = self.create_incoming_msg(self.joe, "Message 3")
@@ -2313,13 +2175,13 @@ class LabelTest(TembaTest):
 
         label.toggle_label([msg1, msg2, msg3], add=True)  # add label to 3 messages
 
-        label = Label.label_objects.get(pk=label.pk)
+        label.refresh_from_db()
         self.assertEqual(label.get_visible_count(), 3)
         self.assertEqual(set(label.get_messages()), {msg1, msg2, msg3})
 
         label.toggle_label([msg3], add=False)  # remove label from a message
 
-        label = Label.label_objects.get(pk=label.pk)
+        label.refresh_from_db()
         self.assertEqual(label.get_visible_count(), 2)
         self.assertEqual(set(label.get_messages()), {msg1, msg2})
 
@@ -2329,74 +2191,63 @@ class LabelTest(TembaTest):
 
         msg2.archive()  # won't remove label from msg, but msg no longer counts toward visible count
 
-        label = Label.label_objects.get(pk=label.pk)
+        label.refresh_from_db()
         self.assertEqual(label.get_visible_count(), 1)
         self.assertEqual(set(label.get_messages()), {msg1, msg2})
 
         msg2.restore()  # msg back in visible count
 
-        label = Label.label_objects.get(pk=label.pk)
+        label.refresh_from_db()
         self.assertEqual(label.get_visible_count(), 2)
         self.assertEqual(set(label.get_messages()), {msg1, msg2})
 
-        msg2.release()  # removes label message no longer visible
+        msg2.delete()  # removes label message no longer visible
 
-        label = Label.label_objects.get(pk=label.pk)
+        label.refresh_from_db()
         self.assertEqual(label.get_visible_count(), 1)
         self.assertEqual(set(label.get_messages()), {msg1})
 
         msg3.archive()
         label.toggle_label([msg3], add=True)  # labelling an already archived message doesn't increment the count
 
-        label = Label.label_objects.get(pk=label.pk)
+        label.refresh_from_db()
         self.assertEqual(label.get_visible_count(), 1)
         self.assertEqual(set(label.get_messages()), {msg1, msg3})
 
         msg3.restore()  # but then restoring that message will
 
-        label = Label.label_objects.get(pk=label.pk)
+        label.refresh_from_db()
         self.assertEqual(label.get_visible_count(), 2)
         self.assertEqual(set(label.get_messages()), {msg1, msg3})
 
         # can't label outgoing messages
         msg5 = self.create_outgoing_msg(self.joe, "Message")
-        self.assertRaises(ValueError, label.toggle_label, [msg5], add=True)
+        self.assertRaises(AssertionError, label.toggle_label, [msg5], add=True)
 
         # can't get a count of a folder
-        folder = Label.get_or_create_folder(self.org, self.user, "Folder")
-        self.assertRaises(ValueError, folder.get_visible_count)
+        folder = Label.objects.create(
+            org=self.org, name="Cool Labels", label_type=Label.TYPE_FOLDER, created_by=self.user, modified_by=self.user
+        )
+        self.assertRaises(AssertionError, folder.get_visible_count)
 
-        # archive one of our messages, should change count but keep an archived count as well
-        self.assertEqual(LabelCount.get_totals([label], is_archived=True)[label], 0)
-        self.assertEqual(LabelCount.get_totals([label], is_archived=False)[label], 2)
+        # squashing shouldn't affect counts
+        self.assertEqual(LabelCount.get_totals([label])[label], 2)
 
-        msg1.release(Msg.DELETE_FOR_ARCHIVE)
-
-        self.assertEqual(LabelCount.get_totals([label], is_archived=True)[label], 1)
-        self.assertEqual(LabelCount.get_totals([label], is_archived=False)[label], 1)
-
-        # squash and check once more
         squash_msgcounts()
 
-        self.assertEqual(LabelCount.get_totals([label], is_archived=True)[label], 1)
-        self.assertEqual(LabelCount.get_totals([label], is_archived=False)[label], 1)
-
-        # do a user release
-        msg3.release(Msg.DELETE_FOR_USER)
-
-        self.assertEqual(LabelCount.get_totals([label], is_archived=True)[label], 1)
-        self.assertEqual(LabelCount.get_totals([label], is_archived=False)[label], 0)
-        squash_msgcounts()
-        self.assertEqual(LabelCount.get_totals([label], is_archived=True)[label], 1)
-        self.assertEqual(LabelCount.get_totals([label], is_archived=False)[label], 0)
+        self.assertEqual(LabelCount.get_totals([label])[label], 2)
 
     def test_get_messages_and_hierarchy(self):
-        folder1 = Label.get_or_create_folder(self.org, self.user, "Sorted")
-        folder2 = Label.get_or_create_folder(self.org, self.user, "Todo")
-        label1 = Label.get_or_create(self.org, self.user, "Spam", folder1)
-        label2 = Label.get_or_create(self.org, self.user, "Social", folder1)
-        label3 = Label.get_or_create(self.org, self.user, "Other")
-        label4 = Label.get_or_create(self.org, self.user, "Deleted")
+        folder1 = Label.objects.create(
+            org=self.org, name="Sorted", label_type=Label.TYPE_FOLDER, created_by=self.user, modified_by=self.user
+        )
+        folder2 = Label.objects.create(
+            org=self.org, name="Todo", label_type=Label.TYPE_FOLDER, created_by=self.user, modified_by=self.user
+        )
+        label1 = self.create_label("Spam", folder=folder1)
+        label2 = self.create_label("Social", folder=folder1)
+        label3 = self.create_label("Other")
+        label4 = self.create_label("Deleted")
 
         label4.release(self.user)
 
@@ -2433,10 +2284,12 @@ class LabelTest(TembaTest):
             )
 
     def test_delete(self):
-        folder1 = Label.get_or_create_folder(self.org, self.user, "Folder")
-        label1 = Label.get_or_create(self.org, self.user, "Spam", folder1)
-        label2 = Label.get_or_create(self.org, self.user, "Social", folder1)
-        label3 = Label.get_or_create(self.org, self.user, "Other")
+        folder1 = Label.objects.create(
+            org=self.org, name="Folder", label_type=Label.TYPE_FOLDER, created_by=self.user, modified_by=self.user
+        )
+        label1 = self.create_label("Spam", folder=folder1)
+        label2 = self.create_label("Social", folder=folder1)
+        label3 = self.create_label("Other")
 
         msg1 = self.create_incoming_msg(self.joe, "Message 1")
         msg2 = self.create_incoming_msg(self.joe, "Message 2")
@@ -2447,8 +2300,6 @@ class LabelTest(TembaTest):
         label3.toggle_label([msg3], add=True)
 
         ExportMessagesTask.create(self.org, self.admin, label=label1)
-        with self.assertRaises(ValueError):
-            folder1.release(self.admin)
 
         # can't release non-empty folder
         with self.assertRaises(AssertionError):
@@ -2464,7 +2315,7 @@ class LabelTest(TembaTest):
         self.assertEqual(self.admin, folder1.modified_by)
 
         # check that contained labels are also released
-        self.assertEqual(0, Label.all_objects.filter(id__in=[label1.id, label2.id], is_active=True).count())
+        self.assertEqual(0, Label.objects.filter(id__in=[label1.id, label2.id], is_active=True).count())
         self.assertEqual(set(), set(Msg.objects.get(id=msg1.id).labels.all()))
         self.assertEqual(set(), set(Msg.objects.get(id=msg2.id).labels.all()))
         self.assertEqual({label3}, set(Msg.objects.get(id=msg3.id).labels.all()))
@@ -2478,62 +2329,89 @@ class LabelTest(TembaTest):
 
 
 class LabelCRUDLTest(TembaTest, CRUDLTestMixin):
-    def test_create_and_update(self):
-        create_label_url = reverse("msgs.label_create")
-        create_folder_url = reverse("msgs.label_create_folder")
+    def test_create(self):
+        create_url = reverse("msgs.label_create")
 
-        self.login(self.admin)
+        self.assertCreateFetch(create_url, allow_viewers=False, allow_editors=True, form_fields=("name", "messages"))
 
         # try to create label with invalid name
-        response = self.client.post(create_label_url, {"name": "+Spam"})
-        self.assertFormError(response, "form", "name", "Name must not be blank or begin with punctuation")
+        self.assertCreateSubmit(
+            create_url, {"name": '"Spam"'}, form_errors={"name": 'Cannot contain the character: "'}
+        )
 
         # try again with valid name
-        self.client.post(create_label_url, {"name": "Spam"}, follow=True)
-
-        label1 = Label.label_objects.get()
-        self.assertEqual("Spam", label1.name)
-        self.assertIsNone(label1.folder)
+        self.assertCreateSubmit(
+            create_url,
+            {"name": "Spam"},
+            new_obj_query=Label.objects.filter(name="Spam", label_type=Label.TYPE_LABEL, folder=None),
+        )
 
         # check that we can't create another with same name
-        response = self.client.post(create_label_url, {"name": "Spam"})
-        self.assertFormError(response, "form", "name", "Name must be unique")
+        self.assertCreateSubmit(create_url, {"name": "Spam"}, form_errors={"name": "Must be unique."})
 
-        # create a folder
-        self.client.post(create_folder_url, {"name": "Folder"}, follow=True)
-        folder = Label.folder_objects.get(name="Folder")
-
-        # and a label in it
-        self.client.post(create_label_url, {"name": "Spam2", "folder": folder.id}, follow=True)
-        label2 = Label.label_objects.get(name="Spam2")
-        self.assertEqual(folder, label2.folder)
-
-        # update label one
-        self.client.post(reverse("msgs.label_update", args=[label1.id]), {"name": "Spam1"})
-
-        label1.refresh_from_db()
-
-        self.assertEqual("Spam1", label1.name)
-        self.assertIsNone(label1.folder)
-
-        # try to update to invalid label name
-        response = self.client.post(reverse("msgs.label_update", args=[label1.id]), {"name": "+Spam"})
-        self.assertFormError(response, "form", "name", "Name must not be blank or begin with punctuation")
+        # create another label
+        self.assertCreateSubmit(
+            create_url,
+            {"name": "Spam 2"},
+            new_obj_query=Label.objects.filter(name="Spam 2", label_type=Label.TYPE_LABEL, folder=None),
+        )
 
         # try creating a new label after reaching the limit on labels
-        current_count = Label.all_objects.filter(org=self.org, is_active=True).count()
-        with patch.object(Label, "MAX_ORG_LABELS", current_count):
-            response = self.client.post(create_label_url, {"name": "CoolStuff"})
+        current_count = Label.get_active_for_org(self.org).count()
+        with override_settings(ORG_LIMIT_DEFAULTS={"labels": current_count}):
+            response = self.client.post(create_url, {"name": "CoolStuff"})
             self.assertFormError(
                 response,
                 "form",
                 "name",
-                "This org has 3 labels and the limit is 3. "
+                "This workspace has reached its limit of 2 labels. "
                 "You must delete existing ones before you can create new ones.",
             )
 
+    def test_update(self):
+        # users can no longer create folders or new labels with folders, but they still exist
+        folder1 = Label.objects.create(
+            org=self.org, name="Cool Labels", label_type=Label.TYPE_FOLDER, created_by=self.user, modified_by=self.user
+        )
+        folder2 = Label.objects.create(
+            org=self.org, name="Sad Labels", label_type=Label.TYPE_FOLDER, created_by=self.user, modified_by=self.user
+        )
+        label1 = self.create_label("Spam", folder=folder1)
+        label2 = self.create_label("Sales", folder=None)
+
+        label1_url = reverse("msgs.label_update", args=[label1.id])
+        label2_url = reverse("msgs.label_update", args=[label2.id])
+
+        # only show folder field for labels which already have a folder
+        self.assertUpdateFetch(
+            label1_url, allow_viewers=False, allow_editors=True, form_fields={"name": "Spam", "folder": folder1.id}
+        )
+        self.assertUpdateFetch(label2_url, allow_viewers=False, allow_editors=True, form_fields={"name": "Sales"})
+
+        # try to update to invalid name
+        self.assertUpdateSubmit(
+            label1_url,
+            {"name": '"Spam"'},
+            form_errors={"name": 'Cannot contain the character: "'},
+            object_unchanged=label1,
+        )
+
+        # update with valid name and new folder
+        self.assertUpdateSubmit(label1_url, {"name": "Junk", "folder": folder2.id})
+
+        label1.refresh_from_db()
+        self.assertEqual("Junk", label1.name)
+        self.assertEqual(folder2, label1.folder)
+
+        # remove from folder
+        self.assertUpdateSubmit(label1_url, {"name": "Junk", "folder": ""})
+
+        label1.refresh_from_db()
+        self.assertEqual("Junk", label1.name)
+        self.assertIsNone(label1.folder)
+
     def test_delete(self):
-        label = Label.get_or_create(self.org, self.user, "Spam")
+        label = self.create_label("Spam")
 
         delete_url = reverse("msgs.label_delete", args=[label.uuid])
 
@@ -2550,12 +2428,13 @@ class LabelCRUDLTest(TembaTest, CRUDLTestMixin):
         label.save()
 
         # add a dependency and try again
-        flow = self.create_flow()
+        flow = self.create_flow("Color Flow")
         flow.label_dependencies.add(label)
         self.assertFalse(flow.has_issues)
 
         response = self.assertDeleteFetch(delete_url, allow_editors=True)
-        self.assertContains(response, "is used by the following flows which may not work as expected")
+        self.assertContains(response, "is used by the following items but can still be deleted:")
+        self.assertContains(response, "Color Flow")
 
         self.assertDeleteSubmit(delete_url, object_deactivated=label, success_status=200)
 
@@ -2565,8 +2444,10 @@ class LabelCRUDLTest(TembaTest, CRUDLTestMixin):
 
     def test_delete_folder(self):
         # create a folder with a single label
-        folder = Label.get_or_create_folder(self.org, self.user, "Cool Labels")
-        label1 = Label.get_or_create(self.org, self.user, "Spam", folder=folder)
+        folder = Label.objects.create(
+            org=self.org, name="Cool Labels", label_type=Label.TYPE_FOLDER, created_by=self.user, modified_by=self.user
+        )
+        label1 = self.create_label("Spam", folder=folder)
 
         delete_url = reverse("msgs.label_delete_folder", args=[folder.id])
 
@@ -2586,35 +2467,19 @@ class LabelCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertEqual("/msg/inbox/", response["Temba-Success"])
 
         # modal will show error if a label is added in the background
-        Label.get_or_create(self.org, self.user, "Spam", folder=folder)
+        self.create_label("Spam", folder=folder)
 
         response = self.assertDeleteSubmit(delete_url, object_unchanged=folder, success_status=200)
         self.assertContains(response, "cannot be deleted as it still contains labels")
 
-    def test_label_delete_with_flow_dependency(self):
-
-        label_one = Label.get_or_create(self.org, self.user, "label1")
-
-        from temba.flows.models import Flow
-
-        self.get_flow("dependencies")
-        flow = Flow.objects.filter(name="Dependencies").first()
-
-        flow.label_dependencies.add(label_one)
-
-        # release method raises ValueError
-        with self.assertRaises(ValueError) as release_error:
-            label_one.release()
-
-        self.assertEqual(str(release_error.exception), f"Cannot delete Label: {label_one.name}, used by 1 flows")
-
     def test_list(self):
-        folder = Label.get_or_create_folder(self.org, self.user, "Folder")
-        Label.get_or_create(self.org, self.user, "Spam", folder=folder)
-        Label.get_or_create(self.org, self.user, "Junk", folder=folder)
-        Label.get_or_create(self.org, self.user, "Important")
-
-        Label.get_or_create(self.org2, self.admin2, "Other Org")
+        folder = Label.objects.create(
+            org=self.org, name="Folder", label_type=Label.TYPE_FOLDER, created_by=self.user, modified_by=self.user
+        )
+        self.create_label("Spam", folder=folder)
+        self.create_label("Junk", folder=folder)
+        self.create_label("Important")
+        self.create_label("Other Org", org=self.org2)
 
         # viewers can't edit flows so don't have access to this JSON endpoint as that's only place it's used
         self.login(self.user)
@@ -2676,7 +2541,7 @@ class SystemLabelTest(TembaTest):
         msg3 = self.create_incoming_msg(contact1, "Message 3")
         msg4 = self.create_incoming_msg(contact1, "Message 4")
         call1 = self.create_channel_event(self.channel, "tel:0783835001", ChannelEvent.TYPE_CALL_IN, extra={})
-        Broadcast.create(self.org, self.user, "Broadcast 2", contacts=[contact1, contact2], status=QUEUED)
+        Broadcast.create(self.org, self.user, "Broadcast 2", contacts=[contact1, contact2], status=Msg.STATUS_QUEUED)
         Broadcast.create(
             self.org,
             self.user,
@@ -2702,7 +2567,7 @@ class SystemLabelTest(TembaTest):
         msg3.archive()
 
         bcast1 = self.create_broadcast(self.user, "Broadcast 1", contacts=[contact1, contact2])
-        Msg.objects.filter(broadcast=bcast1).update(status=PENDING)
+        Msg.objects.filter(broadcast=bcast1).update(status=Msg.STATUS_PENDING)
 
         msg5, msg6 = tuple(Msg.objects.filter(broadcast=bcast1))
         self.create_channel_event(self.channel, "tel:0783835002", ChannelEvent.TYPE_CALL_IN, extra={})
@@ -2729,8 +2594,8 @@ class SystemLabelTest(TembaTest):
         )
 
         msg1.archive()
-        msg3.release()  # deleting an archived msg
-        msg4.release()  # deleting a visible msg
+        msg3.delete()  # deleting an archived msg
+        msg4.delete()  # deleting a visible msg
         msg5.status = "F"
         msg5.save(update_fields=("status",))
         msg6.status = "S"
@@ -2793,40 +2658,6 @@ class SystemLabelTest(TembaTest):
         # we should only have one system label per type
         self.assertEqual(SystemLabelCount.objects.all().count(), 7)
 
-        # archive one of our inbox messages
-        msg1.release(Msg.DELETE_FOR_ARCHIVE)
-
-        self.assertEqual(
-            SystemLabel.get_counts(self.org),
-            {
-                SystemLabel.TYPE_INBOX: 1,
-                SystemLabel.TYPE_FLOWS: 0,
-                SystemLabel.TYPE_ARCHIVED: 0,
-                SystemLabel.TYPE_OUTBOX: 1,
-                SystemLabel.TYPE_SENT: 1,
-                SystemLabel.TYPE_FAILED: 1,
-                SystemLabel.TYPE_SCHEDULED: 2,
-                SystemLabel.TYPE_CALLS: 1,
-            },
-        )
-
-        squash_msgcounts()
-
-        # check our archived count
-        self.assertEqual(
-            SystemLabelCount.get_totals(self.org, True),
-            {
-                SystemLabel.TYPE_INBOX: 1,
-                SystemLabel.TYPE_FLOWS: 0,
-                SystemLabel.TYPE_ARCHIVED: 0,
-                SystemLabel.TYPE_OUTBOX: 0,
-                SystemLabel.TYPE_SENT: 0,
-                SystemLabel.TYPE_FAILED: 0,
-                SystemLabel.TYPE_SCHEDULED: 0,
-                SystemLabel.TYPE_CALLS: 0,
-            },
-        )
-
 
 class TagsTest(TembaTest):
     def setUp(self):
@@ -2845,7 +2676,7 @@ class TagsTest(TembaTest):
         self.assertTrue(text.find(clazz) >= 0)
 
     def test_as_icon(self):
-        msg = self.create_outgoing_msg(self.joe, "How is it going?", status=QUEUED)
+        msg = self.create_outgoing_msg(self.joe, "How is it going?", status=Msg.STATUS_QUEUED)
         now = timezone.now()
         two_hours_ago = now - timedelta(hours=2)
 

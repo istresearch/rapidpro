@@ -1,8 +1,8 @@
+from django.conf import settings
 from django.utils import timezone
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
 
-from temba import settings
 from temba.msgs.models import Msg, Label
 
 

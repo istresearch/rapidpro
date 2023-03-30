@@ -5,17 +5,16 @@ import requests
 from typing import Match, Optional, Union
 from urllib.parse import urlparse
 
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest, HttpResponse
 from django.urls import reverse
 
-from temba import settings
 from temba.api.v2.views_base import BaseAPIView
 from temba.orgs.views import OrgPermsMixin
 
 from engage.api.permissions import SSLorLocalTrafficPermission
 from engage.api.responses import HttpResponseNoContent
-from engage.auth.account import UserAcct
 from engage.utils import get_required_arg
 from engage.utils.logs import LogExtrasMixin
 from engage.utils.pm_config import PMConfig
@@ -71,12 +70,12 @@ class APIsForDownloadPostmaster(LogExtrasMixin):
         def get(self, request: HttpRequest, *args, **kwargs):
             user = self.get_user()
             logger.debug("user?", extra=self.with_log_extras({
-                'req.user': request.user,
+                'req.user': request.user if hasattr(request, 'user') else None,
                 'user': user,
             }))
             if not user.is_authenticated or user is AnonymousUser:
                 return HttpResponseNoContent('Not authorized', status=401)
-            if not UserAcct.is_allowed(user, self.permission):
+            if not user.is_allowed(self.permission):
                 return HttpResponseNoContent('Forbidden', status=403)
             try:
                 pm_info = APIsForDownloadPostmaster.fetch_apk_link(self)
@@ -136,12 +135,12 @@ class APIsForDownloadPostmaster(LogExtrasMixin):
                     # special endpoint that requires auth
                     user = self.get_user()
                     logger.debug("user?", extra=self.with_log_extras({
-                        'req.user': request.user,
+                        'req.user': request.user if hasattr(request, 'user') else None,
                         'user': user,
                     }))
                     if not user.is_authenticated or user is AnonymousUser:
                         return HttpResponseNoContent('Not authorized', status=401)
-                    if UserAcct.is_allowed(user, APIsForDownloadPostmaster.PostmasterInfo.permission):
+                    if user.is_allowed(APIsForDownloadPostmaster.PostmasterInfo.permission):
                         return self.doDownload(request)
                     else:
                         return HttpResponseNoContent(status=403)

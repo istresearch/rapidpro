@@ -1,31 +1,20 @@
-import base64
-import hashlib
-import hmac
 import itertools
-import json
-import time
 from enum import Enum
-
-from boto3 import client as botoclient
-from botocore.exceptions import ClientError
 
 from rest_framework import generics, status, views
 from rest_framework.pagination import CursorPagination
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from smartmin.views import SmartFormView, SmartTemplateView
 
 from django import forms
-from django.conf import settings
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User
 from django.db.models import Prefetch, Q
 from django.http import HttpResponse, JsonResponse
-from django.utils.encoding import force_bytes
-from django.utils.translation import ugettext_lazy as _
-from django.views.generic import View
+from django.utils.translation import gettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
 
 from temba.api.models import APIToken, Resthook, ResthookSubscriber, WebHookEvent
@@ -33,6 +22,7 @@ from temba.api.v2.views_base import (
     BaseAPIView,
     BulkWriteAPIMixin,
     CreatedOnCursorPagination,
+    DateJoinedCursorPagination,
     DeleteAPIMixin,
     ListAPIMixin,
     ModifiedOnCursorPagination,
@@ -43,14 +33,15 @@ from temba.campaigns.models import Campaign, CampaignEvent
 from temba.channels.models import Channel, ChannelEvent
 from temba.classifiers.models import Classifier
 from temba.contacts.models import Contact, ContactField, ContactGroup, ContactGroupCount, ContactURN
-from temba.contacts.tasks import release_group_task
 from temba.flows.models import Flow, FlowRun, FlowStart
 from temba.globals.models import Global
 from temba.locations.models import AdminBoundary, BoundaryAlias
 from temba.msgs.models import Broadcast, Label, LabelCount, Msg, SystemLabel
+from temba.orgs.models import OrgMembership, OrgRole
 from temba.templates.models import Template, TemplateTranslation
-from temba.tickets.models import Ticket, Ticketer
-from temba.utils import on_transaction_commit, splitting_getlist, str_to_bool
+from temba.tickets.models import Ticket, Ticketer, Topic
+from temba.utils import splitting_getlist, str_to_bool
+from temba.utils.uuid import is_uuid
 
 from ..models import SSLPermission
 from ..support import InvalidQueryError
@@ -87,9 +78,12 @@ from .serializers import (
     ResthookSubscriberReadSerializer,
     ResthookSubscriberWriteSerializer,
     TemplateReadSerializer,
+    TicketBulkActionSerializer,
     TicketerReadSerializer,
     TicketReadSerializer,
-    TicketWriteSerializer,
+    TopicReadSerializer,
+    TopicWriteSerializer,
+    UserReadSerializer,
     WebHookEventReadSerializer,
     WorkspaceReadSerializer,
 )
@@ -100,17 +94,17 @@ class RootView(views.APIView):
     We provide a RESTful JSON API for you to interact with your data from outside applications. The following endpoints
     are available:
 
-     * [/api/v2/archives](/api/v2/archives) - to list archives
+     * [/api/v2/archives](/api/v2/archives) - to list archives of messages and runs
      * [/api/v2/boundaries](/api/v2/boundaries) - to list administrative boundaries
      * [/api/v2/broadcasts](/api/v2/broadcasts) - to list and send message broadcasts
-     * [/api/v2/campaigns](/api/v2/campaigns) - to list, create, or update campaigns
-     * [/api/v2/campaign_events](/api/v2/campaign_events) - to list, create, update or delete campaign events
+     * [/api/v2/campaigns](/api/v2/campaigns) - to list, create, or update scenarios
+     * [/api/v2/campaign_events](/api/v2/campaign_events) - to list, create, update or delete scenario events
      * [/api/v2/channels](/api/v2/channels) - to list channels
      * [/api/v2/channel_events](/api/v2/channel_events) - to list channel events
      * [/api/v2/classifiers](/api/v2/classifiers) - to list classifiers
      * [/api/v2/contacts](/api/v2/contacts) - to list, create, update or delete contacts
      * [/api/v2/contact_actions](/api/v2/contact_actions) - to perform bulk contact actions
-     * [/api/v2/definitions](/api/v2/definitions) - to export flow definitions, campaigns, and triggers
+     * [/api/v2/definitions](/api/v2/definitions) - to export flow definitions, scenarios, and triggers
      * [/api/v2/fields](/api/v2/fields) - to list, create or update contact fields
      * [/api/v2/flow_starts](/api/v2/flow_starts) - to list flow starts and start contacts in flows
      * [/api/v2/flows](/api/v2/flows) - to list flows
@@ -125,6 +119,10 @@ class RootView(views.APIView):
      * [/api/v2/resthook_subscribers](/api/v2/resthook_subscribers) - to list, create or delete subscribers on your resthooks
      * [/api/v2/templates](/api/v2/templates) - to list current WhatsApp templates on your account
      * [/api/v2/ticketers](/api/v2/ticketers) - to list ticketing services
+     * [/api/v2/tickets](/api/v2/tickets) - to list tickets
+     * [/api/v2/ticket_actions](/api/v2/ticket_actions) - to perform bulk ticket actions
+     * [/api/v2/topics](/api/v2/topics) - to list and create topics
+     * [/api/v2/users](/api/v2/users) - to list user logins
      * [/api/v2/workspace](/api/v2/workspace) - to view your workspace
 
     To use the endpoint simply append _.json_ to the URL. For example [/api/v2/flows](/api/v2/flows) will return the
@@ -205,6 +203,7 @@ class RootView(views.APIView):
     def get(self, request, *args, **kwargs):
         return Response(
             {
+                "archives": reverse("api.v2.archives", request=request),
                 "boundaries": reverse("api.v2.boundaries", request=request),
                 "broadcasts": reverse("api.v2.broadcasts", request=request),
                 "campaigns": reverse("api.v2.campaigns", request=request),
@@ -229,7 +228,10 @@ class RootView(views.APIView):
                 "runs": reverse("api.v2.runs", request=request),
                 "templates": reverse("api.v2.templates", request=request),
                 "ticketers": reverse("api.v2.ticketers", request=request),
-                # "tickets": reverse("api.v2.tickets", request=request),
+                "tickets": reverse("api.v2.tickets", request=request),
+                "ticket_actions": reverse("api.v2.ticket_actions", request=request),
+                "topics": reverse("api.v2.topics", request=request),
+                "users": reverse("api.v2.users", request=request),
                 "workspace": reverse("api.v2.workspace", request=request),
             }
         )
@@ -285,7 +287,11 @@ class ExplorerView(SmartTemplateView):
             RunsEndpoint.get_read_explorer(),
             TemplatesEndpoint.get_read_explorer(),
             TicketersEndpoint.get_read_explorer(),
-            # TicketsEndpoint.get_read_explorer(),
+            TicketsEndpoint.get_read_explorer(),
+            TicketActionsEndpoint.get_write_explorer(),
+            TopicsEndpoint.get_read_explorer(),
+            TopicsEndpoint.get_write_explorer(),
+            UsersEndpoint.get_read_explorer(),
             WorkspaceEndpoint.get_read_explorer(),
         ]
         return context
@@ -319,13 +325,13 @@ class AuthenticateView(SmartFormView):
         if user and user.is_active:
             login(self.request, user)
 
-            role = APIToken.get_role_from_code(role_code)
+            role = OrgRole.from_code(role_code)
             tokens = []
 
             if role:
                 valid_orgs = APIToken.get_orgs_for_role(user, role)
                 for org in valid_orgs:
-                    token = APIToken.get_or_create(org, user, role)
+                    token = APIToken.get_or_create(org, user, role=role)
                     serialized = {"uuid": str(org.uuid), "name": org.name, "id": org.id}  # for backward compatibility
                     tokens.append({"org": serialized, "token": token.key})
             else:  # pragma: needs cover
@@ -425,77 +431,6 @@ class ArchivesEndpoint(ListAPIMixin, BaseAPIView):
             ],
         }
 
-class AttachmentsEndpoint(View):
-    """
-    This endpoint allows you to request a signed S3 URL for attachment uploads.
-
-    ## Requesting a Signed S3 URL
-
-    Make a `POST` request to the endpoint with a `path` parameter specifying the file path, and an `acl` parameter specifying an S3 canned ACL (optional; default: `public-read`).
-    """
-
-    @csrf_exempt
-    def dispatch(self, *args, **kwargs):
-        return super().dispatch(*args, **kwargs)
- 
-    def post(self, request, format=None, *args, **kwargs):
-        response = self.handle(request)
-        response.accepted_renderer = JSONRenderer()
-        response.accepted_media_type = "application/json"
-        response.renderer_context = {}
-        return response
-
-    def handle(self, request):
-        try:
-            req_body = force_bytes(request.body)
-            req_data = json.loads(req_body)
-
-            path = req_data.get("path")
-            acl = req_data.get("acl", "public-read")
-
-            channel_id = request.GET.get("cid")
-            channel_uuid = request.GET.get("uuid")
-            request_time = request.GET.get("ts")
-            request_signature = force_bytes(request.GET.get("signature"))
-
-            bucket = settings.AWS_STORAGE_BUCKET_NAME
-            expires = settings.AWS_SIGNED_URL_DURATION
-
-            if channel_uuid is not None:
-                channels = Channel.objects.filter(uuid=channel_uuid, is_active=True)
-            elif channel_id is not None:
-                channels = Channel.objects.filter(pk=channel_id, is_active=True)
-            if not channels:
-                raise Exception("Invalid channel")
-            channel = channels[0]
-            if not channel.secret or not channel.org:
-                raise Exception("Invalid channel metadata")
-            now = time.time()
-            if abs(now - int(request_time)) > 60 * 15:
-                raise Exception("Invalid timestamp")
-
-            signature = hmac.new(key=force_bytes(str(channel.secret + request_time)), msg=req_body, digestmod=hashlib.sha256).digest()
-            signature = base64.urlsafe_b64encode(signature).strip()
-
-            if request_signature != signature:
-                raise Exception("Invalid signature")
-
-            if not path:
-                raise Exception("Required attribute 'path' not specified")
-
-        except Exception as e:
-            data = {'error': str(e)}
-            return Response(data, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            client = botoclient('s3')
-            data = client.generate_presigned_post(bucket, path, Conditions=[{"acl": acl}], ExpiresIn=expires)
-            return Response(data, status=status.HTTP_200_OK)
-        except ClientError as e:
-            data = {'error': str(e)}
-
-        return Response(data, status=status.HTTP_400_BAD_REQUEST)
-
 
 class BoundariesEndpoint(ListAPIMixin, BaseAPIView):
     """
@@ -557,7 +492,7 @@ class BoundariesEndpoint(ListAPIMixin, BaseAPIView):
     serializer_class = AdminBoundaryReadSerializer
     pagination_class = Pagination
 
-    def get_queryset(self):
+    def derive_queryset(self):
         org = self.request.user.get_org()
         if not org.country:
             return AdminBoundary.objects.none()
@@ -668,13 +603,13 @@ class BroadcastsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
             queryset = queryset.filter(id=broadcast_id)
 
         queryset = queryset.prefetch_related(
-            Prefetch("contacts", queryset=Contact.objects.only("uuid", "name").order_by("pk")),
-            Prefetch("groups", queryset=ContactGroup.user_groups.only("uuid", "name").order_by("pk")),
+            Prefetch("contacts", queryset=Contact.objects.only("uuid", "name").order_by("id")),
+            Prefetch("groups", queryset=ContactGroup.objects.only("uuid", "name").order_by("id")),
         )
 
         if not org.is_anon:
             queryset = queryset.prefetch_related(
-                Prefetch("urns", queryset=ContactURN.objects.only("scheme", "path", "display").order_by("pk"))
+                Prefetch("urns", queryset=ContactURN.objects.only("scheme", "path", "display").order_by("id"))
             )
 
         return self.filter_before_after(queryset, "created_on")
@@ -719,23 +654,23 @@ class BroadcastsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
 
 class CampaignsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
     """
-    This endpoint allows you to list campaigns in your account.
+    This endpoint allows you to list scenarios in your account.
 
-    ## Listing Campaigns
+    ## Listing Scenarios
 
-    A `GET` returns the campaigns, listing the most recently created campaigns first.
+    A `GET` returns the scenarios, listing the most recently created scenarios first.
 
-     * **uuid** - the UUID of the campaign (string), filterable as `uuid`.
-     * **name** - the name of the campaign (string).
-     * **archived** - whether this campaign is archived (boolean)
-     * **group** - the group this scenario (campaign) operates on (object).
-     * **created_on** - when the campaign was created (datetime), filterable as `before` and `after`.
+     * **uuid** - the UUID of the scenario (string), filterable as `uuid`.
+     * **name** - the name of the scenario (string).
+     * **archived** - whether this scenario is archived (boolean)
+     * **group** - the group this scenario operates on (object).
+     * **created_on** - when the scenario was created (datetime), filterable as `before` and `after`.
 
     Example:
 
         GET /api/v2/campaigns.json
 
-    Response is a list of the campaigns on your account
+    Response is a list of the scenarios on your account
 
         {
             "next": null,
@@ -751,13 +686,13 @@ class CampaignsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
             ...
         }
 
-    ## Adding Campaigns
+    ## Adding scenarios
 
-    A **POST** can be used to create a new campaign, by sending the following data. Don't specify a UUID as this will be
+    A **POST** can be used to create a new scenario, by sending the following data. Don't specify a UUID as this will be
     generated for you.
 
-    * **name** - the name of the campaign (string, required)
-    * **group** - the UUID of the contact group this campaign will be run against (string, required)
+    * **name** - the name of the scenario (string, required)
+    * **group** - the UUID of the contact group this scenario will be run against (string, required)
 
     Example:
 
@@ -767,7 +702,7 @@ class CampaignsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
             "group": "7ae473e8-f1b5-4998-bd9c-eb8e28c92fa9"
         }
 
-    You will receive a campaign object as a response if successful:
+    You will receive a scenario object as a response if successful:
 
         {
             "uuid": "f14e4ff0-724d-43fe-a953-1d16aefd1c00",
@@ -777,9 +712,9 @@ class CampaignsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
             "created_on": "2013-08-19T19:11:21.088Z"
         }
 
-    ## Updating Campaigns
+    ## Updating scenarios
 
-    A **POST** can also be used to update an existing campaign if you specify its UUID in the URL.
+    A **POST** can also be used to update an existing scenario if you specify its UUID in the URL.
 
     Example:
 
@@ -810,7 +745,7 @@ class CampaignsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
         if uuid:
             queryset = queryset.filter(uuid=uuid)
 
-        queryset = queryset.prefetch_related(Prefetch("group", queryset=ContactGroup.user_groups.only("uuid", "name")))
+        queryset = queryset.prefetch_related(Prefetch("group", queryset=ContactGroup.objects.only("uuid", "name")))
 
         return queryset
 
@@ -818,26 +753,26 @@ class CampaignsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
     def get_read_explorer(cls):
         return {
             "method": "GET",
-            "title": "List Scenarios (Campaigns)",
+            "title": "List scenarios",
             "url": reverse("api.v2.campaigns"),
-            "slug": "campaign-list",
-            "params": [{"name": "uuid", "required": False, "help": "A campaign UUID to filter by"}],
+            "slug": "scenario-list",
+            "params": [{"name": "uuid", "required": False, "help": "A scenario UUID to filter by"}],
         }
 
     @classmethod
     def get_write_explorer(cls):
         return {
             "method": "POST",
-            "title": "Add or Update Scenarios (Campaigns)",
+            "title": "Add or Update scenarios",
             "url": reverse("api.v2.campaigns"),
-            "slug": "campaign-write",
-            "params": [{"name": "uuid", "required": False, "help": "UUID of the scenario (campaign) to be updated"}],
+            "slug": "scenario-write",
+            "params": [{"name": "uuid", "required": False, "help": "UUID of the scenario to be updated"}],
             "fields": [
-                {"name": "name", "required": True, "help": "The name of the scenario (campaign)"},
+                {"name": "name", "required": True, "help": "The name of the scenario"},
                 {
                     "name": "group",
                     "required": True,
-                    "help": "The UUID of the contact group operated on by the scenario (campaign)",
+                    "help": "The UUID of the contact group operated on by the scenario",
                 },
             ],
         }
@@ -845,14 +780,14 @@ class CampaignsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
 
 class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView):
     """
-    This endpoint allows you to list campaign events in your account.
+    This endpoint allows you to list scenario events in your account.
 
-    ## Listing Campaign Events
+    ## Listing scenario Events
 
-    A `GET` returns the campaign events, listing the most recently created events first.
+    A `GET` returns the scenario events, listing the most recently created events first.
 
-     * **uuid** - the UUID of the campaign (string), filterable as `uuid`.
-     * **campaign** - the UUID and name of the campaign (object), filterable as `campaign` with UUID.
+     * **uuid** - the UUID of the scenario (string), filterable as `uuid`.
+     * **campaign** - the UUID and name of the scenario (object), filterable as `campaign` with UUID.
      * **relative_to** - the key and label of the date field this event is based on (object).
      * **offset** - the offset from our contact field (positive or negative integer).
      * **unit** - the unit for our offset (one of "minutes, "hours", "days", "weeks").
@@ -865,7 +800,7 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAP
 
         GET /api/v2/campaign_events.json
 
-    Response is a list of the campaign events on your account
+    Response is a list of the scenario events on your account
 
         {
             "next": null,
@@ -885,12 +820,12 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAP
             ...
         }
 
-    ## Adding Campaign Events
+    ## Adding scenario Events
 
-    A **POST** can be used to create a new campaign event, by sending the following data. Don't specify a UUID as this
+    A **POST** can be used to create a new scenario event, by sending the following data. Don't specify a UUID as this
     will be generated for you.
 
-    * **campaign** - the UUID of the campaign this event should be part of (string, can't be changed for existing events)
+    * **campaign** - the UUID of the scenario this event should be part of (string, can't be changed for existing events)
     * **relative_to** - the field key that this event will be relative to (string)
     * **offset** - the offset from our contact field (positive or negative integer)
     * **unit** - the unit for our offset (one of "minutes", "hours", "days" or "weeks")
@@ -924,9 +859,9 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAP
             "created_on": "2013-08-19T19:11:21.088453Z"
         }
 
-    ## Updating Campaign Events
+    ## Updating scenario Events
 
-    A **POST** can also be used to update an existing campaign event if you specify its UUID in the URL.
+    A **POST** can also be used to update an existing scenario event if you specify its UUID in the URL.
 
     Example:
 
@@ -939,9 +874,9 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAP
             "message": "Feeling sick and helpless, lost the compass where self is."
         }
 
-    ## Deleting Campaign Events
+    ## Deleting scenario Events
 
-    A **DELETE** can be used to delete a campaign event if you specify its UUID in the URL.
+    A **DELETE** can be used to delete a scenario event if you specify its UUID in the URL.
 
     Example:
 
@@ -957,7 +892,7 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAP
     write_serializer_class = CampaignEventWriteSerializer
     pagination_class = CreatedOnCursorPagination
 
-    def get_queryset(self):
+    def derive_queryset(self):
         return self.model.objects.filter(campaign__org=self.request.user.get_org(), is_active=True)
 
     def filter_queryset(self, queryset):
@@ -973,7 +908,10 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAP
         # filter by campaign name/uuid (optional)
         campaign_ref = params.get("campaign")
         if campaign_ref:
-            campaign = Campaign.objects.filter(org=org).filter(Q(uuid=campaign_ref) | Q(name=campaign_ref)).first()
+            campaign_filter = Q(name=campaign_ref)
+            if is_uuid(campaign_ref):
+                campaign_filter |= Q(uuid=campaign_ref)
+            campaign = org.campaigns.filter(campaign_filter).first()
             if campaign:
                 queryset = queryset.filter(campaign=campaign)
             else:
@@ -982,7 +920,7 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAP
         queryset = queryset.prefetch_related(
             Prefetch("campaign", queryset=Campaign.objects.only("uuid", "name")),
             Prefetch("flow", queryset=Flow.objects.only("uuid", "name")),
-            Prefetch("relative_to", queryset=ContactField.all_fields.filter(is_active=True).only("key", "label")),
+            Prefetch("relative_to", queryset=ContactField.objects.filter(is_active=True).only("key", "name")),
         )
 
         return queryset
@@ -991,12 +929,12 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAP
     def get_read_explorer(cls):
         return {
             "method": "GET",
-            "title": "List Campaign Events",
+            "title": "List scenario Events",
             "url": reverse("api.v2.campaign_events"),
-            "slug": "campaign-event-list",
+            "slug": "scenario-event-list",
             "params": [
-                {"name": "uuid", "required": False, "help": "A campaign event UUID to filter by"},
-                {"name": "campaign", "required": False, "help": "A campaign UUID or name to filter"},
+                {"name": "uuid", "required": False, "help": "A scenario event UUID to filter by"},
+                {"name": "campaign", "required": False, "help": "A scenario UUID or name to filter"},
             ],
         }
 
@@ -1004,12 +942,12 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAP
     def get_write_explorer(cls):
         return {
             "method": "POST",
-            "title": "Add or Update Scenario Events",
+            "title": "Add or Update scenario Events",
             "url": reverse("api.v2.campaign_events"),
-            "slug": "campaign-event-write",
-            "params": [{"name": "uuid", "required": False, "help": "The UUID of the campaign event to update"}],
+            "slug": "scenario-event-write",
+            "params": [{"name": "uuid", "required": False, "help": "The UUID of the scenario event to update"}],
             "fields": [
-                {"name": "campaign", "required": False, "help": "The UUID of the campaign this event belongs to"},
+                {"name": "campaign", "required": False, "help": "The UUID of the scenario this event belongs to"},
                 {
                     "name": "relative_to",
                     "required": True,
@@ -1047,11 +985,11 @@ class CampaignEventsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAP
     def get_delete_explorer(cls):
         return {
             "method": "DELETE",
-            "title": "Delete Campaign Events",
+            "title": "Delete scenario Events",
             "url": reverse("api.v2.campaign_events"),
-            "slug": "campaign-event-delete",
+            "slug": "scenario-event-delete",
             "request": "",
-            "params": [{"name": "uuid", "required": False, "help": "The UUID of the campaign event to delete"}],
+            "params": [{"name": "uuid", "required": False, "help": "The UUID of the scenario event to delete"}],
         }
 
 
@@ -1333,12 +1271,12 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView)
 
      * **uuid** - the UUID of the contact (string), filterable as `uuid`.
      * **name** - the name of the contact (string).
+     * **status** - the status of the contact (one of "active", "blocked", "stopped" or "archived").
      * **language** - the preferred language of the contact (string).
      * **urns** - the URNs associated with the contact (string array), filterable as `urn`.
      * **groups** - the UUIDs of any groups the contact is part of (array of objects), filterable as `group` with group name or UUID.
-     * **fields** - any contact fields on this contact (dictionary).
-     * **blocked** - whether the contact is blocked (boolean).
-     * **stopped** - whether the contact is stopped, i.e. has opted out (boolean).
+     * **fields** - any contact fields on this contact (object).
+     * **flow** - the flow that the contact is currently in, if any (object).
      * **created_on** - when this contact was created (datetime).
      * **modified_on** - when this contact was last modified (datetime), filterable as `before` and `after`.
      * **last_seen_on** - when this contact last communicated with us (datetime).
@@ -1356,15 +1294,15 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView)
             {
                 "uuid": "09d23a05-47fe-11e4-bfe9-b8f6b119e9ab",
                 "name": "Ben Haggerty",
+                "status": "active",
                 "language": null,
                 "urns": ["tel:+250788123123"],
                 "groups": [{"name": "Customers", "uuid": "5a4eb79e-1b1f-4ae3-8700-09384cca385f"}],
                 "fields": {
                   "nickname": "Macklemore",
                   "side_kick": "Ryan Lewis"
-                }
-                "blocked": false,
-                "stopped": false,
+                },
+                "flow": {"uuid": "c1bc5fcf-3e27-4265-97bf-f6c3a385c2d6", "name": "Registration"},
                 "created_on": "2015-11-11T13:05:57.457742Z",
                 "modified_on": "2020-08-11T13:05:57.576056Z",
                 "last_seen_on": "2020-07-11T13:05:57.576056Z"
@@ -1400,15 +1338,15 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView)
         {
             "uuid": "09d23a05-47fe-11e4-bfe9-b8f6b119e9ab",
             "name": "Ben Haggerty",
+            "status": "active",
             "language": "eng",
             "urns": ["tel:+250788123123", "twitter:ben"],
             "groups": [{"name": "Devs", "uuid": "6685e933-26e1-4363-a468-8f7268ab63a9"}],
             "fields": {
               "nickname": "Macklemore",
               "side_kick": "Ryan Lewis"
-            }
-            "blocked": false,
-            "stopped": false,
+            },
+            "flow": null,
             "created_on": "2015-11-11T13:05:57.457742Z",
             "modified_on": "2015-11-11T13:05:57.576056Z",
             "last_seen_on": null
@@ -1482,27 +1420,27 @@ class ContactsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView)
         # filter by group name/uuid (optional)
         group_ref = params.get("group")
         if group_ref:
-            group = ContactGroup.user_groups.filter(org=org).filter(Q(uuid=group_ref) | Q(name=group_ref)).first()
+            group = ContactGroup.get_groups(org).filter(Q(uuid=group_ref) | Q(name=group_ref)).first()
             if group:
-                queryset = queryset.filter(all_groups=group)
+                queryset = queryset.filter(groups=group)
             else:
                 queryset = queryset.filter(pk=-1)
 
         # use prefetch rather than select_related for foreign keys to avoid joins
         queryset = queryset.prefetch_related(
+            Prefetch("org"),
             Prefetch(
-                "all_groups",
-                queryset=ContactGroup.user_groups.only("uuid", "name").order_by("pk"),
-                to_attr="prefetched_user_groups",
-            )
+                "groups",
+                queryset=ContactGroup.get_groups(org).only("uuid", "name", "org").order_by("id"),
+                to_attr="prefetched_groups",
+            ),
+            Prefetch("current_flow"),
         )
 
         return self.filter_before_after(queryset, "modified_on")
 
-    def prepare_for_serialization(self, object_list):
-        # initialize caches of all contact fields and URNs
-        org = self.request.user.get_org()
-        Contact.bulk_cache_initialize(org, object_list)
+    def prepare_for_serialization(self, object_list, using: str):
+        Contact.bulk_urn_cache_initialize(object_list, using=using)
 
     def get_serializer_context(self):
         """
@@ -1643,16 +1581,16 @@ class ContactActionsEndpoint(BulkWriteAPIMixin, BaseAPIView):
 
 class DefinitionsEndpoint(BaseAPIView):
     """
-    This endpoint allows you to export definitions of flows, campaigns and triggers in your account. Note that the
+    This endpoint allows you to export definitions of flows, scenarios and triggers in your account. Note that the
     schema of flow definitions may change over time.
 
     ## Exporting Definitions
 
-    A **GET** exports a set of flows and campaigns, and can automatically include dependencies for the requested items,
+    A **GET** exports a set of flows and scenarios, and can automatically include dependencies for the requested items,
     such as groups, triggers and other flows.
 
       * **flow** - the UUIDs of flows to include (string, repeatable)
-      * **campaign** - the UUIDs of campaigns to include (string, repeatable)
+      * **campaign** - the UUIDs of scenarios to include (string, repeatable)
       * **dependencies** - whether to include dependencies (all, flows, none, default: all)
 
     Example:
@@ -1760,7 +1698,7 @@ class DefinitionsEndpoint(BaseAPIView):
             "slug": "definition-list",
             "params": [
                 {"name": "flow", "required": False, "help": "One or more flow UUIDs to include"},
-                {"name": "campaign", "required": False, "help": "One or more campaign UUIDs to include"},
+                {"name": "campaign", "required": False, "help": "One or more scenario UUIDs to include"},
                 {
                     "name": "dependencies",
                     "required": False,
@@ -1852,7 +1790,7 @@ class FieldsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
     pagination_class = CreatedOnCursorPagination
     lookup_params = {"key": "key"}
 
-    def get_queryset(self):
+    def derive_queryset(self):
         org = self.request.user.get_org()
         return self.model.user_fields.filter(org=org, is_active=True)
 
@@ -2158,6 +2096,9 @@ class GroupsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView):
 
      * **uuid** - the UUID of the group (string), filterable as `uuid`
      * **name** - the name of the group (string), filterable as `name`
+     * **query** - the query if a smart group (string)
+     * **status** - the status (one of "initializing", "evaluating" or "ready")
+     * **system** - whether this is a system group that can't be edited (bool)
      * **count** - the number of contacts in the group (int)
 
     Example:
@@ -2173,8 +2114,10 @@ class GroupsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView):
                 {
                     "uuid": "5f05311e-8f81-4a67-a5b5-1501b6d6496a",
                     "name": "Reporters",
-                    "count": 315,
-                    "query": null
+                    "query": null,
+                    "status": "ready",
+                    "system": false,
+                    "count": 315
                 },
                 ...
             ]
@@ -2227,7 +2170,7 @@ class GroupsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView):
     A **DELETE** can be used to delete a contact group if you specify its UUID in the URL.
 
     Notes:
-        - cannot delete groups with associated active campaigns, flows or triggers. You first need to delete related
+        - cannot delete groups with associated active scenarios or triggers. You first need to delete related
           objects through the web interface
 
     Example:
@@ -2239,11 +2182,13 @@ class GroupsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView):
 
     permission = "contacts.contactgroup_api"
     model = ContactGroup
-    model_manager = "user_groups"
     serializer_class = ContactGroupReadSerializer
     write_serializer_class = ContactGroupWriteSerializer
     pagination_class = CreatedOnCursorPagination
     exclusive_params = ("uuid", "name")
+
+    def derive_queryset(self):
+        return ContactGroup.get_groups(self.request.user.get_org())
 
     def filter_queryset(self, queryset):
         params = self.request.query_params
@@ -2260,49 +2205,22 @@ class GroupsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView):
 
         return queryset.filter(is_active=True).exclude(status=ContactGroup.STATUS_INITIALIZING)
 
-    def prepare_for_serialization(self, object_list):
+    def prepare_for_serialization(self, object_list, using: str):
         group_counts = ContactGroupCount.get_totals(object_list)
         for group in object_list:
             group.count = group_counts[group]
 
-    def delete(self, request, *args, **kwargs):
-        self.lookup_values = self.get_lookup_values()
-        if not self.lookup_values:
-            raise InvalidQueryError(
-                "URL must contain one of the following parameters: " + ", ".join(sorted(self.lookup_params.keys()))
-            )
-
-        instance = self.get_object()
-
+    def perform_destroy(self, instance):
         # if there are still dependencies, give up
         triggers = instance.triggers.filter(is_archived=False)
         if triggers:
-            deps = ", ".join([str(t.id) for t in triggers])
-            raise InvalidQueryError(
-                f"Group is being used by the following triggers which must be archived first: {deps}"
-            )
-
-        flows = Flow.objects.filter(org=instance.org, group_dependencies__in=[instance])
-        if flows:
-            deps = ", ".join([f.uuid for f in flows])
-            raise InvalidQueryError(f"Group is being used by the following flows which must be archived first: {deps}")
+            raise InvalidQueryError("Group is being used by triggers which must be archived first.")
 
         campaigns = instance.campaigns.filter(is_archived=False)
         if campaigns:
-            deps = ", ".join([c.uuid for c in campaigns])
-            raise InvalidQueryError(
-                f"Group is being used by the following campaigns which must be archived first: {deps}"
-            )
+            raise InvalidQueryError("Group is being used by scenarios which must be archived first.")
 
-        self.perform_destroy(instance)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-    def perform_destroy(self, instance):
-        instance.is_active = False
-        instance.save(update_fields=("is_active",))
-
-        # release the group in a background task
-        on_transaction_commit(lambda: release_group_task.delay(instance.id))
+        instance.release(self.request.user)
 
     @classmethod
     def get_read_explorer(cls):
@@ -2421,13 +2339,16 @@ class LabelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView):
     You will receive either a 204 response if a label was deleted, or a 404 response if no matching label was found.
     """
 
-    permission = "contacts.label_api"
+    permission = "msgs.label_api"
     model = Label
-    model_manager = "label_objects"
     serializer_class = LabelReadSerializer
     write_serializer_class = LabelWriteSerializer
     pagination_class = CreatedOnCursorPagination
     exclusive_params = ("uuid", "name")
+
+    def derive_queryset(self):
+        org = self.request.user.get_org()
+        return self.model.objects.filter(org=org, is_active=True).exclude(label_type=Label.TYPE_FOLDER)
 
     def filter_queryset(self, queryset):
         params = self.request.query_params
@@ -2444,7 +2365,7 @@ class LabelsEndpoint(ListAPIMixin, WriteAPIMixin, DeleteAPIMixin, BaseAPIView):
 
         return queryset.filter(is_active=True)
 
-    def prepare_for_serialization(self, object_list):
+    def prepare_for_serialization(self, object_list, using: str):
         label_counts = LabelCount.get_totals(object_list)
         for label in object_list:
             label.count = label_counts[label]
@@ -2602,7 +2523,7 @@ class MessagesEndpoint(ListAPIMixin, BaseAPIView):
         "sent": SystemLabel.TYPE_SENT,
     }
 
-    def get_queryset(self):
+    def derive_queryset(self):
         org = self.request.user.get_org()
         folder = self.request.query_params.get("folder")
 
@@ -2615,7 +2536,9 @@ class MessagesEndpoint(ListAPIMixin, BaseAPIView):
             else:
                 return self.model.objects.filter(pk=-1)
         else:
-            return self.model.objects.filter(org=org).exclude(visibility=Msg.VISIBILITY_DELETED).exclude(msg_type=None)
+            return self.model.objects.filter(
+                org=org, visibility__in=(Msg.VISIBILITY_VISIBLE, Msg.VISIBILITY_ARCHIVED)
+            ).exclude(msg_type=None)
 
     def filter_queryset(self, queryset):
         params = self.request.query_params
@@ -2643,7 +2566,7 @@ class MessagesEndpoint(ListAPIMixin, BaseAPIView):
         # filter by label name/uuid (optional)
         label_ref = params.get("label")
         if label_ref:
-            label = Label.label_objects.filter(org=org).filter(Q(name=label_ref) | Q(uuid=label_ref)).first()
+            label = Label.get_active_for_org(org).filter(Q(name=label_ref) | Q(uuid=label_ref)).first()
             if label:
                 queryset = queryset.filter(labels=label, visibility=Msg.VISIBILITY_VISIBLE)
             else:
@@ -2654,7 +2577,7 @@ class MessagesEndpoint(ListAPIMixin, BaseAPIView):
             Prefetch("contact", queryset=Contact.objects.only("uuid", "name")),
             Prefetch("contact_urn", queryset=ContactURN.objects.only("scheme", "path", "display")),
             Prefetch("channel", queryset=Channel.objects.only("uuid", "name")),
-            Prefetch("labels", queryset=Label.label_objects.only("uuid", "name").order_by("pk")),
+            Prefetch("labels", queryset=Label.objects.only("uuid", "name").order_by("pk")),
         )
 
         # incoming folder gets sorted by 'modified_on'
@@ -3066,7 +2989,6 @@ class RunsEndpoint(ListAPIMixin, BaseAPIView):
      * **contact** - the UUID and name of the contact (object), filterable as `contact` with UUID.
      * **start** - the UUID of the flow start (object)
      * **responded** - whether the contact responded (boolean), filterable as `responded`.
-     * **path** - the contact's path through the flow nodes (array of objects)
      * **values** - values generated by rulesets in the flow (array of objects).
      * **created_on** - the datetime when this run was started (datetime).
      * **modified_on** - when this run was last modified (datetime), filterable as `before` and `after`.
@@ -3094,12 +3016,6 @@ class RunsEndpoint(ListAPIMixin, BaseAPIView):
                     "name": "Bob McFlow"
                 },
                 "responded": true,
-                "path": [
-                    {"node": "27a86a1b-6cc4-4ae3-b73d-89650966a82f", "time": "2015-11-11T13:05:50.457742Z"},
-                    {"node": "fc32aeb0-ac3e-42a8-9ea7-10248fdf52a1", "time": "2015-11-11T13:03:51.635662Z"},
-                    {"node": "93a624ad-5440-415e-b49f-17bf42754acb", "time": "2015-11-11T13:03:52.532151Z"},
-                    {"node": "4c9cb68d-474f-4b9a-b65e-c2aa593a3466", "time": "2015-11-11T13:05:57.576056Z"}
-                ],
                 "values": {
                     "color": {
                         "value": "blue",
@@ -3179,6 +3095,11 @@ class RunsEndpoint(ListAPIMixin, BaseAPIView):
         )
 
         return self.filter_before_after(queryset, "modified_on")
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["include_paths"] = str_to_bool(self.request.query_params.get("paths", "true"))
+        return context
 
     @classmethod
     def get_read_explorer(cls):
@@ -3316,7 +3237,7 @@ class FlowStartsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
 
     """
 
-    permission = "api.flowstart_api"
+    permission = "flows.flowstart_api"
     model = FlowStart
     serializer_class = FlowStartReadSerializer
     write_serializer_class = FlowStartWriteSerializer
@@ -3339,7 +3260,7 @@ class FlowStartsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
         # use prefetch rather than select_related for foreign keys to avoid joins
         queryset = queryset.prefetch_related(
             Prefetch("contacts", queryset=Contact.objects.only("uuid", "name").order_by("id")),
-            Prefetch("groups", queryset=ContactGroup.user_groups.only("uuid", "name").order_by("id")),
+            Prefetch("groups", queryset=ContactGroup.objects.only("uuid", "name").order_by("id")),
         )
 
         return self.filter_before_after(queryset, "modified_on")
@@ -3560,9 +3481,11 @@ class TicketsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
      * **ticketer** - the UUID and name of the ticketer (object).
      * **contact** - the UUID and name of the contact (object), filterable as `contact` with UUID.
      * **status** - the status of the ticket, e.g. 'open' or 'closed'.
-     * **subject** - the subject of the ticket.
-     * **body** - the body of the ticket.
-     * **opened_on** - when this ticket was opened.
+     * **topic** - the topic of the ticket (object).
+     * **body** - the body of the ticket (string).
+     * **opened_on** - when this ticket was opened (datetime).
+     * **modified_on** - when this ticket was last modified (datetime).
+     * **closed_on** - when this ticket was closed (datetime).
 
     Example:
 
@@ -3579,9 +3502,11 @@ class TicketsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
                 "ticketer": {"uuid": "9a8b001e-a913-486c-80f4-1356e23f582e", "name": "Email (bob@acme.com)"},
                 "contact": {"uuid": "f1ea776e-c923-4c1a-b3a3-0c466932b2cc", "name": "Jim"},
                 "status": "open",
-                "subject": "Need help",
+                "topic": {"uuid": "040edbfe-be55-48f3-864d-a4a7147c447b", "name": "Support"},
                 "body": "Where did I leave my shorts?",
-                "opened_on": "2013-02-27T09:06:15.456"
+                "opened_on": "2013-02-27T09:06:15.456",
+                "modified_on": "2013-02-27T09:07:18.234",
+                "closed_on": null
             },
             ...
     """
@@ -3589,7 +3514,6 @@ class TicketsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
     permission = "tickets.ticket_api"
     model = Ticket
     serializer_class = TicketReadSerializer
-    write_serializer_class = TicketWriteSerializer
     pagination_class = ModifiedOnCursorPagination
 
     def filter_queryset(self, queryset):
@@ -3607,37 +3531,209 @@ class TicketsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
             else:
                 queryset = queryset.filter(id=-1)
 
-        ticket_uuid = params.get("ticket")
-        if ticket_uuid:
-            queryset = queryset.filter(uuid=ticket_uuid)
-
-        # filter by ticketer type if provided, unpublished support for agents
-        ticketer_type = params.get("ticketer_type")
-        if ticketer_type:
-            queryset = queryset.filter(ticketer__ticketer_type=ticketer_type)
+        uuid = params.get("uuid") or params.get("ticket")
+        if uuid:
+            queryset = queryset.filter(uuid=uuid)
 
         queryset = queryset.prefetch_related(
             Prefetch("ticketer", queryset=Ticketer.objects.only("uuid", "name")),
+            Prefetch("topic", queryset=Topic.objects.only("uuid", "name")),
             Prefetch("contact", queryset=Contact.objects.only("uuid", "name")),
+            "assignee",
         )
 
         return queryset
 
-    # @classmethod
-    # def get_read_explorer(cls):
-    #     return {
-    #         "method": "GET",
-    #         "title": "List Tickets",
-    #         "url": reverse("api.v2.tickets"),
-    #         "slug": "ticket-list",
-    #         "params": [
-    #             {
-    #                 "name": "contact",
-    #                 "required": False,
-    #                 "help": "A contact UUID to filter by, ex: 09d23a05-47fe-11e4-bfe9-b8f6b119e9ab",
-    #             },
-    #         ],
-    #     }
+    @classmethod
+    def get_read_explorer(cls):
+        return {
+            "method": "GET",
+            "title": "List Tickets",
+            "url": reverse("api.v2.tickets"),
+            "slug": "ticket-list",
+            "params": [
+                {
+                    "name": "contact",
+                    "required": False,
+                    "help": "A contact UUID to filter by, ex: 09d23a05-47fe-11e4-bfe9-b8f6b119e9ab",
+                },
+            ],
+        }
+
+
+class TicketActionsEndpoint(BulkWriteAPIMixin, BaseAPIView):
+    """
+    ## Bulk Ticket Updating
+
+    A **POST** can be used to perform an action on a set of tickets in bulk.
+
+    * **tickets** - the ticket UUIDs (array of up to 100 strings)
+    * **action** - the action to perform, a string one of:
+
+        * _assign_ - Assign the tickets to the given user
+        * _note_ - Add the given note to the tickets
+        * _close_ - Close the tickets
+        * _reopen_ - Re-open the tickets
+
+    * **assignee** - the email of a user (string, optional)
+    * **note** - the note to add to the tickets (string, optional)
+
+    Example:
+
+        POST /api/v2/ticket_actions.json
+        {
+            "tickets": ["55b6606d-9e89-45d1-a3e2-dc11f19f78df", "bef96b71-865d-480a-a660-33db466a210a"],
+            "action": "assign",
+            "assignee": "jim@nyaruka.com"
+        }
+
+    You will receive an empty response with status code 204 if successful.
+    """
+
+    permission = "tickets.ticket_api"
+    serializer_class = TicketBulkActionSerializer
+
+    @classmethod
+    def get_write_explorer(cls):
+        actions = cls.serializer_class.ACTION_CHOICES
+        return {
+            "method": "POST",
+            "title": "Update Multiple Tickets",
+            "url": reverse("api.v2.ticket_actions"),
+            "slug": "ticket-actions",
+            "fields": [
+                {"name": "tickets", "required": True, "help": "The UUIDs of the tickets to update"},
+                {"name": "action", "required": True, "help": "One of the following strings: " + ", ".join(actions)},
+                {"name": "assignee", "required": False, "help": "The email address of a user"},
+                {"name": "note", "required": False, "help": "The note text"},
+            ],
+        }
+
+
+class TopicsEndpoint(ListAPIMixin, WriteAPIMixin, BaseAPIView):
+    """
+    This endpoint allows you to list the topics in your workspace.
+
+    ## Listing Topics
+
+    A **GET** returns the tickets for your organization, most recent first.
+
+     * **uuid** - the UUID of the topic (string).
+     * **name** - the name of the topic (string).
+     * **created_on** - when this topic was created (datetime).
+
+    Example:
+
+        GET /api/v2/topics.json
+
+    Response:
+
+        {
+            "next": null,
+            "previous": null,
+            "results": [
+            {
+                "uuid": "9a8b001e-a913-486c-80f4-1356e23f582e",
+                "name": "Support",
+                "created_on": "2013-02-27T09:06:15.456"
+            },
+            ...
+    """
+
+    permission = "tickets.topic_api"
+    model = Topic
+    serializer_class = TopicReadSerializer
+    write_serializer_class = TopicWriteSerializer
+    pagination_class = CreatedOnCursorPagination
+
+    @classmethod
+    def get_read_explorer(cls):
+        return {"method": "GET", "title": "List Topics", "url": reverse("api.v2.topics"), "slug": "topic-list"}
+
+    @classmethod
+    def get_write_explorer(cls):
+        return {
+            "method": "POST",
+            "title": "Add or Update Topics",
+            "url": reverse("api.v2.topics"),
+            "slug": "topic-write",
+            "params": [{"name": "uuid", "required": False, "help": "The UUID of the topic to update"}],
+            "fields": [{"name": "name", "required": True, "help": "The name of the topic"}],
+        }
+
+
+class UsersEndpoint(ListAPIMixin, BaseAPIView):
+    """
+    This endpoint allows you to list the user logins in your workspace.
+
+    ## Listing Users
+
+    A **GET** returns the users in your workspace, ordered by newest created first.
+
+     * **email** - the email address of the user (string).
+     * **first_name** - the first name of the user (string).
+     * **last_name** - the last name of the user (string).
+     * **role** - the role of the user (string), filterable as `role` which can be repeated.
+     * **created_on** - when this user was created (datetime).
+
+    Example:
+
+        GET /api/v2/users.json
+
+    Response:
+
+        {
+            "next": null,
+            "previous": null,
+            "results": [
+            {
+                "email": "bob@flow.com",
+                "first_name": "Bob",
+                "last_name": "McFlow",
+                "role": "agent",
+                "created_on": "2013-03-02T17:28:12.123456Z"
+            },
+            ...
+    """
+
+    permission = "orgs.org_api"
+    model = User
+    serializer_class = UserReadSerializer
+    pagination_class = DateJoinedCursorPagination
+
+    def derive_queryset(self):
+        org = self.request.user.get_org()
+
+        # limit to roles if specified
+        roles = self.request.query_params.getlist("role")
+        if roles:
+            role_by_name = {name: role for role, name in UserReadSerializer.ROLES.items()}
+            roles = [role_by_name.get(r) for r in roles if r in role_by_name]
+        else:
+            roles = None
+
+        return org.get_users(roles=roles)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+
+        # build a map of users to roles
+        user_roles = {}
+        for m in OrgMembership.objects.filter(org=self.request.user.get_org()).select_related("user"):
+            user_roles[m.user] = m.role
+
+        context["user_roles"] = user_roles
+        return context
+
+    @classmethod
+    def get_read_explorer(cls):
+        return {
+            "method": "GET",
+            "title": "List Users",
+            "url": reverse("api.v2.users"),
+            "slug": "user-list",
+            "params": [],
+        }
 
 
 class WorkspaceEndpoint(BaseAPIView):
