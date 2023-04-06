@@ -387,8 +387,8 @@ GROUP_PERMISSIONS['Administrators'] += (
 GROUP_PERMISSIONS['Editors'] += (
     "channels.channellog_read",
 )
-GROUP_PERMISSIONS['Editors'] -= (
-    "channels.channel_delete",
+GROUP_PERMISSIONS['Editors'] = tuple(
+    item for item in GROUP_PERMISSIONS['Editors'] if item != "channels.channel_delete"
 )
 
 #============== KeyCloak SSO ===================
