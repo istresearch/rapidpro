@@ -10,11 +10,18 @@ ARG USER_PID=1717
 # ========================================================================
 
 FROM alpine as load-files
+# while doing the build, no interaction possible
+ARG DEBIAN_FRONTEND=noninteractive
+
+COPY rp-build-deps.sh /opt/code2use/
 
 COPY pyproject.toml /opt/code2use/
-COPY package*.json /opt/code2use/
+COPY poetry.lock /opt/code2use/
 COPY poetry-install.sh /opt/code2use/
-COPY rp-build-deps.sh /opt/code2use/
+
+COPY .npmrc /opt/code2use/
+COPY package*.json /opt/code2use/
+COPY tailwind.config.js /opt/code2use/
 
 RUN sed "s|poetry install|poetry install -vvv -n --no-dev|" /opt/code2use/poetry-install.sh > /opt/code2use/install-pylibs.sh \
  && chmod +x /opt/code2use/install-pylibs.sh
@@ -23,17 +30,10 @@ RUN sed "s|poetry install|poetry install -vvv -n --no-dev|" /opt/code2use/poetry
 
 ARG FROM_STAGE
 FROM ${FROM_STAGE}
-
-# Colors! :D
-ENV COLOR_NONE=\033[0m \
-	COLOR_GREEN=\033[0;32m \
-	COLOR_RED=\033[0;31m \
-	COLOR_CYAN=\033[0;36m
-# Once colors have been defined, we can use them for specific things.
-ENV COLOR_MSG=$COLOR_CYAN
-
 # while doing the build, no interaction possible
-ENV DEBIAN_FRONTEND noninteractive
+ARG DEBIAN_FRONTEND=noninteractive
+
+SHELL ["/bin/bash", "-c"]
 
 ARG ARG_PIP_RETRIES
 ARG ARG_PIP_TIMEOUT
@@ -49,9 +49,11 @@ ENV PIP_RETRIES=$ARG_PIP_RETRIES \
 USER root
 
 ARG USER_PID
-RUN grp=engage; usr=engage && addgroup -S $grp && adduser -u $USER_PID -S $usr -G $grp \
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && grp=engage; usr=engage && addgroup -S ${grp} && adduser -u ${USER_PID} -S ${usr} -G ${grp} \
  && mkdir -p /rapidpro; chown -R engage:engage /rapidpro \
- && mkdir -p /venv; chown -R engage:engage /venv
+ && mkdir -p /venv; chown -R engage:engage /venv \
+ && notify "installed user:group [engage:engage]"
 
 WORKDIR /rapidpro
 
@@ -60,31 +62,25 @@ COPY --from=load-files --chown=engage:engage /opt/code2use/* ./
 COPY --from=load-files --chown=engage:engage /opt/code2use/package*.json ./node_config/
 
 # required runtime libs
-RUN set -ex; apk -U add --virtual .my-build-deps \
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && apk -U add --virtual .my-build-deps \
     su-exec \
     cargo \
-    gcc \
-	git \
-    linux-headers \
-    libressl-dev \
-    libxslt-dev \
-    libxml2-dev \
-    libffi-dev \
-    openssl-dev \
-    python3-dev \
-    musl-dev \
-    postgresql-dev \
- && echo "installed all runtime deps" \
- && npm install -g node-gyp less \
- && echo "installed global runtime npm libs" \
- && ./rp-build-deps.sh \
- && set -x; su-exec engage:engage ./install-pylibs.sh \
+ && notify "installed needed OS libs required to build stuff" \
+ && npm install -g npm@latest node-gyp less \
+ && notify "installed/built global runtime npm libs" \
+ && set -x; ./rp-build-deps.sh; set +x \
+ && notify "installed/built OS libs" \
+ && set -x; su-exec engage:engage ./install-pylibs.sh; set +x \
+ && notify "installed/built python libs" \
  && su-exec engage:engage npm install \
+ && notify "installed/built npm libs" \
  && apk del .rp-build-deps \
  && apk del .my-build-deps \
- && echo "installed/built python and npm libs"
+ && notify "removed libs only needed for building stuff"
 
-RUN runDeps="$( \
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && runDeps="$( \
     scanelf --needed --nobanner --recursive /venv \
       | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
       | sort -u \
@@ -92,11 +88,10 @@ RUN runDeps="$( \
       | sort -u \
     )" \
  && apk --no-cache -U add $runDeps \
-	git \
 	libmagic \
 	libressl \
 	libxml2 \
 	ncurses \
 	pcre \
 	postgresql-client \
- && echo "installed runtime pylibs"
+ && notify "installed runtime pylibs"

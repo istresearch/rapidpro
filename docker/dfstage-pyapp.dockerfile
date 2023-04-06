@@ -17,6 +17,8 @@ ARG VERSION_CI
 # ========================================================================
 
 FROM alpine as load-files
+# while doing the build, no interaction possible
+ARG DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /opt/code2use
 COPY ./engage      engage
@@ -33,6 +35,8 @@ COPY ./VERSION     VERSION
 
 ARG FROM_STAGE
 FROM ${FROM_STAGE}
+# while doing the build, no interaction possible
+ARG DEBIAN_FRONTEND=noninteractive
 
 # NOTE: we default force Celery to run as root; do we still wish to force that?
 ARG ARG_C_FORCE_ROOT
@@ -85,4 +89,4 @@ CMD ["/startup.sh"]
 USER engage
 
 ARG VERSION_CI
-ENV VERSION_CI=$VERSION_CI
+ENV VERSION_CI=${VERSION_CI}

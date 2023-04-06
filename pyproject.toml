@@ -48,11 +48,12 @@ xlsxlite = "^0.2.0"
 colorama = "^0.4.4"
 gunicorn = "^20.0.4"
 iptools = "^0.7.0"
-iso-639 = "^0.4.5"
+# poetry filename/version parsing issue with iso-639: https://github.com/python-poetry/poetry/issues/6996
+iso-639 = {git = "https://github.com/noumar/iso639.git", tag = "0.4.5"}
 iso8601 = "^0.1.14"
 phonenumbers = "*"
 pycountry = "^20.7.3"
-python-dateutil = "2.2"
+python-dateutil = "^2.8"
 cffi = "1.15.0"
 psycopg2-binary = "^2.9.1"
 python-intercom = "^3.1.0"
@@ -62,23 +63,23 @@ chardet = "^4.0.0"
 openpyxl = "^3.0.9"
 python-json-logger = "2.0.0"
 #----- engage
-bandwidth-sdk = "3.1.0"
+bandwidth-sdk = "14.3.0"
 iris_sdk = {git = "https://github.com/bandwidthcom/python-bandwidth-iris"}
-amqp = "2.6.1"
-dicttoxml = "1.7.4"
-django-getenv = "1.3.1"
-django-cache-url = "3.4.2"
+amqp = "5.1.1"
+dicttoxml = "1.7.16"
+django-getenv = "1.3.2"
+django-cache-url = "3.4.4"
 pypng = "^0.20220715.0"
-pyqrcode = "^1.2"
-uwsgi = "2.0.18"
-whitenoise = "^5.1"
+pyqrcode = "1.2.1"
+uwsgi = "2.0.21"
+whitenoise = "6.4.0"
 #----- oidc _PROVIDER_
 #pyjwt = "^2.3.0" #required by oauthlib
 #oauthlib = "^3.2.0" #required by django-oauth-toolkit
 #django-oauth-toolkit = "^1.7.1"
 #django-cors-headers = "^3.11.0"
 #----- oidc _CLIENT_
-django-oauth2-authcodeflow = "0.5.0"
+django-oauth2-authcodeflow = "1.0.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.1.0"

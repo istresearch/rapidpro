@@ -1,9 +1,14 @@
 # Alpine image with Python 3.9 as default python3 install
-FROM node:12.22-alpine3.14
+FROM node:16-alpine3.17
 
-RUN set -ex \
- && apk add --no-cache \
-	bash nano python3 \
+# while doing the build, no interaction possible
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apk add --no-cache \
+	bash \
+    nano \
+    python3 \
+	git \
     sqlite \
     tiff \
     curl \
@@ -11,4 +16,4 @@ RUN set -ex \
     proj \
     gdal \
     binutils \
- && echo "installed basic needs and runtime osgeo dependencies"
+ && echo -e "\n----[ installed basic needs and runtime osgeo dependencies ]----\n"
