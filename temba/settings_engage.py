@@ -49,8 +49,11 @@ INSTALLED_APPS = (
         'engage.auth',
         'engage.channels',
         'engage.contacts',
+        'engage.flows',
+        'engage.mailroom',
         'engage.msgs',
         'engage.orgs',
+        'engage.schedules',
         'engage.utils',
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
