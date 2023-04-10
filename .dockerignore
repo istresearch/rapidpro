@@ -1,2 +1,6 @@
 env
-.git
+.*
+!.npmrc
+_*
+ansible
+node_modules

@@ -61,7 +61,7 @@ jobs:
           echo "::notice::Layer3: ${IMAGE_NAME}:${IMAGE_TAG}"
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          echo "VERSION_STR=${IMAGE_TAG_HASH}" >> $GITHUB_OUTPUT
+          echo "VERSION_TAG=${IMAGE_TAG_HASH}" >> $GITHUB_OUTPUT
   #endjob build_cfg
 
   trigger-build:
@@ -91,7 +91,7 @@ jobs:
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ needs.build_cfg.outputs.VER_NUM }}",
-                  "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_STR }}"
+                  "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_TAG }}"
                 ]
               },
               "callback": {
