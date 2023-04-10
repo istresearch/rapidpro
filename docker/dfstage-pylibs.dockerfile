@@ -1,17 +1,23 @@
 ARG FROM_STAGE
 
-ARG ARG_PIP_RETRIES=120
-ARG ARG_PIP_TIMEOUT=400
-ARG ARG_PIP_DEFAULT_TIMEOUT=400
-ARG ARG_PIP_EXTRA_INDEX_URL=https://alpine-3.wheelhouse.praekelt.org/simple
-
-ARG USER_PID=1717
-
 # ========================================================================
 
 FROM alpine as load-files
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
+
+SHELL ["/bin/bash", "-c"]
+
+ARG FLOW_EDITOR
+ARG REPO_UN
+ARG REPO_PW
+# Check if the REPO_UN and REPO_PWD enviornment variables are set.  If not, exit build.
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && if [ "${FLOW_EDITOR}" = "" ]; then echo "FLOW_EDITOR build arg not set"; exit 1; fi \
+ && if [ "${REPO_UN}" = "" ]; then echo "REPO_PW build arg not set"; exit 1; fi \
+ && if [ "${REPO_PW}" = "" ]; then echo "REPO_PW build arg not set"; exit 1; fi \
+ && notify "using build from repo://engage/floweditor/floweditor-v${FLOW_EDITOR}_${ARCH}.tar.gz"
+COPY https://${REPO_UN}:${REPO_PW}@repo.istresearch.com/engage/floweditor/floweditor-v${FLOW_EDITOR}_${ARCH}.tar.gz /opt/code2use/floweditor.tar.gz
 
 COPY rp-build-deps.sh /opt/code2use/
 
@@ -35,10 +41,10 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 SHELL ["/bin/bash", "-c"]
 
-ARG ARG_PIP_RETRIES
-ARG ARG_PIP_TIMEOUT
-ARG ARG_PIP_DEFAULT_TIMEOUT
-ARG ARG_PIP_EXTRA_INDEX_URL
+ARG ARG_PIP_RETRIES=120
+ARG ARG_PIP_TIMEOUT=400
+ARG ARG_PIP_DEFAULT_TIMEOUT=400
+ARG ARG_PIP_EXTRA_INDEX_URL=https://alpine-3.wheelhouse.praekelt.org/simple
 
 ENV PIP_RETRIES=$ARG_PIP_RETRIES \
     PIP_TIMEOUT=$ARG_PIP_TIMEOUT \
@@ -74,6 +80,7 @@ RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
  && set -x; su-exec engage:engage ./install-pylibs.sh; set +x \
  && notify "installed/built python libs" \
  && su-exec engage:engage npm install \
+ && tar -zxf floweditor.tar.gz --directory node_modules/@nyaruka/flow-editor \
  && notify "installed/built npm libs" \
  && apk del .rp-build-deps \
  && apk del .my-build-deps \

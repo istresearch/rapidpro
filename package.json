@@ -9,7 +9,7 @@
     ]
   },
   "dependencies": {
-    "@nyaruka/flow-editor": "github:istresearch/floweditor#v1.17.1-3",
+    "@nyaruka/flow-editor": "github:istresearch/floweditor#2269a8e013a9de07cc12509be546699744d8ba19",
     "@nyaruka/temba-components": "0.28.2",
     "colorette": "1.2.2",
     "fa-icons": "0.2.0",
