@@ -115,7 +115,7 @@ jobs:
                 "payload": {
                   "repo": {
                     "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
-                    "ref_name": "${{ github.event.client_payload.repo.ref_name }}",
+                    "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
                   },
                   "layer2tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                   "layer2": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"

@@ -101,7 +101,7 @@ jobs:
                 "payload": {
                   "repo": {
                     "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
-                    "ref_name": "${{ github.event.client_payload.repo.ref_name }}",
+                    "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
                   },
                   "tag": "${{ needs.build_cfg.outputs.VERSION_TAG }}",
                   "ver_num": "${{ needs.build_cfg.outputs.VER_NUM }}",
