@@ -5,8 +5,6 @@ on:
     types: [build_layer3, build_layer2_error]
 
 env:
-  REPO_BRANCH: ${{ github.event.client_payload.repo.branch }}
-  REPO_TAG: ${{ github.event.client_payload.repo.tag }}
   IMAGE_STAGE: pyapp
   DOCKERFILE2USE: docker/dfstage-pyapp.dockerfile
   FROM_LAYER: ${{ github.event.client_payload.layer2 }}
@@ -39,14 +37,16 @@ jobs:
 
       - name: "Determine Tag To Use"
         id: config_step
+        env:
+          REF_NAME: "${{ github.event.client_payload.repo.ref_name }}"
         run: |-
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
           VERSION_STR=$(cat VERSION)
 
-          if [[ -n "${REPO_TAG}" ]]; then
-            IMAGE_TAG_HASH="${REPO_TAG#*v}"
-          elif [ "${REPO_BRANCH}" != "master" ] && [ "${REPO_BRANCH}" != "main" ]; then
-            IMAGE_TAG_HASH="ci-${VERSION_STR}-${REPO_BRANCH#**/}"
+          if [[ "${{ github.event.client_payload.repo.ref_type }}" == "tag" ]]; then
+            IMAGE_TAG_HASH="${REF_NAME#*v}"
+          elif [ "${REF_NAME}" != "master" ] && [ "${REF_NAME}" != "main" ]; then
+            IMAGE_TAG_HASH="ci-${VERSION_STR}-${REF_NAME#**/}"
           else
             IMAGE_TAG_HASH="ci-${VERSION_STR}"
           fi
@@ -79,8 +79,8 @@ jobs:
             {
               "repo": {
                 "name": "${{ github.repository }}",
-                "branch": "${{ env.REPO_BRANCH }}",
-                "tag": "${{ env.REPO_TAG }}"
+                "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
+                "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
               },
               "image": {
                 "dockerfile": "${{ env.DOCKERFILE2USE }}",
@@ -102,10 +102,8 @@ jobs:
                   "repo": {
                     "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
                     "ref_name": "${{ github.event.client_payload.repo.ref_name }}",
-                    "branch": "${{ env.REPO_BRANCH }}",
-                    "tag": "${{ env.REPO_TAG }}"
                   },
-                  "tag": "${{ needs.build_cfg.outputs.VERSION_STR }}",
+                  "tag": "${{ needs.build_cfg.outputs.VERSION_TAG }}",
                   "ver_num": "${{ needs.build_cfg.outputs.VER_NUM }}",
                   "layer3tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                   "layer3": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"

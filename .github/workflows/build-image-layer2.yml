@@ -5,8 +5,6 @@ on:
     types: [build_layer2, build_layer1_error]
 
 env:
-  REPO_BRANCH: ${{ github.event.client_payload.repo.branch }}
-  REPO_TAG: ${{ github.event.client_payload.repo.tag }}
   IMAGE_STAGE: pylibs
   DOCKERFILE2USE: docker/dfstage-pylibs.dockerfile
   FROM_LAYER: ${{ github.event.client_payload.layer1 }}
@@ -98,8 +96,8 @@ jobs:
             {
               "repo": {
                 "name": "${{ github.repository }}",
-                "branch": "${{ env.REPO_BRANCH }}",
-                "tag": "${{ env.REPO_TAG }}"
+                "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
+                "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
               },
               "image": {
                 "dockerfile": "${{ env.DOCKERFILE2USE }}",
@@ -118,8 +116,6 @@ jobs:
                   "repo": {
                     "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
                     "ref_name": "${{ github.event.client_payload.repo.ref_name }}",
-                    "branch": "${{ env.REPO_BRANCH }}",
-                    "tag": "${{ env.REPO_TAG }}"
                   },
                   "layer2tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                   "layer2": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
@@ -143,8 +139,6 @@ jobs:
               "repo": {
                 "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
                 "ref_name": "${{ github.event.client_payload.repo.ref_name }}",
-                "branch": "${{ env.REPO_BRANCH }}",
-                "tag": "${{ env.REPO_TAG }}"
               },
               "layer2tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
               "layer2": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
