@@ -91,7 +91,7 @@ jobs:
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ needs.build_cfg.outputs.VER_NUM }}",
-                  "VERSION_TAG=${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                  "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_STR }}"
                 ]
               },
               "callback": {
@@ -105,7 +105,7 @@ jobs:
                     "branch": "${{ env.REPO_BRANCH }}",
                     "tag": "${{ env.REPO_TAG }}"
                   },
-                  "tag": "${{ needs.build_cfg.outputs.VERSION_TAG }}",
+                  "tag": "${{ needs.build_cfg.outputs.VERSION_STR }}",
                   "ver_num": "${{ needs.build_cfg.outputs.VER_NUM }}",
                   "layer3tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                   "layer3": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
