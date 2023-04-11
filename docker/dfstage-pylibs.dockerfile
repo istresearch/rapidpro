@@ -14,7 +14,7 @@ RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
  && if [ "${REPO_UN}" = "" ]; then echo "REPO_PW build arg not set"; exit 1; fi \
  && if [ "${REPO_PW}" = "" ]; then echo "REPO_PW build arg not set"; exit 1; fi \
  && notify "using build from repo://engage/floweditor/floweditor-v${FLOW_EDITOR}_${ARCH}.tar.gz"
-COPY https://${REPO_UN}:${REPO_PW}@repo.istresearch.com/engage/floweditor/floweditor-v${FLOW_EDITOR}_${ARCH}.tar.gz /opt/code2use/floweditor.tar.gz
+ADD https://${REPO_UN}:${REPO_PW}@repo.istresearch.com/engage/floweditor/floweditor-v${FLOW_EDITOR}_${ARCH}.tar.gz /opt/code2use/floweditor.tar.gz
 
 COPY rp-build-deps.sh /opt/code2use/
 
