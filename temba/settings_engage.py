@@ -41,7 +41,7 @@ if POST_MASTER_DL_QRCODE is not None and not POST_MASTER_DL_QRCODE.startswith("d
 MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
-    tuple(filter(lambda tup : tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
+    tuple(filter(lambda tup: tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
         'flatpickr',
         'temba.ext',
         'engage.api',

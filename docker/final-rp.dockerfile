@@ -1,14 +1,12 @@
-ARG FROM_STAGE_TAG
-ARG VERSION_TAG
-
-# ========================================================================
-
-FROM istresearch/p4-engage:${FROM_STAGE_TAG}
+ARG FROM_STAGE
+FROM ${FROM_STAGE}
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
 
 CMD ["/startup.sh"]
 
+ARG RAPIDPRO_REPO=istresearch/rapidpro
+ARG RAPIDPRO_VERSION=main
 LABEL org.label-schema.name="RapidPro" \
       org.label-schema.description="RapidPro allows organizations to visually build scalable interactive messaging applications." \
       org.label-schema.url="https://www.rapidpro.io/" \
