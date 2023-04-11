@@ -5,6 +5,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 SHELL ["/bin/bash", "-c"]
 
+ARG ARCH
 ARG FLOW_EDITOR
 ARG REPO_UN
 ARG REPO_PW
