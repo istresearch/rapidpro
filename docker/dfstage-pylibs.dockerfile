@@ -1,8 +1,5 @@
 ARG FROM_STAGE
-
-# ========================================================================
-
-FROM alpine as load-files
+FROM ${FROM_STAGE} as load-files
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
 
