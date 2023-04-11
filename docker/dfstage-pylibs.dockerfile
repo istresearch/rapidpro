@@ -52,7 +52,7 @@ ENV PIP_RETRIES=$ARG_PIP_RETRIES \
 
 USER root
 
-ARG USER_PID
+ARG USER_PID=1717
 RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
  && grp=engage; usr=engage && addgroup -S ${grp} && adduser -u ${USER_PID} -S ${usr} -G ${grp} \
  && mkdir -p /rapidpro; chown -R engage:engage /rapidpro \
