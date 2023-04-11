@@ -128,7 +128,7 @@ ansible/site.retry
 .direnv/
 
 .idea
-_*
+_*/
 scm/*_tag.txt
 workspace/info/
 !/engage/hamls/smartmin/*
