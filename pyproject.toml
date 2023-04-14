@@ -11,7 +11,7 @@ repository = "http://github.com/rapidpro/rapidpro"
 [tool.poetry.dependencies]
 python = "^3.9"
 Django = "^4.0.6"
-django-compressor = "^3.1"
+django-compressor = "^4.3"
 django-countries = "^7.0"
 django-flatpickr = "^1.0.0"
 django-hamlpy = "^1.4.4"
@@ -63,7 +63,8 @@ chardet = "^4.0.0"
 openpyxl = "^3.0.9"
 python-json-logger = "2.0.0"
 #----- engage
-bandwidth-sdk = "14.3.0"
+bandwidth-sdk = "3.1.0"
+# to install via IntelliJ, use https://github.com/bandwidthcom/python-bandwidth-iris#egg=iris_sdk
 iris_sdk = {git = "https://github.com/bandwidthcom/python-bandwidth-iris"}
 amqp = "5.1.1"
 dicttoxml = "1.7.16"
@@ -73,6 +74,7 @@ pypng = "^0.20220715.0"
 pyqrcode = "1.2.1"
 uwsgi = "2.0.21"
 whitenoise = "6.4.0"
+brotli = "1.0.9"
 #----- oidc _PROVIDER_
 #pyjwt = "^2.3.0" #required by oauthlib
 #oauthlib = "^3.2.0" #required by django-oauth-toolkit
@@ -86,7 +88,7 @@ black = "^22.1.0"
 coverage = "^5.5"
 flake8 = "^4.0.1"
 isort = "^5.10.1"
-codecov = "^2.1.11"
+#codecov = "^2.1.11"
 responses = "^0.12.1"
 beautifulsoup4 = "^4.9.3"
 

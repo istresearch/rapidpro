@@ -5,10 +5,10 @@ from __future__ import unicode_literals
 # Engage settings file
 # -----------------------------------------------------------------------------------
 
-from getenv import env
+from getenv import env  # django-getenv package
 from glob import glob
 import dj_database_url
-import django_cache_url
+import django_cache_url  # django-cache-url package
 
 from engage.auth.oauth_config import OAuthConfig
 from engage.utils.strings import is_empty, str2bool
@@ -209,33 +209,38 @@ if not AWS_MEDIA:
 
 if not AWS_STATIC:
     # @see whitenoise middleware usage: https://whitenoise.evans.io/en/stable/django.html
-    STATICFILES_STORAGE = 'engage.utils.storage.WhiteNoiseStaticFilesStorage'
+    STATICFILES_STORAGE = 'engage.utils.storage.EngageStaticFilesStorage'
     # insert just after security middleware (which is at idx 0)
     MIDDLEWARE = MIDDLEWARE[:1] + ('whitenoise.middleware.WhiteNoiseMiddleware',) + MIDDLEWARE[1:]
     WHITENOISE_MANIFEST_STRICT = False
+    #WHITENOISE_KEEP_ONLY_HASHED_FILES = True  # cannot keep only hashed unless we purge {STATIC_URL} from .haml files.
+    DEBUG_PROPAGATE_EXCEPTIONS = True
+#endif not using aws for staticfiles
 
 STATIC_ROOT = os.path.join(PROJECT_DIR, "../sitestatic/")
 
-# compress_precompilers used for static LESS files whether or not COMPRESS_ENABLED==True
-COMPRESS_PRECOMPILERS = (
-    ("text/less", 'lessc --include-path="%s:%s" {infile} {outfile}' % (
-        os.path.join(COMPRESS_ROOT, "less"),
-        os.path.join(COMPRESS_ROOT, "engage", "less"),
-    )),
-)
-
 COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'on') == 'on'
-if COMPRESS_ENABLED:
-    COMPRESS_URL = STATIC_URL
-    COMPRESS_ROOT = STATIC_ROOT
-    #COMPRESS_STORAGE = STATICFILES_STORAGE
-
-COMPRESS_OFFLINE_MANIFEST = f"manifest-{env('VERSION_CI', '1-dev')[:-4]}.json"
 # If COMPRESS_OFFLINE is False, compressor will look in COMPRESS_STORAGE for
 # previously processed results, but if not found, will create them on the fly
 # and save them to use again.
 #COMPRESS_OFFLINE = False
 COMPRESS_OFFLINE = COMPRESS_ENABLED and (env('DEV_STATIC', 'off') != 'on')
+if COMPRESS_OFFLINE:
+    COMPRESS_OFFLINE_MANIFEST = f"manifest-{env('VERSION_CI', '1-dev')[:-4]}.json"
+#endif
+if COMPRESS_ENABLED:
+    COMPRESS_URL = STATIC_URL
+    COMPRESS_ROOT = STATIC_ROOT
+    #COMPRESS_STORAGE = STATICFILES_STORAGE
+
+    # compress_precompilers used for static LESS files whether or not COMPRESS_ENABLED==True
+    COMPRESS_PRECOMPILERS = (
+        ("text/less", 'lessc --include-path="%s:%s" {infile} {outfile}' % (
+            os.path.join(COMPRESS_ROOT, "less"),
+            os.path.join(COMPRESS_ROOT, "engage", "less"),
+        )),
+    )
+#endif compress on
 
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
 MAGE_API_URL = env('MAGE_API_URL', 'http://localhost:8026/api/v1')

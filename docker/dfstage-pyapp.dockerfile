@@ -71,4 +71,6 @@ CMD ["/startup.sh"]
 USER engage
 
 ARG VERSION_CI
-ENV VERSION_CI=${VERSION_CI}
+ENV VERSION_CI=${VERSION_CI} \
+    LC_ALL=en_US.UTF-8 \
+    LANG=en_US.UTF-8

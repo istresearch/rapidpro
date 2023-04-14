@@ -1,6 +1,6 @@
 {% extends base_template %}
 
-{% load smartmin static %}
+{% load static smartmin %}
 
 {% block pre-content %}
 <div class="page-header"><h2>{{ title }}</h2></div>
@@ -16,14 +16,27 @@
   },
   function(){});
 
-
-
   $("td.clickable").click(function(){
     document.location = $(this).children("a").attr("href");
   });
 
 
   function fetchPJAXContent(url, container, options) {
+
+    options = options || {};
+
+    // hijack an pjax requests made from spa pages and route the content there instead
+    if (container == "#pjax" && document.querySelector(".spa-content")) {
+      container = ".spa-content";
+      options["headers"] = (options["headers"] || {})
+      options["headers"]["TEMBA-SPA"] = 1;
+    }
+
+    var triggerEvents = true;
+    if (!!options["ignoreEvents"]) {
+      triggerEvents = false;
+    }
+
     var type = 'GET';
     var data = undefined;
     var processData = true;
@@ -50,7 +63,9 @@
       }
     }
 
-    document.dispatchEvent(new Event("temba-pjax-begin"));
+    if (triggerEvents) {
+        document.dispatchEvent(new Event("temba-pjax-begin"));
+    }
 
     // see if we should skip our fetch
     if (options) {
@@ -75,7 +90,6 @@
           toastr.info(toast, '', {"positionClass": "toast-bottom-full-width"});
         }
 
-
         if ('followRedirects' in options && options['followRedirects'] == true) {
             var redirect = jqXHR.getResponseHeader('REDIRECT');
             if (redirect) {
@@ -96,7 +110,10 @@
         }
 
         $(container).html(response);
-        document.dispatchEvent(new Event("temba-pjax-complete"));
+
+        if (triggerEvents) {
+            document.dispatchEvent(new Event("temba-pjax-complete"));
+        }
 
         if (options) {
           if ('onSuccess' in options) {

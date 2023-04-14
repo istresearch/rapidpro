@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 from django.conf import settings
-from django.conf.urls import url
+from django.urls import re_path
 from django.contrib.auth.models import AnonymousUser
 from django.http import HttpRequest, HttpResponse
 from rest_framework.views import View
@@ -97,7 +97,7 @@ class UserGuideMixin:
 #endclass UserGuideMixin
 
 urlpatterns = [
-    url(
+    re_path(
         r"^user_guide$",
         UserGuideMixin.UserGuide.as_view(),
         name="engage.user_guide",

@@ -78,7 +78,7 @@ jobs:
                 ]
               },
               "deployment": {
-                "deploy_flag": "${{ github.ref_type == 'branch' }}",
+                "deploy_flag": "${{ github.ref_type != 'branch' }}",
                 "k8s": [ {
                   "project": "pulse-engage",
                   "container": "pulse-engage",
