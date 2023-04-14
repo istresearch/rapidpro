@@ -7,3 +7,13 @@ class AppConfig(BaseAppConfig):
     name = "engage.contacts"
     label = "engage_contacts"
     verbose_name = "Engage Contacts"
+
+    def ready(self):
+        from .models import ContactFieldOverrides
+        ContactFieldOverrides.setClassOverrides()
+
+        from .views import ContactListOverrides
+        ContactListOverrides.setClassOverrides()
+    #enddef ready
+
+#endclass AppConfig

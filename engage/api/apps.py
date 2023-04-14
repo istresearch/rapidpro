@@ -7,3 +7,10 @@ class AppConfig(BaseAppConfig):
     name = "engage.api"
     label = "engage_api"
     verbose_name = "Engage API"
+
+    def ready(self):
+        from .serializers import MsgBulkActionSerializerOverride
+        MsgBulkActionSerializerOverride.setClassOverrides()
+    #enddef ready
+
+#endclass AppConfig

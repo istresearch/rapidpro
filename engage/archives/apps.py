@@ -7,3 +7,10 @@ class AppConfig(BaseAppConfig):
     name = "engage.archives"
     label = "engage_archives"
     verbose_name = "Engage Archives"
+
+    def ready(self):
+        from .models import ArchiveOverrides
+        ArchiveOverrides.setClassOverrides()
+    #enddef ready
+
+#endclass AppConfig

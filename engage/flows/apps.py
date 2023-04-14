@@ -7,3 +7,13 @@ class AppConfig(BaseAppConfig):
     name = "engage.flows"
     label = "engage_flows"
     verbose_name = "Engage Flows"
+
+    def ready(self):
+        from .models import FlowOverrides
+        FlowOverrides.setClassOverrides()
+
+        from .views import FlowCRUDLOverrides
+        FlowCRUDLOverrides.setClassOverrides()
+    #enddef ready
+
+#endclass AppConfig
