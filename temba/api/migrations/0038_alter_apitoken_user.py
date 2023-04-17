@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("orgs", "0096_user"),
-        ("api", "0035_alter_resthook_created_by_alter_resthook_modified_by_and_more.py"),
+        ("api", "0035_alter_resthook_created_by_alter_resthook_modified_by_and_more"),
     ]
 
     operations = [

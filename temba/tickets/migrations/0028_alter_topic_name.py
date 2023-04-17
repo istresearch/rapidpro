@@ -8,7 +8,7 @@ import temba.utils.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("tickets", "0026_alter_ticketer_created_by_alter_ticketer_modified_by_and_more.py "),
+        ("tickets", "0026_alter_ticketer_created_by_alter_ticketer_modified_by_and_more"),
     ]
 
     operations = [

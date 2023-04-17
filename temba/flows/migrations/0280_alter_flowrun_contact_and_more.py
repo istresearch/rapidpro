@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("contacts", "0157_update_group_type"),
-        ("flows", "0277_flowrun_flows_flowrun_contacts_at_node.py "),
+        ("flows", "0277_flowrun_flows_flowrun_contacts_at_node"),
     ]
 
     operations = [

@@ -8,7 +8,7 @@ import temba.utils.uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("globals", "0005_alter_global_created_by_alter_global_modified_by.py"),
+        ("globals", "0005_alter_global_created_by_alter_global_modified_by"),
     ]
 
     operations = [

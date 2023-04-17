@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("triggers", "0022_alter_trigger_created_by_alter_trigger_modified_by.py "),
+        ("triggers", "0022_alter_trigger_created_by_alter_trigger_modified_by"),
     ]
 
     operations = [

@@ -8,7 +8,7 @@ import temba.utils.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("msgs", "0168_remove_msg_delete_from_counts_and_more.py"),
+        ("msgs", "0168_remove_msg_delete_from_counts_and_more"),
     ]
 
     operations = [

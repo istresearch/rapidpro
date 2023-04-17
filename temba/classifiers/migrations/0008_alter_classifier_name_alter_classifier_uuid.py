@@ -9,7 +9,7 @@ import temba.utils.uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("classifiers", "0005_alter_classifier_created_by_and_more.py"),
+        ("classifiers", "0005_alter_classifier_created_by_and_more"),
     ]
 
     operations = [

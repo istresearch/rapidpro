@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ("policies", "0005_auto_20200901_1626.py"),
+        ("policies", "0005_auto_20200901_1626"),
     ]
 
     operations = [

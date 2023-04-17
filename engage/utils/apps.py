@@ -20,6 +20,10 @@ class AppConfig(BaseAppConfig):
 
         from .views import MultipleObjectMixinOverrides
         MultipleObjectMixinOverrides.setClassOverrides()
+
+        from temba.utils import models as TUM
+        from .models import RequireUpdateFieldsMixin
+        TUM.RequireUpdateFieldsMixin = RequireUpdateFieldsMixin
     #enddef ready
 
 #endclass AppConfig

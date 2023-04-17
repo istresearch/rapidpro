@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("orgs", "0092_org_api_rates.py "),
+        ("orgs", "0092_org_api_rates"),
     ]
 
     operations = [

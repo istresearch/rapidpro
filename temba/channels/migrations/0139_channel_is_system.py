@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("channels", "0136_alter_alert_created_by_alter_alert_modified_by_and_more.py"),
+        ("channels", "0136_alter_alert_created_by_alter_alert_modified_by_and_more"),
     ]
 
     operations = [

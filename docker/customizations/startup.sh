@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -ex # fail on any error & print commands as they're run
 
 source /venv/bin/activate

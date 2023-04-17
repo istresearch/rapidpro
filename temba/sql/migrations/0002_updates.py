@@ -8,7 +8,7 @@ from . import InstallSQL
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("sql", "0001_functions"),
+        ("sql", "0001_initial"),
     ]
 
     operations = [

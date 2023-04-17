@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("contacts", "0151_fix_fb_contact_names.py"),
+        ("contacts", "0151_fix_fb_contact_names"),
     ]
 
     operations = [

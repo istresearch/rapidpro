@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("locations", "0019_remove_adminboundary_geometry.py"),
+        ("locations", "0019_remove_adminboundary_geometry"),
     ]
 
     operations = [

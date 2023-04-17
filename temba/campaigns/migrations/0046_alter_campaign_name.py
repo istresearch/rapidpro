@@ -8,7 +8,7 @@ import temba.utils.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("campaigns", "0041_alter_campaign_created_by_alter_campaign_modified_by_and_more.py"),
+        ("campaigns", "0041_alter_campaign_created_by_alter_campaign_modified_by_and_more"),
     ]
 
     operations = [
