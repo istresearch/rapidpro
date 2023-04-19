@@ -96,15 +96,17 @@ DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 
 REDIS_URL = env('REDIS_URL')
 if REDIS_URL:
-    BROKER_URL = env('BROKER_URL', REDIS_URL)
+    CELERY_BROKER_URL = env('BROKER_URL', REDIS_URL)
     CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', REDIS_URL)
     CACHE_URL = env('CACHE_URL', REDIS_URL)
-    CACHES = {'default': django_cache_url.parse(CACHE_URL)}
     if CACHES['default']['BACKEND'] == 'django_redis.cache.RedisCache':
+        CACHES['default']['LOCATION'] = REDIS_URL
         if 'OPTIONS' not in CACHES['default']:
             CACHES['default']['OPTIONS'] = {}
+        #endif
         CACHES['default']['OPTIONS']['CLIENT_CLASS'] = 'django_redis.client.DefaultClient'
-
+    #endif default cache definition is what we expect
+#endif Redis defined
 
 IS_PROD = env('IS_PROD', 'off') == 'on'
 # -----------------------------------------------------------------------------------
