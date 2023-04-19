@@ -13,6 +13,15 @@ ROLE_SURVEYOR = "S"
 def backfill_org_membership(apps, schema_editor):  # pragma: no cover
     Org = apps.get_model("orgs", "Org")
 
+    # ensure old definition exists, so we can migrate to new schema
+    from django.contrib.auth.models import User
+    from django.db import models
+    Org.administrators = models.ManyToManyField(User, related_name='org_admins')
+    Org.editors = models.ManyToManyField(User, related_name='org_editors')
+    Org.viewers = models.ManyToManyField(User, related_name='org_viewers')
+    Org.agents = models.ManyToManyField(User, related_name='org_agents')
+    Org.surveyors = models.ManyToManyField(User, related_name='org_surveyors')
+
     role_counts = defaultdict(int)
 
     def add_user(o, u, r: str):
@@ -34,6 +43,11 @@ def backfill_org_membership(apps, schema_editor):  # pragma: no cover
     for role, count in role_counts.items():
         print(f"Added {count} users with role {role} to orgs")
 
+    delattr(Org, 'administrators')
+    delattr(Org, 'editors')
+    delattr(Org, 'viewers')
+    delattr(Org, 'agents')
+    delattr(Org, 'surveyors')
 
 def reverse(apps, schema_editor):  # pragma: no cover
     pass

@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 
@@ -22,6 +23,7 @@ class EngageStaticFilesStorage(BaseStaticFilesStorage):
     generates an exception. Tweak a few of the methods to ignore
     malformed/missing files we do not care about in production.
     """
+    logger = logging.getLogger(__name__)
     manifest_strict = False
     ignore_ext_list = ('.map',)
 
@@ -49,17 +51,34 @@ class EngageStaticFilesStorage(BaseStaticFilesStorage):
                     file_paths = os.path.dirname(file_name).split(os.sep)
                     #print(file_paths)
                     if file_ext in self.ignore_ext_list or 'test' in file_paths:
-                        print(f"  ignoring missing '{file_name}' for '{name}'")
+                        print(f"\nignoring missing '{file_name}' for '{name}'")
+                        self.logger.debug(f"  ignoring missing '{file_name}' for '{name}'", extra={
+                            "ref": file_name,
+                            "file": name,
+                            "proc": True,
+                        })
                         processed = True
                     #endif ext is one we ignore
                 #endif match found in exception msg
             #endif MissingFileError
             if isinstance(processed, Exception):
-                print(f"  EX on '{name}': {processed}")
+                self.logger.error(f"EX on '{name}': {processed}", extra={
+                    "file": name,
+                    "ex": processed,
+                    "proc": False,
+                })
             elif processed:
-                print(f"processed '{name}'")
+                print(".", end='')
+                self.logger.debug(f"processed '{name}'", extra={
+                    "file": name,
+                    "proc": True,
+                })
             else:
-                print(f" NOT proc '{name}'")
+                print(f"\nNOT proc '{name}'")
+                self.logger.debug(f"  NOT processed '{name}'", extra={
+                    "file": name,
+                    "proc": False,
+                })
             #endif
             yield name, hashed_name, processed
         #endfor

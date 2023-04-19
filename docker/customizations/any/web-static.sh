@@ -17,8 +17,9 @@ if [[ -n $REDIS_URL ]]; then
   echo 'Finished clearing static cache.'
 fi
 
-echo 'Collecting compressed static website files…'
+echo 'Collecting static website files…'
 python manage.py collectstatic --noinput --settings=temba.settings
+echo ""  # ensure we end up on fresh line
 
 echo "Compressing static website files…"
 

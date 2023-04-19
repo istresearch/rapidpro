@@ -39,7 +39,7 @@ class UserOverrides(ClassOverrideMixinMustBeFirst, TembaUser):
         :return: the org object as a property of the user obj or from the db.
         """
         if not hasattr(self, "_org"):
-            self.set_org(Org.objects.filter(administrators=self, is_active=True).first())
+            self.set_org(Org.objects.filter(users=self, is_active=True).first())
         #endif
         return getattr(self, "_org", None)
     #enddef get_org

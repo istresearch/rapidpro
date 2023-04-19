@@ -2,7 +2,6 @@ import logging
 
 from django import forms
 from django.contrib import messages
-from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -15,7 +14,7 @@ from smartmin.views import (
 )
 
 from temba.api.models import APIToken
-from temba.orgs.models import Org, OrgRole
+from temba.orgs.models import Org, OrgRole, User
 from temba.orgs.views import OrgPermsMixin, OrgCRUDL
 
 

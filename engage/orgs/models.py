@@ -1,12 +1,9 @@
-import functools
-import operator
-
 from django.conf import settings as siteconfig
 from django.db import transaction
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
 
-from temba.orgs.models import Org, OrgRole
+from temba.orgs.models import Org
 
 
 class OrgModelOverride(ClassOverrideMixinMustBeFirst, Org):

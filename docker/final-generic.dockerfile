@@ -16,5 +16,8 @@ USER root
 RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
 USER engage
 
-# compress static files
-RUN ./web-static.sh
+# collect and compress static files
+ARG RUN_WEB_STATIC_FILE_COLLECTOR=1
+RUN if [[ '${RUN_WEB_STATIC_FILE_COLLECTOR}' == '1' ]]; then \
+  ./web-static.sh \
+fi

@@ -18,7 +18,7 @@ class MsgModelOverride(ClassOverrideMixinMustBeFirst, Msg):
         Archives this message
         """
         # engage: allow for any kind of msg type
-        #if self.direction != INCOMING:
+        #if self.direction != Msg.DIRECTION_IN:
         #    raise ValueError("Can only archive incoming non-test messages")
 
         self.visibility = Msg.VISIBILITY_ARCHIVED
@@ -30,7 +30,7 @@ class MsgModelOverride(ClassOverrideMixinMustBeFirst, Msg):
         Restores (i.e. un-archives) this message
         """
         # engage: allow for any kind of msg type
-        #if self.direction != INCOMING:  # pragma: needs cover
+        #if self.direction != Msg.DIRECTION_IN:  # pragma: needs cover
         #    raise ValueError("Can only restore incoming non-test messages")
 
         self.visibility = Msg.VISIBILITY_VISIBLE
@@ -62,10 +62,10 @@ class LabelModelOverride(ClassOverrideMixinMustBeFirst, Label):
 
         for msg in msgs:
             # engage: allow for any kind of msg type
-            #if msg.direction != INCOMING:
+            #if msg.direction != Msg.DIRECTION_IN:
             #    raise ValueError("Can only apply labels to incoming messages")
 
-            # if we are adding the label and this message doesnt have it, add it
+            # if we are adding the label and this message doesn't have it, add it
             if add:
                 if not msg.labels.filter(pk=self.pk):
                     msg.labels.add(self)
