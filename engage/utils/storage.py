@@ -62,6 +62,7 @@ class EngageStaticFilesStorage(BaseStaticFilesStorage):
                 #endif match found in exception msg
             #endif MissingFileError
             if isinstance(processed, Exception):
+                print(f"\n  EX on '{name}': {processed}")
                 self.logger.error(f"EX on '{name}': {processed}", extra={
                     "file": name,
                     "ex": processed,
@@ -75,7 +76,7 @@ class EngageStaticFilesStorage(BaseStaticFilesStorage):
                 })
             else:
                 print(f"\nNOT proc '{name}'")
-                self.logger.debug(f"  NOT processed '{name}'", extra={
+                self.logger.debug(f"NOT processed '{name}'", extra={
                     "file": name,
                     "proc": False,
                 })

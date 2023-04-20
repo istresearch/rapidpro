@@ -116,7 +116,7 @@ class HomeOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRUDL.Home
             formax.add_section("user", reverse("orgs.user_edit"), icon="icon-user", action="redirect")
 
         if self.has_org_perm("orgs.org_two_factor"):
-            if user.get_settings().two_factor_enabled:
+            if user.settings.two_factor_enabled:
                 formax.add_section(
                     "two_factor", reverse("orgs.user_two_factor_tokens"), icon="icon-two-factor", action="link"
                 )

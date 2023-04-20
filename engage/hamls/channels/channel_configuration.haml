@@ -1,5 +1,5 @@
 -extends "smartmin/read.haml"
--load i18n channels
+-load i18n channels static compress
 
 -block title
   {{ object.get_channel_type_display }} Configuration
@@ -46,7 +46,7 @@
 
 -block extra-script
   {{ block.super }}
-  <script src="{{ STATIC_URL }}rest_framework/js/prettify-min.js"></script>
+  %script{src:"{% static 'rest_framework/js/prettify-min.js' %}"}
   :javascript
     $(function(){
       prettyPrint();

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from copy import deepcopy
+
 # -----------------------------------------------------------------------------------
 # Engage settings file
 # -----------------------------------------------------------------------------------
@@ -89,10 +91,16 @@ except:
 SECRET_KEY = env('SECRET_KEY', required=True)
 
 DATABASE_URL = env('DATABASE_URL', required=True)
-DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
-DATABASES['default']['CONN_MAX_AGE'] = 60
-DATABASES['default']['ATOMIC_REQUESTS'] = True
-DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
+_db_rw_config = dj_database_url.parse(
+    url=DATABASE_URL,
+    engine="django.contrib.gis.db.backends.postgis",
+    conn_max_age=60,
+)
+_db_rw_config["ATOMIC_REQUESTS"] = True
+_db_rw_config["DISABLE_SERVER_SIDE_CURSORS"] = True
+_db_ro_config = deepcopy(_db_rw_config)
+#print(_db_rw_config)
+DATABASES = {"default": _db_rw_config, "readonly": _db_ro_config}
 
 REDIS_URL = env('REDIS_URL')
 if REDIS_URL:

@@ -1,5 +1,5 @@
 -extends "smartmin/base.html"
--load smartmin i18n
+-load smartmin i18n static compress
 
 -block extra-style
   :css
@@ -23,13 +23,13 @@
     }
 
     table .headerSortDown {
-      background-image: url({{STATIC_URL}}img/sort_dsc.png);
+      background-image: url({% static 'img/sort_dsc.png' %});
       background-repeat: no-repeat;
       background-position: 98% 50%;
     }
 
     table .headerSortUp {
-      background-image: url({{STATIC_URL}}img/sort_asc.png);
+      background-image: url({% static 'img/sort_asc.png' %});
       background-repeat: no-repeat;
       background-position: 98% 50%;
     }

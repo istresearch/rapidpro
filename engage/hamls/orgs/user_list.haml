@@ -1,5 +1,5 @@
 -extends "smartmin/list.html"
--load smartmin sms temba compress contacts i18n humanize
+-load smartmin sms temba contacts i18n humanize static compress
 
 -block extra-style
   {{block.super}}
@@ -27,13 +27,13 @@
     }
 
     table .headerSortDown {
-      background-image: url({{STATIC_URL}}img/sort_dsc.png);
+      background-image: url({% static 'img/sort_dsc.png' %});
       background-repeat: no-repeat;
       background-position: 98% 50%;
     }
 
     table .headerSortUp {
-      background-image: url({{STATIC_URL}}img/sort_asc.png);
+      background-image: url({% static 'img/sort_asc.png' %});
       background-repeat: no-repeat;
       background-position: 98% 50%;
     }

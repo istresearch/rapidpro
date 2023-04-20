@@ -52,16 +52,16 @@ if superuser:
     org = Org.objects.filter(name=org_name).first()
     if org:
         token = APIToken.get_or_create(org, superuser)
-        logger.debug("token retrieved", extra={
+        logger.info("token retrieved", extra={
             'org_name': org_name,
             'token': token,
         })
-        print(token_key + "=" + str(token))
+        #print(token_key + "=" + str(token))
     else:
         logger.error("org does not exist", extra={
             'org_name': org_name,
         })
-        print("Org "+org_name+" not found.")
+        #print("Org "+org_name+" not found.")
     #endif org exists
 elif os.environ.get('ADMIN_NAME') and os.environ.get('ADMIN_EMAIL') and os.environ.get('ADMIN_PSWD'):
     #print('Creating superuser...')
@@ -98,9 +98,9 @@ elif os.environ.get('ADMIN_NAME') and os.environ.get('ADMIN_EMAIL') and os.envir
     org.add_user(org_user, OrgRole.EDITOR)
 
     token = APIToken.get_or_create(org, superuser)
-    logger.debug("token retrieved", extra={
+    logger.info("token retrieved", extra={
         'org_name': org_name,
         'token': token,
     })
-    print(token_key + "=" + str(token))
+    #print(token_key + "=" + str(token))
 #endif org not exist
