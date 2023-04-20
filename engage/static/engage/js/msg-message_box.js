@@ -1,7 +1,3 @@
-function handleRowClick(uuid) {
-    gotoLink("/contact/read/" + uuid + "/");
-}
-
 function handleAddLabelClicked() {
     document.getElementById("create-label-modal").open = true;
 }

@@ -1,5 +1,5 @@
 -extends "smartmin/list.html"
--load smartmin sms temba static compress contacts i18n humanize engage_contact_filters
+-load smartmin sms temba static compress contacts i18n humanize
 
 -block extra-style
   {{block.super}}
@@ -28,6 +28,11 @@
 
   #pjax
     -block pjax
+      -if org_perms.msgs.msg_update
+        %temba-dialog#delete-confirmation.hide(header='{{ _("Delete Selected Messages")|escapejs }}' primaryButtonName='{{ _("Delete")|escapejs }}' destructive='true')
+          .p-6
+            -trans "Are you sure you want to delete the selected messages? This cannot be undone."
+
       .lp-frame
         .left
           .flex.flex-col
@@ -84,11 +89,6 @@
                   .button-light.block.mt-3
                     - trans "Create Label"
 
-              -if org_perms.msgs.label_create_folder
-                %temba-modax{ header:'{% trans "Create Folder" %}', endpoint:"{% url 'msgs.label_create_folder' %}"}
-                  .button-light.block.mt-3
-                    -trans "Create Folder"
-
         -if has_messages
           .right
             .flex.w-full.items-end.mb-4
@@ -102,22 +102,22 @@
                           -trans "Remove Label"
 
                       - if 'archive' in actions
-                        .button-action.object-btn-archive
+                        .button-action(onclick='runActionOnObjectRows("archive")')
                           .-mt-1.mr-2.glyph.icon-box
                           -trans "Archive"
 
                       - if 'restore' in actions
-                        .button-action.object-btn-restore
+                        .button-action(onclick='runActionOnObjectRows("restore")')
                           .-mt-1.mr-2.glyph.icon-download
                           -trans "Restore"
 
                       - if 'delete' in actions
-                        .button-action.object-btn-delete
+                        .button-action(onclick='onDeleteClicked()')
                           .-mt-1.mr-2.glyph.icon-remove
                           -trans "Delete"
 
                       - if 'resend' in actions
-                        .button-action.object-btn-resend
+                        .button-action(onclick='runActionOnObjectRows("resend")')
                           .mt-1.mr-2.glyph.icon-loop.text-sm
                           -trans "Resend"
 
@@ -131,7 +131,7 @@
                             -for node in labels
                               -if node.obj.is_folder and node.children
                                 %li.dropdown-submenu
-                                  .lbl-menu.object-btn-label.cursor-pointer{data-id:'{{node.obj.id}}'}
+                                  .lbl-menu.cursor-pointer(href='#' onclick='labelObjectRows({{node.obj.id}})' data-id='{{node.obj.id}}')
                                     .flex.items-center.py-1.hover-linked
                                       .icon-arrow-right-8.text-2xl.-ml-1.-mt-1.mr-1
                                       .name.px-2
@@ -139,7 +139,7 @@
                                   %ul.dropdown-menu.label-menu.border-none
                                     - for child in node.children
                                       %li
-                                        .lbl-menu.object-btn-label.px-4{data-id:'{{child.obj.id}}'}
+                                        .lbl-menu.object-btn-label.px-4(href='#' onclick='labelObjectRows({{child.obj.id}})' data-id='{{child.obj.id}}')
                                           .flex.items-center.py-1.hover-linked
                                             .glyph.message-label.label-checkbox
                                             .name.px-1
@@ -147,7 +147,7 @@
                             -for node in labels
                               -if not node.obj.is_folder
                                 %li
-                                  .lbl-menu.object-btn-label{data-id:'{{node.obj.id}}'}
+                                  .lbl-menu(href='#' onclick='labelObjectRows({{node.obj.id}})' data-id='{{node.obj.id}}')
                                     .flex.items-center.py-1.hover-linked
                                       .glyph.message-label.label-checkbox
                                       .name.px-1
@@ -186,13 +186,13 @@
                 %tbody
                   -for object in object_list
                     %tr.sms.object-row{id: 'id-row-{{object.id}}', data-object-id:'{{ object.id }}',
-                                  data-sender-id:'{{object.contact.id}}', data-sender-uuid:'{{object.contact.uuid}}', onrowclick:'handleRowClick("{{object.contact.uuid}}")'}
+                                  data-sender-id:'{{object.contact.id}}', data-sender-uuid:'{{object.contact.uuid}}', onclick:'handleRowClicked(event)'}
                       -if actions
                         - if org_perms.msgs.msg_update or org_perms.msgs.broadcast_send
                           %td.checkbox.sms.object-row-check
                             %temba-checkbox{onclick:"handleRowSelection(this)"}
                       %td.whitespace-nowrap
-                        {{ object.contact|short_name:user_org }}
+                        {{ object.contact|name_or_urn:user_org|truncatechars:20 }}
                       %td.w-full
                         .flex.flex-wrap.flex-end.items-center.justify-end
                           .flex-grow.inline
@@ -263,6 +263,21 @@
   {{ block.super }}
   :javascript
     var theSendMsgEndpoint = "{% url 'msgs.broadcast_send' %}";
+
+    function handleRowClick(uuid) {
+        if (event.target.tagName == "TEMBA-CHECKBOX") {
+            return;
+        }
+
+        var row = event.target.closest("tr");
+        var uuid = row.getAttribute("data-sender-uuid");
+
+        {% if is_spa %}
+        fetchURL("/contact/read/" + uuid + "/");
+        {% else %}
+        gotoLink("/contact/read/" + uuid + "/");
+        {% endif %}
+    }
 
   <script type="text/javascript" src="{% static 'engage/js/msg-message_box.js' %}"></script>
   {% if org_perms.msgs.msg_update %}
