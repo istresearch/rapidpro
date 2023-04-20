@@ -15,5 +15,6 @@ set -x
 # initialize/update the db schema
 echo "Updating db schema..."
 # migrate must be called to create initial db schema
-python manage.py migrate
+#python manage.py migrate temba.sql
+python manage.py migrate "$@"
 echo "Finished updating db schema."
