@@ -20,28 +20,32 @@ CREATE OR REPLACE TRIGGER temba_flowrun_insert
     AFTER INSERT ON flows_flowrun
     FOR EACH ROW EXECUTE PROCEDURE temba_flowrun_insert();
 
+/*EDIT: do not create; replaced in flows, 0274_replace_exit_type.py
 CREATE OR REPLACE TRIGGER temba_flowrun_path_change
     AFTER UPDATE OF path, is_active ON flows_flowrun
     FOR EACH ROW EXECUTE PROCEDURE temba_flowrun_path_change();
-
+*/
+/*EDIT: do not create; replaced in flows, 0273_delete_from_results.py
 CREATE OR REPLACE TRIGGER temba_flowrun_update_flowcategorycount
    AFTER INSERT OR DELETE OR UPDATE OF results
    ON flows_flowrun
    FOR EACH ROW
    EXECUTE PROCEDURE temba_update_flowcategorycount();
-
+*/
+/*EDIT: do not create; dropped in flows, 0274_replace_exit_type.py
 CREATE OR REPLACE TRIGGER temba_flowrun_update_flowruncount
    AFTER INSERT OR DELETE OR UPDATE OF exit_type
    ON flows_flowrun
    FOR EACH ROW
    EXECUTE PROCEDURE temba_update_flowruncount();
-
+*/
+/*EDIT: do not create; dropped in flows, 0273_delete_from_results.py
 CREATE OR REPLACE TRIGGER temba_flowrun_update_flowstartcount
    AFTER INSERT OR DELETE OR UPDATE OF start_id
    ON flows_flowrun
    FOR EACH ROW
    EXECUTE PROCEDURE temba_update_flowstartcount();
-
+*/
 CREATE OR REPLACE TRIGGER temba_msg_labels_on_change_trg
    AFTER INSERT OR DELETE ON msgs_msg_labels
    FOR EACH ROW EXECUTE PROCEDURE temba_msg_labels_on_change();
