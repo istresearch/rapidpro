@@ -68,9 +68,18 @@ RUN rsync -a /opt/ov/any/ ./ && rm -R /opt/ov/any
 
 COPY --chown=engage:engage docker/customizations/startup.sh /startup.sh
 CMD ["/startup.sh"]
-USER engage
 
 ARG VERSION_CI
 ENV VERSION_CI=${VERSION_CI} \
     LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8
+
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && apk -U add --virtual .my-build-deps \
+    gettext \
+ && notify "installed needed OS libs required to translate stuff" \
+ && set -x; su-exec engage:engage ./web-i18n.sh; set +x \
+ && apk del .my-build-deps \
+ && notify "removed libs only needed for translate stuff"
+
+USER engage
