@@ -45,6 +45,8 @@ jobs:
 
           if [[ "${{ github.event.client_payload.repo.ref_type }}" == "tag" ]]; then
             IMAGE_TAG_HASH="${REF_NAME#*v}"
+          elif [[ "${REF_NAME}" == "develop" ]]; then
+            IMAGE_TAG_HASH="ci-develop"
           elif [ "${REF_NAME}" != "master" ] && [ "${REF_NAME}" != "main" ]; then
             IMAGE_TAG_HASH="ci-${VERSION_STR}-${REF_NAME#**/}"
           else
@@ -52,9 +54,9 @@ jobs:
           fi
           IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
           
-          source scm/utils.sh
-          VER_NUM=$(createVersionNumFrom10minTs)
-          VER_INT="${VER_NUM//.}"
+          VER_BUILD=$(date +%H%M)
+          VER_NUM="$(date +%y).$(date +%m).$(date +%d).${VER_BUILD:0:3}"
+          VER_INT=${VER_NUM//.}
           echo "::notice::Version Timestamp=${VER_NUM}"
           echo "VER_NUM=${VER_NUM}" >> $GITHUB_OUTPUT
 
