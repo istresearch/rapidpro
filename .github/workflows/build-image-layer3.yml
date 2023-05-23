@@ -44,6 +44,8 @@ jobs:
 
           if [[ -n "${REPO_TAG}" ]]; then
             IMAGE_TAG="${REPO_TAG#*v}"
+          elif [[ "${REPO_BRANCH}" == "develop" ]]; then
+            IMAGE_TAG="ci-develop"
           elif [ "${REPO_BRANCH}" != "master" ] && [ "${REPO_BRANCH}" != "main" ]; then
             IMAGE_TAG="ci-${VERSION_STR}-${REPO_BRANCH#**/}"
           fi

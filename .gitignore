@@ -126,11 +126,17 @@ ansible/site.retry
 scm/*_tag.txt
 
 # prior versions for compare
-_v*/
+_*/
+.v/
 
 # mock s3 attachments storage
 .s3data/
 
 # container build layers tag info
+scm/*_tag.txt
 workspace/info/
+
 !/engage/hamls/smartmin/*
+
+.idea
+.db*/
