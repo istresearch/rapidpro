@@ -5,8 +5,6 @@ on:
     types: [build_layer3, build_layer2_error]
 
 env:
-  REPO_BRANCH: ${{ github.event.client_payload.repo.branch }}
-  REPO_TAG: ${{ github.event.client_payload.repo.tag }}
   IMAGE_STAGE: pyapp
   DOCKERFILE2USE: docker/dfstage-pyapp.dockerfile
   FROM_LAYER: ${{ github.event.client_payload.layer2 }}
@@ -30,6 +28,7 @@ jobs:
     outputs:
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
+      VERSION_TAG: ${{ steps.config_step.outputs.VERSION_TAG }}
       VER_NUM: ${{ steps.config_step.outputs.VER_NUM }}
     steps:
       - uses: actions/checkout@v3
@@ -82,8 +81,8 @@ jobs:
             {
               "repo": {
                 "name": "${{ github.repository }}",
-                "branch": "${{ env.REPO_BRANCH }}",
-                "tag": "${{ env.REPO_TAG }}"
+                "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
+                "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
               },
               "image": {
                 "dockerfile": "${{ env.DOCKERFILE2USE }}",
@@ -94,7 +93,7 @@ jobs:
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ needs.build_cfg.outputs.VER_NUM }}",
-                  "VERSION_TAG=${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                  "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_TAG }}"
                 ]
               },
               "callback": {
@@ -104,11 +103,9 @@ jobs:
                 "payload": {
                   "repo": {
                     "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
-                    "ref_name": "${{ github.event.client_payload.repo.ref_name }}",
-                    "branch": "${{ env.REPO_BRANCH }}",
-                    "tag": "${{ env.REPO_TAG }}"
+                    "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
                   },
-                  "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+                  "tag": "${{ needs.build_cfg.outputs.VERSION_TAG }}",
                   "ver_num": "${{ needs.build_cfg.outputs.VER_NUM }}",
                   "layer3tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                   "layer3": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
