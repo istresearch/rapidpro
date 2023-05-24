@@ -7702,9 +7702,6 @@ msgstr ""
 
 #---------------------------------------------
 
-msgid "Flow Event"
-msgstr ""
-
 msgid "Message Event"
 msgstr ""
 

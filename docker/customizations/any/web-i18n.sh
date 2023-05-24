@@ -11,9 +11,5 @@ fi
 
 echo ''
 echo 'Ensure translations are compiled…'
-python manage.py compilemessages --settings=temba.settings
+python manage.py compilemessages
 echo 'Finished compiling translations.'
-
-####
-#8 8.726 CommandError: Can't find msgfmt. Make sure you have GNU gettext tools 0.15 or newer installed.
-#

@@ -14,6 +14,16 @@ LABEL org.label-schema.name="Engage" \
 COPY --chown=engage:engage docker/customizations/generic /opt/ov/brand
 USER root
 RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
+
+# apply translations
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && apk -U add --virtual .my-build-deps \
+    gettext \
+ && notify "installed needed OS libs required to translate stuff" \
+ && set -x; ./web-i18n.sh; set +x \
+ && apk del .my-build-deps \
+ && notify "removed libs only needed for translate stuff"
+
 USER engage
 
 # collect and compress static files
