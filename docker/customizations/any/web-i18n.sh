@@ -9,7 +9,9 @@ if [[ -z $SECRET_KEY ]]; then
   export SECRET_KEY=123
 fi
 
-find locale -name '*.po' -type f -delete
+# remove any pre-compiled translations
+find locale -name '*.mo' -type f -delete
+
 echo ''
 echo 'Ensure translations are compiled…'
 python manage.py compilemessages

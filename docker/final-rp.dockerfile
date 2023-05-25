@@ -35,6 +35,6 @@ USER engage
 
 # collect and compress static files
 ARG RUN_WEB_STATIC_FILE_COLLECTOR=1
-RUN if [[ '${RUN_WEB_STATIC_FILE_COLLECTOR}' == '1' ]]; then \
-  ./web-static.sh \
+RUN if [[ "${RUN_WEB_STATIC_FILE_COLLECTOR}" == "1" ]]; then \
+  ./web-static.sh; \
 fi
