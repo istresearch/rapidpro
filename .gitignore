@@ -142,3 +142,4 @@ workspace/info/
 
 .idea
 .db*/
+.vdb*/

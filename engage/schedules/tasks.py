@@ -2,12 +2,12 @@ from django_redis import get_redis_connection
 
 from django.utils import timezone
 
-from celery.task import task
+from celery import shared_task
 
 from temba.schedules.models import Schedule
 
 
-@task(track_started=True, name="check_schedule_task")
+@shared_task(track_started=True, name="check_schedule_task")
 def check_schedule_task(sched_id=None):
     """
     See if any schedules are expired and fire appropriately

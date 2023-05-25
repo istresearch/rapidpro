@@ -3,14 +3,14 @@ import requests
 
 from django.conf import settings
 
-from celery.task import task
+from celery import shared_task
 
 from temba.channels.models import Channel
 from temba.channels.types.postmaster import PostmasterType
 
 logger = logging.getLogger(__name__)
 
-@task(track_started=True, name="update_postmaster_sync_task")
+@shared_task(track_started=True, name="update_postmaster_sync_task")
 def update_postmaster_sync_task():
     """
     Run every 5 minutes and updates postmaster channel sync times.
