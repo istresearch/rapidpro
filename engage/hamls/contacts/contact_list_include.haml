@@ -61,13 +61,18 @@
                 -trans "Send"
 
   -block contacts-list
-    .table-scroll.overflow-x-auto
+    .table-scroll.shadow.rounded-lg.overflow-x-auto
       %table.list.object-list.lined.selectable
         - if object_list
           %thead
-            %tr.contacts
+            %tr.contacts.multiselect-header
               -if org_perms.contacts.contact_update
                 %th
+                  %div{style: 'padding-top: 4px; width: 12px'}
+                    %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox
+                    %div.multiselect-header
+                      %span
+                        -trans "Select all"
               %th
               %th
               -for field in contact_fields
@@ -131,7 +136,7 @@
           -for object in contacts
             %tr.contact.select-row.object-row(onclick='handleRowClicked(event)' data-uuid="{{object.uuid}}" data-object-id="{{object.id}}")
 
-              -if org_perms.contacts.contact_update or org_perms.msgs.broadcast_send
+              - if org_perms.contacts.contact_update or org_perms.msgs.broadcast_send
                 %td.contact.checkbox.object-row-checkbox
                   %temba-checkbox(onclick="handleRowSelection(this)")
 
@@ -164,9 +169,9 @@
                   %nobr
                     -for group in object.groups.all
                       -if group.group_type == 'M'
-                        %span.label.label-info.lbl(data-id="{{ group.id }}")
+                        %span.label.label-info.lbl(data-id="{{group.id}}")
                           %a(href="{% url 'contacts.contact_filter' group.uuid %}")
-                            {{ group.name }}
+                            {{group.name}}
 
           -empty
             %tr.empty_list
@@ -179,6 +184,6 @@
               %td
 
 
-      
+
 -else
   -include "contacts/empty_include.haml"

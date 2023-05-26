@@ -1,4 +1,4 @@
--extends "smartmin/read.html" 
+-extends "smartmin/read.html"
 
 -load smartmin sms contacts compress temba channels
 -load i18n humanize
@@ -26,7 +26,7 @@
       .lbl-group.linked.inverted.bg-secondary.mr-2.mb-2(onclick="goto(event)" href="{% url 'contacts.contact_blocked' %}")
         %temba-icon(name="slash")
         -trans "Blocked"
-  
+
     -elif contact.status == 'S'
       .lbl-group.linked.inverted.bg-secondary.mr-2.mb-2(onclick="goto(event)" href="{% url 'contacts.contact_stopped' %}")
         %temba-icon(name="alert-octagon")
@@ -72,8 +72,8 @@
               .whitespace-nowrap.pr-12.contact-field{data-id:'{{field.id}}'}
                 .contact-field-value.tracking-wider.font-normal.text-xs
                   {{ field.name|title }}
-        
-      
+
+
 
   %table.list.tight.toggle.stateful#contact-details
     %thead
@@ -122,8 +122,8 @@
             .contact-field
               .contact-field-value
                 {{contact.anon_identifier}}
-  
-    
+
+
       -for field in all_contact_fields
         %tr
           %td
@@ -134,7 +134,7 @@
             .contact-field{data-id:'{{field.id}}'}
               .contact-field-value.editable.cursor-pointer.hover-linked
                 {{ field.value }}
-      
+
       -for urn in contact_urns
         -if not user_org.is_anon
           %tr
@@ -158,7 +158,7 @@
                   .linked{onclick:"goto(event)", href:'http://twitter.com/{{urn.display}}'}
                     {{urn|format_urn:user_org}}
                 -else
-                  {{urn|format_urn:user_org}}      
+                  {{urn|format_urn:user_org}}
 
   -if open_tickets
     %table.list.tickets.mt-6
@@ -247,9 +247,9 @@
     %tbody.recent
 
     // trigger the first batch of previous messages
-    %tr{ ic-append-from:"/contact/history/{{contact.uuid}}/?before={{recent_start}}", 
-         ic-trigger-on:"scrolled-into-view", 
-         ic-target:"table .previous", 
+    %tr{ ic-append-from:"/contact/history/{{contact.uuid}}/?before={{recent_start}}",
+         ic-trigger-on:"scrolled-into-view",
+         ic-target:"table .previous",
          ic-indicator:"#indicator" }
 
     %tbody.previous
@@ -444,7 +444,7 @@
             border: 0px solid;
             text-align:right;
             min-width: 150px;
-            
+
             .time {
               margin-right: 0px;
             }

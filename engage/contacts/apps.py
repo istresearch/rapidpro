@@ -11,6 +11,8 @@ class AppConfig(BaseAppConfig):
     def ready(self):
         from .models import ContactFieldOverrides
         ContactFieldOverrides.setClassOverrides()
+        from .models import ContactOverrides
+        ContactOverrides.setClassOverrides()
 
         from .views import ContactListOverrides
         ContactListOverrides.setClassOverrides()

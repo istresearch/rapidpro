@@ -1,6 +1,6 @@
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
 
-from temba.contacts.models import ContactField
+from temba.contacts.models import ContactField, Contact
 
 
 class ContactFieldOverrides(ClassOverrideMixinMustBeFirst, ContactField):
@@ -11,12 +11,29 @@ class ContactFieldOverrides(ClassOverrideMixinMustBeFirst, ContactField):
         abstract = True
 
     @classmethod
-    def get_or_create(cls, org, user, key, label=None, show_in_table=None, value_type=None, priority=None):
+    def get_or_create(cls, org, user, key: str, name: str = None, value_type=None):
         try:
-            return cls.getOrigClsAttr('get_or_create')(org, user, key, label, show_in_table, value_type, priority)
+            return cls.getOrigClsAttr('get_or_create')(cls, org, user, key, name, value_type)
         except ValueError as ex:
             raise ValueError( str(ex).replace('campaigns', 'scenarios') )
         #endtry
     #enddef get_or_create
 
 #endclass ContactFieldOverrides
+
+class ContactOverrides(ClassOverrideMixinMustBeFirst, Contact):
+    override_ignore = ignoreDjangoModelAttrs(Contact)
+
+    # we do not want Django to perform any magic inheritance
+    class Meta:
+        abstract = True
+
+    def get_urns(self):
+        try:
+            return self.getOrigClsAttr('get_urns')(self)
+        except ValueError:
+            return None
+        #endtry
+    #enddef get_urns
+
+#endclass ContactOverrides
