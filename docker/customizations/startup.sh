@@ -32,11 +32,8 @@ echo 'MANAGEPY_IMPORT_GEOJSON?'; if [ "x$MANAGEPY_IMPORT_GEOJSON" = "xon" ]; the
 	echo "Imported geojson for relation_ids $OSM_RELATION_IDS"
 fi
 
-echo 'run celery or rapidpro?';
 TYPE=${1:-rapidpro}
-if [ "$TYPE" = "celery" ]; then
-	$CELERY_CMD
-elif [ "$TYPE" = "rapidpro" ]; then
+if [ "$TYPE" = "rapidpro" ]; then
   if [ -f /opt/dev/src-refresh.sh ]; then
     /opt/dev/src-refresh.sh
   fi

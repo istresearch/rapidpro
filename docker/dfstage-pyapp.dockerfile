@@ -60,8 +60,6 @@ EXPOSE ${UWSGI_PORT}
 # These options don't appear to be configurable via environment variables, so pass them in here instead
 ENV STARTUP_CMD="/venv/bin/uwsgi --http-auto-chunked --http-keepalive"
 
-ENV CELERY_CMD="/venv/bin/celery --beat --app=temba worker --loglevel=INFO --queues=celery,msgs,flows,handler"
-
 # apply overrides
 COPY --chown=engage:engage docker/customizations/any /opt/ov/any
 RUN rsync -a /opt/ov/any/ ./ && rm -R /opt/ov/any
