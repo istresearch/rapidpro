@@ -121,9 +121,10 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
             self.pm_app_qrcode = f"data:image/png;base64, {base64.b64encode(qrstream.getvalue()).decode('ascii')}"
 
             try:
-                pm_info = APIsForDownloadPostmaster.fetch_apk_link(self)
+                pmi = APIsForDownloadPostmaster.PostmasterInfo()
+                pm_info = APIsForDownloadPostmaster.fetch_apk_link(pmi)
                 if pm_info:
-                    self.pm_app_version = pm_info['version']
+                    self.pm_app_version = f"Version {pm_info['version']}"
                 #endif
             except ValueError as vx:
                 self.pm_app_version = str(vx)
