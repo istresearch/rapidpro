@@ -7,7 +7,7 @@ var btnDelete = null;
 var dlgDelConfirm = null;
 
 /**
- * pjax is used to reload parts of the DOM occationally, call this function
+ * pjax is used to reload parts of the DOM occasionally, call this function
  * both when DOM is first ready and whenever pjax finishes its DOM changes.
  * NOTE: DO NOT PLACE .addEventListener() for elements outside of the pjax
  *       subtree else they will get duplicated after every pjax refresh!
