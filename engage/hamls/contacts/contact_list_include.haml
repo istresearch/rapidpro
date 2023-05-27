@@ -65,12 +65,12 @@
       %table.list.object-list.lined.selectable
         - if object_list
           %thead
-            %tr.contacts.multiselect-header
+            %tr.contacts
               -if org_perms.contacts.contact_update
                 %th
-                  %div{style: 'padding-top: 4px; width: 12px'}
+                  %div.multiselect-header
                     %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox
-                    %div.multiselect-header
+                    %div.multiselect-label
                       %span
                         -trans "Select all"
               %th

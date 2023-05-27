@@ -173,11 +173,11 @@
               %table.list.object-list.lined{class: '{% if org_perms.msgs.msg_update or org_perms.msgs.broadcast_send %}selectable{% endif %}'}
                 %thead
                   - if actions
-                    %tr.multiselect-header
+                    %tr
                       %th
-                        %div{style: 'padding-top: 4px; width: 12px'}
+                        %div.multiselect-header
                           %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox
-                          %div.multiselect-header
+                          %div.multiselect-label
                             %span
                               Select all
                       %th
