@@ -12,7 +12,7 @@ import os
 
 from .models import Msg
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 dicttoxml.LOG.setLevel(logging.ERROR)
 
 LABEL_PREFIX = os.getenv("CTO_LABEL_PREFIX", "CTO")

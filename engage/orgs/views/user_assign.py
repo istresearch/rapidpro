@@ -18,7 +18,7 @@ from temba.orgs.models import Org, OrgRole, User
 from temba.orgs.views import OrgPermsMixin, OrgCRUDL
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 class OrgViewAssignUserMixin(ClassOverrideMixinMustBeFirst, OrgCRUDL):
 

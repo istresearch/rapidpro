@@ -37,7 +37,7 @@ class PurgeOutboxMixin:
             return super().dispatch(request, *args, **kwargs)
 
         def get(self, request: HttpRequest, *args, **kwargs):
-            logger = logging.getLogger(__name__)
+            logger = logging.getLogger()
 
             user = self.get_user()
             if not user.get_org():

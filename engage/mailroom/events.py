@@ -12,7 +12,7 @@ from temba.msgs.models import Msg
 from temba.orgs.models import Org, User
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 def getHistoryContentFromMsg(org: Org, user: User, obj: Msg) -> dict:
     """

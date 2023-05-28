@@ -15,7 +15,7 @@ class UserViewDeleteOverride(ClassOverrideMixinMustBeFirst, UserCRUDL.Delete):
     permission = "auth.user_update"
 
     def post(self, request, *args, **kwargs):
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger()
 
         user = self.get_object()
         username = user.username

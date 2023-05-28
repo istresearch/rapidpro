@@ -23,7 +23,7 @@ class EngageStaticFilesStorage(BaseStaticFilesStorage):
     generates an exception. Tweak a few of the methods to ignore
     malformed/missing files we do not care about in production.
     """
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger()
     manifest_strict = False
     ignore_ext_list = ('.map',)
 

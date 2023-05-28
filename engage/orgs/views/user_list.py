@@ -6,7 +6,7 @@ from temba.orgs.views import UserCRUDL
 from temba.utils import get_anonymous_user
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 class OrgViewListUserOverrides(ClassOverrideMixinMustBeFirst, UserCRUDL.List):
     fields = ("username", "orgs", "date_joined",)

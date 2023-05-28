@@ -22,7 +22,7 @@ from temba.flows.models import (
 from temba.flows.views import FlowCRUDL
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 class FlowCRUDLOverrides(ClassOverrideMixinMustBeFirst, FlowCRUDL):
 

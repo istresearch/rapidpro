@@ -15,7 +15,7 @@ class WriteSerializer(serializers.Serializer):
     """
 
     def run_validation(self, data=serializers.empty):
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger()
         if not isinstance(data, dict):
             raise ParseError.withCause(
                 cause='JSON Parse Failure',

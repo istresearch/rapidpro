@@ -18,7 +18,7 @@ from temba.orgs.views import OrgCRUDL
 from temba.utils import languages
 from temba.utils.timezones import TimeZoneFormField
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 class OrgCreateForm(forms.ModelForm):

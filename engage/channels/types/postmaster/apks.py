@@ -21,7 +21,7 @@ from engage.utils.pm_config import PMConfig
 from engage.utils.strings import is_empty
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 class APIsForDownloadPostmaster(LogExtrasMixin):
     """

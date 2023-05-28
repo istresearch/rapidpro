@@ -55,7 +55,7 @@ class AwsS3Config:
     #enddef get_client()
 
     def get_obj(self, aObjPath: str = ''):
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger()
         theObjKey = aObjPath if aObjPath and len(aObjPath) > 1 else self.FILEPATH
         try:
             theObj = self.get_client().get_object(Bucket=self.AWS_S3_BUCKET, Key=theObjKey)

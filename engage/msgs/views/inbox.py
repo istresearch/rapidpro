@@ -8,7 +8,7 @@ from engage.utils.strings import sanitize_text
 from temba.msgs.views import InboxView
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 class MsgInboxViewOverrides(ClassOverrideMixinMustBeFirst, InboxView):
     """

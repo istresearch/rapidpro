@@ -4,7 +4,7 @@ from temba.utils.celery import nonoverlapping_task
 
 from .cto import export_cto_msgs
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 @nonoverlapping_task(track_started=True, name="export_cto_msgs", lock_timeout=3600)
 def export_cto_msgs_task():

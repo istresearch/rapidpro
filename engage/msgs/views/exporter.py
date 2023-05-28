@@ -16,7 +16,7 @@ from temba.msgs.tasks import export_messages_task
 from temba.msgs.views import MsgCRUDL
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 class MsgExporterOverrides(ClassOverrideMixinMustBeFirst, MsgCRUDL.Export):
     """
