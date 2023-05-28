@@ -15,6 +15,10 @@ class EngageOverrides:
         #logging.debug('Ran? ' + str(cls.ENGAGE_OVERRIDES_RAN))
         if cls.ENGAGE_OVERRIDES_RAN:
             return
+        #dndif
+
+        from django.conf import settings
+        settings.PM_CONFIG.fetch_apk_link()
 
         cls.ENGAGE_OVERRIDES_RAN = True
     #enddef RunEngageOverrides

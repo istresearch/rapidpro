@@ -120,15 +120,11 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
             qrc.png(qrstream, scale=4)
             self.pm_app_qrcode = f"data:image/png;base64, {base64.b64encode(qrstream.getvalue()).decode('ascii')}"
 
-            try:
-                pmi = APIsForDownloadPostmaster.PostmasterInfo()
-                pm_info = APIsForDownloadPostmaster.fetch_apk_link(pmi)
-                if pm_info:
-                    self.pm_app_version = f"Version {pm_info['version']}"
-                #endif
-            except ValueError as vx:
-                self.pm_app_version = str(vx)
-            #endtry
+            if settings.PM_CONFIG.pm_info and 'version' in settings.PM_CONFIG.pm_info:
+                self.pm_app_version = f"Version {settings.PM_CONFIG.pm_info['version']}"
+            elif settings.PM_CONFIG.pm_info:
+                self.pm_app_version = f"Failed to get version info: {settings.PM_CONFIG.pm_info}"
+            #endif
         #endif
     #enddef init_pm_app_dl
 

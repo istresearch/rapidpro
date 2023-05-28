@@ -1,9 +1,18 @@
 import django_cache_url
 from getenv import env
+import logging
+import re
+import requests
+import ssl
+from typing import Match, Optional
+from urllib.parse import urlparse
 from uuid import uuid4
 
+from engage.utils.ssl_adapter import TLSAdapter
 from engage.utils.strings import is_empty
 
+
+logger = logging.getLogger()
 
 class PMConfig:
     """
@@ -19,6 +28,7 @@ class PMConfig:
         self.auth_user = env('POST_MASTER_FETCH_USER', None)
         self.auth_pswd = env('POST_MASTER_FETCH_PSWD', None)
         self.fetch_auth = (self.auth_user, self.auth_pswd) if not is_empty(self.auth_user) else None
+        self.pm_info = None
 
         self.url_nonce_alias = 'dl-pm-nonces'
         self.url_nonce_prefix = f"{self.url_nonce_alias}"
@@ -76,5 +86,91 @@ class PMConfig:
         theVal = theCache.get(nonce, None) if nonce else None
         return theVal if type(theVal) is bool else False
     #enddef validate_nonce
+
+    def fetch_apk_link(self) -> Optional[dict]:
+        """
+        Common method to get pm download information. May throw a ValueError.
+        :return: dict(link, filename, version)
+        """
+        logger.debug("pm fetch_apk_link", extra={
+            'fetch_url': self.fetch_url,
+            #'auth': obj.fetch_auth,
+        })
+        # any PM server will require TLS 1.2+ and use one of the better ciphers
+        session = requests.session()
+        adapter = TLSAdapter(ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
+        session.mount("https://", adapter)
+        try:
+            resp = session.request('GET', self.fetch_url, auth=self.fetch_auth, timeout=60, verify=False)
+        except Exception as ex:
+            logger.debug("pm EX fetch_apk_link", extra={
+                'ex': ex,
+            })
+            raise
+        #endtry
+        self.pm_info = self.parse_fetch_apk_link(resp)
+        return self.pm_info
+    #enddef fetch_apk_link
+
+    def parse_fetch_apk_link(self, resp) -> Optional[dict]:
+        if resp is not None and resp.ok:
+            ctype = resp.headers.get('Content-Type')
+            if ctype is not None and ctype.startswith('text/html'):
+                list_of_links = resp.text
+                pm_link_match: Optional[Match[str]] = None
+                # page may list ordered links, get last one: <a href="pm-4.0.15.alpha.2709.apk">
+                for pm_link_match in re.finditer(r'<a href="(.+\.apk)">', list_of_links):
+                    pass
+                if pm_link_match:
+                    pm_filename = pm_link_match.group(1)
+                    pm_version = pm_filename[3:-4]
+                    if self.fetch_url.endswith('/'):
+                        pm_link = self.fetch_url + pm_filename
+                    else:
+                        pm_link = f"{self.fetch_url}/{pm_filename}"
+                    #endif
+                    logger.debug("pm link parse", extra={
+                        'pm_link': pm_link,
+                        'pm_filename': pm_filename,
+                        'pm_version': pm_version,
+                    })
+                else:
+                    logger.debug("pm link parse", extra={
+                        'pm_link': None,
+                    })
+                    return None
+                #endif
+            else:
+                pm_link = self.fetch_url
+                pm_filename = urlparse(self.fetch_url).path.rsplit('/', 1)[-1]
+                pm_version = pm_filename[3:-4]
+            #endif
+            return {
+                'link': pm_link,
+                'filename': pm_filename,
+                'version': pm_version,
+            }
+        else:
+            logger.error("pm fetch url failed to fetch apk", extra={
+                'url': self.fetch_url,
+                'resp': resp,
+                'content-type': resp.headers.get('Content-Type') if resp is not None else '',
+            })
+        #endif
+    #enddef parse_fetch_apk_link
+
+    def get_pm_app_version(self) -> str:
+        try:
+            self.pm_info = self.fetch_apk_link()
+            if self.pm_info:
+                return self.pm_info['version']
+            #endif
+        except ValueError as vx:
+            logger.error("pm ValueError on get_pm_app_version", extra={
+                'ex': vx,
+            })
+            return str(vx)
+        #endtry
+    #enddef get_pm_app_version
 
 #endclass PMConfig
