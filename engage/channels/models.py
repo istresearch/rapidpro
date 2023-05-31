@@ -43,8 +43,8 @@ class ChannelOverrides(ClassOverrideMixinMustBeFirst, Channel):
 
         tps = getattr(settings, "DEFAULT", 10)
 
-        return cls.getOrigClsAttr('create')(org, user, country, channel_type,
-                name, address, config, role, schemes, tps, **kwargs
+        return cls.getOrigClsAttr('create')(org=org, user=user, country=country, channel_type=channel_type,
+                name=name, address=address, config=config, role=role, schemes=schemes, tps=tps, **kwargs
         )
     #enddef create
 
