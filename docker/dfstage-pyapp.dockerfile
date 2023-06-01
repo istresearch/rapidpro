@@ -71,3 +71,26 @@ ARG VERSION_CI
 ENV VERSION_CI=${VERSION_CI} \
     LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8
+
+# Update Node 16.x to latest
+#----------------------------------
+# Install jq and curl dependencies
+# Get major.minor version (that is v14.xx for node:14-alpine)
+# Dynamically receive the newest version for the major version of this image
+# Download the suitable tarball
+# Uncompress the tarball
+# Overwrite symlink node -> nodejs
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && apk update && apk add --no-cache jq curl \
+ && export NODE_MAJOR_MINOR_VERSION=$(node --version | cut -d. -f1,2) \
+ && export DOWNLOAD_VERSION=$(curl -fsSL --compressed https://unofficial-builds.nodejs.org/download/release/index.json | jq --raw-output ".[]|select(.version | startswith(\"$NODE_MAJOR_MINOR_VERSION\"))|.version" | head -1) \
+ && curl -fsSLO --compressed "https://unofficial-builds.nodejs.org/download/release/$DOWNLOAD_VERSION/node-$DOWNLOAD_VERSION-linux-x64-musl.tar.xz" \
+ && tar -xJf "node-$DOWNLOAD_VERSION-linux-x64-musl.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \
+ && ln -sf /usr/local/bin/node /usr/local/bin/nodejs \
+ && notify "Node 16.x updated"
+
+# Update openssl to latest
+#----------------------------------
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && apk update && apk add --no-cache -u openssl \
+ && notify "openssl updated"
