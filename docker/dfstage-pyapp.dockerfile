@@ -72,6 +72,13 @@ ENV VERSION_CI=${VERSION_CI} \
     LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8
 
+#NOTE: CANNOT UPDATE NODE!  arm64 build fails with
+#COMPRESS_WITH_BROTLI=on
+#+ python manage.py compress --extension=.haml --force -v0 --settings=temba.settings_compress_static
+#CommandError: An error occurred during rendering channels/types/vonage/claim.haml: env: can't execute 'node': Exec format error
+#The command '/bin/bash -c if [[ "${RUN_WEB_STATIC_FILE_COLLECTOR}" == "1" ]]; then   ./web-static.sh; fi' returned a non-zero code: 1
+#::error::Build failed
+#-------------
 # Update Node 16.x to latest
 #----------------------------------
 # Install jq and curl dependencies
@@ -80,14 +87,14 @@ ENV VERSION_CI=${VERSION_CI} \
 # Download the suitable tarball
 # Uncompress the tarball
 # Overwrite symlink node -> nodejs
-RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && apk update && apk add --no-cache jq curl \
- && export NODE_MAJOR_MINOR_VERSION=$(node --version | cut -d. -f1,2) \
- && export DOWNLOAD_VERSION=$(curl -fsSL --compressed https://unofficial-builds.nodejs.org/download/release/index.json | jq --raw-output ".[]|select(.version | startswith(\"$NODE_MAJOR_MINOR_VERSION\"))|.version" | head -1) \
- && curl -fsSLO --compressed "https://unofficial-builds.nodejs.org/download/release/$DOWNLOAD_VERSION/node-$DOWNLOAD_VERSION-linux-x64-musl.tar.xz" \
- && tar -xJf "node-$DOWNLOAD_VERSION-linux-x64-musl.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \
- && ln -sf /usr/local/bin/node /usr/local/bin/nodejs \
- && notify "Node 16.x updated"
+#RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+# && apk update && apk add --no-cache jq curl \
+# && export NODE_MAJOR_MINOR_VERSION=$(node --version | cut -d. -f1,2) \
+# && export DOWNLOAD_VERSION=$(curl -fsSL --compressed https://unofficial-builds.nodejs.org/download/release/index.json | jq --raw-output ".[]|select(.version | startswith(\"$NODE_MAJOR_MINOR_VERSION\"))|.version" | head -1) \
+# && curl -fsSLO --compressed "https://unofficial-builds.nodejs.org/download/release/$DOWNLOAD_VERSION/node-$DOWNLOAD_VERSION-linux-x64-musl.tar.xz" \
+# && tar -xJf "node-$DOWNLOAD_VERSION-linux-x64-musl.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \
+# && ln -sf /usr/local/bin/node /usr/local/bin/nodejs \
+# && notify "Node 16.x updated"
 
 # Update openssl to latest
 #----------------------------------
