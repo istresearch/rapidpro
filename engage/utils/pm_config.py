@@ -3,10 +3,12 @@ from getenv import env
 import logging
 import re
 import requests
+import ssl
 from typing import Match, Optional
 from urllib.parse import urlparse
 from uuid import uuid4
 
+from engage.utils.ssl_adapter import TLSAdapter
 from engage.utils.strings import is_empty
 
 
@@ -94,8 +96,12 @@ class PMConfig:
             'fetch_url': self.fetch_url,
             #'auth': obj.fetch_auth,
         })
+        # any PM server will require TLS 1.2+ and use one of the better ciphers
+        session = requests.session()
+        adapter = TLSAdapter(ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
+        session.mount("https://", adapter)
         try:
-            resp = requests.get(self.fetch_url, auth=self.fetch_auth, timeout=60)
+            resp = session.request('GET', self.fetch_url, auth=self.fetch_auth, timeout=60, verify=False)
         except Exception as ex:
             logger.debug("pm EX fetch_apk_link", extra={
                 'ex': ex,
