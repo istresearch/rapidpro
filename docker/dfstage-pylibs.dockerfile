@@ -94,7 +94,6 @@ RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
     )" \
  && apk --no-cache -U add $runDeps \
 	libmagic \
-	libressl \
 	libxml2 \
 	ncurses \
 	pcre \
