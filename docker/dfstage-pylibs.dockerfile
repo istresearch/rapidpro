@@ -17,8 +17,6 @@ RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
  && notify "using build from repo://engage/floweditor/floweditor-v${FLOW_EDITOR}_${ARCH}.tar.gz"
 ADD https://${REPO_UN}:${REPO_PW}@repo.istresearch.com/engage/floweditor/floweditor-v${FLOW_EDITOR}_${ARCH}.tar.gz /opt/code2use/floweditor.tar.gz
 
-COPY rp-build-deps.sh /opt/code2use/
-
 COPY pyproject.toml /opt/code2use/
 COPY poetry.lock /opt/code2use/
 COPY poetry-install.sh /opt/code2use/
@@ -27,7 +25,7 @@ COPY .npmrc /opt/code2use/
 COPY package*.json /opt/code2use/
 COPY tailwind.config.js /opt/code2use/
 
-RUN sed "s|poetry install|poetry install -vvv -n --no-dev|" /opt/code2use/poetry-install.sh > /opt/code2use/install-pylibs.sh \
+RUN sed "s|poetry install|poetry install -vv -n --only main|" /opt/code2use/poetry-install.sh > /opt/code2use/install-pylibs.sh \
  && chmod +x /opt/code2use/install-pylibs.sh
 
 # ========================================================================
@@ -42,7 +40,7 @@ SHELL ["/bin/bash", "-c"]
 ARG ARG_PIP_RETRIES=120
 ARG ARG_PIP_TIMEOUT=400
 ARG ARG_PIP_DEFAULT_TIMEOUT=400
-ARG ARG_PIP_EXTRA_INDEX_URL=https://alpine-3.wheelhouse.praekelt.org/simple
+ARG ARG_PIP_EXTRA_INDEX_URL=https://bullseye.wheelhouse.praekelt.org/simple
 
 ENV PIP_RETRIES=$ARG_PIP_RETRIES \
     PIP_TIMEOUT=$ARG_PIP_TIMEOUT \
@@ -54,7 +52,7 @@ USER root
 
 ARG USER_PID=1717
 RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && grp=engage; usr=engage && addgroup -S ${grp} && adduser -u ${USER_PID} -S ${usr} -G ${grp} \
+ && grp=engage; usr=engage && addgroup --system ${grp} && adduser --uid ${USER_PID} --ingroup ${grp} ${usr} \
  && mkdir -p /rapidpro; chown -R engage:engage /rapidpro \
  && mkdir -p /venv; chown -R engage:engage /venv \
  && notify "installed user:group [engage:engage]"
@@ -65,24 +63,61 @@ COPY --from=load-files --chown=engage:engage /opt/code2use/* ./
 # special folder for package*.json files when DEBUG mode is enabled and collectstatic is run.
 COPY --from=load-files --chown=engage:engage /opt/code2use/package*.json ./node_config/
 
-# required runtime libs
+# Install latest su-exec
 RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && apk -U add --virtual .my-build-deps \
-    su-exec \
+ && set -ex; \
+  curl -o /usr/local/bin/su-exec.c https://raw.githubusercontent.com/ncopa/su-exec/master/su-exec.c; \
+  fetch_deps='gcc libc-dev'; \
+  apt-get update; \
+  apt-get install -y -q --no-install-recommends $fetch_deps; \
+  rm -rf /var/lib/apt/lists/*; \
+  gcc -Wall /usr/local/bin/su-exec.c -o/usr/local/bin/su-exec; \
+  chown root:root /usr/local/bin/su-exec; \
+  chmod 0755 /usr/local/bin/su-exec; \
+  rm /usr/local/bin/su-exec.c; \
+  apt-get purge -y --auto-remove $fetch_deps \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* \
+ && notify "installed su-exec"
+
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && apt-get update && apt-get install -y -q --no-install-recommends \
     cargo \
- && notify "installed needed OS libs required to build stuff" \
+    git \
+ && rm -rf /var/lib/apt/lists/* && apt-get clean \
+ && notify "installed needed OS libs required"
+
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
  && npm install -g npm@latest node-gyp less \
  && notify "installed/built global runtime npm libs" \
- && set -x; ./rp-build-deps.sh; set +x \
- && notify "installed/built OS libs" \
- && set -x; su-exec engage:engage ./install-pylibs.sh; set +x \
- && notify "installed/built python libs" \
  && su-exec engage:engage npm install \
  && tar -zxf floweditor.tar.gz --directory node_modules/@nyaruka/flow-editor \
- && notify "installed/built npm libs" \
- && apk del .rp-build-deps \
- && apk del .my-build-deps \
- && notify "removed libs only needed for building stuff"
+ && notify "installed/built npm libs"
+
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && apt-get update && apt-get install -y -q --no-install-recommends \
+    libfreetype-dev \
+    libmagic-dev \
+    libncurses5-dev libncursesw5-dev \
+    libpcre2-posix2 libpcre2-dev \
+    libpng-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    locales \
+    locales-all \
+    ncurses-dev \
+    pax-utils \
+    postgresql-client \
+    python3-dev \
+    python3-venv \
+    python3.9 \
+ && rm -rf /var/lib/apt/lists/* && apt-get clean \
+ && locale-gen en_US.UTF-8 \
+ && notify "installed needed OS libs required for Django app"
+
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && set -x; su-exec engage:engage ./install-pylibs.sh; set +x \
+ && notify "installed/built python libs"
 
 RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
  && runDeps="$( \
@@ -92,10 +127,4 @@ RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
       | xargs -r apk info --installed \
       | sort -u \
     )" \
- && apk --no-cache -U add $runDeps \
-	libmagic \
-	libxml2 \
-	ncurses \
-	pcre \
-	postgresql-client \
  && notify "installed runtime pylibs"

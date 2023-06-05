@@ -30,9 +30,9 @@ ENV RAPIDPRO_VERSION=${RAPIDPRO_VERSION}
 
 USER root
 # runtime libs we need/want to keep around
-RUN apk add --update --no-cache \
+RUN apt-get update && apt-get install -y -q --no-install-recommends \
 	rsync \
- && rm -rf /var/cache/apk/*
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /rapidpro
 
@@ -98,6 +98,6 @@ ENV VERSION_CI=${VERSION_CI} \
 
 # Update openssl to latest
 #----------------------------------
-RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && apk update && apk add --no-cache -u openssl \
- && notify "openssl updated"
+#RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+# && apk update && apk add --no-cache -u openssl \
+# && notify "openssl updated"

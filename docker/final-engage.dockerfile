@@ -20,11 +20,11 @@ RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
 
 # apply translations
 RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && apk -U add --virtual .my-build-deps \
+ && apt-get update && apt-get install -y -q --no-install-recommends \
     gettext \
  && notify "installed needed OS libs required to translate stuff" \
  && set -x; ./web-i18n.sh; set +x \
- && apk del .my-build-deps \
+ && rm -rf /var/lib/apt/lists/* \
  && notify "removed libs only needed for translate stuff"
 
 USER engage
