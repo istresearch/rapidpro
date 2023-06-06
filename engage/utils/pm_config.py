@@ -96,12 +96,8 @@ class PMConfig:
             'fetch_url': self.fetch_url,
             #'auth': obj.fetch_auth,
         })
-        # any PM server will require TLS 1.2+ and use one of the better ciphers
-        session = requests.session()
-        adapter = TLSAdapter(ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
-        session.mount("https://", adapter)
         try:
-            resp = session.request('GET', self.fetch_url, auth=self.fetch_auth, timeout=60, verify=False)
+            resp = requests.get(self.fetch_url, auth=self.fetch_auth, timeout=60)
         except Exception as ex:
             logger.debug("pm EX fetch_apk_link", extra={
                 'ex': ex,

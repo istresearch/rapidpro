@@ -158,11 +158,7 @@ class APIsForDownloadPostmaster(LogExtrasMixin):
                     pm_filename = self.pm_config.pm_info['filename']
                     pm_version = self.pm_config.pm_info['version']
 
-                    # any PM server will require TLS 1.2+ and use one of the better ciphers
-                    session = requests.session()
-                    adapter = TLSAdapter(ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1)
-                    session.mount("https://", adapter)
-                    resp = session.request('GET', pm_link, auth=self.pm_config.fetch_auth, timeout=60, verify=False)
+                    resp = requests.get(pm_link, auth=self.pm_config.fetch_auth, timeout=60)
                     if resp is not None and resp.ok:
                         r = HttpResponse(resp.content, content_type=apk_content_type)
                         r["Content-Disposition"] = f"attachment; filename={pm_filename}"

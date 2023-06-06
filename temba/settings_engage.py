@@ -81,12 +81,14 @@ DEBUG = env('DJANGO_DEBUG', 'off') == 'on'
 
 # no OSGeo stage building libs, just using pre-built libs now.
 # @see https://stackoverflow.com/questions/58403178/geodjango-cant-find-gdal-on-docker-python-alpine-based-image
+# slightly updated on move to debian-base-image, should work on either as it s now.
 try:
     GDAL_LIBRARY_PATH = glob('/usr/lib/libgdal.so*')[0]
     GEOS_LIBRARY_PATH = glob('/usr/lib/libgeos_c.so*')[0]
 except:
     GEOS_LIBRARY_PATH = '/usr/local/lib/libgeos_c.so'
     GDAL_LIBRARY_PATH = '/usr/local/lib/libgdal.so'
+#endtry locate GDAL library executable
 
 SECRET_KEY = env('SECRET_KEY', required=True)
 
