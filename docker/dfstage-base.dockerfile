@@ -6,7 +6,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 SHELL ["/bin/bash", "-c"]
 
-RUN apt-get update && apt-get install -y -q apt-utils && apt-get -y -q upgrade \
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && apt-get update && apt-get install -y -q apt-utils && apt-get -y -q upgrade \
  && apt-get install -y -q \
     bash \
     nano \
@@ -33,6 +34,6 @@ RUN apt-get update && apt-get install -y -q apt-utils && apt-get -y -q upgrade \
     LINK_SRC=$(echo "${LIB_LIST}"); \
     ln -s "${LINK_SRC}" "${LINK_DST}"; \
  fi \
- && echo -e "\n----[ installed basic needs and runtime osgeo dependencies ]----\n"
+ && notify "installed basic needs and runtime osgeo dependencies"
 
 CMD ["/bin/bash"]
