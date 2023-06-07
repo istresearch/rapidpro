@@ -9,8 +9,11 @@ class AppConfig(BaseAppConfig):
     verbose_name = "Engage Auth"
 
     def ready(self):
-        from .account import UserOverrides
-        UserOverrides.setClassOverrides()
+        from .account import AuthUserOverrides
+        AuthUserOverrides.setClassOverrides()
+
+        from .account import TembaUserOverrides
+        TembaUserOverrides.setClassOverrides()
     #enddef ready
 
 #endclass AppConfig
