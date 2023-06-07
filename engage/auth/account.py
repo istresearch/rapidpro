@@ -1,7 +1,10 @@
+import logging
+
 from django.contrib.auth.models import User as AuthUser
 from django.utils.functional import cached_property
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.logs import LogExtrasMixin
 
 from temba.orgs.models import Org, User as TembaUser
 
@@ -108,7 +111,7 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
 
 #endclass AuthUserOverrides
 
-class TembaUserOverrides(ClassOverrideMixinMustBeFirst, TembaUser):
+class TembaUserOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, TembaUser):
     override_ignore = ignoreDjangoModelAttrs(TembaUser)
     # fake model, tell Django to ignore so that it does not try to create/migrate schema.
 
@@ -169,6 +172,12 @@ class TembaUserOverrides(ClassOverrideMixinMustBeFirst, TembaUser):
             if roles is not None:
                 orgs = orgs.filter(orgmembership__user=self, orgmembership__role_code__in=[r.code for r in roles])
             #endif
+            logger = logging.getLogger()
+            logger.debug("", extra=self.with_log_extras({
+                'brands': brands,
+                'roles': roles,
+                'orgs': orgs,
+            }))
         #endif superuser
 
         return orgs

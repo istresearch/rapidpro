@@ -1,4 +1,4 @@
-from temba import settings
+from django.conf import settings
 from django.conf.urls import include
 from django.urls import re_path
 from .oauth_utils import SsoSignin
