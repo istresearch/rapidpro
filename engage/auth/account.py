@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User as AuthUser
+from django.utils.functional import cached_property
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
 
@@ -14,6 +15,18 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
 
     # default optional property to False so it exists.
     using_token = False
+
+    @cached_property
+    def settings(self):
+        assert self.is_authenticated, "can't fetch user settings for anonymous users"
+        from temba.orgs.models import UserSettings
+        return UserSettings.objects.get_or_create(user=self)[0]
+
+    @cached_property
+    def api_token(self) -> str:
+        from temba.api.models import get_or_create_api_token
+
+        return get_or_create_api_token(self)
 
     def has_org_perm(self, org, permission: str) -> bool:
         """
@@ -68,6 +81,7 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
         Why do we need this override?: user orgs not sorted for superadmins.
         :param self: the user object
         :param brands: optional param for branding.
+        :param roles: optional param for which roles to check against
         :return: the orgs the user has access to sorted for the org picker.
         """
         if self.is_superuser:
