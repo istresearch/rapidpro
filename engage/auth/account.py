@@ -59,7 +59,7 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
             #print(json.dumps(orgs[0]))
             #print(orgs[0].__dict__)
         else:
-            orgs = self.orgs.filter(is_active=True).distinct().order_by("name")
+            orgs = Org.objects.filter(is_active=True).distinct().order_by("name")
             if brands is not None:
                 orgs = orgs.filter(brand__in=brands)
             #endif
