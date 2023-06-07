@@ -15,6 +15,23 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
     # default optional property to False so it exists.
     using_token = False
 
+    def has_org_perm(self, org, permission: str) -> bool:
+        """
+        Determines if a user has the given permission in the given org.
+        """
+        if self.is_superuser:
+            return True
+
+        if self.is_anonymous:  # pragma: needs cover
+            return False
+
+        role = org.get_user_role(self) if org is not None else None
+        if not role:
+            return False
+
+        return role.has_perm(permission)
+    #enddef has_org_perm
+
     def is_allowed(self, permission) -> bool:
         """
         NOT AVAILABLE ON THE User OBJECT ITSELF!
@@ -70,6 +87,10 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
 
         return orgs
     #enddef get_orgs
+
+    def set_org(self, org):
+        self._org = org
+    #enddef set_org
 
 #endclass AuthUserOverrides
 
