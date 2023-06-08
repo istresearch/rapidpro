@@ -264,7 +264,8 @@
   :javascript
     var theSendMsgEndpoint = "{% url 'msgs.broadcast_send' %}";
 
-    function handleRowClick(uuid) {
+    function handleRowClicked(event) {
+
         if (event.target.tagName == "TEMBA-CHECKBOX") {
             return;
         }

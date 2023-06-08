@@ -220,6 +220,7 @@
     {{block.super}}
 
     :javascript
+      var params = '{{url_params|safe}}';
       var org_home_url_format = '{% url "orgs.org_home" %}?org=%s';
       var org_chosen_url_format = '{% url "orgs.org_choose" %}?organization=%s';
       {% if user.is_superuser %}
@@ -236,6 +237,55 @@
     <script type="text/javascript" src="{% static 'engage/js/frame-common.js' %}"></script>
 
     -block extra-script
+
+    -block refresh-fn
+      :javascript
+        function refresh(onSuccess, forceReload){
+          var url = params;
+          {% if page_obj %}
+            url += "page={{page_obj.number}}";
+          {% endif %}
+
+          if (url == '') {
+            url = '?';
+          }
+
+          url += '&ts=' + new Date().getTime() + "&refresh=" + refreshTimeout;
+
+          document.dispatchEvent(new Event("temba-refresh-begin"));
+          fetchPJAXContent(url, '#pjax', {
+              onSuccess: function() {
+                if (onSuccess) {
+                  onSuccess();
+                }
+                document.dispatchEvent(new Event("temba-refresh-complete"));
+                refreshTimeout = Math.floor(refreshTimeout * 1.1)
+                scheduleRefresh();
+              },
+              shouldIgnore: function() {
+                if (forceReload) {
+                  return false;
+                }
+                var pjax = document.querySelector("#pjax");
+                if (pjax) {
+                  return eval(document.querySelector("#pjax").dataset.noPjax);
+                }
+                return true;
+              },
+              onIgnore: function() {
+                var pjax = document.querySelector("#pjax");
+                if (pjax) {
+                  scheduleRefresh();
+                }
+              }
+          });
+        }
+
+    -block full-page-script
+      :javascript
+        document.addEventListener("temba-redirected", function(event){
+          document.location.href = event.detail.url;
+        });
 
     <script type="text/javascript" src="{% static 'js/libs/jquery.url.js' %}"></script>
 
