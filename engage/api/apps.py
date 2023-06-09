@@ -11,6 +11,9 @@ class AppConfig(BaseAppConfig):
     def ready(self):
         from .serializers import MsgBulkActionSerializerOverride
         MsgBulkActionSerializerOverride.setClassOverrides()
+
+        from .exceptions import APIExceptionOverride
+        APIExceptionOverride.setClassOverrides()
     #enddef ready
 
 #endclass AppConfig

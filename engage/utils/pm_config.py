@@ -92,19 +92,22 @@ class PMConfig:
         Common method to get pm download information. May throw a ValueError.
         :return: dict(link, filename, version)
         """
+        if not self.fetch_url:
+            return None
+        #endif
         logger.debug("pm fetch_apk_link", extra={
             'fetch_url': self.fetch_url,
             #'auth': obj.fetch_auth,
         })
         try:
             resp = requests.get(self.fetch_url, auth=self.fetch_auth, timeout=60)
+            self.pm_info = self.parse_fetch_apk_link(resp)
         except Exception as ex:
             logger.debug("pm EX fetch_apk_link", extra={
                 'ex': ex,
             })
             raise
         #endtry
-        self.pm_info = self.parse_fetch_apk_link(resp)
         return self.pm_info
     #enddef fetch_apk_link
 
