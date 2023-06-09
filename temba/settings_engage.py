@@ -491,7 +491,13 @@ ORG_PLAN_ENGAGE = 'managed'
 # Default plan for new orgs
 DEFAULT_PLAN = ORG_PLAN_ENGAGE
 
-MIDDLEWARE += ("engage.utils.middleware.RedirectMiddleware",)
+mwl = list(MIDDLEWARE)
+# replace BrandingMiddleware
+idx = mwl.index("temba.middleware.BrandingMiddleware")
+mwl[idx] = "engage.utils.middleware.BrandingMiddleware"
+# add custom middleware
+mwl.append("engage.utils.middleware.RedirectMiddleware")
+MIDDLEWARE = tuple(mwl)
 
 ALT_CALLBACK_DOMAIN = env('ALT_CALLBACK_DOMAIN', None)
 

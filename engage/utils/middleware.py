@@ -1,4 +1,5 @@
 from django import shortcuts
+from django.conf import settings
 
 class RedirectTo(Exception):
     def __init__(self, url):
@@ -47,3 +48,22 @@ class SubdirMiddleware:
     #enddef __call__
 
 #endclass SubdirMiddleware
+
+class BrandingMiddleware:
+    """
+    Replace upstream BrandingMiddleware with this non-bugged version.
+    """
+    def __init__(self, get_response=None):
+        self.get_response = get_response
+    #enddef init
+
+    def __call__(self, request):
+        brand_key = settings.DEFAULT_BRAND
+        branding = settings.BRANDING.get(brand_key)
+        branding["brand"] = brand_key
+        branding["keys"] = [brand_key]
+        request.branding = branding
+        response = self.get_response(request)
+        return response
+    #enddef call
+#endclass

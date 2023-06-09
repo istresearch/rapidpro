@@ -25,14 +25,8 @@ class RolePermsWrapper:
 
 
 def user_orgs_for_brand(request):
-    print('user.is_auth?='+' yes' if request.user.is_authenticated else ' no')
-    print(request.user)
-    print(f"branding.keys={request.branding.get('keys', [])}")
-    print(f"org={request.org}")
     if request.user.is_authenticated:
         user_orgs = request.user.get_orgs(brands=request.branding.get("keys", []))
-        print('user_orgs=')
-        print(user_orgs)
         return {"user_orgs": user_orgs}
     return {}
 
