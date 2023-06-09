@@ -23,6 +23,7 @@ class PM_Schemes:
     PM_WHATSAPP_SCHEME      = "pm_whatsapp"
     PM_SESSION_SCHEME       = "pm_session"
     PM_REDDIT_SCHEME        = "pm_reddit"
+    PM_MASTODON_SCHEME      = "pm_mastodon"
 
 # notes: iconclass can be a bootstrap icon glyph (icon-*); some will need 'pm-icon' to ensure css works right, or
 #        use a class that does _not_ begin with "icon-" and add to engage/static/engage/less/engage.less near
@@ -46,6 +47,7 @@ PM_Schemes_Meta = [
     Schemes_Meta(PM_Schemes.PM_WHATSAPP_SCHEME,   _("Postmaster WhatsApp Identifier"),  "icon-whatsapp",                   "WA",    _("WhatsApp")),
     Schemes_Meta(PM_Schemes.PM_SESSION_SCHEME,    _("Postmaster Session Identifier"),   "icon-session-messenger",          "SESS",  _("Session")),
     Schemes_Meta(PM_Schemes.PM_REDDIT_SCHEME,     _("Postmaster Reddit Identifier"),    "icon-reddit",                     "REDDIT",_("Reddit")),
+    Schemes_Meta(PM_Schemes.PM_MASTODON_SCHEME,   _("Postmaster Mastodon Identifier"),  "icon-mastodon",                   "MAST",  _("Mastodon")),
 ]
 
 PM_Scheme_Icons = { ico.scheme: ico.iconclass for ico in PM_Schemes_Meta }
