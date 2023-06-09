@@ -150,6 +150,8 @@ class ManageChannelMixin:
                 self.request.session[search_sesskey] = arg_search
             else:
                 del self.request.session[search_sesskey]
+                # remove the "?search=" for empty string as it messes up pagination
+                return redirect(f"{reverse('channels.channel_manage')}")
             #endif search is part of request
             return super(ManageChannelMixin.Manage, self).render_to_response(context, **response_kwargs)
         #enddef render_to_response
