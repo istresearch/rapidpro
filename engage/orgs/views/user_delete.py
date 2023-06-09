@@ -31,7 +31,14 @@ class UserViewDeleteOverride(ClassOverrideMixinMustBeFirst, UserCRUDL.Delete):
         user.release(self.request.user, brand=brand)
 
         messages.success(self.request, _(f"Deleted user {username}"))
-        return HttpResponseRedirect(reverse("orgs.user_list", args=()))
+        from django.http import HttpResponse
+        return HttpResponse(
+            f"{username} deleted successfully.",
+            headers={
+                "X-Redirect-Delay": "3000",
+                "Location": reverse("orgs.user_list"),
+            }
+        )
     #enddef post
 
 #endclass UserViewDeleteOverride

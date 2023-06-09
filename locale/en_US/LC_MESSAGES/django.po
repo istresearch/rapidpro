@@ -7092,7 +7092,7 @@ msgid "Deleting this user will also delete the following workspaces owned by thi
 msgstr ""
 
 #, python-format
-msgid "Are you sure you want to delete <b>%(username)s</b>?\""
+msgid "Are you sure you want to delete \"<b>%(username)s</b>?\""
 msgstr ""
 
 msgid "Confirm your current password to save these changes"
