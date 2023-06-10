@@ -59,13 +59,3 @@ function createContactChoice(term, data) {
 String.prototype.sprintf = function() {
     return [...arguments].reduce((p,c) => p.replace(/%s/,c), this);
 }
-
-$(document).ajaxComplete(function(event, request, settings) {
-    let delay_ms = parseInt(request.getResponseHeader('X-Redirect-Delay'));
-    let url = request.getResponseHeader('Location');
-    if ( !isNaN(delay_ms) && delay_ms > 0 && url ) {
-        setTimeout(function() {
-            window.location = url;
-        }, delay_ms);
-    }
-});

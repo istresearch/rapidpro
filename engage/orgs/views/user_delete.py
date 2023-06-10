@@ -35,8 +35,7 @@ class UserViewDeleteOverride(ClassOverrideMixinMustBeFirst, UserCRUDL.Delete):
         return HttpResponse(
             f"{username} deleted successfully.",
             headers={
-                "X-Redirect-Delay": "3000",
-                "Location": reverse("orgs.user_list"),
+                "temba-success": reverse("orgs.user_list"),
             }
         )
     #enddef post
