@@ -1,0 +1,4 @@
+# substitute your machine's IP address or FQDN; e.g. my.domain.inuse.com
+map $host $server_fqdn {
+  default ${SERVER_FQDN};
+}
