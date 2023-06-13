@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 from copy import deepcopy
 
 # -----------------------------------------------------------------------------------
@@ -122,10 +120,14 @@ IS_PROD = env('IS_PROD', 'off') == 'on'
 # -----------------------------------------------------------------------------------
 # Used when creating callbacks for Twilio, Nexmo etc..
 # -----------------------------------------------------------------------------------
-HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
-TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
+HOSTNAME = env('DOMAIN_NAME', 'localhost')
+HOST_SCHEME = env('DOMAIN_SCHEME', "https" if HOSTNAME != "localhost" else "http")
+HOST_ORIGIN = HOST_SCHEME + "://" + HOSTNAME
 
-if TEMBA_HOST.lower().startswith('https://') and str2bool(env('USE_SECURE_COOKIES', False)):
+STATIC_HOST = env('STATIC_HOST', "") if not DEBUG else ""
+STATIC_URL = STATIC_HOST + "/sitestatic/"
+
+if HOST_SCHEME.lower() == 'https' and str2bool(env('USE_SECURE_COOKIES', False)):
     #from .security_settings import *  # noqa
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_AGE = 1209600  # 2 weeks
@@ -217,6 +219,7 @@ if AWS_STORAGE_BUCKET_NAME:
         MEDIA_URL = f"{AWS_S3_URL}/media/"
 
 if not AWS_MEDIA:
+    MEDIA_URL = env('MEDIA_URL', '/media/')
     STORAGE_URL = MEDIA_URL[:-1]
 
 if not AWS_STATIC:
@@ -238,7 +241,7 @@ COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'on') == 'on'
 #COMPRESS_OFFLINE = False
 COMPRESS_OFFLINE = COMPRESS_ENABLED and (env('DEV_STATIC', 'off') != 'on')
 if COMPRESS_OFFLINE:
-    COMPRESS_OFFLINE_MANIFEST = f"manifest-{env('VERSION_CI', '1-dev')[:-4]}.json"
+    COMPRESS_OFFLINE_MANIFEST = f"manifest-webapp.json"
 #endif
 if COMPRESS_ENABLED:
     COMPRESS_URL = STATIC_URL
