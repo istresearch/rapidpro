@@ -8,7 +8,7 @@
 -block extra-style
   {{ block.super }}
   <link rel="stylesheet" type="text/css" href="{% static "rest_framework/css/prettify.css" %}"/>
-  <link rel="stylesheet" type="text/css" href="{% static "css/codemirror.css" %}"/>
+  <link rel="stylesheet" type="text/css" href="{% static "bower/codemirror/lib/codemirror.css" %}"/>
 
   <style>
    .button-form {
@@ -55,4 +55,3 @@
         -url 'api.v2' as v2_url
         -blocktrans trimmed
           API v1 has been replaced by <a href="{{ v2_url }}">API v2</a>. Please migrate your applications accordingly.
-
