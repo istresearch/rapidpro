@@ -99,9 +99,13 @@ class EngageStaticFilesStorage(BaseStaticFilesStorage):
         Overriding from Django staticfiles/storage.py because utf-8 decode fail
         does _not_ give you which @*(@* file actually tossed the exception.
         """
-        # Sort the files by directory level
-        def path_level(name):
-            return len(name.split(os.sep))
+        def path_level(pathname):
+            """
+            Sort the files by directory level
+            :param pathname: path of filename
+            :return: depth of directory
+            """
+            return len(pathname.split(os.sep))
 
         for name in sorted(paths, key=path_level, reverse=True):
             try:
@@ -120,17 +124,17 @@ class EngageStaticFilesStorage(BaseStaticFilesStorage):
                     else:
                         hashed_name = hashed_files[hash_key]
 
-                    # then get the original's file content..
+                    # then get the original's file content...
                     if hasattr(original_file, "seek"):
                         original_file.seek(0)
 
                     hashed_file_exists = self.exists(hashed_name)
                     processed = False
 
-                    # ..to apply each replacement pattern to the content
+                    # ...to apply each replacement pattern to the content
                     if name in adjustable_paths:
                         old_hashed_name = hashed_name
-                        decode_err_mode = self.decode_utf8_mode(storage, path)
+                        decode_err_mode = self.decode_utf8_mode(path=path, name=name)
                         content = original_file.read().decode("utf-8", errors=decode_err_mode)
                         for extension, patterns in self._patterns.items():
                             if matches_patterns(path, (extension,)):
