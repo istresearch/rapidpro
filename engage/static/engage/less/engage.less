@@ -300,7 +300,7 @@ temba-modax > div.send-via-btn {
   margin-top: -3px;
   font-size: @chatIconSize;
   position: relative;
-  display: inline-block;
+  display: contents;
   .tooltiptext {
     visibility: hidden;
     width: 200px;
@@ -308,7 +308,7 @@ temba-modax > div.send-via-btn {
     color: var(--color-nav-unselected);
     font-family: "Roboto", 'Helvetica Neue', sans-serif;
     font-weight: 200;
-    font-size: smaller;
+    font-size: large;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: auto;
     text-align: center;
@@ -328,6 +328,7 @@ temba-modax#send-via-pm_element > div.send-via-btn {
   background-size: @chatIconSize;
   height: @chatIconSize;
   width: @chatIconSize;
+  display: block;
 }
 .mode-icon-pm_signal,
 temba-modax#send-via-pm_signal > div.send-via-btn {
