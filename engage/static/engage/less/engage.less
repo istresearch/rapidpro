@@ -292,6 +292,11 @@ span.glyph.icon-channel-postmaster{
  This makes it harder to override/target CSS. haml was updated to include
  IDs for specific elements and we target the "slotted" div element for css.
  */
+temba-modax:has(div.send-via-btn) {
+  padding-right: 8px;
+  width: 1.9rem;
+}
+
 .mode-icon,
 temba-modax > div.send-via-btn {
   cursor: pointer;
@@ -300,7 +305,8 @@ temba-modax > div.send-via-btn {
   margin-top: -3px;
   font-size: @chatIconSize;
   position: relative;
-  display: contents;
+  /* display cannot be 'contents' else tooltips stop working */
+  display: inline-block;
   .tooltiptext {
     visibility: hidden;
     width: 200px;
@@ -328,7 +334,7 @@ temba-modax#send-via-pm_element > div.send-via-btn {
   background-size: @chatIconSize;
   height: @chatIconSize;
   width: @chatIconSize;
-  display: block;
+  margin-top: 3px;
 }
 .mode-icon-pm_signal,
 temba-modax#send-via-pm_signal > div.send-via-btn {
@@ -336,13 +342,15 @@ temba-modax#send-via-pm_signal > div.send-via-btn {
   background-size: @chatIconSize;
   height: @chatIconSize;
   width: @chatIconSize;
+  margin-top: 6px;
 }
 .mode-icon-pm_session,
 temba-modax#send-via-pm_session > div.send-via-btn {
   background: url("@{imgEngagePath}/session-messenger.png");
   background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
+  height: 25px;
+  width: 25px;
+  margin-top: 0px;
 }
 .mode-icon-pm_reddit,
 temba-modax#send-via-pm_reddit > div.send-via-btn {
@@ -350,6 +358,7 @@ temba-modax#send-via-pm_reddit > div.send-via-btn {
   background-size: @chatIconSize;
   height: @chatIconSize;
   width: @chatIconSize;
+  margin-top: 0px;
 }
 .mode-icon-pm_mastodon,
 temba-modax#send-via-pm_mastodon > div.send-via-btn {
@@ -357,6 +366,7 @@ temba-modax#send-via-pm_mastodon > div.send-via-btn {
   background-size: @chatIconSize;
   height: @chatIconSize;
   width: @chatIconSize;
+  margin-top: 0px;
 }
 /* ----------------------------------------------------*/
 
