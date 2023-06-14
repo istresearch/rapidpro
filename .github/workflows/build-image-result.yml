@@ -13,19 +13,21 @@ on:
 jobs:
   layer4_success:
     if: github.event.client_payload.error_msg == ''
+    name: "Display Msg [${{ github.event.action }}]"
     runs-on: ubuntu-latest
     steps:
       - name: "Display Msg"
         run: |-
-          echo "::notice::${{ github.event.client_payload.name }} image built with tag [${{ github.event.client_payload.tag }}]"
+          echo -e "::notice::${{ github.event.client_payload.name }} image built with tag [${{ github.event.client_payload.tag }}]"
   #endjob layer4_success
 
   layer4_error:
     if: github.event.client_payload.error_msg != ''
+    name: "Display Err Msg [${{ github.event.action }}]"
     runs-on: ubuntu-latest
     steps:
       - name: "Display Err Msg"
         run: |-
-          echo "::error::${{ github.event.client_payload.error_msg }}"
+          echo -e "::error::${{ github.event.client_payload.error_msg }}"
           exit 1
   #endjob layer4_error

@@ -2,6 +2,7 @@ name: "Build Nginx w/static files"
 
 on:
   repository_dispatch:
+    types:
       - build_layer5
       - build_layer4_engage_error
 
@@ -17,9 +18,9 @@ jobs:
     if: github.event.client_payload.error_msg != ''
     runs-on: ubuntu-latest
     steps:
-      - name: Display Msg
+      - name: "Display Err Msg"
         run: |-
-          echo "${{ github.event.client_payload.error_msg }}"
+          echo -e "${{ github.event.client_payload.error_msg }}"
           exit 1
   #endjob layer3_error
 

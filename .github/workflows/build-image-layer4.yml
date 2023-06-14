@@ -99,7 +99,7 @@ jobs:
                 "error_type": "build_layer4_engage_error",
                 "payload": {
                   "name": "engage",
-                  "tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}"
+                  "tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
                   "ver_num": "${{ env.VER_NUM }}",
                   "layer4tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
                   "layer4": "${{ needs.build_cfg_engage.outputs.IMAGE_NAME }}:${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}"
