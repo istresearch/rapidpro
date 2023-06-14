@@ -74,7 +74,7 @@ jobs:
                 "name": "${{ needs.build_cfg_engage.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
                 "build_args": [
-                  "STATICFILES_FROM_IMAGE=${{ env.FROM_LAYER }}",
+                  "STATICFILES_FROM_IMAGE=${{ env.FROM_LAYER }}"
                 ]
               },
               "deployment": {

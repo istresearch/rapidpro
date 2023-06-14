@@ -7,7 +7,6 @@ on:
       - build_layer4_generic_error
       - build_layer4_rp
       - build_layer4_rp_error
-      - build_layer5
       - build_layer5_error
 
 jobs:
