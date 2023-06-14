@@ -3,10 +3,12 @@ name: "Display Build Conclusions"
 on:
   repository_dispatch:
     types:
-      - build_layer4_engage
       - build_layer4_generic
+      - build_layer4_generic_error
       - build_layer4_rp
-      - build_layer4_error
+      - build_layer4_rp_error
+      - build_layer5
+      - build_layer5_error
 
 jobs:
   layer4_success:

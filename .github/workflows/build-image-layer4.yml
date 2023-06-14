@@ -95,11 +95,14 @@ jobs:
               },
               "callback": {
                 "repository": "${{ github.repository }}",
-                "event_type": "build_layer4_engage",
-                "error_type": "build_layer4_error",
+                "event_type": "build_layer5",
+                "error_type": "build_layer4_engage_error",
                 "payload": {
                   "name": "engage",
-                  "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"
+                  "tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}"
+                  "ver_num": "${{ env.VER_NUM }}",
+                  "layer4tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
+                  "layer4": "${{ needs.build_cfg_engage.outputs.IMAGE_NAME }}:${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}"
                 }
               }
             }
@@ -179,10 +182,10 @@ jobs:
               "callback": {
                 "repository": "${{ github.repository }}",
                 "event_type": "build_layer4_generic",
-                "error_type": "build_layer4_error",
+                "error_type": "build_layer4_generic_error",
                 "payload": {
                   "name": "generic",
-                  "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"
+                  "tag": "${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}"
                 }
               }
             }
@@ -256,7 +259,7 @@ jobs:
               "callback": {
                 "repository": "${{ github.repository }}",
                 "event_type": "build_layer4_rp",
-                "error_type": "build_layer4_error",
+                "error_type": "build_layer4_rp_error",
                 "payload": {
                   "name": "rp",
                   "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"

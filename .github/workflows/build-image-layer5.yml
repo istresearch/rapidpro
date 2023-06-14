@@ -1,0 +1,97 @@
+name: "Build Nginx w/static files"
+
+on:
+  repository_dispatch:
+      - build_layer5
+      - build_layer4_engage_error
+
+
+env:
+  VERSION_STR: ${{ github.event.client_payload.tag }}
+  VER_NUM: ${{ github.event.client_payload.ver_num }}
+  FROM_LAYER: ${{ github.event.client_payload.layer4 }}
+  FROM_LAYER_TAG: ${{ github.event.client_payload.layer4tag }}
+
+jobs:
+  layer4_error:
+    if: github.event.client_payload.error_msg != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display Msg
+        run: |-
+          echo "${{ github.event.client_payload.error_msg }}"
+          exit 1
+  #endjob layer3_error
+
+  build_cfg:
+    if: github.event.client_payload.error_msg == ''
+    runs-on: ubuntu-latest
+    environment: default
+    outputs:
+      DOCKERFILE2USE: ${{ steps.config_step.outputs.DOCKERFILE2USE }}
+      IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
+      IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.client_payload.repo.ref_name }}
+
+      - name: "Config For Nginx Build"
+        id: config_step
+        run: |-
+          DOCKERFILE2USE="docker/nginx/nginx.dockerfile"
+          echo "DOCKERFILE2USE=${DOCKERFILE2USE}" >> $GITHUB_OUTPUT
+
+          IMAGE_NAME=${{ github.repository_owner }}/p4-engage
+          IMAGE_TAG=nginx-${VERSION_STR}
+          echo "::notice::Build: ${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+  #endjob build_cfg
+
+  trigger-build:
+    runs-on: ubuntu-latest
+    needs: [build_cfg]
+    environment: default
+    steps:
+      - name: "Trigger Container Build For Nginx"
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.CI_WEBHOOK_TOKEN }}
+          repository: istresearch/ci-docker
+          event-type: build-repo
+          client-payload: |-
+            {
+              "repo": {
+                "name": "${{ github.repository }}",
+                "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
+                "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
+              },
+              "image": {
+                "dockerfile": "${{ needs.build_cfg_engage.outputs.DOCKERFILE2USE }}",
+                "arch_allowed": "amd64 arm64",
+                "name": "${{ needs.build_cfg_engage.outputs.IMAGE_NAME }}",
+                "tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
+                "build_args": [
+                  "STATICFILES_FROM_IMAGE=${{ env.FROM_LAYER }}",
+                ]
+              },
+              "deployment": {
+                "deploy_flag": "${{ github.ref_type != 'branchXXXX' }}",
+                "k8s": [ {
+                  "project": "pulse-engage-nginx",
+                  "container": "nginx",
+                  "deploy_msg": ""
+                } ]
+              },
+              "callback": {
+                "repository": "${{ github.repository }}",
+                "event_type": "build_layer5",
+                "error_type": "build_layer5_error",
+                "payload": {
+                  "name": "nginx",
+                  "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"
+                }
+              }
+            }
+  #endjob trigger-build
