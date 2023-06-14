@@ -99,6 +99,10 @@ jobs:
                 "error_type": "build_layer4_engage_error",
                 "payload": {
                   "name": "engage",
+                  "repo": {
+                    "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
+                    "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
+                  },
                   "tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
                   "ver_num": "${{ env.VER_NUM }}",
                   "layer4tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
