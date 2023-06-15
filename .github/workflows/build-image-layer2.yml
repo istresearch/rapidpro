@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |-
+          echo "::notice::${{ github.event.client_payload.run_number }}"
+          echo "::notice::${{ github.event.client_payload.run_url }}"
           echo "${{ github.event.client_payload.error_msg }}"
           exit 1
   #endjob layer1_error

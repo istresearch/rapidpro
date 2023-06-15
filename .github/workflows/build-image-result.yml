@@ -7,6 +7,7 @@ on:
       - build_layer4_generic_error
       - build_layer4_rp
       - build_layer4_rp_error
+      - build_layer5_nginx
       - build_layer5_error
 
 jobs:
@@ -16,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |-
+          echo "::notice::${{ github.event.client_payload.run_number }}"
+          echo "::notice::${{ github.event.client_payload.run_url }}"
           echo -e "::notice::${{ github.event.client_payload.name }} image built with tag [${{ github.event.client_payload.tag }}]"
   #endjob layer4_success
 
@@ -25,6 +28,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |-
+          echo "::notice::${{ github.event.client_payload.run_number }}"
+          echo "::notice::${{ github.event.client_payload.run_url }}"
           echo -e "::error::${{ github.event.client_payload.error_msg }}"
           exit 1
   #endjob layer4or5_error
