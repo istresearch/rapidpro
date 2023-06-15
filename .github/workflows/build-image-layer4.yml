@@ -13,10 +13,10 @@ env:
 jobs:
   layer3_error:
     if: github.event.client_payload.error_msg != ''
+    name: "Error on run: ${{ github.event.client_payload.run_id }}"
     runs-on: ubuntu-latest
     steps:
-      - name: Display Msg
-        run: |-
+      - run: |-
           echo "${{ github.event.client_payload.error_msg }}"
           exit 1
   #endjob layer3_error

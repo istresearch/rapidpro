@@ -15,18 +15,16 @@ jobs:
     name: "Display Msg [${{ github.event.action }}]"
     runs-on: ubuntu-latest
     steps:
-      - name: "Display Msg"
-        run: |-
+      - run: |-
           echo -e "::notice::${{ github.event.client_payload.name }} image built with tag [${{ github.event.client_payload.tag }}]"
   #endjob layer4_success
 
-  layer4_error:
+  layer4or5_error:
     if: github.event.client_payload.error_msg != ''
-    name: "Display Err Msg [${{ github.event.action }}]"
+    name: "Run [${{ github.event.client_payload.run_id }}] Failed for [${{ github.event.action }}]"
     runs-on: ubuntu-latest
     steps:
-      - name: "Display Err Msg"
-        run: |-
+      - run: |-
           echo -e "::error::${{ github.event.client_payload.error_msg }}"
           exit 1
-  #endjob layer4_error
+  #endjob layer4or5_error

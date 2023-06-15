@@ -16,13 +16,13 @@ env:
 jobs:
   layer4_error:
     if: github.event.client_payload.error_msg != ''
+    name: "Error on run: ${{ github.event.client_payload.run_id }}"
     runs-on: ubuntu-latest
     steps:
-      - name: "Display Err Msg"
-        run: |-
+      - run: |-
           echo -e "${{ github.event.client_payload.error_msg }}"
           exit 1
-  #endjob layer3_error
+  #endjob layer4_error
 
   build_cfg:
     if: github.event.client_payload.error_msg == ''
@@ -69,10 +69,10 @@ jobs:
                 "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
               },
               "image": {
-                "dockerfile": "${{ needs.build_cfg_engage.outputs.DOCKERFILE2USE }}",
+                "dockerfile": "${{ needs.build_cfg.outputs.DOCKERFILE2USE }}",
                 "arch_allowed": "amd64 arm64",
-                "name": "${{ needs.build_cfg_engage.outputs.IMAGE_NAME }}",
-                "tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
+                "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
+                "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
                   "STATICFILES_FROM_IMAGE=${{ env.FROM_LAYER }}"
                 ]
