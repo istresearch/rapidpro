@@ -95,15 +95,15 @@ class PMConfig:
         if not self.fetch_url:
             return None
         #endif
-        logger.debug("pm fetch_apk_link", extra={
-            'fetch_url': self.fetch_url,
-            #'auth': obj.fetch_auth,
-        })
+        #logger.debug("pm fetch_apk_link", extra={
+        #    'fetch_url': self.fetch_url,
+        #    #'auth': obj.fetch_auth,
+        #})
         try:
             resp = requests.get(self.fetch_url, auth=self.fetch_auth, timeout=60)
             self.pm_info = self.parse_fetch_apk_link(resp)
         except Exception as ex:
-            logger.debug("pm EX fetch_apk_link", extra={
+            logger.warning("pm EX fetch_apk_link", extra={
                 'ex': ex,
             })
             raise
@@ -128,15 +128,15 @@ class PMConfig:
                     else:
                         pm_link = f"{self.fetch_url}/{pm_filename}"
                     #endif
-                    logger.debug("pm link parse", extra={
-                        'pm_link': pm_link,
-                        'pm_filename': pm_filename,
-                        'pm_version': pm_version,
-                    })
+                    #logger.debug("pm link parse", extra={
+                    #    'pm_link': pm_link,
+                    #    'pm_filename': pm_filename,
+                    #    'pm_version': pm_version,
+                    #})
                 else:
-                    logger.debug("pm link parse", extra={
-                        'pm_link': None,
-                    })
+                    #logger.debug("pm link parse", extra={
+                    #    'pm_link': None,
+                    #})
                     return None
                 #endif
             else:

@@ -67,10 +67,10 @@ class APIsForDownloadPostmaster(LogExtrasMixin):
 
         def get(self, request: HttpRequest, *args, **kwargs):
             user = self.get_user()
-            logger.debug("user?", extra=self.with_log_extras({
-                'req.user': request.user if hasattr(request, 'user') else None,
-                'user': user,
-            }))
+            #logger.debug("user?", extra=self.with_log_extras({
+            #    'req.user': request.user if hasattr(request, 'user') else None,
+            #    'user': user,
+            #}))
             if not user.is_authenticated or user is AnonymousUser:
                 return HttpResponseNoContent('Not authorized', status=401)
             if not user.is_allowed(self.permission):
@@ -130,10 +130,10 @@ class APIsForDownloadPostmaster(LogExtrasMixin):
                 except TypeError:
                     # special endpoint that requires auth
                     user = self.get_user()
-                    logger.debug("user?", extra=self.with_log_extras({
-                        'req.user': request.user if hasattr(request, 'user') else None,
-                        'user': user,
-                    }))
+                    #logger.debug("user?", extra=self.with_log_extras({
+                    #    'req.user': request.user if hasattr(request, 'user') else None,
+                    #    'user': user,
+                    #}))
                     if not user.is_authenticated or user is AnonymousUser:
                         return HttpResponseNoContent('Not authorized', status=401)
                     if user.is_allowed(APIsForDownloadPostmaster.PostmasterInfo.permission):
