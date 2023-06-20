@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 from django.conf import settings
+from django.contrib import messages
 from django.urls import reverse
 
 from .manage import ManageChannelMixin
@@ -118,6 +119,22 @@ class ChannelDeleteOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Delete)
 
         return reverse("channels.channel_manage")
     #enddef get_success_url
+
+    def post(self, request, *args, **kwargs):
+        try:
+            return self.getOrigClsAttr('post')(self, request=request, *args, **kwargs)
+        except ValueError as vex:
+            messages.error(request, vex)
+            from django.http import HttpResponse
+            return HttpResponse(
+                vex,
+                headers={
+                    "Temba-Success": self.cancel_url,
+                },
+                status=204,
+            )
+        #endtry
+    #enddef post
 
 #endclass ChannelDeleteOverrides
 
