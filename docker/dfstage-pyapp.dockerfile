@@ -24,15 +24,15 @@ RUN HASH_ALL=$(./staticfiles-hash-calc.sh) \
  && export BUILD_FROM_LAYER="skip"
 
 ARG FROM_STAGE
-FROM ${FROM_STAGE} as tar-download
+FROM ${FROM_STAGE} as tar_download
 ONBUILD ADD "${TAR_URL}" .
 
 ARG FROM_STAGE
-FROM ${FROM_STAGE} as tar-skip
+FROM ${FROM_STAGE} as tar_skip
 
 # ========================================================================
 
-FROM tar-${BUILD_FROM_LAYER}
+FROM tar_${BUILD_FROM_LAYER}
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
 
