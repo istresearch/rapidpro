@@ -87,6 +87,11 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
         :param roles: optional param for which roles to check against
         :return: the orgs the user has access to sorted for the org picker.
         """
+        #import logging
+        #logger = logging.getLogger()
+        #logger.debug(f"user={self}", extra={
+        #    'roles': roles,
+        #})
         if self.is_superuser:
             orgs = Org.objects.all().order_by("name", "slug")
             #import json
@@ -99,6 +104,8 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
             #endif
             if roles is not None:
                 orgs = orgs.filter(orgmembership__user=self, orgmembership__role_code__in=[r.code for r in roles])
+            else:
+                orgs = orgs.filter(orgmembership__user=self)
             #endif
         #endif superuser
 

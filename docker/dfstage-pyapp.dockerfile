@@ -14,19 +14,25 @@ COPY ./templates   templates
 COPY ./LICENSE     LICENSE
 COPY ./manage.py   manage.py
 COPY ./VERSION     VERSION
-COPY ./staticfiles-hash-*.txt .
+COPY ./staticfiles-hash-calc.sh .
 
-ARG SF_HASH
-RUN if [[ -n "${SF_HASH}" ]]; then \
- MRU_ENGAGE_FILE=$(find engage/static -type f ! -iname ".*" -exec stat --printf="%Y[%n]\n" "{}" \; | sort -nr | cut -d: -f2- | head -n1); \
- MRU_RP_FILE=$(find static -type f ! -iname ".*" -exec stat --printf="%Y[%n]\n" "{}" \; | sort -nr | cut -d: -f2- | head -n1); \
- echo "${MRU_ENGAGE_FILE}-${MRU_RP_FILE}" > staticfiles-hash-df.txt; \
-fi;
+RUN HASH_ALL=$(./staticfiles-hash-calc.sh) \
+ && echo "this is where we would check repo to see if tar.gz present" \
+ && echo "then download if it is, else skip if it isn't" \
+ && export TAR_URL="https://repo/engage-sitestatic-${HASH_ALL}.tar.gz" \
+ && echo "url=${TAR_URL}" \
+ && export BUILD_FROM_LAYER="skip"
+
+ARG FROM_STAGE
+FROM ${FROM_STAGE} as tar-download
+ONBUILD ADD "${TAR_URL}" .
+
+ARG FROM_STAGE
+FROM ${FROM_STAGE} as tar-skip
 
 # ========================================================================
 
-ARG FROM_STAGE
-FROM ${FROM_STAGE}
+FROM tar-${BUILD_FROM_LAYER}
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
 

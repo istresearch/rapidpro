@@ -91,13 +91,11 @@ jobs:
                 "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-                "pre_build_sh": "./staticfile-hash-calc.sh",
                 "build_args": [
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ needs.build_cfg.outputs.VER_NUM }}",
-                  "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_TAG }}",
-                  "SF_HASH=1"
+                  "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_TAG }}"
                 ]
               },
               "callback": {
