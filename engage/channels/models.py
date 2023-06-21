@@ -54,16 +54,6 @@ class ChannelOverrides(ClassOverrideMixinMustBeFirst, Channel):
         return self.getOrigClsAttr('claim')(self, org=org, user=user, phone=phone)
     #enddef claim
 
-    def release(self, user, trigger_sync: bool = True, check_dependent_flows=True, **kwargs):
-        if check_dependent_flows:
-            dependent_flows_count = self.dependent_flows.count()
-            if dependent_flows_count > 0:
-                raise ValueError(f"Cannot delete Channel: {self.get_name()}, used by {dependent_flows_count} flows")
-            #endif
-        #endif
-        return self.getOrigClsAttr('release')(self, user=user, trigger_sync=trigger_sync, **kwargs)
-    #enddef release
-
 #endclass ChannelOverrides
 
 
