@@ -13,7 +13,7 @@ on:
 jobs:
   build_error:
     if: github.event.client_payload.error_msg != ''
-    name: "Run [${{ github.event.client_payload.run_id }}] Failed for [${{ github.event.action }}]"
+    name: "Error on Run #${{ github.event.client_payload.run_number }} for [${{ github.event.action }}]"
     runs-on: ubuntu-latest
     steps:
       - run: |-
