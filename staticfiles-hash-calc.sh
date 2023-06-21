@@ -11,5 +11,5 @@ function hash_dir {
 
 HASH_ENGAGE_DIR=$(hash_dir "engage/static")
 HASH_TEMBA_DIR=$(hash_dir "static")
-HASH_ALL=$(echo "${HASH_ENGAGE_DIR%[[:space:]]*}-${HASH_TEMBA_DIR%[[:space:]]*}" | sha256sum)
-echo "${HASH_ALL%[[:space:]]*}" 2>&1 | tee staticfiles-hash-all.txt
+HASH_ALL=$(echo "${HASH_ENGAGE_DIR%%[[:space:]]*}-${HASH_TEMBA_DIR%%[[:space:]]*}" | sha256sum)
+echo "${HASH_ALL%%[[:space:]]*}" 2>&1 | tee staticfiles-hash-all.txt

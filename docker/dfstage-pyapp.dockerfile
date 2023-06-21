@@ -1,5 +1,5 @@
-# syntax=docker/dockerfile:1.2
 ARG FROM_STAGE
+ARG FROM_BUILD_LAYER=${FROM_STAGE}
 FROM ${FROM_STAGE} as load-files
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
@@ -14,25 +14,22 @@ COPY ./templates   templates
 COPY ./LICENSE     LICENSE
 COPY ./manage.py   manage.py
 COPY ./VERSION     VERSION
-COPY ./staticfiles-hash-calc.sh .
 
-RUN HASH_ALL=$(./staticfiles-hash-calc.sh) \
- && echo "this is where we would check repo to see if tar.gz present" \
- && echo "then download if it is, else skip if it isn't" \
- && export TAR_URL="https://repo/engage-sitestatic-${HASH_ALL}.tar.gz" \
- && echo "url=${TAR_URL}" \
- && export BUILD_FROM_LAYER="skip"
+# do this in gha
+#COPY ./staticfiles-hash-calc.sh .
+#RUN HASH_ALL=$(./staticfiles-hash-calc.sh) \
+# && echo "this is where we would check repo to see if tar.gz present" \
+# && echo "then download if it is, else skip if it isn't" \
+# && export TAR_URL="https://repo/engage-sitestatic-${HASH_ALL}.tar.gz" \
+# && echo "url=${TAR_URL}"
 
-ARG FROM_STAGE
 FROM ${FROM_STAGE} as tar_download
+ONBUILD RUN echo "download tar"
 ONBUILD ADD "${TAR_URL}" .
-
-ARG FROM_STAGE
-FROM ${FROM_STAGE} as tar_skip
 
 # ========================================================================
 
-FROM tar_${BUILD_FROM_LAYER}
+FROM ${FROM_BUILD_LAYER}
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
 
