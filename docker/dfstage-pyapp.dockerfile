@@ -14,7 +14,7 @@ COPY ./templates   templates
 COPY ./LICENSE     LICENSE
 COPY ./manage.py   manage.py
 COPY ./VERSION     VERSION
-COPY ./staticfiles-hash*.txt .
+COPY ./staticfiles-hash-sh.txt .
 
 ARG SF_HASH
 RUN if [[ -n "${SF_HASH}" ]]; then \
