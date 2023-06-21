@@ -100,7 +100,6 @@ jobs:
                 "event_type": "build_layer5",
                 "error_type": "build_layer4_engage_error",
                 "payload": {
-                  "name": "engage",
                   "repo": {
                     "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
                     "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
@@ -188,11 +187,7 @@ jobs:
               "callback": {
                 "repository": "${{ github.repository }}",
                 "event_type": "build_generic_success",
-                "error_type": "build_generic_error",
-                "payload": {
-                  "name": "generic",
-                  "tag": "${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}"
-                }
+                "error_type": "build_generic_error"
               }
             }
   #endjob trigger-build-generic
@@ -265,11 +260,7 @@ jobs:
               "callback": {
                 "repository": "${{ github.repository }}",
                 "event_type": "build_rp_success",
-                "error_type": "build_rp_error",
-                "payload": {
-                  "name": "rp",
-                  "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"
-                }
+                "error_type": "build_rp_error"
               }
             }
   #endjob trigger-build-rp

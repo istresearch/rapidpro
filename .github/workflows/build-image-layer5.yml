@@ -90,11 +90,7 @@ jobs:
               "callback": {
                 "repository": "${{ github.repository }}",
                 "event_type": "build_nginx_success",
-                "error_type": "build_nginx_error",
-                "payload": {
-                  "name": "nginx",
-                  "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"
-                }
+                "error_type": "build_nginx_error"
               }
             }
   #endjob trigger-build
