@@ -15,10 +15,11 @@ jobs:
     if: github.event.client_payload.error_msg != ''
     name: "Error on Run #${{ github.event.client_payload.run_number }}"
     runs-on: ubuntu-latest
+    env:
+      RUN_URL: "[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
     steps:
       - run: |-
-          echo "::error::[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
-          echo -e "::error::${{ github.event.client_payload.error_msg }}"
+          echo -e "::error::${RUN_URL}%0A${{ github.event.client_payload.error_msg }}"
           exit 1
   #endjob layer3_error
 
