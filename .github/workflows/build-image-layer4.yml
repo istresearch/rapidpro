@@ -17,9 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |-
-          echo "::notice::${{ github.event.client_payload.run_number }}"
-          echo "::notice::${{ github.event.client_payload.run_url }}"
-          echo "${{ github.event.client_payload.error_msg }}"
+          echo "::error::[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
+          echo -e "::error::${{ github.event.client_payload.error_msg }}"
           exit 1
   #endjob layer3_error
 
@@ -187,8 +186,8 @@ jobs:
               },
               "callback": {
                 "repository": "${{ github.repository }}",
-                "event_type": "build_layer4_generic",
-                "error_type": "build_layer4_generic_error",
+                "event_type": "build_generic_success",
+                "error_type": "build_generic_error",
                 "payload": {
                   "name": "generic",
                   "tag": "${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}"
@@ -264,8 +263,8 @@ jobs:
               },
               "callback": {
                 "repository": "${{ github.repository }}",
-                "event_type": "build_layer4_rp",
-                "error_type": "build_layer4_rp_error",
+                "event_type": "build_rp_success",
+                "error_type": "build_rp_error",
                 "payload": {
                   "name": "rp",
                   "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"

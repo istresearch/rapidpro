@@ -20,9 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |-
-          echo "::notice::${{ github.event.client_payload.run_number }}"
-          echo "::notice::${{ github.event.client_payload.run_url }}"
-          echo -e "${{ github.event.client_payload.error_msg }}"
+          echo "::error::[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
+          echo -e "::error::${{ github.event.client_payload.error_msg }}"
           exit 1
   #endjob layer4_error
 
@@ -89,8 +88,8 @@ jobs:
               },
               "callback": {
                 "repository": "${{ github.repository }}",
-                "event_type": "build_layer5_nginx",
-                "error_type": "build_layer5_error",
+                "event_type": "build_nginx_success",
+                "error_type": "build_nginx_error",
                 "payload": {
                   "name": "nginx",
                   "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"

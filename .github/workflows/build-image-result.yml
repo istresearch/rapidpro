@@ -3,33 +3,31 @@ name: "Display Build Conclusions"
 on:
   repository_dispatch:
     types:
-      - build_layer4_generic
-      - build_layer4_generic_error
-      - build_layer4_rp
-      - build_layer4_rp_error
-      - build_layer5_nginx
-      - build_layer5_error
+      - build_generic_success
+      - build_generic_error
+      - build_rp_success
+      - build_rp_error
+      - build_nginx_success
+      - build_nginx_error
 
 jobs:
-  layer4_success:
-    if: github.event.client_payload.error_msg == ''
-    name: "Display Msg [${{ github.event.action }}]"
-    runs-on: ubuntu-latest
-    steps:
-      - run: |-
-          echo "::notice::${{ github.event.client_payload.run_number }}"
-          echo "::notice::${{ github.event.client_payload.run_url }}"
-          echo -e "::notice::${{ github.event.client_payload.name }} image built with tag [${{ github.event.client_payload.tag }}]"
-  #endjob layer4_success
-
-  layer4or5_error:
+  build_error:
     if: github.event.client_payload.error_msg != ''
     name: "Run [${{ github.event.client_payload.run_id }}] Failed for [${{ github.event.action }}]"
     runs-on: ubuntu-latest
     steps:
       - run: |-
-          echo "::notice::${{ github.event.client_payload.run_number }}"
-          echo "::notice::${{ github.event.client_payload.run_url }}"
+          echo "::error::[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
           echo -e "::error::${{ github.event.client_payload.error_msg }}"
           exit 1
-  #endjob layer4or5_error
+  #endjob build_error
+
+  build_success:
+    if: github.event.client_payload.build_msg != ''
+    name: "Display Msg [${{ github.event.action }}]"
+    runs-on: ubuntu-latest
+    steps:
+      - run: |-
+          echo "::notice::[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
+          echo -e "::notice::${{ github.event.client_payload.build_msg }}]"
+  #endjob build_success

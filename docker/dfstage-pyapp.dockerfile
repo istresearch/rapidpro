@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.2
 ARG FROM_STAGE
 FROM ${FROM_STAGE} as load-files
 # while doing the build, no interaction possible
@@ -13,10 +14,14 @@ COPY ./templates   templates
 COPY ./LICENSE     LICENSE
 COPY ./manage.py   manage.py
 COPY ./VERSION     VERSION
+COPY ./staticfiles-hash*.txt .
 
-RUN MRU_ENGAGE_FILE=$(find engage/static -type f ! -iname ".*" -exec stat --printf="%Y[%n]\n" "{}" \; | sort -nr | cut -d: -f2- | head -n1) \
+ARG SF_HASH
+RUN if [[ -n "${SF_HASH}" ]]; then \
+ MRU_ENGAGE_FILE=$(find engage/static -type f ! -iname ".*" -exec stat --printf="%Y[%n]\n" "{}" \; | sort -nr | cut -d: -f2- | head -n1) \
  && MRU_RP_FILE=$(find static -type f ! -iname ".*" -exec stat --printf="%Y[%n]\n" "{}" \; | sort -nr | cut -d: -f2- | head -n1) \
- && echo "${MRU_ENGAGE_FILE}-${MRU_RP_FILE}" > staticfiles-hash.txt
+ && echo "${MRU_ENGAGE_FILE}-${MRU_RP_FILE}" > staticfiles-hash-df.txt \
+fi
 
 # ========================================================================
 

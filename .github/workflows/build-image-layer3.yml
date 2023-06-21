@@ -17,9 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |-
-          echo "::notice::${{ github.event.client_payload.run_number }}"
-          echo "::notice::${{ github.event.client_payload.run_url }}"
-          echo "${{ github.event.client_payload.error_msg }}"
+          echo "::error::[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
+          echo -e "::error::${{ github.event.client_payload.error_msg }}"
           exit 1
   #endjob layer2_error
 
@@ -95,7 +94,8 @@ jobs:
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ needs.build_cfg.outputs.VER_NUM }}",
-                  "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_TAG }}"
+                  "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_TAG }}",
+                  "SF_HASH=$(./staticfile-hash-calc.sh)"
                 ]
               },
               "callback": {
