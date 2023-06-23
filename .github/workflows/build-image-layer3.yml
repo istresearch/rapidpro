@@ -81,7 +81,10 @@ jobs:
           REPO_FILEPATH="engage/sitestatic/webstatic-${HASH_ALL}.tar.gz"
           TAR_URL="https://${REPO_UN}:${REPO_PW}@${REPO_DL_DOMAIN}/${REPO_FILEPATH}"
           # check repo to see if tar.gz present
-          if [[ $(curl --silent -I "${TAR_URL}" | grep -E "^HTTP" | awk -F " " '{print $2}') == "200" ]]; then
+          R=$(curl --silent -I "${TAR_URL}")
+          # print out all headers
+          echo "${R}"
+          if [[ $(${R} | grep -E "^HTTP" | awk -F " " '{print $2}') == "200" ]]; then
             echo "::notice::Found [${REPO_FILEPATH}] and passing into build args."
             REPO_BUILD_ARGS=
             REPO_BUILD_ARGS+='"REPO_UN"="%REPO_UN",'
