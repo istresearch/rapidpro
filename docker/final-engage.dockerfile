@@ -1,5 +1,20 @@
 ARG FROM_STAGE
-FROM ${FROM_STAGE}
+ARG FROM_BUILD_LAYER=${FROM_STAGE}
+FROM ${FROM_STAGE} as load-files
+# while doing the build, no interaction possible
+ARG DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /opt/code2use
+COPY --chown=engage:engage docker/customizations/engage .
+
+FROM ${FROM_STAGE} as tar_download
+ONBUILD RUN echo "download tar"
+ARG TAR_URL=LICENSE
+ONBUILD ADD "${TAR_URL}" .
+
+# ========================================================================
+
+FROM ${FROM_BUILD_LAYER}
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -17,15 +32,6 @@ LABEL org.label-schema.name="Engage" \
 COPY --chown=engage:engage docker/customizations/engage /opt/ov/brand
 USER root
 RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
-
-# apply translations
-RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && apt-get update && apt-get install -y -q --no-install-recommends \
-    gettext \
- && notify "installed needed OS libs required to translate stuff" \
- && set -x; ./web-i18n.sh; set +x \
- && rm -rf /var/lib/apt/lists/* \
- && notify "removed libs only needed for translate stuff"
 
 USER engage
 

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# fail on any error & print commands as they're run
+set -ex
 source /venv/bin/activate
 
 if [[ -z $DATABASE_URL ]]; then
@@ -8,8 +10,6 @@ fi
 if [[ -z $SECRET_KEY ]]; then
   export SECRET_KEY=123
 fi
-
-set -ex # fail on any error & print commands as they're run
 
 if [[ -n $REDIS_URL ]]; then
   echo 'Clearing static cache…'
