@@ -1,6 +1,11 @@
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
 
+ARG REPO_UN
+ARG REPO_PW
+ARG REPO_HOST
+ARG REPO_FILEPATH
+
 ARG FROM_STAGE
 ARG FROM_BUILD_LAYER=${FROM_STAGE}
 FROM ${FROM_STAGE} as load-files
