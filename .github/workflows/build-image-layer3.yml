@@ -46,6 +46,7 @@ jobs:
 
       - name: "Determine Tag To Use"
         id: config_step
+        shell: bash
         env:
           REF_NAME: "${{ github.event.client_payload.repo.ref_name }}"
           REPO_UN: ${{ vars.REPO_UN }}
@@ -79,9 +80,12 @@ jobs:
 
           HASH_ALL=$(./staticfiles-hash-calc.sh)
           REPO_FILEPATH="engage/sitestatic/webstatic-${HASH_ALL}.tar.gz"
-          TAR_URL="https://${REPO_UN}:${REPO_PW}@${REPO_DL_DOMAIN}/${REPO_FILEPATH}"
-          # check repo to see if tar.gz present
-          R=$(curl --silent -I "${TAR_URL}")
+          TAR_URL="https://${REPO_DL_DOMAIN}/${REPO_FILEPATH}"
+          # check repo to see if tar.gz present by using header-only curl cmd
+          # NOTE: curl with user/pw in URL will force GHA to mask the pw, causing curl to return 401.
+          # bash sub-shell magic to avoid exposing the pw in cmd line history via inline file-create & use.
+          # @see https://stackoverflow.com/questions/33794842/forcing-curl-to-get-a-password-from-the-environment
+          R=$(curl --silent -I --netrc-file <(cat <<<"machine ${REPO_DL_DOMAIN} login ${REPO_UN} password ${REPO_PW}") "${TAR_URL}")
           # print out all headers
           echo "${R}"
           if [[ $(${R} | grep -E "^HTTP" | awk -F " " '{print $2}') == "200" ]]; then
