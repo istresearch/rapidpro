@@ -6,7 +6,6 @@ on:
       - build_layer5
       - build_layer4_engage_error
 
-
 env:
   VERSION_STR: ${{ github.event.client_payload.image.tag }}
   VER_NUM: ${{ github.event.client_payload.image.ver_num }}
@@ -99,3 +98,34 @@ jobs:
               }
             }
   #endjob trigger-build
+
+  trigger-build-webstatic:
+    if: github.event.client_payload.image.repo_filepath != ''
+    needs: [build_cfg_engage]
+    runs-on: ubuntu-latest
+    environment: default
+    steps:
+      - name: "Trigger Archive Build For Static Website Files"
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.CI_WEBHOOK_TOKEN }}
+          repository: istresearch/postoffice
+          event-type: build-webstatic
+          client-payload: |-
+            {
+              "repo": {
+                "name": "${{ github.repository }}",
+                "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
+                "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
+              },
+              "data": {
+                "image2use": "${{ env.FROM_LAYER }}",
+                "repo_filepath": "${{ github.event.client_payload.image.repo_filepath }}"
+              },
+              "callback": {
+                "repository": "${{ github.repository }}",
+                "event_type": "build_webstatic_success",
+                "error_type": "build_webstatic_error"
+              }
+            }
+  #endjob trigger-build-webstatic
