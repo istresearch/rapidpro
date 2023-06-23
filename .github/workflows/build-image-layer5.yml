@@ -101,7 +101,7 @@ jobs:
 
   trigger-build-webstatic:
     if: github.event.client_payload.image.repo_filepath != ''
-    needs: [build_cfg_engage]
+    needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
     steps:

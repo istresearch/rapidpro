@@ -161,7 +161,7 @@ jobs:
           elif [[ "${REF_NAME}" == "develop" ]]; then
             BUILD_FLAG=1
           elif [[ "${REF_NAME}" =~ dev[-\/].* ]]; then
-            BUILD_FLAG=1
+            BUILD_FLAG=0
           else
             BUILD_FLAG=0
           fi
