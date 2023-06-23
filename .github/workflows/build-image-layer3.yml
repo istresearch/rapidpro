@@ -91,10 +91,10 @@ jobs:
           if [[ $(echo "${R}" | grep -E "^HTTP" | awk -F " " '{print $2}') == "200" ]]; then
             echo "::notice::Found [${REPO_FILEPATH}] and passing into build args."
             REPO_BUILD_ARGS=
-            REPO_BUILD_ARGS+='"REPO_UN"="%REPO_UN",'
-            REPO_BUILD_ARGS+='"REPO_PW":"%REPO_PW",'
-            REPO_BUILD_ARGS+='"REPO_HOST":"'"${REPO_DL_DOMAIN}"'",'
-            REPO_BUILD_ARGS+='"REPO_FILEPATH":"'"${REPO_FILEPATH}"'",'
+            REPO_BUILD_ARGS+='"REPO_UN=%REPO_UN",'
+            REPO_BUILD_ARGS+='"REPO_PW=%REPO_PW",'
+            REPO_BUILD_ARGS+='"REPO_HOST='"${REPO_DL_DOMAIN}"'",'
+            REPO_BUILD_ARGS+='"REPO_FILEPATH='"${REPO_FILEPATH}"'",'
             echo "REPO_BUILD_ARGS=${REPO_BUILD_ARGS}" >> $GITHUB_OUTPUT
           else
             echo "::notice::Creating [${REPO_FILEPATH}] in a later step for next time."
