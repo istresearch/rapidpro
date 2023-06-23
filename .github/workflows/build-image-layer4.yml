@@ -54,7 +54,7 @@ jobs:
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           
-          if [[ -n "${{ github.event.client_payload.image.repo_filepath }}" ]]; then
+          if [[ -z "${{ github.event.client_payload.image.repo_filepath }}" ]]; then
             # save minutes/money if we do not need to run the webstatic stuff
             echo "RUN_STATIC=0" >> $GITHUB_OUTPUT
           fi
