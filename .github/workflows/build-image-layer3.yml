@@ -48,7 +48,7 @@ jobs:
         id: config_step
         env:
           REF_NAME: "${{ github.event.client_payload.repo.ref_name }}"
-          REPO_UN: ${{ secrets.REPO_UN }}
+          REPO_UN: ${{ vars.REPO_UN }}
           REPO_PW: ${{ secrets.REPO_PW }}
           REPO_DL_DOMAIN: ${{ vars.REPO_DL_DOMAIN }}
         run: |-
