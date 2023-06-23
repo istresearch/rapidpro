@@ -36,6 +36,7 @@ jobs:
       DOCKERFILE2USE: ${{ steps.config_step.outputs.DOCKERFILE2USE }}
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
+      RUN_STATIC: ${{ steps.config_step.outputs.RUN_STATIC }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -52,6 +53,11 @@ jobs:
           echo "::notice::Build: ${IMAGE_NAME}:${IMAGE_TAG}"
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          
+          if [[ -n "${{ github.event.client_payload.image.repo_filepath }}" ]]; then
+            # save minutes/money if we do not need to run the webstatic stuff
+            echo "RUN_STATIC=0" >> $GITHUB_OUTPUT
+          fi
   #endjob build_cfg_engage
 
   trigger-build-engage:
@@ -81,7 +87,8 @@ jobs:
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ env.VER_NUM }}",
-                  "VERSION_TAG=${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}"
+                  "VERSION_TAG=${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
+                  "RUN_WEB_STATIC_FILE_COLLECTOR=${{ needs.build_cfg_engage.outputs.RUN_STATIC }}"
                 ]
               },
               "deployment": {
