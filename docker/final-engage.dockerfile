@@ -18,6 +18,11 @@ ARG REPO_HOST
 ARG REPO_FILEPATH
 ONBUILD RUN echo "download tar"
 ONBUILD ADD --chown=engage:engage "https://${REPO_UN}:${REPO_PW}@${REPO_HOST}/${REPO_FILEPATH}" /rapidpro
+ONBUILD RUN TAR_FILE=$(basename "${REPO_FILEPATH}"); \
+  if [ -f "${TAR_FILE}" ]; then \
+    tar -xzf "${TAR_FILE}"; \
+    rm "${TAR_FILE}"; \
+  fi
 
 # ========================================================================
 

@@ -40,6 +40,7 @@ USER root
 RUN apt-get update && apt-get install -y -q --no-install-recommends \
     gettext \
 	rsync \
+    tar \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /rapidpro
