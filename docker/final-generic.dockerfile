@@ -1,7 +1,27 @@
-ARG FROM_STAGE
-FROM ${FROM_STAGE}
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
+
+ARG FROM_STAGE
+ARG FROM_BUILD_LAYER=${FROM_STAGE}
+FROM ${FROM_STAGE} as load-files
+
+WORKDIR /opt/code2use
+COPY docker/customizations/generic .
+
+# ========================================================================
+
+# optional stage in case we already have a collection of static files to use
+FROM ${FROM_STAGE} as tar_download
+ARG REPO_UN
+ARG REPO_PW
+ARG REPO_HOST
+ARG REPO_FILEPATH
+ONBUILD RUN echo "download tar"
+ONBUILD ADD --chown=engage:engage "https://${REPO_UN}:${REPO_PW}@${REPO_HOST}/${REPO_FILEPATH}" /rapidpro
+
+# ========================================================================
+
+FROM ${FROM_BUILD_LAYER}
 
 ARG VERSION_TAG
 ENV VERSION_TAG=${VERSION_TAG:-main}
@@ -11,20 +31,16 @@ LABEL org.label-schema.name="Engage" \
       org.label-schema.schema-version="1.0"
 
 # apply branding
-COPY --chown=engage:engage docker/customizations/generic /opt/ov/brand
+COPY --from=load-files --chown=engage:engage /opt/code2use /opt/ov/brand
 USER root
 RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
 
-# apply translations
-RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && apt-get update && apt-get install -y -q --no-install-recommends \
-    gettext \
- && notify "installed needed OS libs required to translate stuff" \
- && set -x; ./web-i18n.sh; set +x \
- && rm -rf /var/lib/apt/lists/* \
- && notify "removed libs only needed for translate stuff"
-
 USER engage
+
+# apply translations (needs gettext OS lib)
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && set -x; ./web-i18n.sh; set +x \
+ && notify "translations compiled"
 
 # collect and compress static files
 ARG RUN_WEB_STATIC_FILE_COLLECTOR=1

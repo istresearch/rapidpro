@@ -28,15 +28,62 @@ jobs:
           echo -e "::notice::${RUN_URL}%0A${{ github.event.client_payload.build_msg }}"
   #endjob build_result
 
-  build_cfg_engage:
+  build_cfg:
     needs: [build_result]
+    runs-on: ubuntu-latest
+    environment: default
+    env:
+      REPO_UN: ${{ vars.REPO_UN }}
+      REPO_PW: ${{ secrets.REPO_PW }}
+      REPO_DL_DOMAIN: ${{ vars.REPO_DL_DOMAIN }}
+    outputs:
+      REPO_BUILD_ARGS: ${{ steps.config_step.outputs.REPO_BUILD_ARGS }}
+      REPO_FILEPATH: ${{ steps.config_step.outputs.REPO_FILEPATH }}
+      RUN_STATIC: ${{ steps.config_step.outputs.RUN_STATIC }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.client_payload.repo.ref_name }}
+
+      - name: "Check if webstatic hash archive exists"
+        id: config_step
+        shell: bash
+        run: |-
+          HASH_ALL=$(./staticfiles-hash-calc.sh)
+          REPO_FILEPATH="engage/sitestatic/webstatic-${HASH_ALL}.tar.gz"
+          TAR_URL="https://${REPO_DL_DOMAIN}/${REPO_FILEPATH}"
+          # check repo to see if tar.gz present by using header-only curl cmd
+          # NOTE: curl with user/pw in URL will force GHA to mask the pw, causing curl to return 401.
+          # bash sub-shell magic to avoid exposing the pw in cmd line history via inline file-create & use.
+          # @see https://stackoverflow.com/questions/33794842/forcing-curl-to-get-a-password-from-the-environment
+          R=$(curl --silent -I --netrc-file <(cat <<<"machine ${REPO_DL_DOMAIN} login ${REPO_UN} password ${REPO_PW}") "${TAR_URL}")
+          # print out all headers
+          echo "${R}"
+          if [[ $(echo "${R}" | grep -E "^HTTP" | awk -F " " '{print $2}') == "200" ]]; then
+            echo "::notice::Found [${REPO_FILEPATH}] and passing into build args."
+            REPO_BUILD_ARGS=
+            REPO_BUILD_ARGS+='"REPO_UN=%REPO_UN",'
+            REPO_BUILD_ARGS+='"REPO_PW=%REPO_PW",'
+            REPO_BUILD_ARGS+='"REPO_HOST='"${REPO_DL_DOMAIN}"'",'
+            REPO_BUILD_ARGS+='"REPO_FILEPATH='"${REPO_FILEPATH}"'",'
+            echo "REPO_BUILD_ARGS=${REPO_BUILD_ARGS}" >> $GITHUB_OUTPUT
+            # save minutes/money if we do not need to run the webstatic stuff
+            echo "RUN_STATIC=0" >> $GITHUB_OUTPUT
+          else
+            echo "::notice::Creating [${REPO_FILEPATH}] in a later step for next time."
+            echo "REPO_FILEPATH=${REPO_FILEPATH}" >> $GITHUB_OUTPUT
+            echo "RUN_STATIC=1" >> $GITHUB_OUTPUT
+          fi
+  #endjob build_cfg
+
+  build_cfg_engage:
+    needs: [build_cfg]
     runs-on: ubuntu-latest
     environment: default
     outputs:
       DOCKERFILE2USE: ${{ steps.config_step.outputs.DOCKERFILE2USE }}
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
-      RUN_STATIC: ${{ steps.config_step.outputs.RUN_STATIC }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -53,18 +100,11 @@ jobs:
           echo "::notice::Build: ${IMAGE_NAME}:${IMAGE_TAG}"
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          
-          if [[ -z "${{ github.event.client_payload.image.repo_filepath }}" ]]; then
-            # save minutes/money if we do not need to run the webstatic stuff
-            echo "RUN_STATIC=0" >> $GITHUB_OUTPUT
-          else
-            echo "RUN_STATIC=1" >> $GITHUB_OUTPUT
-          fi
   #endjob build_cfg_engage
 
   trigger-build-engage:
     runs-on: ubuntu-latest
-    needs: [build_cfg_engage]
+    needs: [build_cfg, build_cfg_engage]
     environment: default
     steps:
       - name: "Trigger Container Build For Engage"
@@ -85,12 +125,12 @@ jobs:
                 "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg_engage.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
-                "build_args": [
+                "build_args": [ ${{ needs.build_cfg.outputs.REPO_BUILD_ARGS }}
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ env.VER_NUM }}",
                   "VERSION_TAG=${{ needs.build_cfg_engage.outputs.IMAGE_TAG }}",
-                  "RUN_WEB_STATIC_FILE_COLLECTOR=${{ needs.build_cfg_engage.outputs.RUN_STATIC }}"
+                  "RUN_WEB_STATIC_FILE_COLLECTOR=${{ needs.build_cfg.outputs.RUN_STATIC }}"
                 ]
               },
               "deployment": {
@@ -131,7 +171,7 @@ jobs:
   #endjob trigger-build-engage
 
   build_cfg_generic:
-    needs: [build_result]
+    needs: [build_cfg]
     runs-on: ubuntu-latest
     environment: default
     outputs:
@@ -173,7 +213,7 @@ jobs:
   trigger-build-generic:
     if: needs.build_cfg_generic.outputs.BUILD_FLAG == 1
     runs-on: ubuntu-latest
-    needs: [build_cfg_generic]
+    needs: [build_cfg, build_cfg_generic]
     environment: default
     steps:
       - name: "Trigger Container Build"
@@ -194,11 +234,12 @@ jobs:
                 "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg_generic.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}",
-                "build_args": [
+                "build_args": [ ${{ needs.build_cfg.outputs.REPO_BUILD_ARGS }}
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ env.VER_NUM }}",
-                  "VERSION_TAG=${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}"
+                  "VERSION_TAG=${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}",
+                  "RUN_WEB_STATIC_FILE_COLLECTOR=${{ needs.build_cfg.outputs.RUN_STATIC }}"
                 ]
               },
               "callback": {
@@ -210,7 +251,7 @@ jobs:
   #endjob trigger-build-generic
 
   build_cfg_rp:
-    needs: [build_result]
+    needs: [build_cfg]
     runs-on: ubuntu-latest
     environment: default
     outputs:
@@ -246,7 +287,7 @@ jobs:
   trigger-build-rp:
     if: needs.build_cfg_rp.outputs.BUILD_FLAG == 1
     runs-on: ubuntu-latest
-    needs: [build_cfg_rp]
+    needs: [build_cfg, build_cfg_rp]
     environment: default
     steps:
       - name: "Trigger Container Build For RP"
@@ -267,11 +308,12 @@ jobs:
                 "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg_rp.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}",
-                "build_args": [
+                "build_args": [ ${{ needs.build_cfg.outputs.REPO_BUILD_ARGS }}
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ env.VER_NUM }}",
-                  "VERSION_TAG=${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"
+                  "VERSION_TAG=${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}",
+                  "RUN_WEB_STATIC_FILE_COLLECTOR=${{ needs.build_cfg.outputs.RUN_STATIC }}"
                 ]
               },
               "callback": {

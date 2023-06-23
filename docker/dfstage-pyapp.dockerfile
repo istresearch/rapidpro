@@ -1,14 +1,8 @@
-ARG FROM_STAGE
-ARG FROM_BUILD_LAYER=${FROM_STAGE}
-FROM ${FROM_STAGE} as load-files
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && apt-get update && apt-get install -y -q --no-install-recommends \
-    gettext \
-    rsync \
- && notify "installed needed OS libs"
+ARG FROM_STAGE
+FROM ${FROM_STAGE} as load-files
 
 WORKDIR /opt/code2use
 COPY ./engage      engage
@@ -25,27 +19,9 @@ COPY ./VERSION     VERSION
 COPY docker/customizations/any /opt/ov/any
 RUN rsync -a /opt/ov/any/ /opt/code2use/
 
-# apply translations (needs gettext OS lib)
-RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && set -x; ./web-i18n.sh; set +x \
- && notify "translations compiled"
-
 # ========================================================================
 
-# optional stage in case we already have a collection of static files to use
-FROM ${FROM_STAGE} as tar_download
-ARG REPO_UN
-ARG REPO_PW
-ARG REPO_HOST
-ARG REPO_FILEPATH
-ONBUILD RUN echo "download tar"
-ONBUILD ADD --chown=engage:engage "https://${REPO_UN}:${REPO_PW}@${REPO_HOST}/${REPO_FILEPATH}" /rapidpro
-
-# ========================================================================
-
-FROM ${FROM_BUILD_LAYER}
-# while doing the build, no interaction possible
-ARG DEBIAN_FRONTEND=noninteractive
+FROM ${FROM_STAGE}
 
 # NOTE: we default force Celery to run as root
 ARG ARG_C_FORCE_ROOT=1
@@ -58,6 +34,7 @@ ENV RAPIDPRO_VERSION=${RAPIDPRO_VERSION}
 USER root
 # runtime libs we need/want to keep around
 RUN apt-get update && apt-get install -y -q --no-install-recommends \
+    gettext \
 	rsync \
  && rm -rf /var/lib/apt/lists/*
 

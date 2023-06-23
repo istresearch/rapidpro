@@ -37,8 +37,6 @@ jobs:
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
       VERSION_TAG: ${{ steps.config_step.outputs.VERSION_TAG }}
       VER_NUM: ${{ steps.config_step.outputs.VER_NUM }}
-      REPO_BUILD_ARGS: ${{ steps.config_step.outputs.REPO_BUILD_ARGS }}
-      REPO_FILEPATH: ${{ steps.config_step.outputs.REPO_FILEPATH }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -49,9 +47,6 @@ jobs:
         shell: bash
         env:
           REF_NAME: "${{ github.event.client_payload.repo.ref_name }}"
-          REPO_UN: ${{ vars.REPO_UN }}
-          REPO_PW: ${{ secrets.REPO_PW }}
-          REPO_DL_DOMAIN: ${{ vars.REPO_DL_DOMAIN }}
         run: |-
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
           VERSION_STR=$(cat VERSION)
@@ -77,29 +72,6 @@ jobs:
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           echo "VERSION_TAG=${IMAGE_TAG_HASH}" >> $GITHUB_OUTPUT
-
-          HASH_ALL=$(./staticfiles-hash-calc.sh)
-          REPO_FILEPATH="engage/sitestatic/webstatic-${HASH_ALL}.tar.gz"
-          TAR_URL="https://${REPO_DL_DOMAIN}/${REPO_FILEPATH}"
-          # check repo to see if tar.gz present by using header-only curl cmd
-          # NOTE: curl with user/pw in URL will force GHA to mask the pw, causing curl to return 401.
-          # bash sub-shell magic to avoid exposing the pw in cmd line history via inline file-create & use.
-          # @see https://stackoverflow.com/questions/33794842/forcing-curl-to-get-a-password-from-the-environment
-          R=$(curl --silent -I --netrc-file <(cat <<<"machine ${REPO_DL_DOMAIN} login ${REPO_UN} password ${REPO_PW}") "${TAR_URL}")
-          # print out all headers
-          echo "${R}"
-          if [[ $(echo "${R}" | grep -E "^HTTP" | awk -F " " '{print $2}') == "200" ]]; then
-            echo "::notice::Found [${REPO_FILEPATH}] and passing into build args."
-            REPO_BUILD_ARGS=
-            REPO_BUILD_ARGS+='"REPO_UN=%REPO_UN",'
-            REPO_BUILD_ARGS+='"REPO_PW=%REPO_PW",'
-            REPO_BUILD_ARGS+='"REPO_HOST='"${REPO_DL_DOMAIN}"'",'
-            REPO_BUILD_ARGS+='"REPO_FILEPATH='"${REPO_FILEPATH}"'",'
-            echo "REPO_BUILD_ARGS=${REPO_BUILD_ARGS}" >> $GITHUB_OUTPUT
-          else
-            echo "::notice::Creating [${REPO_FILEPATH}] in a later step for next time."
-            echo "REPO_FILEPATH=${REPO_FILEPATH}" >> $GITHUB_OUTPUT
-          fi
   #endjob build_cfg
 
   trigger-build:
@@ -125,7 +97,7 @@ jobs:
                 "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-                "build_args": [ ${{ needs.build_cfg.outputs.REPO_BUILD_ARGS }}
+                "build_args": [
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ needs.build_cfg.outputs.VER_NUM }}",
@@ -145,8 +117,7 @@ jobs:
                     "tag": "${{ needs.build_cfg.outputs.VERSION_TAG }}",
                     "ver_num": "${{ needs.build_cfg.outputs.VER_NUM }}",
                     "layer3tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-                    "layer3": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-                    "repo_filepath": "${{ needs.build_cfg.outputs.REPO_FILEPATH }}"
+                    "layer3": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
                   }
                 }
               }
