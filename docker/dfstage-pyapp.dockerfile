@@ -15,6 +15,10 @@ COPY ./LICENSE     LICENSE
 COPY ./manage.py   manage.py
 COPY ./VERSION     VERSION
 
+RUN apt-get update && apt-get install -y -q --no-install-recommends \
+	rsync \
+ && rm -rf /var/lib/apt/lists/*
+
 # apply overrides
 COPY docker/customizations/any /opt/ov/any
 RUN rsync -a /opt/ov/any/ /opt/code2use/
