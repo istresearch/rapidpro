@@ -57,6 +57,8 @@ jobs:
           if [[ -z "${{ github.event.client_payload.image.repo_filepath }}" ]]; then
             # save minutes/money if we do not need to run the webstatic stuff
             echo "RUN_STATIC=0" >> $GITHUB_OUTPUT
+          else
+            echo "RUN_STATIC=1" >> $GITHUB_OUTPUT
           fi
   #endjob build_cfg_engage
 
