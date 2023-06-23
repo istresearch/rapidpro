@@ -82,6 +82,7 @@ jobs:
           TAR_URL="https://${REPO_UN}:${REPO_PW}@${REPO_DL_DOMAIN}/${REPO_FILEPATH}"
           # check repo to see if tar.gz present
           if [[ $(curl --silent -I "${TAR_URL}" | grep -E "^HTTP" | awk -F " " '{print $2}') == "200" ]]; then
+            echo "::notice::Found [${REPO_FILEPATH}] and passing into build args."
             REPO_BUILD_ARGS=
             REPO_BUILD_ARGS+='"REPO_UN"="%REPO_UN",'
             REPO_BUILD_ARGS+='"REPO_PW":"%REPO_PW",'
@@ -89,6 +90,7 @@ jobs:
             REPO_BUILD_ARGS+='"REPO_FILEPATH":"'"${REPO_FILEPATH}"'",'
             echo "REPO_BUILD_ARGS=${REPO_BUILD_ARGS}" >> $GITHUB_OUTPUT
           else
+            echo "::notice::Creating [${REPO_FILEPATH}] in a later step for next time."
             echo "REPO_FILEPATH=${REPO_FILEPATH}" >> $GITHUB_OUTPUT
           fi
   #endjob build_cfg
