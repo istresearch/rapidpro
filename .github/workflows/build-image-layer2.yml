@@ -29,7 +29,7 @@ jobs:
   #endjob build_result
 
   build_cfg:
-    if: github.event.client_payload.error_msg == ''
+    needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
     outputs:
