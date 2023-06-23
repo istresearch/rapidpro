@@ -88,7 +88,7 @@ jobs:
           R=$(curl --silent -I --netrc-file <(cat <<<"machine ${REPO_DL_DOMAIN} login ${REPO_UN} password ${REPO_PW}") "${TAR_URL}")
           # print out all headers
           echo "${R}"
-          if [[ $(${R} | grep -E "^HTTP" | awk -F " " '{print $2}') == "200" ]]; then
+          if [[ $(echo "${R}" | grep -E "^HTTP" | awk -F " " '{print $2}') == "200" ]]; then
             echo "::notice::Found [${REPO_FILEPATH}] and passing into build args."
             REPO_BUILD_ARGS=
             REPO_BUILD_ARGS+='"REPO_UN"="%REPO_UN",'
