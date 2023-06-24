@@ -234,12 +234,11 @@ jobs:
                 "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg_generic.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}",
-                "build_args": [ ${{ needs.build_cfg.outputs.REPO_BUILD_ARGS }}
+                "build_args": [
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ env.VER_NUM }}",
-                  "VERSION_TAG=${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}",
-                  "RUN_WEB_STATIC_FILE_COLLECTOR=${{ needs.build_cfg.outputs.RUN_STATIC }}"
+                  "VERSION_TAG=${{ needs.build_cfg_generic.outputs.IMAGE_TAG }}"
                 ]
               },
               "callback": {
@@ -308,12 +307,11 @@ jobs:
                 "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg_rp.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}",
-                "build_args": [ ${{ needs.build_cfg.outputs.REPO_BUILD_ARGS }}
+                "build_args": [
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
                   "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ env.VER_NUM }}",
-                  "VERSION_TAG=${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}",
-                  "RUN_WEB_STATIC_FILE_COLLECTOR=${{ needs.build_cfg.outputs.RUN_STATIC }}"
+                  "VERSION_TAG=${{ needs.build_cfg_rp.outputs.IMAGE_TAG }}"
                 ]
               },
               "callback": {
