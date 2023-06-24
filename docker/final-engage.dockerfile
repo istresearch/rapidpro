@@ -1,42 +1,26 @@
 # while doing the build, no interaction possible
 ARG DEBIAN_FRONTEND=noninteractive
 
-ARG REPO_UN
-ARG REPO_PW
-ARG REPO_HOST
-ARG REPO_FILEPATH
-
 ARG FROM_STAGE
-ARG FROM_BUILD_LAYER=${FROM_STAGE}
 FROM ${FROM_STAGE} as load-files
 
 WORKDIR /opt/code2use
 COPY docker/customizations/engage .
 
-# ========================================================================
-
-# optional stage in case we already have a collection of static files to use
-FROM ${FROM_STAGE} as tar_download
 ARG REPO_UN
 ARG REPO_PW
-ARG REPO_HOST
+ARG REPO_DL_DOMAIN
 ARG REPO_FILEPATH
-ONBUILD RUN echo "download tar"
-ONBUILD ADD --chown=engage:engage "https://${REPO_UN}:${REPO_PW}@${REPO_HOST}/${REPO_FILEPATH}" /rapidpro
-ONBUILD RUN TAR_FILE=$(basename "${REPO_FILEPATH}"); \
-  if [ -f "${TAR_FILE}" ]; then \
-    tar -xzf "${TAR_FILE}"; \
-    rm "${TAR_FILE}"; \
-  fi
+COPY docker/customizations/any/web-static-curl.sh .
+RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
+ && if [[ -n "${REPO_DL_DOMAIN}" ]]; then \
+  ./web-static-curl.sh; \
+  notify "downloaded and extracted static files tarball"; \
+fi
 
 # ========================================================================
 
-FROM ${FROM_BUILD_LAYER}
-
-ARG REPO_UN
-ARG REPO_PW
-ARG REPO_HOST
-ARG REPO_FILEPATH
+FROM ${FROM_STAGE}
 
 ARG VERSION_TAG
 ENV VERSION_TAG=${VERSION_TAG:-main}
@@ -50,7 +34,6 @@ LABEL org.label-schema.name="Engage" \
 
 # apply branding
 COPY --from=load-files --chown=engage:engage /opt/code2use /opt/ov/brand
-USER root
 RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
 
 USER engage
