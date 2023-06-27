@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from copy import deepcopy
 
 # -----------------------------------------------------------------------------------
 # Engage settings file
 # -----------------------------------------------------------------------------------
 
-from getenv import env
+from getenv import env  # django-getenv package
 from glob import glob
 import dj_database_url
-import django_cache_url
+import django_cache_url  # django-cache-url package
 
 from engage.auth.oauth_config import OAuthConfig
 from engage.utils.strings import is_empty, str2bool
@@ -19,6 +19,9 @@ from temba.settings_common import *  # noqa
 
 SUB_DIR = env('SUB_DIR', required=False)
 # NOTE: we do not support SUB_DIR anymore, kits no longer use it. Feel free to rip out.
+if not is_empty(SUB_DIR):
+    MIDDLEWARE += ("engage.utils.middleware.SubdirMiddleware",)
+#endif
 
 COURIER_URL = env('COURIER_URL', 'http://localhost:8080')
 DEFAULT_TPS = env('DEFAULT_TPS', 10)    # Default Transactions Per Second for newly create Channels.
@@ -26,7 +29,8 @@ MAX_TPS = env('MAX_TPS', 50)            # Max configurable Transactions Per Seco
 
 MAX_ORG_LABELS = int(env('MAX_ORG_LABELS', 500))
 
-POST_OFFICE_QR_URL = env('POST_OFFICE_QR_URL', 'http://localhost:8088/postoffice/engage/claim')
+POST_OFFICE_API_URL = env('POST_OFFICE_API_URL', 'http://postoffice:8088/postoffice')
+POST_OFFICE_QR_URL = env('POST_OFFICE_QR_URL', f"{POST_OFFICE_API_URL}/engage/claim")
 POST_OFFICE_API_KEY = env('POST_OFFICE_API_KEY', 'abc123')
 
 POST_MASTER_DL_URL = env('POST_MASTER_DL_URL', required=False)
@@ -37,7 +41,7 @@ if POST_MASTER_DL_QRCODE is not None and not POST_MASTER_DL_QRCODE.startswith("d
 MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
 INSTALLED_APPS = (
-    tuple(filter(lambda tup : tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
+    tuple(filter(lambda tup: tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
         'flatpickr',
         'temba.ext',
         'engage.api',
@@ -45,14 +49,18 @@ INSTALLED_APPS = (
         'engage.auth',
         'engage.channels',
         'engage.contacts',
+        'engage.flows',
+        'engage.mailroom',
         'engage.msgs',
         'engage.orgs',
+        'engage.schedules',
         'engage.utils',
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
 
 APP_URLS += (
     'temba.ext.urls',
+    'engage.api.urls',
     'engage.auth.urls',
     'engage.utils.user_guide',
 )
@@ -71,41 +79,55 @@ DEBUG = env('DJANGO_DEBUG', 'off') == 'on'
 
 # no OSGeo stage building libs, just using pre-built libs now.
 # @see https://stackoverflow.com/questions/58403178/geodjango-cant-find-gdal-on-docker-python-alpine-based-image
+# slightly updated on move to debian-base-image, should work on either as it s now.
 try:
-    GDAL_LIBRARY_PATH = glob('/usr/lib/libgdal.so.*')[0]
-    GEOS_LIBRARY_PATH = glob('/usr/lib/libgeos_c.so.*')[0]
+    GDAL_LIBRARY_PATH = glob('/usr/lib/libgdal.so*')[0]
+    GEOS_LIBRARY_PATH = glob('/usr/lib/libgeos_c.so*')[0]
 except:
     GEOS_LIBRARY_PATH = '/usr/local/lib/libgeos_c.so'
     GDAL_LIBRARY_PATH = '/usr/local/lib/libgdal.so'
+#endtry locate GDAL library executable
 
 SECRET_KEY = env('SECRET_KEY', required=True)
 
 DATABASE_URL = env('DATABASE_URL', required=True)
-DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
-DATABASES['default']['CONN_MAX_AGE'] = 60
-DATABASES['default']['ATOMIC_REQUESTS'] = True
-DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
+_db_rw_config = dj_database_url.parse(
+    url=DATABASE_URL,
+    engine="django.contrib.gis.db.backends.postgis",
+    conn_max_age=60,
+)
+_db_rw_config["ATOMIC_REQUESTS"] = True
+_db_rw_config["DISABLE_SERVER_SIDE_CURSORS"] = True
+_db_ro_config = deepcopy(_db_rw_config)
+#print(_db_rw_config)
+DATABASES = {"default": _db_rw_config, "readonly": _db_ro_config}
 
 REDIS_URL = env('REDIS_URL')
 if REDIS_URL:
-    BROKER_URL = env('BROKER_URL', REDIS_URL)
+    CELERY_BROKER_URL = env('BROKER_URL', REDIS_URL)
     CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', REDIS_URL)
     CACHE_URL = env('CACHE_URL', REDIS_URL)
-    CACHES = {'default': django_cache_url.parse(CACHE_URL)}
     if CACHES['default']['BACKEND'] == 'django_redis.cache.RedisCache':
+        CACHES['default']['LOCATION'] = REDIS_URL
         if 'OPTIONS' not in CACHES['default']:
             CACHES['default']['OPTIONS'] = {}
+        #endif
         CACHES['default']['OPTIONS']['CLIENT_CLASS'] = 'django_redis.client.DefaultClient'
-
+    #endif default cache definition is what we expect
+#endif Redis defined
 
 IS_PROD = env('IS_PROD', 'off') == 'on'
 # -----------------------------------------------------------------------------------
 # Used when creating callbacks for Twilio, Nexmo etc..
 # -----------------------------------------------------------------------------------
-HOSTNAME = env('DOMAIN_NAME', 'rapidpro.ngrok.com')
-TEMBA_HOST = env('TEMBA_HOST', HOSTNAME)
+HOSTNAME = env('DOMAIN_NAME', 'localhost')
+HOST_SCHEME = env('DOMAIN_SCHEME', "https" if HOSTNAME != "localhost" else "http")
+HOST_ORIGIN = HOST_SCHEME + "://" + HOSTNAME
 
-if TEMBA_HOST.lower().startswith('https://') and str2bool(env('USE_SECURE_COOKIES', False)):
+STATIC_HOST = env('STATIC_HOST', "") if not DEBUG else ""
+STATIC_URL = STATIC_HOST + "/sitestatic/"
+
+if HOST_SCHEME.lower() == 'https' and str2bool(env('USE_SECURE_COOKIES', False)):
     #from .security_settings import *  # noqa
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_AGE = 1209600  # 2 weeks
@@ -197,37 +219,43 @@ if AWS_STORAGE_BUCKET_NAME:
         MEDIA_URL = f"{AWS_S3_URL}/media/"
 
 if not AWS_MEDIA:
+    MEDIA_URL = env('MEDIA_URL', '/media/')
     STORAGE_URL = MEDIA_URL[:-1]
 
 if not AWS_STATIC:
     # @see whitenoise middleware usage: https://whitenoise.evans.io/en/stable/django.html
-    STATICFILES_STORAGE = 'engage.utils.storage.WhiteNoiseStaticFilesStorage'
+    STATICFILES_STORAGE = 'engage.utils.storage.EngageStaticFilesStorage'
     # insert just after security middleware (which is at idx 0)
     MIDDLEWARE = MIDDLEWARE[:1] + ('whitenoise.middleware.WhiteNoiseMiddleware',) + MIDDLEWARE[1:]
     WHITENOISE_MANIFEST_STRICT = False
+    #WHITENOISE_KEEP_ONLY_HASHED_FILES = True  # cannot keep only hashed unless we purge {STATIC_URL} from .haml files.
+    DEBUG_PROPAGATE_EXCEPTIONS = True
+#endif not using aws for staticfiles
 
 STATIC_ROOT = os.path.join(PROJECT_DIR, "../sitestatic/")
 
-# compress_precompilers used for static LESS files whether or not COMPRESS_ENABLED==True
-COMPRESS_PRECOMPILERS = (
-    ("text/less", 'lessc --include-path="%s:%s" {infile} {outfile}' % (
-        os.path.join(COMPRESS_ROOT, "less"),
-        os.path.join(COMPRESS_ROOT, "engage", "less"),
-    )),
-)
-
 COMPRESS_ENABLED = env('DJANGO_COMPRESSOR', 'on') == 'on'
-if COMPRESS_ENABLED:
-    COMPRESS_URL = STATIC_URL
-    COMPRESS_ROOT = STATIC_ROOT
-    #COMPRESS_STORAGE = STATICFILES_STORAGE
-
-COMPRESS_OFFLINE_MANIFEST = f"manifest-{env('VERSION_CI', '1-dev')[:-4]}.json"
 # If COMPRESS_OFFLINE is False, compressor will look in COMPRESS_STORAGE for
 # previously processed results, but if not found, will create them on the fly
 # and save them to use again.
 #COMPRESS_OFFLINE = False
 COMPRESS_OFFLINE = COMPRESS_ENABLED and (env('DEV_STATIC', 'off') != 'on')
+if COMPRESS_OFFLINE:
+    COMPRESS_OFFLINE_MANIFEST = f"manifest-webapp.json"
+#endif
+if COMPRESS_ENABLED:
+    COMPRESS_URL = STATIC_URL
+    COMPRESS_ROOT = STATIC_ROOT
+    #COMPRESS_STORAGE = STATICFILES_STORAGE
+
+    # compress_precompilers used for static LESS files whether or not COMPRESS_ENABLED==True
+    COMPRESS_PRECOMPILERS = (
+        ("text/less", 'lessc --include-path="%s:%s" {infile} {outfile}' % (
+            os.path.join(COMPRESS_ROOT, "less"),
+            os.path.join(COMPRESS_ROOT, "engage", "less"),
+        )),
+    )
+#endif compress on
 
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
 MAGE_API_URL = env('MAGE_API_URL', 'http://localhost:8026/api/v1')
@@ -353,9 +381,37 @@ LOGGING = {
 }
 LOGGING['root']['level'] = env('LOG_LEVEL', env('DJANGO_LOG_LEVEL', 'INFO'))
 
-# any changes to permissions requires container script ./db-update.sh be run.
+PERMISSIONS['*'] += (
+    "read_list",  # can read an object, viewing its details
+)
+PERMISSIONS['orgs.org'] += (
+    "assign_user",
+    "transfer_to_account",
+    "bandwidth_account",
+    "bandwidth_connect",
+    "postmaster_connect",
+    "postmaster_account",
+)
+PERMISSIONS['msgs.msg'] += (
+    "test",
+)
+
+# any changes to group permissions requires container script ./db-update.sh be run.
+GROUP_PERMISSIONS['Administrators'] += (
+    "apks.apk_create",
+    "apks.apk_list",
+    "apks.apk_update",
+    "orgs.org_transfer_to_account",
+    "orgs.org_bandwidth_account",
+    "orgs.org_bandwidth_connect",
+    "orgs.org_postmaster_account",
+    "orgs.org_postmaster_connect",
+)
 GROUP_PERMISSIONS['Editors'] += (
     "channels.channellog_read",
+)
+GROUP_PERMISSIONS['Editors'] = tuple(
+    item for item in GROUP_PERMISSIONS['Editors'] if item != "channels.channel_delete"
 )
 
 #============== KeyCloak SSO ===================
@@ -416,6 +472,11 @@ DEFAULT_BRAND_OBJ.update({
 PM_CONFIG: PMConfig = PMConfig(REDIS_URL, CACHES)
 
 MSG_FIELD_SIZE = env('MSG_FIELD_SIZE', 4096)
+PAGINATE_CHANNELS_COUNT = int(env("PAGINATE_CHANNELS_COUNT", 25))
+# -----------------------------------------------------------------------------------
+# Installs can also choose how long to keep SyncEvents around. Default is 7 days.
+# -----------------------------------------------------------------------------------
+SYNC_EVENT_TRIM_DAYS = 7
 
 # set of ISO-639-3 codes of languages to allow in addition to all ISO-639-1 languages
 if env('NON_ISO6391_LANGUAGES_ALLOWED', None) is not None:
@@ -433,6 +494,14 @@ ORG_PLAN_ENGAGE = 'managed'
 # Default plan for new orgs
 DEFAULT_PLAN = ORG_PLAN_ENGAGE
 
-MIDDLEWARE += ("engage.utils.middleware.RedirectMiddleware",)
+mwl = list(MIDDLEWARE)
+# replace BrandingMiddleware
+idx = mwl.index("temba.middleware.BrandingMiddleware")
+mwl[idx] = "engage.utils.middleware.BrandingMiddleware"
+# add custom middleware
+mwl.append("engage.utils.middleware.RedirectMiddleware")
+MIDDLEWARE = tuple(mwl)
 
 ALT_CALLBACK_DOMAIN = env('ALT_CALLBACK_DOMAIN', None)
+
+ASYNC_MESSAGE_EXPORT = env('ASYNC_MESSAGE_EXPORT', 'on') == 'on'

@@ -39,7 +39,7 @@
 
           -trans "To learn more about flows, visit the"
             <a href="{% non_ssl_brand_url 'public.video_list'%}">{% trans "learning center" %}</a>.
-
+    
           .mt-6
             %temba-modax.inline-block.mb-1(endpoint="{% url 'flows.flow_create'%}" header='{{_("Create Flow")|escapejs}}')
               .button-primary.lift.inline-block
@@ -59,7 +59,7 @@
           .title
             %a(href="{% url 'channels.channel_claim' %}")
               -trans "Get Connected"
-
+          
           -blocktrans with name=brand.name
             No matter where you are in the world, it's easy to configure {{name}} to work on real phones without delay.
             Whether you want to use a Twilio number, a direct connection with your local carriers, or even the SIM card
@@ -106,7 +106,7 @@
           %temba-modax.inline-block.mb-1(endpoint="{% url 'contacts.contactgroup_create'%}" header='{{_("Create Group")|escapejs}}')
             .button-light.lift.inline-block.mr-1.mb-1{href:"{% url 'contacts.contact_list' %}#group"}
               -trans "Create Group"
-
+      
   .flex.mt-6
     .summary.card.p-12.overflow-hidden
       .icon-contact.relative.text-gray-100(style="font-size:240px; transform: rotate(-5deg) translate(-180px, 0px);")
@@ -136,7 +136,7 @@
         .title
           %a(href="{% url 'orgs.org_home' %}")
             -trans "Workspace"
-
+  
         -block account-blurb
 
         .mt-2
@@ -145,7 +145,7 @@
             {{name}} also offers a robust REST API to add SMS features to your own website. Have a look through the
             %a{href:'{{api_url}}'}
               API documentation
-            to learn more.
+            to learn more. 
 
         .mt-6
           -block account-details

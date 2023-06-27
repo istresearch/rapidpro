@@ -11,18 +11,25 @@ env:
   FROM_LAYER_TAG: ${{ github.event.client_payload.layer2tag }}
 
 jobs:
-  layer2_error:
-    if: github.event.client_payload.error_msg != ''
+  build_result:
+    name: "Build Layer 2 Result [#${{ github.event.client_payload.run_number }}]"
     runs-on: ubuntu-latest
+    env:
+      RUN_URL: "[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
     steps:
-      - name: Display Msg
+      - name: "Display Error Msg"
+        if: github.event.client_payload.error_msg != ''
         run: |-
-          echo "${{ github.event.client_payload.error_msg }}"
+          echo -e "::error::${RUN_URL}%0A${{ github.event.client_payload.error_msg }}"
           exit 1
-  #endjob layer2_error
+      - name: "Display Success Msg"
+        if: github.event.client_payload.build_msg != ''
+        run: |-
+          echo -e "::notice::${RUN_URL}%0A${{ github.event.client_payload.build_msg }}"
+  #endjob build_result
 
   build_cfg:
-    if: github.event.client_payload.error_msg == ''
+    needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
     outputs:
@@ -37,6 +44,7 @@ jobs:
 
       - name: "Determine Tag To Use"
         id: config_step
+        shell: bash
         env:
           REF_NAME: "${{ github.event.client_payload.repo.ref_name }}"
         run: |-
@@ -105,10 +113,12 @@ jobs:
                     "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
                     "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
                   },
-                  "tag": "${{ needs.build_cfg.outputs.VERSION_TAG }}",
-                  "ver_num": "${{ needs.build_cfg.outputs.VER_NUM }}",
-                  "layer3tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-                  "layer3": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                  "image": {
+                    "tag": "${{ needs.build_cfg.outputs.VERSION_TAG }}",
+                    "ver_num": "${{ needs.build_cfg.outputs.VER_NUM }}",
+                    "layer3tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+                    "layer3": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                  }
                 }
               }
             }

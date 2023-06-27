@@ -9,7 +9,7 @@ from temba.channels.types.vonage.type import VonageType
 from temba.channels.types.vonage.views import ClaimView
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
 

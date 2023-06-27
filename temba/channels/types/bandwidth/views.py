@@ -8,7 +8,7 @@ from django import forms
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from temba.utils import analytics
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from engage.orgs.bandwidth import BW_ACCOUNT_SID, BW_ACCOUNT_TOKEN, BW_APPLICATION_SID, BW_ACCOUNT_SECRET
 

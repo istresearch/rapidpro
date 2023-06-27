@@ -10,7 +10,7 @@ services:
     environment:
       - DOMAIN_NAME=localhost
       - ALLOWED_HOSTS=localhost
-      - TEMBA_HOST=localhost
+      - DOMAIN_SCHEME=http
       - DJANGO_DEBUG=off
       - DATABASE_URL=postgresql://postgres:postgres@postgresql/rapidpro
       - REDIS_URL=redis://redis:6379/0

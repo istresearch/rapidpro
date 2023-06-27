@@ -23,7 +23,6 @@ apk add -U --virtual .rp-build-deps \
  	ncurses-dev \
  	patch \
  	pcre-dev \
- 	postgresql-dev \
  	python3-dev \
  	readline \
  	readline-dev \

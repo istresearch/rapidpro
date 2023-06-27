@@ -38,7 +38,7 @@
               color: var(--color-primary-dark);
               margin-bottom: 10px;
               font-size: 11px;
-
+              
             }
 
             &:hover {
@@ -60,7 +60,7 @@
             color: var(--color-nav-unselected);
           }
         }
-
+      
         a {
           width: 75px;
           display: flex;
@@ -137,21 +137,21 @@
     %a{href:"{% url 'msgs.msg_inbox' %}", class:"{% active request 'inbox|outbox|broadcast|call|msg/filter|msg/flow|msg/archived|failed' %}"}
       .circle
         .icon-bubble-3.icon-2
-      .title
+      .title 
         -trans "messages"
 
   -if org_perms.contacts.contact_list and not request.user.is_superuser
     %a{href:"{% url 'contacts.contact_list' %}", class:"{% active request 'contact|imports' %}"}
       .circle
         .icon-contact
-      .title
+      .title 
         -trans "contacts"
 
   -if org_perms.flows.flow_list and not request.user.is_superuser
     %a{href:"{% url 'flows.flow_list' %}", class:"{% active request '(?<!msg)/flow' %}"}
       .circle
         .icon-flow.icon-3
-      .title
+      .title 
         -trans "flows"
 
   -if org_perms.campaigns.campaign_list and not request.user.is_superuser
@@ -168,7 +168,7 @@
       .title
         -trans "triggers"
 
-  -if org_perms.tickets.ticket_list and not request.user.is_superuser and user_org and user_org.has_ticketer
+  -if org_perms.tickets.ticket_list and not request.user.is_superuser
     %a{href:"{% url 'tickets.ticket_list' %}", class:"{% active request 'ticket' %}"}
       .circle
         .icon-ticket
@@ -183,7 +183,7 @@
         .title
           -trans "channels"
 
-  -if request.user.is_superuser or perms.auth.user_list
+  -if request.user.is_superuser or perms.orgs.user_list
     -if not user_org
       %a{href:"{% url 'orgs.user_list' %}", class:"{% active request 'users' %}"}
         .circle
@@ -221,7 +221,7 @@
 
           -block loggedin-submenu
 
-          -if request.user.is_superuser or perms.auth.user_list
+          -if request.user.is_superuser or perms.orgs.user_list
             -if user_org
               %a{href:"{% url 'orgs.user_list' %}", class:"{% active request 'users' %}"}
                 .circle

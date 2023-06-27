@@ -61,9 +61,9 @@
   $(document).on("click", '.multiselect-select-all', function(event) {
     $(this).toggleClass('checked');
     if ( $(this).hasClass('checked') ) {
-      $('tr:not(.checked) td temba-checkbox').each(function() { $($(this)[0].shadowRoot).children('temba-field').click();});
+      $('tr:not(.checked) td temba-checkbox').each(function() { $(this)[0].click(); });
     } else {
-      $('tr.checked td temba-checkbox').each(function() { $($(this)[0].shadowRoot).children('temba-field').click();});
+      $('tr.checked td temba-checkbox').each(function() { $(this)[0].click(); });
     }
   });
 
@@ -85,23 +85,3 @@
 </script>
 
 {% endblock %}
-
--block extra-style
-  {{block.super}}
-  :css
-    .multiselect-select-all{
-      font-size: 16px !important;
-      padding-left: 5px;
-      margin-right: 8px;
-    }
-    .multiselect-select-all a {
-        margin-left: 5px;
-        margin-right: 5px;
-     }
-
-     div.multiselect-header {
-        padding-bottom: 0px !important;
-        padding-left: 0px !important;
-        display: inline;
-        vertical-align: sub;
-     }

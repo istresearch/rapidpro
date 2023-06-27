@@ -6,7 +6,9 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("channels", "0123_merge_20200420_1534"),
+        ('channels', '0122_auto_20200323_2134'),
+        ('channels', '0122_populate_allow_international'),
+        ('channels', '0123_auto_20201026_1945'),
     ]
 
     operations = [

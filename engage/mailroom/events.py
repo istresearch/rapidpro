@@ -1,7 +1,5 @@
 import logging
 
-from django.contrib.auth.models import User
-
 from temba.mailroom.events import (
     _url_for_user,
     get_event_time,
@@ -10,21 +8,19 @@ from temba.mailroom.events import (
     Event,
     ChannelEvent,
 )
-
 from temba.msgs.models import Msg
-from temba.orgs.models import Org
+from temba.orgs.models import Org, User
 
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger()
 
 def getHistoryContentFromMsg(org: Org, user: User, obj: Msg) -> dict:
     """
     Reconstructs an engine event from a msg instance. Properties which aren't part of regular events are prefixed
     with an underscore.
     """
-    from temba.msgs.models import INCOMING, IVR
-
     channel_log = obj.get_last_log()
-    logs_url = _url_for_user(org, user, "channels.channellog_read", args=[channel_log.id]) if channel_log else None
+    logs_url = _url_for_user(org, user, "channels.channellog_read", args=[channel_log.channel.uuid, channel_log.id]) if channel_log else None
     if channel_log and channel_log.is_error:
         logger.debug("channel log is_error", extra={
             'context': 'contact history',
@@ -32,7 +28,7 @@ def getHistoryContentFromMsg(org: Org, user: User, obj: Msg) -> dict:
             'desc': channel_log.description,
         })
 
-    if obj.direction == INCOMING:
+    if obj.direction == Msg.DIRECTION_IN:
         return {
             "type": Event.TYPE_MSG_RECEIVED,
             "created_on": get_event_time(obj).isoformat(),
@@ -57,7 +53,7 @@ def getHistoryContentFromMsg(org: Org, user: User, obj: Msg) -> dict:
         }
     else:
         msg_event = {
-            "type": Event.TYPE_IVR_CREATED if obj.msg_type == IVR else Event.TYPE_MSG_CREATED,
+            "type": Event.TYPE_IVR_CREATED if obj.msg_type == Msg.TYPE_IVR else Event.TYPE_MSG_CREATED,
             "created_on": get_event_time(obj).isoformat(),
             "msg": _msg_out(obj),
             # additional properties

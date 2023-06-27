@@ -1,163 +1,243 @@
-"""
-Django provides a means to override the default User class, but if you started
-you project before such a means was provided, it's really a lot of work to
-subclass. RP decided to just continue with the Monkey Patch method of hacking
-in methods and properties they want to add to the User class as defined in
-temba.orgs.models. Monkey Patching is invisible to our IDEs, however, so to
-help developers, this static utilities class was created so we could at least
-_FIND_ what kinds of added methods were available. You can then either call
-the appropriate method on the User object directly, or you can use these
-static methods: e.g. user_obj.get_org() vs UserAcct.get_org(user_obj)
-"""
+import logging
 
-from django.conf import settings
-from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.auth.models import User as AuthUser
+from django.utils.functional import cached_property
 
-from engage.orgs.models import get_user_org, get_user_orgs
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.logs import LogExtrasMixin
 
-class UserAcct:
-    """
-    Provide a means to extend the Django User class without replacing it.
-    Alternative means to accessing the monkey patches made to User class.
-    """
-    @staticmethod
-    def is_allowed(user, permission) -> bool:
+from temba.orgs.models import Org, User as TembaUser
+
+
+class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
+    override_ignore = ignoreDjangoModelAttrs(AuthUser)
+    # fake model, tell Django to ignore so that it does not try to create/migrate schema.
+
+    class Meta:
+        abstract = True
+
+    # default optional property to False so it exists.
+    using_token = False
+
+    def __str__(self):
+        return self.name or self.username
+
+    @classmethod
+    def create(cls, email: str, first_name: str, last_name: str, password: str, language: str = None):
+        obj = cls.objects.create_user(
+            username=email, email=email, first_name=first_name, last_name=last_name, password=password
+        )
+        if language:
+            obj.settings.language = language
+            obj.settings.save(update_fields=("language",))
+        return obj
+
+    @property
+    def name(self) -> str:
+        return self.get_full_name()
+
+    @cached_property
+    def is_alpha(self) -> bool:
+        return self.groups.filter(name="Alpha").exists()
+
+    @cached_property
+    def is_beta(self) -> bool:
+        return self.groups.filter(name="Beta").exists()
+
+    @cached_property
+    def is_support(self) -> bool:
+        return self.groups.filter(name="Customer Support").exists()
+
+    @cached_property
+    def settings(self):
+        assert self.is_authenticated, "can't fetch user settings for anonymous users"
+        from temba.orgs.models import UserSettings
+        return UserSettings.objects.get_or_create(user=self)[0]
+
+    @cached_property
+    def api_token(self) -> str:
+        from temba.api.models import get_or_create_api_token
+
+        return get_or_create_api_token(self)
+
+    def as_engine_ref(self) -> dict:
+        return {"email": self.email, "name": self.name}
+
+    def record_auth(self):
+        """
+        Records that this user authenticated
+        """
+        self.settings.last_auth_on = timezone.now()
+        self.settings.save(update_fields=("last_auth_on",))
+
+    def has_org_perm(self, org, permission: str) -> bool:
+        """
+        Determines if a user has the given permission in the given org.
+        """
+        if self.is_superuser:
+            return True
+
+        if self.is_anonymous:  # pragma: needs cover
+            return False
+
+        role = org.get_user_role(self) if org is not None else None
+        if not role:
+            return False
+
+        return role.has_perm(permission)
+    #enddef has_org_perm
+
+    def is_allowed(self, permission) -> bool:
         """
         NOT AVAILABLE ON THE User OBJECT ITSELF!
-        Check to see if we have the perimssion naturally, then if org is
+        Check to see if we have the permission naturally, then if org is
         defined, check there, too.
-        :param user: The User object.
+        :param self: The User object.
         :param permission: A permission to check.
         :return: Returns True if permission is granted.
         """
-        if user.has_perm(permission):
+        if self.has_perm(permission):
             return True
-        org = user.get_org() if hasattr(user, 'get_org') and callable(user.get_org) else None
-        if org:
-            return user.has_org_perm(org, permission)
+        org = self.get_org() if hasattr(self, 'get_org') and callable(self.get_org) else None
+        if org and hasattr(self, "has_org_perm"):
+            return self.has_org_perm(org, permission)
         return False
+    #enddef is_allowed
 
-    #### EVERYTHING BELOW THIS LINE IS A MONKEY PATCH PASSTHRU CALL ============
-
-    @staticmethod
-    def release(user, releasing_user, *, brand):
+    def get_org(self):
         """
-        Releases this user, and any orgs of which they are the sole owner
+        Why do we need this override?: user object may not have its _org prop set.
+        Org class has a static method that will either get the org based on the User
+        object passed in or via querying the org db.
+        :param self: the user object
+        :return: the org object as a property of the user obj or from the db.
         """
-        return user.release(releasing_user, brand=brand)
+        if not hasattr(self, "_org") and hasattr(self, "set_org"):
+            self.set_org(Org.objects.filter(users=self, is_active=True).first())
+        #endif
+        return getattr(self, "_org", None)
+    #enddef get_org
 
-    @staticmethod
-    def get_org(user):
-        return user.get_org()
-
-    @staticmethod
-    def set_org(user, org):
-        return user.set_org(org)
-
-    @staticmethod
-    def is_alpha(user) -> bool:
-        return user.is_alpha()
-
-    @staticmethod
-    def is_beta(user) -> bool:
-        return user.is_beta()
-
-    @staticmethod
-    def is_support(user) -> bool:
-        return user.is_support()
-
-    @staticmethod
-    def get_user_orgs(user, brands=None):
-        return user.get_user_orgs(brands)
-
-    @staticmethod
-    def get_org_group(user):
-        return user.get_org_group()
-
-    @staticmethod
-    def get_owned_orgs(user, brand=None):
+    def get_orgs(self, *, brands=None, roles=None):
         """
-        Gets all the orgs where this is the only user for the current brand
+        Why do we need this override?: user orgs not sorted for superadmins.
+        :param self: the user object
+        :param brands: optional param for branding.
+        :param roles: optional param for which roles to check against
+        :return: the orgs the user has access to sorted for the org picker.
         """
-        return user.get_owned_orgs(brand)
+        #import logging
+        #logger = logging.getLogger()
+        #logger.debug(f"user={self}", extra={
+        #    'roles': roles,
+        #})
+        if self.is_superuser:
+            orgs = Org.objects.all().order_by("name", "slug")
+            #import json
+            #print(json.dumps(orgs[0]))
+            #print(orgs[0].__dict__)
+        else:
+            orgs = Org.objects.filter(is_active=True).distinct().order_by("name")
+            if brands is not None:
+                orgs = orgs.filter(brand__in=brands)
+            #endif
+            if roles is not None:
+                orgs = orgs.filter(orgmembership__user=self, orgmembership__role_code__in=[r.code for r in roles])
+            else:
+                orgs = orgs.filter(orgmembership__user=self)
+            #endif
+        #endif superuser
 
-    @staticmethod
-    def has_org_perm(user, org, permission) -> bool:
+        return orgs
+    #enddef get_orgs
+
+    def set_org(self, org):
+        self._org = org
+    #enddef set_org
+
+    def get_owned_orgs(self, *, brand=None):
         """
-        Determines if a user has the given permission in this org
+        Gets the orgs in the given brands where this user is the only user.
         """
-        return user.has_org_perm(org, permission)
+        owned_orgs = []
+        for org in self.get_orgs(brands=[brand] if brand else None):
+            if not org.users.exclude(id=self.id).exists():
+                owned_orgs.append(org)
+        return owned_orgs
 
-    @staticmethod
-    def get_settings(user):
+    def set_team(self, team):
         """
-        Gets or creates user settings for this user
+        Sets the ticketing team for this user
         """
-        return user.get_settings()
+        self.settings.team = team
+        self.settings.save(update_fields=("team",))
 
-    @staticmethod
-    def record_auth(user):
-        return user.record_auth()
+#endclass AuthUserOverrides
 
-    @staticmethod
-    def enable_2fa(user):
-        """
-        Enables 2FA for this user
-        """
-        return user.enable_2fa()
+class TembaUserOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, TembaUser):
+    override_ignore = ignoreDjangoModelAttrs(TembaUser)
+    # fake model, tell Django to ignore so that it does not try to create/migrate schema.
 
-    @staticmethod
-    def disable_2fa(user):
-        """
-        Disables 2FA for this user
-        """
-        return user.disable_2fa()
-
-    @staticmethod
-    def verify_2fa(user, *, otp: str = None, backup_token: str = None) -> bool:
-        """
-        Verifies a user using a 2FA mechanism (OTP or backup token)
-        """
-        return user.verify_2fa(otp=otp, backup_token=backup_token)
-
-    @staticmethod
-    def as_engine_ref(user) -> dict:
-        return user.as_engine_ref()
-
-    @staticmethod
-    def name_of(user) -> str:
-        return user.name
-
-#endclass UserAcct
-
-
-def _TrackUser(self):  # pragma: no cover
-    """
-    Should the current user be tracked
-    """
-    # track if "is logged in" and not DEV instance
-    if self.is_authenticated and not self.is_anonymous and settings.IS_PROD:
-        return True
-    else:
-        return False
-    #endif
-#enddef _TrackUser
-
-
-class UserOverrides(ClassOverrideMixinMustBeFirst, User):
-    # fake model, tell Django to ignore so it does not try to create/migrate schema.
     class Meta:
         abstract = True
-    override_ignore = ignoreDjangoModelAttrs(User)
-    track_user = _TrackUser
+
     # default optional property to False so it exists.
     using_token = False
-    get_org = get_user_org
-    get_user_orgs = get_user_orgs
-#endclass UserOverrides
 
+    def is_allowed(self, permission) -> bool:
+        """
+        NOT AVAILABLE ON THE User OBJECT ITSELF!
+        Check to see if we have the permission naturally, then if org is
+        defined, check there, too.
+        :param self: The User object.
+        :param permission: A permission to check.
+        :return: Returns True if permission is granted.
+        """
+        if self.has_perm(permission):
+            return True
+        org = self.get_org() if hasattr(self, 'get_org') and callable(self.get_org) else None
+        if org:
+            return self.has_org_perm(org, permission)
+        return False
+    #enddef is_allowed
 
-class AnonUserOverrides(ClassOverrideMixinMustBeFirst, AnonymousUser):
-    track_user = _TrackUser
-#endclass AnonUserOverrides
+    def get_org(self):
+        """
+        Why do we need this override?: user object may not have its _org prop set.
+        Org class has a static method that will either get the org based on the User
+        object passed in or via querying the org db.
+        :param self: the user object
+        :return: the org object as a property of the user obj or from the db.
+        """
+        if not hasattr(self, "_org"):
+            self.set_org(Org.objects.filter(users=self, is_active=True).first())
+        #endif
+        return getattr(self, "_org", None)
+    #enddef get_org
+
+    def get_orgs(self, *, brands=None, roles=None):
+        """
+        Why do we need this override?: user orgs not sorted for superadmins.
+        :param self: the user object
+        :param brands: optional param for branding.
+        :return: the orgs the user has access to sorted for the org picker.
+        """
+        if self.is_superuser:
+            orgs = Org.objects.all().order_by("name", "slug")
+            #import json
+            #print(json.dumps(orgs[0]))
+            #print(orgs[0].__dict__)
+        else:
+            orgs = self.orgs.filter(is_active=True).distinct().order_by("name")
+            if brands is not None:
+                orgs = orgs.filter(brand__in=brands)
+            #endif
+            if roles is not None:
+                orgs = orgs.filter(orgmembership__user=self, orgmembership__role_code__in=[r.code for r in roles])
+            #endif
+        #endif superuser
+
+        return orgs
+    #enddef get_orgs
+
+#endclass TembaUserOverrides

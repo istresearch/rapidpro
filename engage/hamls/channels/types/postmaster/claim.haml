@@ -48,6 +48,8 @@
       #dlapp-msg.p-6
         -trans "Scan the QR code with the phone to download the app or type in the link shown on the phone's browser."
       %img#dlapp-qr-code{src:"{{ pm_app_qrcode }}" }
+      %p.p-6.dlapp-version
+        "unknown"
       %p.p-6.dlapp-url
         "replace me"
 
@@ -155,6 +157,8 @@
         var setupQrCode = document.querySelector("#setup-qr-code");
         var dl_link = '{{ pm_app_url }}';
         if ( dl_link ) dlgQrCode.querySelector('.dlapp-url').innerHTML = dl_link;
+        var dl_version = '{{ pm_app_version }}';
+        if ( dl_version ) dlgQrCode.querySelector('.dlapp-version').innerHTML = dl_version;
 
         menuitemQrCode.addEventListener("click", function(e) {
           if ( setupQrCode ) setupQrCode.classList.add("obscureqr");

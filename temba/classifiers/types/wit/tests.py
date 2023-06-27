@@ -72,7 +72,6 @@ class WitTypeTest(TembaTest):
             self.assertEqual("book_car", car.name)
             self.assertEqual("754569408690533", car.external_id)
 
-
     def test_connect(self):
         url = reverse("classifiers.classifier_connect")
         response = self.client.get(url)

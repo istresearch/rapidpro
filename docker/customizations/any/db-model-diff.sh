@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 
-set -e # fail on any error & print commands as they're run
-
+# print commands as they're run
+set -e
 source /venv/bin/activate
 
 #------

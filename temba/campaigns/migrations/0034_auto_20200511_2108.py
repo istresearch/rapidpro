@@ -7,7 +7,7 @@ import temba.utils.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('campaigns', '0033_auto_20191112_1623'),
+        ('campaigns', '0034_add_fire_unique_index'),
     ]
 
     operations = [

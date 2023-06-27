@@ -1,10 +1,9 @@
 -load smartmin i18n humanize temba compress
 
 #org-area
-  {% if user_orgs|length > 0 %}
-    -if user_org
-      %a#btn-org-home{href:'{% url "orgs.org_home" %}?org={{ user_org.id }}'}
-        -# house icon
+  {% if user_org %}
+    %a#btn-org-home{href:'{% url "orgs.org_home" %}?org={{ user_org.id }}'}
+      -# house icon
   {% endif %}
   {% if user_orgs|length > 1 %}
     #org-picker-widget

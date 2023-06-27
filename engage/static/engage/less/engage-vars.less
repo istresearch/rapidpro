@@ -54,3 +54,17 @@
 @color-formax-hovered: @color-links;
 
 @color-button-primary: #386995;
+
+/* NOTE about "escaped vars" with '~':
+Make sure the @imagePath variable points to the images folder from wherever you
+have your compiled CSS, NOT from where you have your LESS files. The key is to
+escape the address in the variable to ensure that it does not get rewritten by
+less.js.
+ */
+/* NOTE 2: leave off the trailing path slash as all uses put one between the var
+and the file name after using the var. e.g. '@{imgEngagePath}/postmaster.svg'
+ */
+@imgBrandPath: ~"../images";
+@imgEngagePath: ~"../../../engage/img";
+
+@chatIconSize: 1.9rem;

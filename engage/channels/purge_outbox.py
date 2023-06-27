@@ -1,15 +1,14 @@
 import logging
 import requests
 
+from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 from rest_framework.views import View
 
-from temba import settings
 from temba.orgs.models import Org
 from temba.orgs.views import OrgPermsMixin
 from temba.utils import json
 
-from engage.auth.account import UserAcct
 from engage.utils import get_required_arg
 from engage.utils.logs import OrgPermLogInfoMixin
 
@@ -38,19 +37,19 @@ class PurgeOutboxMixin:
             return super().dispatch(request, *args, **kwargs)
 
         def get(self, request: HttpRequest, *args, **kwargs):
-            logger = logging.getLogger(__name__)
+            logger = logging.getLogger()
 
             user = self.get_user()
-            if not UserAcct.get_org(user):
+            if not user.get_org():
                 theOrgPK = request.GET.get('org')
                 if theOrgPK:
                     org = Org.objects.filter(id=theOrgPK).first()
                     if org is not None:
-                        UserAcct.set_org(user, org)
-                if not UserAcct.get_org(user):
+                        user.set_org(org)
+                if not user.get_org():
                     return HttpResponse('Org ambiguous, please specify', status=400)
 
-            if not UserAcct.is_allowed(user, self.permission):
+            if not user.is_allowed(self.permission):
                 return HttpResponse('Forbidden', status=403)
 
             # ensure we have the necessary args

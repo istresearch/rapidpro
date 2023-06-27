@@ -4,7 +4,7 @@ from twython import TwythonError
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from temba.utils.views import NonAtomicMixin
 
@@ -83,7 +83,7 @@ class ClaimView(NonAtomicMixin, ClaimViewMixin, SmartFormView):
 
 class UpdateForm(UpdateChannelForm):
     class Meta(UpdateChannelForm.Meta):
-        fields = "name", "address", "alert_email", "tps"
+        fields = "name", "address", "alert_email"
         readonly = ("address",)
         labels = {"address": _("Handle")}
         helps = {"address": _("Twitter handle of this channel")}

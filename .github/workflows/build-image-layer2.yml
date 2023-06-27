@@ -11,23 +11,31 @@ env:
   FROM_LAYER_TAG: ${{ github.event.client_payload.layer1tag }}
 
 jobs:
-  layer1_error:
-    if: github.event.client_payload.error_msg != ''
+  build_result:
+    name: "Build Layer 1 Result [#${{ github.event.client_payload.run_number }}]"
     runs-on: ubuntu-latest
+    env:
+      RUN_URL: "[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
     steps:
-      - name: Display Msg
+      - name: "Display Error Msg"
+        if: github.event.client_payload.error_msg != ''
         run: |-
-          echo "${{ github.event.client_payload.error_msg }}"
+          echo -e "::error::${RUN_URL}%0A${{ github.event.client_payload.error_msg }}"
           exit 1
-  #endjob layer1_error
+      - name: "Display Success Msg"
+        if: github.event.client_payload.build_msg != ''
+        run: |-
+          echo -e "::notice::${RUN_URL}%0A${{ github.event.client_payload.build_msg }}"
+  #endjob build_result
 
   build_cfg:
-    if: github.event.client_payload.error_msg == ''
+    needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
     outputs:
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
+      FLOW_EDITOR: ${{ steps.config_step.outputs.FLOW_EDITOR }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -44,6 +52,9 @@ jobs:
           echo "::notice::Layer2: ${IMAGE_NAME}:${IMAGE_TAG}"
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          
+          FLOW_EDITOR=$(cat VERSION_FlowEditor)
+          echo "FLOW_EDITOR=${FLOW_EDITOR}" >> $GITHUB_OUTPUT
   #endjob build_cfg
 
   check_image_exist:
@@ -105,7 +116,10 @@ jobs:
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
-                  "FROM_STAGE=${{ env.FROM_LAYER }}"
+                  "FROM_STAGE=${{ env.FROM_LAYER }}",
+                  "FLOW_EDITOR=${{ needs.build_cfg.outputs.FLOW_EDITOR }}",
+                  "REPO_UN=%REPO_UN",
+                  "REPO_PW=%REPO_PW"
                 ]
               },
               "callback": {

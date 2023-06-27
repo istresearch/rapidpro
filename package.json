@@ -9,24 +9,29 @@
     ]
   },
   "dependencies": {
-    "@nyaruka/flow-editor": "github:istresearch/floweditor#v1.14.0-1",
-    "@nyaruka/temba-components": "0.13.3",
+    "@nyaruka/flow-editor": "github:istresearch/floweditor#2269a8e013a9de07cc12509be546699744d8ba19",
+    "@nyaruka/temba-components": "0.28.2",
     "colorette": "1.2.2",
     "fa-icons": "0.2.0",
     "is-core-module": "2.4.0",
     "less": "2.7.1",
+    "marked": "^4.0.10",
     "queue-microtask": "1.2.3",
     "react": "16.13.1",
     "react-dom": "16.13.1"
   },
   "scripts": {
-    "preinstall": "npx npm-force-resolutions",
+    "preinstall": "npx -y npm-force-resolutions",
     "tw-build": "postcss static/scss/tailwind.scss -o static/css/tailwind.css",
     "tw-watch": "watch 'npm run tw-build' ./static/scss"
   },
+  "engines": {
+    "npm": ">=8.0.0 <9.0.0",
+    "node": ">=16.0.0 <17.0.0"
+  },
   "devDependencies": {
     "autoprefixer": "10.2.5",
-    "bower": "1.8.8",
+    "bower": "1.8.14",
     "jasmine-core": "2.5.0",
     "postcss": "8.3.0",
     "postcss-import": "14.0.2",

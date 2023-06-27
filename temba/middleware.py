@@ -1,7 +1,6 @@
 import cProfile
 import logging
 import pstats
-import re
 import traceback
 from io import StringIO
 
@@ -140,7 +139,7 @@ class OrgMiddleware:
                 return org
 
         # otherwise if user only belongs to one org, we can use that
-        user_orgs = user.get_user_orgs()
+        user_orgs = user.get_orgs()
         if user_orgs.count() == 1:
             return user_orgs[0]
 
@@ -183,10 +182,11 @@ class LanguageMiddleware:
             language = request.branding.get("language", settings.DEFAULT_LANGUAGE)
             translation.activate(language)
         else:
-            user_settings = user.get_settings()
-            translation.activate(user_settings.language)
+            translation.activate(user.settings.language)
 
-        return self.get_response(request)
+        response = self.get_response(request)
+        response.headers.setdefault("Content-Language", translation.get_language())
+        return response
 
 
 class ProfilerMiddleware:  # pragma: no cover
@@ -231,22 +231,3 @@ class ProfilerMiddleware:  # pragma: no cover
             self.profiler = cProfile.Profile()
             args = (request,) + callback_args
             return self.profiler.runcall(callback, *args, **callback_kwargs)
-
-
-class SubdirMiddleware:
-    """
-    Add subdir info to response header
-    """
-
-    subdir = None
-
-    def __init__(self, get_response=None):
-        self.get_response = get_response
-        if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR:
-            self.subdir = settings.SUB_DIR.replace("/", "").replace("\\", "")
-
-    def __call__(self, request):
-        if hasattr(settings, 'SUB_DIR') and settings.SUB_DIR:
-            request.subdir = self.subdir
-        response = self.get_response(request)
-        return response

@@ -73,9 +73,9 @@
             %table.list.trigger-list.lined{class: '{% if org_perms.flows.flow_update %}selectable{% endif %}'}
               %tbody
                 %th
-                  %div{style: 'padding-top: 4px; width: 12px'}
+                  %div.multiselect-header
                     %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.contact-checkbox.object-row-checkbox
-                    %div.multiselect-header
+                    %div.multiselect-label
                       %span
                         Select all
                 %th
@@ -140,7 +140,7 @@
 
             -block paginator
               -include "includes/pagination.haml"
-  
+
   %temba-modax#update-trigger
 -block extra-script
   {{ block.super }}
@@ -154,4 +154,3 @@
       modal.header = '{{ _("Update Trigger")|escapejs }}';
       modal.open = true;
     }
-    

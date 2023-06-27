@@ -1,15 +1,3 @@
-from django.apps import AppConfig as BaseAppConfig
-
-default_app_config = 'engage.utils.AppConfig'
-
-class AppConfig(BaseAppConfig):
-    """
-    django app labels must be unique; so override AppConfig to ensure uniqueness
-    """
-    name = "engage.utils"
-    label = "engage_utils"
-    verbose_name = "Engage Utilities"
-
 from engage.api.exceptions import ValueException
 
 def _var_dump( obj ):
@@ -19,11 +7,11 @@ def _var_dump( obj ):
     :param obj: The thing to dump.
     :return: Returns the nested thing to dump.
     """
-    newobj=obj
+    newobj = obj
     if '__dict__' in dir(obj) and not isinstance(obj, dict):
-        newobj=obj.__dict__
+        newobj = obj.__dict__
         if ' object at ' in str(obj) and 'has_key' in newobj and not newobj.has_key('__type__'):
-            newobj['__type__']=str(obj)
+            newobj['__type__'] = str(obj)
         for attr in newobj:
             newobj[attr] = _var_dump(newobj[attr])
     return newobj

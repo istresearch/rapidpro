@@ -21,10 +21,10 @@ body {
 
 #splash {
   /* margin-top: -30px; */
-  background: url("../images/splash.png") !important;
+  background: url("@{imgBrandPath}/splash.png") !important;
   background-size: cover !important;
   width: 100%;
-  height: 0px;
+  height: 0;
   padding-bottom: 40%;
 
   h1.description {
@@ -200,6 +200,79 @@ h5.contact-signup {
   }
 }
 
+.icon-twilio_inverted:before {
+  content: "\e099";
+}
+.icon-twilio_original:before {
+  content: "\e09a";
+}
+.icon-channel-twilio:before {
+  content: "\e09b";
+}
+
+.icon-channel-bandwidth:before {
+  display: inline-block;
+  content: ' ';
+  background-image: url('@{imgEngagePath}/bandwidth.svg');
+  background-size: 48px 48px;
+  height: 48px;
+  width: 48px;
+}
+span.glyph.icon-channel-bandwidth{
+  margin-top: 6px;
+  -webkit-filter: invert(50%); /* safari 6.0 - 9.0 */
+  filter: invert(50%);
+  background-size: 64px 64px;
+  height: 64px;
+  width: 64px;
+  text-align: right;
+}
+.icon-channel-bandwidth.formax-icon {
+  -webkit-filter: invert(50%); /* safari 6.0 - 9.0 */
+  filter: invert(50%);
+}
+.icon-channel-bandwidth.medium-help{
+  -webkit-filter: invert(50%); /* safari 6.0 - 9.0 */
+  filter: invert(50%);
+  background-size: 64px 64px;
+  height: 64px;
+  width: 64px;
+}
+.icon-channel-postmaster:before {
+  display: inline-block;
+  content: ' ';
+  background-image: url('@{imgEngagePath}/postmaster.svg');
+  background-size: 48px 48px;
+  height: 48px;
+  width: 48px;
+}
+span.glyph.icon-channel-postmaster{
+  margin-top: 6px;
+  -webkit-filter: invert(50%); /* safari 6.0 - 9.0 */
+  filter: invert(50%);
+  background-size: 64px 64px;
+  height: 64px;
+  width: 64px;
+  text-align: right;
+}
+.icon-channel-postmaster.formax-icon {
+  -webkit-filter: invert(50%); /* safari 6.0 - 9.0 */
+  filter: invert(50%);
+}
+.icon-channel-postmaster.medium-help{
+  -webkit-filter: invert(50%); /* safari 6.0 - 9.0 */
+  filter: invert(50%);
+  background-size: 64px 64px;
+  height: 64px;
+  width: 64px;
+}
+.icon-arrow-left-8:before {
+  content: "\e09c";
+}
+.icon-close:before {
+  content: "\e09f";
+}
+
 /* refresh uses ::before to add unicode char and font */
 /* just display bkg-img for pm-only icons */
 [class^="icon-"]:not(.pm-icon),
@@ -219,12 +292,20 @@ h5.contact-signup {
  This makes it harder to override/target CSS. haml was updated to include
  IDs for specific elements and we target the "slotted" div element for css.
  */
+temba-modax:has(div.send-via-btn) {
+  padding-right: 8px;
+  width: 1.9rem;
+}
+
 .mode-icon,
 temba-modax > div.send-via-btn {
   cursor: pointer;
   height: 16px;
   width: 16px;
+  margin-top: -3px;
+  font-size: @chatIconSize;
   position: relative;
+  /* display cannot be 'contents' else tooltips stop working */
   display: inline-block;
   .tooltiptext {
     visibility: hidden;
@@ -233,8 +314,8 @@ temba-modax > div.send-via-btn {
     color: var(--color-nav-unselected);
     font-family: "Roboto", 'Helvetica Neue', sans-serif;
     font-weight: 200;
-    font-size: smaller;
-    -webkit-font-smoothing: auto;
+    font-size: large;
+    -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: auto;
     text-align: center;
     padding: 5px;
@@ -249,28 +330,43 @@ temba-modax > div.send-via-btn {
 }
 .mode-icon-pm_element,
 temba-modax#send-via-pm_element > div.send-via-btn {
-  background: url("../../../engage/img/element-chat.svg");
-  background-size: 16px;
+  background: url("@{imgEngagePath}/element-chat.svg");
+  background-size: @chatIconSize;
+  height: @chatIconSize;
+  width: @chatIconSize;
+  margin-top: 3px;
 }
 .mode-icon-pm_signal,
 temba-modax#send-via-pm_signal > div.send-via-btn {
-  background: url("../../../engage/img/signal-chat.svg");
-  background-size: 16px;
+  background: url("@{imgEngagePath}/signal-chat.svg");
+  background-size: @chatIconSize;
+  height: @chatIconSize;
+  width: @chatIconSize;
+  margin-top: 6px;
 }
 .mode-icon-pm_session,
 temba-modax#send-via-pm_session > div.send-via-btn {
-  background: url("../../../engage/img/session-messenger.png");
-  background-size: 16px;
+  background: url("@{imgEngagePath}/session-messenger.png");
+  background-size: @chatIconSize;
+  height: 25px;
+  width: 25px;
+  margin-top: 0px;
 }
 .mode-icon-pm_reddit,
 temba-modax#send-via-pm_reddit > div.send-via-btn {
-  background: url("../../../engage/img/reddit.png");
-  background-size: 16px;
+  background: url("@{imgEngagePath}/reddit.png");
+  background-size: @chatIconSize;
+  height: @chatIconSize;
+  width: @chatIconSize;
+  margin-top: 0px;
 }
 .mode-icon-pm_mastodon,
 temba-modax#send-via-pm_mastodon > div.send-via-btn {
-  background: url("../../../engage/img/mastodon.png");
-  background-size: 16px;
+  background: url("@{imgEngagePath}/mastodon.png");
+  background-size: @chatIconSize;
+  height: @chatIconSize;
+  width: @chatIconSize;
+  margin-top: 0px;
 }
 /* ----------------------------------------------------*/
 
@@ -306,7 +402,7 @@ temba-modax#send-via-pm_mastodon > div.send-via-btn {
     align-self: start;
     margin-right: 1em;
     cursor: pointer;
-    background-image: url("../../../engage/img/house-door.svg");
+    background-image: url("@{imgEngagePath}/house-door.svg");
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
@@ -327,7 +423,7 @@ temba-modax#send-via-pm_mastodon > div.send-via-btn {
     margin-left: 1em;
     margin-right: 0.7em;
     cursor: pointer;
-    background-image: url("../../../engage/img/user-guide-solid.svg");
+    background-image: url("@{imgEngagePath}/user-guide-solid.svg");
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
@@ -394,5 +490,24 @@ temba-modax#send-via-pm_mastodon > div.send-via-btn {
 .num_not_in_use {
   &:after {
     content: "🔵";
+  }
+}
+
+.multiselect-header {
+  .multiselect-select-all {
+    font-size: 16px;
+    padding-left: 5px;
+    margin-right: 8px;
+
+    a {
+      margin-left: 5px;
+      margin-right: 5px;
+    }
+  }
+  .multiselect-label {
+    padding-bottom: 0;
+    padding-left: 0;
+    display: inline;
+    vertical-align: sub;
   }
 }

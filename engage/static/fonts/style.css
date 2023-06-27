@@ -1,7 +1,7 @@
 @font-face {
     font-family: 'RobotoMono';
     src: url('Roboto_Mono/static/RobotoMono-Regular.eot');
-    src: url('Roboto_Mono/static/RobotoMono-Regular?#iefix') format('embedded-opentype'),
+    src: url('Roboto_Mono/static/RobotoMono-Regular.eot?#iefix') format('embedded-opentype'),
          url('Roboto_Mono/static/RobotoMono-Regular.woff2') format('woff2'),
          url('Roboto_Mono/static/RobotoMono-Regular.woff') format('woff'),
          url('Roboto_Mono/static/RobotoMono-Regular.ttf') format('truetype');

@@ -20,13 +20,13 @@ class OAuthConfig:
 
     def __init__(self):
         self.OAUTH2_VALIDATOR_CLASS: str = "engage.auth.oauth_validator.EngageOAuth2Validator"
-        self.SCOPES: dict = {
-            'openid': "OpenID Connect scope",
-            'email': "Email",
-            'profile': "Profile",
-            'roles': "Roles",
-            #'offline_access': "Get Refresh Token",
-        }
+        self.SCOPES: list = [
+            'openid',
+            'email',
+            'profile',
+            'roles',
+            #'offline_access',
+        ]
 
         self.KEYCLOAK_URL: str = env('KEYCLOAK_URL', None)
         if not is_empty(self.KEYCLOAK_URL) and not self.KEYCLOAK_URL.endswith('/'):

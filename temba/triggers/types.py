@@ -1,7 +1,7 @@
 import regex
 
 from django import forms
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel
 from temba.contacts.models import ContactURN
@@ -19,7 +19,11 @@ class KeywordTriggerType(TriggerType):
     A trigger for incoming messages that match given keywords
     """
 
-    KEYWORD_REGEX = regex.compile(r"^\w+$", flags=regex.UNICODE | regex.V0)
+    # keywords must a single sequence of word chars, or a single emoji (since engine treats each emoji as a word)
+    KEYWORD_REGEX = regex.compile(
+        r"^(\w+|[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF])$",
+        flags=regex.UNICODE,
+    )
 
     class Form(BaseTriggerForm):
         def __init__(self, user, *args, **kwargs):
@@ -35,10 +39,16 @@ class KeywordTriggerType(TriggerType):
             widgets = {"keyword": InputWidget(), "match_type": SelectWidget()}
 
     code = Trigger.TYPE_KEYWORD
+    slug = "keyword"
+    name = _("Keyword")
+    title = _("Keyword Triggers")
     allowed_flow_types = (Flow.TYPE_MESSAGE, Flow.TYPE_VOICE)
     export_fields = TriggerType.export_fields + ("keyword",)
     required_fields = TriggerType.required_fields + ("keyword",)
     form = Form
+
+    def get_instance_name(self, trigger):
+        return f"{self.name}[{trigger.keyword}] → {trigger.flow.name}"
 
     def validate_import_def(self, trigger_def: dict):
         super().validate_import_def(trigger_def)
@@ -46,14 +56,9 @@ class KeywordTriggerType(TriggerType):
         if not self.is_valid_keyword(trigger_def["keyword"]):
             raise ValueError(f"{trigger_def['keyword']} is not a valid keyword")
 
-    def is_valid_keyword(self, keyword):
-        return (
-            keyword
-            and len(keyword) <= Trigger.KEYWORD_MAX_LEN
-            and self.KEYWORD_REGEX.match(
-                keyword.strip(),
-            )
-        )
+    @classmethod
+    def is_valid_keyword(cls, keyword: str) -> bool:
+        return 0 < len(keyword) <= Trigger.KEYWORD_MAX_LEN and cls.KEYWORD_REGEX.match(keyword) is not None
 
 
 class CatchallTriggerType(TriggerType):
@@ -66,6 +71,9 @@ class CatchallTriggerType(TriggerType):
             super().__init__(user, Trigger.TYPE_CATCH_ALL, *args, **kwargs)
 
     code = Trigger.TYPE_CATCH_ALL
+    slug = "catch_all"
+    name = _("Catch All")
+    title = _("Catch All Triggers")
     allowed_flow_types = (Flow.TYPE_MESSAGE, Flow.TYPE_VOICE)
     form = Form
 
@@ -80,7 +88,7 @@ class ScheduledTriggerType(TriggerType):
             label=_("Contacts To Include"),
             required=False,
             help_text=_("Additional specific contacts that will be started in the flow."),
-            widget=OmniboxChoice(attrs={"placeholder": _("Optional: Select contacts"), "contacts": True}),
+            widget=OmniboxChoice(attrs={"placeholder": _("Optional: Search for contacts"), "contacts": True}),
         )
 
         def __init__(self, user, *args, **kwargs):
@@ -110,6 +118,9 @@ class ScheduledTriggerType(TriggerType):
             }
 
     code = Trigger.TYPE_SCHEDULE
+    slug = "schedule"
+    name = _("Schedule")
+    title = _("Schedule Triggers")
     allowed_flow_types = (Flow.TYPE_MESSAGE, Flow.TYPE_VOICE, Flow.TYPE_BACKGROUND)
     exportable = False
     form = Form
@@ -125,6 +136,9 @@ class InboundCallTriggerType(TriggerType):
             super().__init__(user, Trigger.TYPE_INBOUND_CALL, *args, **kwargs)
 
     code = Trigger.TYPE_INBOUND_CALL
+    slug = "inbound_call"
+    name = _("Inbound Call")
+    title = _("Inbound Call Triggers")
     allowed_flow_types = (Flow.TYPE_VOICE,)
     form = Form
 
@@ -139,6 +153,9 @@ class MissedCallTriggerType(TriggerType):
             super().__init__(user, Trigger.TYPE_MISSED_CALL, *args, **kwargs)
 
     code = Trigger.TYPE_MISSED_CALL
+    slug = "missed_call"
+    name = _("Missed Call")
+    title = _("Missed Call Triggers")
     allowed_flow_types = (Flow.TYPE_MESSAGE, Flow.TYPE_VOICE)
     form = Form
 
@@ -165,6 +182,9 @@ class NewConversationTriggerType(TriggerType):
             fields = ("channel",) + BaseTriggerForm.Meta.fields
 
     code = Trigger.TYPE_NEW_CONVERSATION
+    slug = "new_conversation"
+    name = _("New Conversation")
+    title = _("New Conversation Triggers")
     allowed_flow_types = (Flow.TYPE_MESSAGE,)
     export_fields = TriggerType.export_fields + ("channel",)
     required_fields = TriggerType.required_fields + ("channel",)
@@ -202,6 +222,9 @@ class ReferralTriggerType(TriggerType):
             fields = ("channel", "referrer_id") + BaseTriggerForm.Meta.fields
 
     code = Trigger.TYPE_REFERRAL
+    slug = "referral"
+    name = _("Referral")
+    title = _("Referral Triggers")
     allowed_flow_types = (Flow.TYPE_MESSAGE,)
     export_fields = TriggerType.export_fields + ("channel",)
     form = Form
@@ -217,8 +240,12 @@ class ClosedTicketTriggerType(TriggerType):
             super().__init__(user, Trigger.TYPE_CLOSED_TICKET, *args, **kwargs)
 
     code = Trigger.TYPE_CLOSED_TICKET
+    slug = "closed_ticket"
+    name = _("Closed Ticket")
+    title = _("Closed Ticket Triggers")
     allowed_flow_types = (Flow.TYPE_MESSAGE, Flow.TYPE_VOICE, Flow.TYPE_BACKGROUND)
     form = Form
 
 
-TYPES = {tc.code: tc() for tc in TriggerType.__subclasses__()}
+TYPES_BY_CODE = {tc.code: tc() for tc in TriggerType.__subclasses__()}
+TYPES_BY_SLUG = {tc.slug: tc() for tc in TriggerType.__subclasses__()}
