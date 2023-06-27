@@ -7,7 +7,7 @@
 -block content
   .mb-4
     -blocktrans
-      These are the policies currently in place. In general these should not be modified unless for inconsequential grammar. Consider instead,
+      These are the policies currently in place. In general these should not be modified unless for inconsequential grammar. Consider instead, 
       introducing a new policy which will archive the current policy for posterity and replace it.
 
   %table.list.lined
@@ -22,7 +22,7 @@
         %td
           %a.name(href="{% url 'policies.policy_history' policy.id%}")
             {{policy.get_policy_type_display}}
-
+        
         %td.link
           %a{href:"{% url 'policies.policy_update' policy.id%}"}
             -trans "edit"

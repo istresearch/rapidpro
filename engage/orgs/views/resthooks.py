@@ -6,11 +6,7 @@ from temba.orgs.views import OrgCRUDL
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelFormAttrs
 from temba.utils.fields import CheckboxWidget
-from temba.utils.views import ComponentFormMixin
 
-
-class ResthooksOverrides(ClassOverrideMixinMustBeFirst, ComponentFormMixin, OrgCRUDL.Resthooks):
-    pass
 
 class ResthookFormOverrides(ClassOverrideMixinMustBeFirst, OrgCRUDL.Resthooks.ResthookForm):
     override_ignore = ignoreDjangoModelFormAttrs(OrgCRUDL.Resthooks.ResthookForm)

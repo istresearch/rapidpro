@@ -1,9 +1,22 @@
 /* functions if able to update msgs */
 
+function onDeleteClicked(){
+    var deleteConfirmation = document.querySelector("#delete-confirmation");
+    deleteConfirmation.classList.remove("hide");
+    deleteConfirmation.open = true;
+
+    deleteConfirmation.addEventListener("temba-button-clicked", function(event){
+        if (!event.detail.button.secondary) {
+            runActionOnObjectRows("delete");
+        }
+        deleteConfirmation.open = false;
+    });
+  }
+
 function handleCreateLabelModalLoaded(event) {
-    let lastChecked = getCheckedIds();
-    let body = event.detail.body;
-    body.querySelector("#id_messages").value = lastChecked.join();
+    window.lastChecked = getCheckedIds();
+    var body = event.detail.body;
+    body.querySelector("#id_messages").value = window.lastChecked.join();
 }
 
 function handleCreateLabelModalSubmitted(event) {

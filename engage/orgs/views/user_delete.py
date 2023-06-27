@@ -15,7 +15,7 @@ class UserViewDeleteOverride(ClassOverrideMixinMustBeFirst, UserCRUDL.Delete):
     permission = "auth.user_update"
 
     def post(self, request, *args, **kwargs):
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger()
 
         user = self.get_object()
         username = user.username
@@ -31,7 +31,13 @@ class UserViewDeleteOverride(ClassOverrideMixinMustBeFirst, UserCRUDL.Delete):
         user.release(self.request.user, brand=brand)
 
         messages.success(self.request, _(f"Deleted user {username}"))
-        return HttpResponseRedirect(reverse("orgs.user_list", args=()))
+        from django.http import HttpResponse
+        return HttpResponse(
+            f"{username} deleted successfully.",
+            headers={
+                "temba-success": reverse("orgs.user_list"),
+            }
+        )
     #enddef post
 
 #endclass UserViewDeleteOverride

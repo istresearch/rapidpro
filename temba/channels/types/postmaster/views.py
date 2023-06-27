@@ -7,18 +7,20 @@ from uuid import uuid4
 
 from django import forms
 from django.core.exceptions import ValidationError
-from smartmin.views import SmartFormView
-
 from django.http import HttpResponseRedirect, HttpResponseServerError
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
+
+from smartmin.views import SmartFormView
 
 from temba import settings
 from temba.utils import analytics
-from django.utils.translation import gettext_lazy as _
 
 from ...models import Org
 
 from . import postoffice
+from engage.channels.types.postmaster.apks import APIsForDownloadPostmaster
+
 from ...models import Channel
 from ...views import (
     ALL_COUNTRIES,
@@ -38,6 +40,7 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
     extra_links = None
     pm_app_url: str = getattr(settings, "POST_MASTER_DL_URL", '')
     pm_app_qrcode: str = getattr(settings, "POST_MASTER_DL_QRCODE", '')
+    pm_app_version: str = "unknown"
 
     class Form(ClaimViewMixin.Form):
         CHAT_MODE_CHOICES = getattr(settings, "CHAT_MODE_CHOICES", ())
@@ -80,6 +83,8 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
                                             .format(dict(self.CHAT_MODE_CHOICES)[chat_mode], org_id)))
 
             return self.cleaned_data
+        #enddef clean
+    #endclass Form
 
     def __init__(self, channel_type):
         super().__init__(channel_type)
@@ -114,6 +119,12 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
             qrstream = io.BytesIO()
             qrc.png(qrstream, scale=4)
             self.pm_app_qrcode = f"data:image/png;base64, {base64.b64encode(qrstream.getvalue()).decode('ascii')}"
+
+            if settings.PM_CONFIG.pm_info and 'version' in settings.PM_CONFIG.pm_info:
+                self.pm_app_version = f"Version {settings.PM_CONFIG.pm_info['version']}"
+            elif settings.PM_CONFIG.pm_info:
+                self.pm_app_version = f"Failed to get version info: {settings.PM_CONFIG.pm_info}"
+            #endif
         #endif
     #enddef init_pm_app_dl
 
@@ -124,7 +135,8 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         if extra_links:
             for extra in extra_links:
                 links.append(dict(title=extra["name"], href=reverse(extra["link"], args=[self.object.uuid])))
-
+            #endfor
+        #endif
         if self.pm_app_qrcode:
             links.append(
                 dict(
@@ -133,8 +145,9 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
                     js_class="mi-pm-app-qr",
                 )
             )
-
+        #endif
         return links
+    #enddef get_gear_links
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -142,10 +155,11 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         self.init_pm_app_dl(self.request)
         context['pm_app_url'] = self.pm_app_url
         context['pm_app_qrcode'] = self.pm_app_qrcode
+        context['pm_app_version'] = self.pm_app_version
         return context
 
     def get_success_url(self):
-            return reverse("channels.channel_read", args=[self.uuid])
+        return reverse("channels.channel_read", args=[self.uuid])
 
     form_class = Form
     submit_button_name = "Save"
@@ -153,7 +167,7 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
     field_config = dict(device_id=dict(label=""), chat_mode=dict(label=""))
     success_message = "Postmaster Channel successfully created."
 
-    def form_valid(self, form):
+    def form_valid(self, form, **kwargs):
         device_id = form.cleaned_data["device_id"]
         device_name = form.cleaned_data["device_name"]
         chat_mode = form.cleaned_data["chat_mode"]
@@ -171,11 +185,13 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
             }))
             return HttpResponseServerError("Registration failed, please contact a server admin.")
         #endtry
+    #enddef form_valid
 
     def claim_number(self, user, phone_number, country, role):
         analytics.track(user, "temba.channel_claim_postmaster",
                         properties=dict(address=phone_number))
         return None
+    #enddef claim_number
 
     def create_channel(self, user, org_id, role, device_id, device_name, chat_mode, claim_code):
         org = Org.objects.filter(id=org_id).first()
@@ -209,3 +225,5 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         analytics.track(user, "temba.channel_claim_postmaster", properties=dict(number=device_id))
 
         return channel
+    #enddef create_channel
+#endclass ClaimView

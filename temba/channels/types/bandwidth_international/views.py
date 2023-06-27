@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from smartmin.views import SmartFormView
 
 from engage.orgs.bandwidth import BWI_SENDER, BWI_ENCODING, BWI_USERNAME, BWI_PASSWORD

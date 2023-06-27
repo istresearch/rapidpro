@@ -1,0 +1,31 @@
+name: "Display Build Conclusions"
+
+on:
+  repository_dispatch:
+    types:
+      - build_generic_success
+      - build_generic_error
+      - build_rp_success
+      - build_rp_error
+      - build_nginx_success
+      - build_nginx_error
+      - build_webstatic_success
+      - build_webstatic_error
+
+jobs:
+  build_result:
+    name: "Build Result [#${{ github.event.client_payload.run_number }}] for [${{ github.event.action }}]"
+    runs-on: ubuntu-latest
+    env:
+      RUN_URL: "[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
+    steps:
+      - name: "Display Error Msg"
+        if: github.event.client_payload.error_msg != ''
+        run: |-
+          echo -e "::error::${RUN_URL}%0A${{ github.event.client_payload.error_msg }}"
+          exit 1
+      - name: "Display Success Msg"
+        if: github.event.client_payload.build_msg != ''
+        run: |-
+          echo -e "::notice::${RUN_URL}%0A${{ github.event.client_payload.build_msg }}"
+  #endjob build_result

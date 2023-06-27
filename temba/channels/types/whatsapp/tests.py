@@ -17,13 +17,16 @@ from .type import (
     CONFIG_FB_ACCESS_TOKEN,
     CONFIG_FB_BUSINESS_ID,
     CONFIG_FB_NAMESPACE,
+    CONFIG_FB_TEMPLATE_API_VERSION,
     CONFIG_FB_TEMPLATE_LIST_DOMAIN,
     WhatsAppType,
 )
 
 
 class WhatsAppTypeTest(TembaTest):
-    def test_claim(self):
+    @patch("temba.channels.types.whatsapp.WhatsAppType.check_health")
+    def test_claim(self, mock_health):
+        mock_health.return_value = MockResponse(200, '{"meta": {"api_status": "stable", "version": "v2.35.2"}}')
         TemplateTranslation.objects.all().delete()
         Channel.objects.all().delete()
 
@@ -46,6 +49,7 @@ class WhatsAppTypeTest(TembaTest):
         post_data["facebook_business_id"] = "1234"
         post_data["facebook_access_token"] = "token123"
         post_data["facebook_template_list_domain"] = "graph.facebook.com"
+        post_data["facebook_template_list_api_version"] = ""
 
         # will fail with invalid phone number
         response = self.client.post(url, post_data)
@@ -74,7 +78,7 @@ class WhatsAppTypeTest(TembaTest):
         #         self.assertEqual(200, response.status_code)
         #         self.assertFalse(Channel.objects.all())
         #         mock_get.assert_called_with(
-        #             "https://graph.facebook.com/v3.3/1234/message_templates", params={"access_token": "token123"}
+        #             "https://graph.facebook.com/v14.0/1234/message_templates", params={"access_token": "token123"}
         #         )
         #
         #         self.assertContains(response, "check user id and access token")
@@ -97,12 +101,13 @@ class WhatsAppTypeTest(TembaTest):
         self.assertEqual("tembapasswd", channel.config[Channel.CONFIG_PASSWORD])
         self.assertEqual("abc123", channel.config[Channel.CONFIG_AUTH_TOKEN])
         self.assertEqual("https://nyaruka.com/whatsapp", channel.config[Channel.CONFIG_BASE_URL])
+        self.assertNotIn(CONFIG_FB_TEMPLATE_API_VERSION, channel.config)
 
         self.assertEqual("+250788123123", channel.address)
         self.assertEqual("RW", channel.country)
         self.assertEqual("WA", channel.channel_type)
         self.assertEqual(45, channel.tps)
-        self.assertTrue(channel.get_type().has_attachment_support(channel))
+        self.assertTrue(channel.type.has_attachment_support(channel))
 
         # test activating the channel
         with patch("requests.patch") as mock_patch:
@@ -228,7 +233,9 @@ class WhatsAppTypeTest(TembaTest):
             self.assertEqual("abc345", channel.config[Channel.CONFIG_AUTH_TOKEN])
             self.assertEqual("abc098", channel2.config[Channel.CONFIG_AUTH_TOKEN])
 
-    def test_claim_self_hosted_templates(self):
+    @patch("temba.channels.types.whatsapp.WhatsAppType.check_health")
+    def test_claim_self_hosted_templates(self, mock_health):
+        mock_health.return_value = MockResponse(200, '{"meta": {"api_status": "stable", "version": "v2.35.2"}}')
         Channel.objects.all().delete()
 
         url = reverse("channels.types.whatsapp.claim")
@@ -250,6 +257,7 @@ class WhatsAppTypeTest(TembaTest):
         post_data["facebook_business_id"] = "1234"
         post_data["facebook_access_token"] = "token123"
         post_data["facebook_template_list_domain"] = "example.org"
+        post_data["facebook_template_list_api_version"] = "v3.3"
 
         with patch("requests.post") as mock_post, patch("requests.get") as mock_get:
             mock_post.return_value = MockResponse(200, '{"users": [{"token": "abc123"}]}')
@@ -285,12 +293,13 @@ class WhatsAppTypeTest(TembaTest):
         self.assertEqual("tembapasswd", channel.config[Channel.CONFIG_PASSWORD])
         self.assertEqual("abc123", channel.config[Channel.CONFIG_AUTH_TOKEN])
         self.assertEqual("https://nyaruka.com/whatsapp", channel.config[Channel.CONFIG_BASE_URL])
+        self.assertEqual("v3.3", channel.config[CONFIG_FB_TEMPLATE_API_VERSION])
 
         self.assertEqual("+250788123123", channel.address)
         self.assertEqual("RW", channel.country)
         self.assertEqual("WA", channel.channel_type)
         self.assertEqual(45, channel.tps)
-        self.assertTrue(channel.get_type().has_attachment_support(channel))
+        self.assertTrue(channel.type.has_attachment_support(channel))
 
     @patch("requests.get")
     def test_get_api_templates(self, mock_get):
@@ -319,7 +328,7 @@ class WhatsAppTypeTest(TembaTest):
             MockResponse(200, '{"data": ["foo", "bar"]}'),
             MockResponse(
                 200,
-                '{"data": ["foo"], "paging": {"next": "https://graph.facebook.com/v3.3/1234/message_templates?cursor=MjQZD"} }',
+                '{"data": ["foo"], "paging": {"next": "https://graph.facebook.com/v14.0/1234/message_templates?cursor=MjQZD"} }',
             ),
             MockResponse(200, '{"data": ["bar"], "paging": {"next": null} }'),
         ]
@@ -341,7 +350,7 @@ class WhatsAppTypeTest(TembaTest):
         self.assertEqual(["foo", "bar"], templates_data)
 
         mock_get.assert_called_with(
-            "https://graph.facebook.com/v3.3/1234/message_templates",
+            "https://graph.facebook.com/v14.0/1234/message_templates",
             params={"access_token": "token123", "limit": 255},
         )
 
@@ -353,28 +362,42 @@ class WhatsAppTypeTest(TembaTest):
         mock_get.assert_has_calls(
             [
                 call(
-                    "https://graph.facebook.com/v3.3/1234/message_templates",
+                    "https://graph.facebook.com/v14.0/1234/message_templates",
                     params={"access_token": "token123", "limit": 255},
                 ),
                 call(
-                    "https://graph.facebook.com/v3.3/1234/message_templates?cursor=MjQZD",
+                    "https://graph.facebook.com/v14.0/1234/message_templates?cursor=MjQZD",
                     params={"access_token": "token123", "limit": 255},
                 ),
             ]
         )
 
+    @patch("temba.channels.types.whatsapp.WhatsAppType.check_health")
     @patch("temba.utils.whatsapp.tasks.update_local_templates")
     @patch("temba.channels.types.whatsapp.WhatsAppType.get_api_templates")
-    def test_refresh_templates_task(self, mock_get_api_templates, update_local_templates_mock):
+    def test_refresh_templates_task(self, mock_get_api_templates, update_local_templates_mock, mock_health):
         TemplateTranslation.objects.all().delete()
         Channel.objects.all().delete()
 
         # channel has namespace in the channel config
-        channel = self.create_channel("WA", "Channel", "1234", config={"fb_namespace": "foo_namespace"})
+        channel = self.create_channel(
+            "WA",
+            "Channel",
+            "1234",
+            config={
+                "fb_namespace": "foo_namespace",
+                Channel.CONFIG_BASE_URL: "https://nyaruka.com/whatsapp",
+            },
+        )
 
         self.login(self.admin)
-        mock_get_api_templates.side_effect = [([], False), Exception("foo"), ([{"name": "hello"}], True)]
-
+        mock_get_api_templates.side_effect = [
+            ([], False),
+            Exception("foo"),
+            ([{"name": "hello"}], True),
+            ([{"name": "hello"}], True),
+        ]
+        mock_health.return_value = MockResponse(200, '{"meta": {"api_status": "stable", "version": "v2.35.2"}}')
         update_local_templates_mock.return_value = None
 
         # should skip if locked
@@ -390,6 +413,7 @@ class WhatsAppTypeTest(TembaTest):
         mock_get_api_templates.assert_called_with(channel)
         self.assertEqual(1, mock_get_api_templates.call_count)
         self.assertEqual(0, update_local_templates_mock.call_count)
+        self.assertFalse(mock_health.called)
 
         # any exception
         refresh_whatsapp_templates()
@@ -397,6 +421,7 @@ class WhatsAppTypeTest(TembaTest):
         mock_get_api_templates.assert_called_with(channel)
         self.assertEqual(2, mock_get_api_templates.call_count)
         self.assertEqual(0, update_local_templates_mock.call_count)
+        self.assertFalse(mock_health.called)
 
         # now it should refresh
         refresh_whatsapp_templates()
@@ -404,6 +429,23 @@ class WhatsAppTypeTest(TembaTest):
         mock_get_api_templates.assert_called_with(channel)
         self.assertEqual(3, mock_get_api_templates.call_count)
         update_local_templates_mock.assert_called_once_with(channel, [{"name": "hello"}])
+        self.assertFalse(mock_health.called)
+
+        channel.config.update(version="v1.0.0")
+        channel.save()
+
+        channel.refresh_from_db()
+
+        # now it should refresh
+        refresh_whatsapp_templates()
+
+        mock_get_api_templates.assert_called_with(channel)
+        self.assertEqual(4, mock_get_api_templates.call_count)
+        self.assertTrue(mock_health.called)
+
+        channel.refresh_from_db()
+
+        self.assertEqual("v2.35.2", channel.config.get("version"))
 
     def test_message_templates_and_logs_views(self):
         channel = self.create_channel("WA", "Channel", "1234", config={"fb_namespace": "foo_namespace"})
@@ -420,12 +462,33 @@ class WhatsAppTypeTest(TembaTest):
             "foo_namespace",
         )
 
+        foo = TemplateTranslation.get_or_create(
+            channel,
+            "hi",
+            "eng",
+            "US",
+            "Hi {{1}}",
+            1,
+            TemplateTranslation.STATUS_APPROVED,
+            "1235",
+            "foo_namespace",
+        )
+
         self.login(self.admin)
         # hit our template page
         response = self.client.get(reverse("channels.types.whatsapp.templates", args=[channel.uuid]))
         # should have our template translations
         self.assertContains(response, "Hello")
+        self.assertContains(response, "Hi")
         self.assertContains(response, reverse("channels.types.whatsapp.sync_logs", args=[channel.uuid]))
+
+        foo.is_active = False
+        foo.save()
+
+        response = self.client.get(reverse("channels.types.whatsapp.templates", args=[channel.uuid]))
+        # should have our template translations
+        self.assertContains(response, "Hello")
+        self.assertNotContains(response, "Hi")
 
         # Check if message templates link are in sync_logs view
         response = self.client.get(reverse("channels.types.whatsapp.sync_logs", args=[channel.uuid]))
@@ -439,3 +502,37 @@ class WhatsAppTypeTest(TembaTest):
         self.assertEqual(404, response.status_code)
         response = self.client.get(reverse("channels.types.whatsapp.sync_logs", args=[channel.uuid]))
         self.assertEqual(404, response.status_code)
+
+    def test_check_health(self):
+        channel = self.create_channel(
+            "WA",
+            "WhatsApp: 1234",
+            "1234",
+            config={
+                Channel.CONFIG_BASE_URL: "https://nyaruka.com/whatsapp",
+                Channel.CONFIG_USERNAME: "temba",
+                Channel.CONFIG_PASSWORD: "tembapasswd",
+                Channel.CONFIG_AUTH_TOKEN: "authtoken123",
+                CONFIG_FB_BUSINESS_ID: "1234",
+                CONFIG_FB_ACCESS_TOKEN: "token123",
+                CONFIG_FB_NAMESPACE: "my-custom-app",
+                CONFIG_FB_TEMPLATE_LIST_DOMAIN: "graph.facebook.com",
+            },
+        )
+
+        with patch("requests.get") as mock_get:
+            mock_get.side_effect = [
+                RequestException("Network is unreachable", response=MockResponse(100, "")),
+                MockResponse(200, '{"meta": {"api_status": "stable", "version": "v2.35.2"}}'),
+                MockResponse(401, ""),
+            ]
+
+            with self.assertRaises(Exception):
+                channel.type.check_health(channel)
+
+            channel.type.check_health(channel)
+            mock_get.assert_called_with(
+                "https://nyaruka.com/whatsapp/v1/health", headers={"Authorization": "Bearer authtoken123"}
+            )
+            with self.assertRaises(Exception):
+                channel.type.check_health(channel)

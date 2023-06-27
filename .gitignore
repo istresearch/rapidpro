@@ -26,6 +26,7 @@ parser.out
 screenshots
 sitestatic
 static/javascripts/
+temba/settings.py
 temba/smartmin
 temba.db
 smartmin
@@ -43,6 +44,7 @@ media/recordings
 media/test_orgs
 media/tmp
 media/attachments
+
 
 # External projects
 fabric
@@ -122,15 +124,22 @@ ansible/site.retry
 # VS Code projects
 .vscode/
 
-# CircleCI artifacts
-scm/*_tag.txt
+# autoenv
+.direnv/
 
 # prior versions for compare
-_v*/
+_*/
+.v/
 
 # mock s3 attachments storage
 .s3data/
 
 # container build layers tag info
+scm/*_tag.txt
 workspace/info/
+
 !/engage/hamls/smartmin/*
+
+.idea
+.db*/
+.vdb*/

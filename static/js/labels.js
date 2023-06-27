@@ -46,14 +46,13 @@ function getObjectRowLabels(objectId) {
 function runActionOnObjectRows(action) {
     var objectIds = getCheckedIds();
     jQuery.ajaxSettings.traditional = true;
-    
-    fetchPJAXContent('', '#pjax', {
+    fetchPJAXContent(window.lastFetch || '', '#pjax', {
         postData: { objects: objectIds, action: action, pjax: 'true' },
         onSuccess: function (data, textStatus) {
             wireTableListeners();
         },
         forceReload: true,
-        followRedirects: true
+        followRedirects: true,
     });
 }
 
@@ -62,7 +61,7 @@ function unlabelObjectRows(labelId) {
     var addLabel = false;
 
     jQuery.ajaxSettings.traditional = true;
-    fetchPJAXContent('', '#pjax', {
+    fetchPJAXContent(window.lastFetch || '', '#pjax', {
         postData: {
             objects: objectsIds,
             label: labelId,
@@ -70,12 +69,12 @@ function unlabelObjectRows(labelId) {
             action: 'unlabel',
             pjax: 'true',
         },
-        onSuccess: wireTableListeners
+        onSuccess: wireTableListeners,
     });
 }
 
 function postLabelChanges(smsIds, labelId, addLabel, number, onError) {
-    fetchPJAXContent('', '#pjax', {
+    fetchPJAXContent(window.lastFetch || '', '#pjax', {
         postData: {
             objects: smsIds,
             label: labelId,
@@ -130,7 +129,7 @@ function labelObjectRows(labelId, forceRemove) {
     }
 
     jQuery.ajaxSettings.traditional = true;
-    lastChecked = getCheckedIds();
+    window.lastChecked = getCheckedIds();
 
     if (objectRowsIds.length == 0) {
         showWarning(
@@ -147,9 +146,9 @@ function labelObjectRows(labelId, forceRemove) {
  * When we refresh the object list via pjax, we need to re-select the object rows that were previously selected
  */
 function recheckIds() {
-    if (lastChecked && lastChecked.length > 0) {
-        for (var i = 0; i < lastChecked.length; i++) {
-            var row = $(".object-row[data-object-id='" + lastChecked[i] + "']");
+    if (window.lastChecked && window.lastChecked.length > 0) {
+        for (var i = 0; i < window.lastChecked.length; i++) {
+            var row = $(".object-row[data-object-id='" + window.lastChecked[i] + "']");
             row.addClass('checked');
             row.find('temba-checkbox').attr('checked', true);
         }
@@ -232,8 +231,9 @@ function updateLabelMenu() {
 
 function handleRowSelection(checkbox) {
     var row = checkbox.parentElement.parentElement.classList;
-    var listButtons = document.querySelector('.list-buttons-container')
-        .classList;
+    var listButtons = document.querySelector(
+        '.list-buttons-container'
+    ).classList;
     var pageTitle = document.querySelector('.page-title').classList;
 
     if (checkbox.checked) {

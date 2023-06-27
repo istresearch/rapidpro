@@ -36,7 +36,6 @@ org.initialize(topup_size=org_topup)
 #Create user and set as Org admin
 user = Org.create_user(user_email, user_pass)
 org.add_user(user, OrgRole.ADMINISTRATOR)
-org.administrators.add(user)
 
 token = APIToken.get_or_create(org, superuser)
 

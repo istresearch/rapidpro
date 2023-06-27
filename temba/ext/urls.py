@@ -1,6 +1,7 @@
-from django.conf.urls import include, url
+from django.conf.urls import include
+from django.urls import re_path
 
 
 urlpatterns = [
-    url(r"^ext/api/v2/", include("temba.ext.api.v2.urls")),
+    re_path(r"^ext/api/v2/", include("temba.ext.api.v2.urls")),
 ]

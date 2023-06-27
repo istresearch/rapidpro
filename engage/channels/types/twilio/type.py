@@ -8,7 +8,7 @@ from temba.channels.models import Channel
 from temba.channels.types.twilio.type import TwilioType
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 class TwilioTypeOverrides(ClassOverrideMixinMustBeFirst, TwilioType):
 

@@ -13,19 +13,6 @@ from temba.utils.dates import datetime_to_str
 from .models import Schedule
 
 
-def create_schedule(user, repeat_period, repeat_days=(), start_date=None):
-    if not start_date:
-        # Test date is 10am on a Thursday, Jan 3rd
-        start_date = datetime(2013, 1, 3, hour=10, minute=0).replace(tzinfo=pytz.utc)
-
-    # create a our bitmask from repeat_days
-    bitmask = 0
-    for day in repeat_days:
-        bitmask += pow(2, (day + 1) % 7)
-
-    return Schedule.create_schedule(start_date, repeat_period, user, bitmask)
-
-
 class ScheduleTest(TembaTest):
     def setUp(self):
         super().setUp()
@@ -395,7 +382,7 @@ class ScheduleCRUDLTest(TembaTest, CRUDLTestMixin):
         self.assertUpdateSubmit(
             update_url,
             {"start_datetime": datepicker_fmt(today), "repeat_period": "W"},
-            form_errors={"__all__": "Must specify at least one day of the week."},
+            form_errors={"repeat_days_of_week": "Must specify at least one day of the week."},
             object_unchanged=schedule,
         )
 

@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
     dependencies = [
         ("classifiers", "0002_auto_20191111_1942"),
         ("orgs", "0071_orgactivity_plan_active_contact_count"),
-        ("channels", "0123_merge_20200420_1534"),
+        ("channels", "0123_auto_20201026_1945"),
         ("airtime", "0014_auto_20191023_1904"),
         ("tickets", "0003_auto_20200602_1522"),
         ("request_logs", "0007_auto_20200526_1931"),

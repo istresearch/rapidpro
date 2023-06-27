@@ -93,4 +93,7 @@ $(document).ready(function() {
         handlePosterize(ele);
     });
 
+    if (window.scheduleRefresh) {
+      scheduleRefresh();
+    }
 });

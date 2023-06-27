@@ -1,7 +1,7 @@
 import pytz
 
 from django.http import HttpRequest
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from rest_framework import serializers, status
 from rest_framework.response import Response

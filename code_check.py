@@ -30,7 +30,6 @@ def cmd(line):
 def status(line):
     print(colorama.Fore.GREEN + f">>> {line}..." + colorama.Style.RESET_ALL)
 
-
 def update_po_files():
     def get_current_msgids():
         pot = polib.pofile("locale/en_US/LC_MESSAGES/django.po")
@@ -70,15 +69,15 @@ if __name__ == "__main__":
     status("Make any missing migrations")
     cmd("python manage.py makemigrations")
 
+    status("Running isort")
+    cmd("isort temba")
+
     status("Running black")
-    cmd("black --line-length=119 --target-version=py36 temba")
+    cmd("black --line-length=119 temba")
 
     if not args.skip_flake:
         status("Running flake8")
         cmd("flake8")
-
-    status("Running isort")
-    cmd("isort -rc temba")
 
     # if any code changes were made, exit with error
     if cmd("git diff temba locale"):

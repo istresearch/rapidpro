@@ -2,14 +2,8 @@ import locale
 import resource
 from itertools import islice
 
-import iso8601
-
-from django.core.paginator import InvalidPage
-from django.http import Http404, QueryDict
-
 from django.conf import settings
 from django.db import transaction
-from django.views.generic.list import MultipleObjectMixin, BaseListView
 
 
 def str_to_bool(text):
@@ -56,62 +50,6 @@ def sizeof_fmt(num, suffix="b"):
             return "%3.1f %s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.1f %s%s" % (num, "Y", suffix)
-
-
-def get_dict_from_cursor(cursor):
-    """
-    Returns all rows from a cursor as a dict
-    """
-    desc = cursor.description
-    return [dict(zip([col[0] for col in desc], row)) for row in cursor.fetchall()]
-
-
-class DictStruct(object):
-    """
-    Wraps a dictionary turning it into a structure looking object. This is useful to 'mock' dictionaries
-    coming from Redis to look like normal objects
-    """
-
-    def __init__(self, classname, entries, datetime_fields=()):
-        self._classname = classname
-        self._values = entries
-
-        # for each of our datetime fields, convert back to datetimes
-        for field in datetime_fields:
-            value = self._values.get(field, None)
-            if value:
-                self._values[field] = iso8601.parse_date(value)
-
-        self._initialized = True
-
-    def __getattr__(self, item):
-        if item not in self._values:
-            raise AttributeError("%s does not have a %s field" % (self._classname, item))
-
-        return self._values[item]
-
-    def __setattr__(self, item, value):
-        # needed to prevent infinite loop
-        if "_initialized" not in self.__dict__:
-            return object.__setattr__(self, item, value)
-
-        if item not in self._values:
-            raise AttributeError("%s does not have a %s field" % (self._classname, item))
-
-        self._values[item] = value
-
-    def __str__(self):
-        return "%s [%s]" % (self._classname, self._values)
-
-
-def dict_to_struct(classname, attributes, datetime_fields=()):
-    """
-    Given a classname and a dictionary will return an object that allows for dot access to
-    the passed in attributes.
-
-    ex: dict_to_struct('MsgStruct', attributes)
-    """
-    return DictStruct(classname, attributes, datetime_fields)
 
 
 def prepped_request_to_str(prepped):
@@ -165,9 +103,9 @@ def print_max_mem_usage(msg=None):
 def on_transaction_commit(func):
     """
     Requests that the given function be called after the current transaction has been committed. However function will
-    be called immediately if CELERY_ALWAYS_EAGER is True or if there is no active transaction.
+    be called immediately if CELERY_TASK_ALWAYS_EAGER is True or if there is no active transaction.
     """
-    if getattr(settings, "CELERY_ALWAYS_EAGER", False):
+    if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
         func()
     else:
         transaction.on_commit(func)
@@ -197,71 +135,3 @@ def extract_constants(config, reverse=False):
         return {t[2]: t[0] for t in config}
     else:
         return {t[0]: t[2] for t in config}
-
-
-class MultipleObjectMixinExt(MultipleObjectMixin):
-
-    def paginate_queryset(self, queryset, page_size):
-        """Paginate the queryset, if needed."""
-        paginator = self.get_paginator(
-            queryset, page_size, orphans=self.get_paginate_orphans(),
-            allow_empty_first_page=self.get_allow_empty())
-        page_kwarg = self.page_kwarg
-        page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
-        try:
-            page_number = int(page)
-        except ValueError:
-            if page == 'last':
-                page_number = paginator.num_pages
-            else:
-                raise Http404(_("Page is not 'last', nor can it be converted to an int."))
-
-        changed = False
-        if page_number > paginator.num_pages:
-            page_number = paginator.num_pages
-            changed = True
-        try:
-            page = paginator.page(page_number)
-            if changed:
-                paginator.prev = page_number
-                return (paginator, page_number, page.object_list, page.has_other_pages())
-            return (paginator, page, page.object_list, page.has_other_pages())
-        except InvalidPage as e:
-            raise Http404(_('Invalid page (%(page_number)s): %(message)s') % {
-                'page_number': page_number,
-                'message': str(e)
-            })
-
-
-class BaseListViewExt(BaseListView):
-    def __init__(self, **kwargs):
-        super.__init__(**kwargs)
-
-    def get(self, request, *args, **kwargs):
-        self.object_list = self.get_queryset()
-        allow_empty = self.get_allow_empty()
-
-        if not allow_empty:
-            if self.get_paginate_by(self.object_list) is not None and hasattr(self.object_list, 'exists'):
-                is_empty = not self.object_list.exists()
-            else:
-                is_empty = not self.object_list
-            if is_empty:
-                raise Http404(_("Empty list and '%(class_name)s.allow_empty' is False.") % {
-                    'class_name': self.__class__.__name__,
-                })
-        context = self.get_context_data()
-        response = self.render_to_response(context)
-        if 'page' in self.request.GET and int(self.request.GET['page']) > context['paginator'].num_pages:
-            import copy
-            request_copy = copy.copy(self.request)
-            query_params = QueryDict(request_copy.META['QUERY_STRING']).copy()
-            query_params['page'] = context['paginator'].num_pages
-            request_copy.META['QUERY_STRING'] = query_params.urlencode()
-            response["REDIRECT"] = request_copy.get_full_path()
-        return response
-
-
-MultipleObjectMixin.paginate_queryset = MultipleObjectMixinExt.paginate_queryset
-BaseListView.get = BaseListViewExt.get
-

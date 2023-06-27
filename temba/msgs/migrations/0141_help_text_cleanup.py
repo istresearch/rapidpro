@@ -10,6 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("msgs", "0140_fail_msgs_missing_topups"),
+        ("msgs", "0140_auto_20200701_1756"),
     ]
 
     operations = [

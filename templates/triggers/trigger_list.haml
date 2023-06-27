@@ -131,8 +131,9 @@
               -block extra-rows
 
             -block paginator
-              -include "includes/pagination.haml"
-
+              .mt-3
+                -include "includes/pagination.haml"
+  
   %temba-modax#update-trigger
 -block extra-script
   {{ block.super }}
@@ -146,3 +147,4 @@
       modal.header = '{{ _("Update Trigger")|escapejs }}';
       modal.open = true;
     }
+    

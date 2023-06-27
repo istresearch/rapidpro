@@ -3,15 +3,16 @@
 from django.db import migrations, models
 
 
+# EDIT:
+# did not have 0002 at all during last merge, trying to avoid:
+# InconsistentMigrationHistory: Migration flows.0247_auto_20210126_1834 is applied before its dependency sql.0002_updates
 class Migration(migrations.Migration):
 
     dependencies = [
         ("flows", "0246_auto_20210119_1717"),
-        ("sql", "0001_initial"),
     ]
 
     operations = [
-        migrations.RunSQL("DROP FUNCTION temba_flow_for_run(_run_id INT);"),
         migrations.AlterField(
             model_name="flowpathrecentrun", name="id", field=models.BigAutoField(primary_key=True, serialize=False)
         ),

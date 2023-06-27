@@ -8,7 +8,7 @@ class SSLorLocalTrafficPermission(BasePermission):  # pragma: no cover
     """
     Verifies that the requestor is either using HTTPS or is a local requestor.
     """
-    #logger = logging.getLogger(__name__)
+    #logger = logging.getLogger()
 
     def has_permission(self, request: Request, view):
         # for debugging only, leave commented out otherwise:

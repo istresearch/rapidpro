@@ -5,7 +5,7 @@ from django import forms
 from django.db.models import Model
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 def ignoreDjangoModelAttrs(aDjangoModelClass: type[Model]):
     """

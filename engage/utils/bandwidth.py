@@ -1,10 +1,16 @@
 import requests
 from urllib.parse import urlencode
-from bandwidth import account, messaging, voice, version
+from bandwidth import account, version
 
-from django.utils.encoding import force_text, force_str
-if force_str and not force_text:
+from django.utils.encoding import force_str
+try:
+    from django.utils.encoding import force_text
+    if force_str and not force_text:
+        force_text = force_str
+    #endif
+except ImportError:
     force_text = force_str
+#endtry
 
 from temba.utils.http import HttpEvent
 

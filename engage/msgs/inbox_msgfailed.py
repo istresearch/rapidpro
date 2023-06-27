@@ -5,7 +5,7 @@ from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 from temba.msgs.views import MsgCRUDL
 
 
-#logger = logging.getLogger(__name__)
+#logger = logging.getLogger()
 
 class ViewInboxFailedMsgsOverrides(ClassOverrideMixinMustBeFirst, MsgCRUDL.Failed):
     """

@@ -4,7 +4,7 @@ import django
 django.setup()
 from django.contrib.auth.management.commands.createsuperuser import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
-from temba.orgs.models import Org
+from temba.orgs.models import Org, OrgRole
 
 try:
     superuser = get_user_model().objects.get(username=os.getenv('ADMIN_EMAIL'))
@@ -19,7 +19,7 @@ except ObjectDoesNotExist:
             password=os.getenv('ADMIN_PSWD')
         )
         print('Super user created.')
-    
+#endtry
 if Org.objects.filter(name=os.getenv('ADMIN_ORG')):
     print('Admin org already exists. SKIPPING.')
 elif superuser and os.getenv('ADMIN_ORG'):
@@ -30,7 +30,7 @@ elif superuser and os.getenv('ADMIN_ORG'):
         created_by=superuser,
         modified_by=superuser
     )
-    org.administrators.add(superuser)
+    org.add_user(superuser, OrgRole.ADMINISTRATOR)
     org.initialize()
     print('Admin org created.')
-
+#endif create admin org

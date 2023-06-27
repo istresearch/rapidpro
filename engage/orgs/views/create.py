@@ -2,7 +2,6 @@ import logging
 
 import pytz
 from django import forms
-from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -14,12 +13,12 @@ from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 from smartmin.views import SmartCreateView
 
 from temba import settings
-from temba.orgs.models import Org, OrgRole
+from temba.orgs.models import Org, OrgRole, User
 from temba.orgs.views import OrgCRUDL
 from temba.utils import languages
 from temba.utils.timezones import TimeZoneFormField
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
 
 
 class OrgCreateForm(forms.ModelForm):

@@ -11,8 +11,8 @@ services:
       - '8000:8000'
     environment:
       - DOMAIN_NAME=0.0.0.0
+      - DOMAIN_SCHEME=http
       - ALLOWED_HOSTS=*
-      - TEMBA_HOST=0.0.0.0
       - DJANGO_DEBUG=off
       - DATABASE_URL=postgresql://postgres:postgres@postgresql/rapidpro
       - REDIS_URL=redis://redis:6379/0
