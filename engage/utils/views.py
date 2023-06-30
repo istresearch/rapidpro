@@ -1,10 +1,21 @@
 from django.core.paginator import InvalidPage
 from django.http import Http404, QueryDict
 from django.utils.translation import gettext_lazy as _
+from django.views import defaults
 from django.views.generic.list import MultipleObjectMixin, BaseListView
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 
+
+def page_not_found(request, exception=None):
+    return defaults.page_not_found(request, exception, template_name='404.haml')
+
+def server_error(request):
+    try:
+        return defaults.server_error(request, template_name='500.haml')
+    except:
+        return defaults.server_error(request, template_name='500.html')
+    #endtry
 
 class MultipleObjectMixinOverrides(ClassOverrideMixinMustBeFirst, MultipleObjectMixin):
 

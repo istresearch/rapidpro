@@ -1,6 +1,5 @@
-import logging
-
 from django.contrib.auth.models import User as AuthUser
+from django.utils import timezone
 from django.utils.functional import cached_property
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
