@@ -2,6 +2,7 @@ import logging
 
 from django import forms
 from django.contrib import messages
+from django.contrib.auth.models import Group
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -57,6 +58,7 @@ class OrgViewAssignUserMixin(ClassOverrideMixinMustBeFirst, OrgCRUDL):
                     (OrgRole.EDITOR.code, OrgRole.EDITOR.display),
                     (OrgRole.VIEWER.code, OrgRole.VIEWER.display),
                     (OrgRole.SURVEYOR.code, OrgRole.SURVEYOR.display),
+                    (OrgRole.AGENT.code, OrgRole.AGENT.display),
                 ),
                 required=True,
                 initial=OrgRole.EDITOR.code,
@@ -72,7 +74,7 @@ class OrgViewAssignUserMixin(ClassOverrideMixinMustBeFirst, OrgCRUDL):
             #enddef init
 
             def get_org_choices(self):
-                admin_orgs = OrgRole.ADMINISTRATOR.get_orgs(self.user)
+                admin_orgs = self.user.get_orgs(roles=[OrgRole.ADMINISTRATOR])
                 return admin_orgs.filter(is_active=True).distinct().order_by("name", "slug")
             #enddef get_org_choices
 
@@ -102,9 +104,12 @@ class OrgViewAssignUserMixin(ClassOverrideMixinMustBeFirst, OrgCRUDL):
             org.add_user(user=user, role=role)
 
             # when a user's role changes, delete any API tokens they're no longer allowed to have
-            api_roles = APIToken.get_allowed_roles(org, user)
-            for token in APIToken.objects.filter(org=org, user=user).exclude(role__in=api_roles):
+            api_role: OrgRole = APIToken.get_default_role(org, user)
+            for token in APIToken.objects.filter(org=org, user=user).exclude(
+                    role=Group.objects.get(name=api_role.group)
+            ):
                 token.release()
+            #endfor
 
             org.save()
             logger.error("user assigned to org", extra=self.withLogInfo({
@@ -133,11 +138,14 @@ class OrgViewAssignUserMixin(ClassOverrideMixinMustBeFirst, OrgCRUDL):
                     if user:
                         if user.id != self.get_user().id:
                             self.assign_user(org, role, user)
+                        elif org.id != user.get_org():
+                            self.assign_user(org, role, user)
                         else:
                             logger.warning("assigned_user cannot be self", extra=self.withLogInfo({
                                 'assigned_user': self.get_user().username,
                             }))
                             messages.warning(self.request, _("You cannot re-assign yourself."))
+                        #endif
                     else:
                         theName = form.data.get("username")
                         logger.error("assigned_user not found", extra=self.withLogInfo({
