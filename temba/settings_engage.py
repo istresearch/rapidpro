@@ -277,6 +277,11 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', 'mypassword')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
 
+ORG_PLAN_TOPUP = TOPUP_PLAN
+ORG_PLAN_ENGAGE = 'managed'
+# Default plan for new orgs
+DEFAULT_PLAN = ORG_PLAN_ENGAGE
+# default keys for all brands
 BRANDING["rapidpro.io"].update({
     "logo_link": env('BRANDING_LOGO_LINK', '/'),
     "styles": ['fonts/style.css', ],
@@ -284,6 +289,7 @@ BRANDING["rapidpro.io"].update({
     "allow_signups": env('BRANDING_ALLOW_SIGNUPS', True),
     "tiers": dict(import_flows=0, multi_user=0, multi_org=0),
     "version": None,
+    "default_plan": ORG_PLAN_ENGAGE,
     'has_sso': False,
     'sso_login_url': "",
     'sso_logout_url': "",
@@ -490,11 +496,6 @@ else:
 #Use CHAT_MODE_CHOICES to configure the chatmodes that are available to the Postmaster channel
 from engage.channels.types.postmaster.schemes import PM_Scheme_Default_Chats
 CHAT_MODE_CHOICES = PM_Scheme_Default_Chats
-
-ORG_PLAN_TOPUP = TOPUP_PLAN
-ORG_PLAN_ENGAGE = 'managed'
-# Default plan for new orgs
-DEFAULT_PLAN = ORG_PLAN_ENGAGE
 
 mwl = list(MIDDLEWARE)
 # replace BrandingMiddleware
