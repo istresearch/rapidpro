@@ -7,15 +7,51 @@ from django.views.generic.list import MultipleObjectMixin, BaseListView
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 
 
+def permission_denied(request, exception=None):
+    """
+    403 error
+    :param request: the request
+    :param exception: the exception, if any
+    :return: the rendered page
+    """
+    # if temba-modal, return plain error page
+    if request.headers.get('X-Pjax') == "1":
+        return defaults.permission_denied(request, exception, template_name=defaults.ERROR_403_TEMPLATE_NAME)
+    else:  # else return frame-templated error page
+        return defaults.permission_denied(request, exception, template_name='403_permission_denied.haml')
+#enddef permission_denied
+
 def page_not_found(request, exception=None):
-    return defaults.page_not_found(request, exception, template_name='404.haml')
+    """
+    404 error
+    :param request: the request
+    :param exception: the exception, if any
+    :return: the rendered page
+    """
+    # if temba-modal, return plain error page
+    if request.headers.get('X-Pjax') == "1":
+        return defaults.page_not_found(request, exception, template_name='404.html')
+    else:  # else return frame-templated error page
+        return defaults.page_not_found(request, exception, template_name='404_not_found.haml')
+#enddef page_not_found
 
 def server_error(request):
-    try:
-        return defaults.server_error(request, template_name='500.haml')
-    except:
-        return defaults.server_error(request, template_name='500.html')
-    #endtry
+    """
+    500 error
+    :param request: the request
+    :return: the rendered page
+    """
+    # if temba-modal, return plain error page
+    if request.headers.get('X-Pjax') == "1":
+        return defaults.page_not_found(request, template_name='500.html')
+    else:  # else return frame-templated error page
+        try:
+            return defaults.page_not_found(request, template_name='500_server_error.haml')
+        except:  # else return plain error page
+            return defaults.server_error(request, template_name='500.html')
+        #endtry
+    #endif
+#enddif server_error
 
 class MultipleObjectMixinOverrides(ClassOverrideMixinMustBeFirst, MultipleObjectMixin):
 

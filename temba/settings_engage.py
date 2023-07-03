@@ -64,6 +64,7 @@ APP_URLS += (
     'engage.auth.urls',
     'engage.utils.user_guide',
 )
+HANDLER_403 = 'engage.utils.views.permission_denied'
 HANDLER_404 = 'engage.utils.views.page_not_found'
 HANDLER_500 = 'engage.utils.views.server_error'
 

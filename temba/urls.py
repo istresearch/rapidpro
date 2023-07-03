@@ -54,5 +54,6 @@ if settings.DEBUG:
 for app in settings.APP_URLS:  # pragma: needs cover
     urlpatterns.append(re_path(r"^", include(app)))
 
+handler403 = settings.HANDLER_403
 handler404 = settings.HANDLER_404
 handler500 = settings.HANDLER_500
