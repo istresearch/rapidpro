@@ -18,6 +18,9 @@ RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
   notify "downloaded and extracted static files tarball"; \
 fi
 
+ARG USE_WEB_STATIC_FILE=LICENSE
+ADD ${USE_WEB_STATIC_FILE} /opt/code2use
+
 # ========================================================================
 
 FROM ${FROM_STAGE}

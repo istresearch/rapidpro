@@ -1,10 +1,62 @@
+import logging
+
 from django.core.paginator import InvalidPage
-from django.http import Http404, QueryDict
+from django.forms import forms
+from django.http import Http404, QueryDict, HttpResponseForbidden
 from django.utils.translation import gettext_lazy as _
+from django.views import defaults
 from django.views.generic.list import MultipleObjectMixin, BaseListView
+
+from temba.utils.views import BulkActionMixin
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 
+
+def permission_denied(request, exception=None):
+    """
+    403 error
+    :param request: the request
+    :param exception: the exception, if any
+    :return: the rendered page
+    """
+    # if temba-modal, return plain error page
+    if request.headers.get('X-Pjax') == "1":
+        return defaults.permission_denied(request, exception, template_name=defaults.ERROR_403_TEMPLATE_NAME)
+    else:  # else return frame-templated error page
+        return defaults.permission_denied(request, exception, template_name='403_permission_denied.haml')
+#enddef permission_denied
+
+def page_not_found(request, exception=None):
+    """
+    404 error
+    :param request: the request
+    :param exception: the exception, if any
+    :return: the rendered page
+    """
+    # if temba-modal, return plain error page
+    if request.headers.get('X-Pjax') == "1":
+        return defaults.page_not_found(request, exception, template_name='404.html')
+    else:  # else return frame-templated error page
+        return defaults.page_not_found(request, exception, template_name='404_not_found.haml')
+#enddef page_not_found
+
+def server_error(request):
+    """
+    500 error
+    :param request: the request
+    :return: the rendered page
+    """
+    # if temba-modal, return plain error page
+    if request.headers.get('X-Pjax') == "1":
+        return defaults.page_not_found(request, template_name='500.html')
+    else:  # else return frame-templated error page
+        try:
+            return defaults.page_not_found(request, template_name='500_server_error.haml')
+        except:  # else return plain error page
+            return defaults.server_error(request, template_name='500.html')
+        #endtry
+    #endif
+#enddif server_error
 
 class MultipleObjectMixinOverrides(ClassOverrideMixinMustBeFirst, MultipleObjectMixin):
 
@@ -84,3 +136,62 @@ class BaseListViewOverrides(ClassOverrideMixinMustBeFirst, BaseListView):
     #enddef get
 
 #endclass BaseListViewOverrides
+
+class BulkActionMixinOverrides(ClassOverrideMixinMustBeFirst, BulkActionMixin):
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handles a POSTed action form and returns a response
+        """
+        user = self.get_user()
+        org = user.get_org()
+        form = BulkActionMixin.Form(
+            self.get_bulk_actions(), self.get_queryset(), self.get_bulk_action_labels(), data=self.request.POST
+        )
+        action_error = None
+
+        if form.is_valid():
+            action = form.cleaned_data["action"]
+            objects = form.cleaned_data["objects"]
+            all_objects = form.cleaned_data["all"]
+            label = form.cleaned_data.get("label")
+
+            if all_objects:
+                objects = self.get_queryset()
+            else:
+                objects_ids = [o.id for o in objects]
+                self.kwargs["bulk_action_ids"] = objects_ids  # include in kwargs so is accessible in get call below
+
+                # convert objects queryset to one based only on org + ids
+                objects = self.model._default_manager.filter(org=org, id__in=objects_ids)
+            #endif
+            # check we have the required permission for this action
+            permission = self.get_bulk_action_permission(action)
+            if not user.has_perm(permission) and not user.has_org_perm(org, permission):
+                return HttpResponseForbidden()
+            #endif
+            try:
+                self.apply_bulk_action(user, action, objects, label)
+            except forms.ValidationError as e:
+                action_error = ", ".join(e.messages)
+            except Exception as ex:
+                logger = logging.getLogger()
+                logger.exception(f"error applying '{action}' to {self.model.__name__} objects", exc_info=ex, extra={
+                    'user': user.email,
+                    'model': self.model.__name__,
+                    'action': action,
+                    'ex': ex,
+                })
+                action_error = f"Failed: {ex}"
+            #endtry
+        #endif form is valid
+        response = self.get(request, *args, **kwargs)
+        if action_error:
+            response["Temba-Toast"] = action_error
+        elif hasattr(self, 'apply_bulk_action_toast') and self.apply_bulk_action_toast:
+            response["Temba-Toast"] = self.apply_bulk_action_toast
+        #endif
+        return response
+    #enddef post
+
+#endclass BulkActionMixinOverrides

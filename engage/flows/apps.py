@@ -14,6 +14,9 @@ class AppConfig(BaseAppConfig):
 
         from .views import FlowCRUDLOverrides
         FlowCRUDLOverrides.setClassOverrides()
+
+        from .views import ArchivedViewOverrides
+        ArchivedViewOverrides.setClassOverrides()
     #enddef ready
 
 #endclass AppConfig

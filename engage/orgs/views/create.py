@@ -2,6 +2,7 @@ import logging
 
 import pytz
 from django import forms
+from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -12,7 +13,6 @@ from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 
 from smartmin.views import SmartCreateView
 
-from temba import settings
 from temba.orgs.models import Org, OrgRole, User
 from temba.orgs.views import OrgCRUDL
 from temba.utils import languages
@@ -108,19 +108,6 @@ class OrgViewCreateOverride(ClassOverrideMixinMustBeFirst, OrgCRUDL):
             # create views don't have an object, so this is always False
             return False
 
-        def pre_save(self, obj):
-            if self.request.user.id and self.request.user.id > 0:
-                # auto populate created_by if it is present
-                if hasattr(obj, 'created_by_id'):
-                    obj.created_by = self.request.user
-
-                # auto populate modified_by if it is present
-                if hasattr(obj, 'modified_by_id'):
-                    obj.modified_by = self.request.user
-
-            return obj
-        #enddef pre_save
-
         def derive_success_message(self):
             # First check whether a default message has been set
             if self.success_message is None:
@@ -137,13 +124,21 @@ class OrgViewCreateOverride(ClassOverrideMixinMustBeFirst, OrgCRUDL):
         #enddef derive_title
 
         def create_user(self):
-            user = User.objects.filter(username__iexact=self.form.cleaned_data["email"]).first()
-            if not user:
-                user = Org.create_user(self.form.cleaned_data["email"], self.form.cleaned_data["password"])
-
-            user.first_name = self.form.cleaned_data["first_name"]
-            user.last_name = self.form.cleaned_data["last_name"]
-            user.save(update_fields=("first_name", "last_name"))
+            user = User.objects.filter(
+                username__iexact=self.form.cleaned_data["email"]
+            ).first()
+            if user:
+                user.first_name = self.form.cleaned_data["first_name"]
+                user.last_name = self.form.cleaned_data["last_name"]
+                user.save(update_fields=("first_name", "last_name"))
+            else:
+                user = User.create(
+                    self.form.cleaned_data["email"],
+                    self.form.cleaned_data["first_name"],
+                    self.form.cleaned_data["last_name"],
+                    self.form.cleaned_data["password"],
+                )
+            #endif
             return user
         #enddef create_user
 
@@ -164,8 +159,9 @@ class OrgViewCreateOverride(ClassOverrideMixinMustBeFirst, OrgCRUDL):
             obj.language = self.request.branding.get("language", settings.DEFAULT_LANGUAGE)
             obj.plan = self.request.branding.get("default_plan", settings.DEFAULT_PLAN)
 
-            if obj.timezone.zone in pytz.country_timezones("US"):
+            if obj.timezone.zone in pytz.country_timezones["US"]:
                 obj.date_format = Org.DATE_FORMAT_MONTH_FIRST
+            #endif
 
             # if we have a default UI language, use that as the default flow language too
             default_flow_language = languages.alpha2_to_alpha3(obj.language)
@@ -181,38 +177,15 @@ class OrgViewCreateOverride(ClassOverrideMixinMustBeFirst, OrgCRUDL):
                     "orgs.org_grant"
             ):  # pragma: needs cover
                 obj.add_user(self.request.user, OrgRole.ADMINISTRATOR)
+            #endif
 
             if self.form.cleaned_data["credits"] == settings.ORG_PLAN_ENGAGE:
-                self.init_org(org=obj)
+                obj.init_org()
             else:
                 obj.initialize(branding=obj.get_branding(), topup_size=self.form.cleaned_data["credits"])
-
+            #endif
             return obj
         #enddef post_save
-
-        def init_org(self, org):
-            """
-            Initializes an organization, creating all the dependent objects we need for it to work properly.
-            """
-            from temba.middleware import BrandingMiddleware
-            from temba.contacts.models import ContactField, ContactGroup
-
-            org.is_multi_user = True
-            org.is_multi_org = True
-            org.plan = settings.ORG_PLAN_ENGAGE
-            org.save(update_fields=("is_multi_user", "is_multi_org", 'plan'))
-            with transaction.atomic():
-                branding = org.get_branding()
-                if not branding:
-                    branding = BrandingMiddleware.get_branding_for_host("")
-                #endif
-                ContactGroup.create_system_groups(org)
-                ContactField.create_system_fields(org)
-            #endwith transaction
-
-            # outside the transaction since it is going to call mailroom for flow validation
-            org.create_sample_flows(branding.get("api_link", ""))
-        #enddef init_org
 
     #endclass Create
 

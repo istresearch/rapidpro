@@ -1,0 +1,3 @@
+web: venv/bin/uwsgi --http-auto-chunked --http-keepalive
+beat: venv/bin/celery --app=temba beat --loglevel=INFO
+worker: venv/bin/celery --app=temba worker --loglevel=INFO --queues=celery,msgs,flows,handler

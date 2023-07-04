@@ -1,10 +1,10 @@
-import logging
 from datetime import timedelta
+import logging
 
-from django.utils.encoding import force_str
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
@@ -111,3 +111,32 @@ class FlowCRUDLOverrides(ClassOverrideMixinMustBeFirst, FlowCRUDL):
     #endclass Json
 
 #endclass FlowCRUDLOverrides
+
+class ArchivedViewOverrides(ClassOverrideMixinMustBeFirst, FlowCRUDL.Archived):
+    bulk_action_permissions = {"delete": "flows.flow_delete"}
+
+    def get_bulk_actions(self):
+        actions = []
+        if self.has_org_perm("flows.flow_update"):
+            actions.append("restore")
+        #endif
+        if self.has_org_perm("flows.flow_delete"):
+            actions.append("delete")
+        #endif
+        return actions
+    #enddef get_bulk_actions
+
+    def apply_bulk_action(self, user, action, objects, label):
+        self.apply_bulk_action_toast = None
+        if action == "delete":
+            num_obj = len(objects)
+            self.getOrigClsAttr('apply_bulk_action')(self, user, action, objects, label)
+            if num_obj > 1:
+                self.apply_bulk_action_toast = f"All {num_obj} flows deleted"
+            #endif
+        else:
+            self.getOrigClsAttr('apply_bulk_action')(self, user, action, objects, label)
+        #endif
+    #enddef apply_bulk_action
+
+#endclass Archived

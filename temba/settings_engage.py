@@ -64,6 +64,9 @@ APP_URLS += (
     'engage.auth.urls',
     'engage.utils.user_guide',
 )
+HANDLER_403 = 'engage.utils.views.permission_denied'
+HANDLER_404 = 'engage.utils.views.page_not_found'
+HANDLER_500 = 'engage.utils.views.server_error'
 
 TEMPLATES[0]['DIRS'].insert(0,
     os.path.join(PROJECT_DIR, "../engage/hamls"),
@@ -156,7 +159,7 @@ IS_AWS_S3_REGION_DEFAULT = bool(AWS_S3_REGION_NAME == 'us-east-1')
 AWS_SIGNED_URL_DURATION = int(env('AWS_SIGNED_URL_DURATION', '1800'))
 AWS_DEFAULT_ACL = env('AWS_DEFAULT_ACL', '')
 AWS_LOCATION = env('AWS_LOCATION', '')
-AWS_QUERYSTRING_EXPIRE = '157784630' #unsure why this is hardcoded as a string
+AWS_QUERYSTRING_EXPIRE = '157784630'  # unsure why this is hardcoded as a string
 AWS_STATIC = bool(AWS_STORAGE_BUCKET_NAME) and env('AWS_STATIC', False)
 AWS_MEDIA = bool(AWS_STORAGE_BUCKET_NAME) and env('AWS_MEDIA', True)
 AWS_S3_USE_SSL = bool(env('AWS_S3_USE_SSL', True))
@@ -275,6 +278,11 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', 'mypassword')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
 
+ORG_PLAN_TOPUP = TOPUP_PLAN
+ORG_PLAN_ENGAGE = 'managed'
+# Default plan for new orgs
+DEFAULT_PLAN = ORG_PLAN_ENGAGE
+# default keys for all brands
 BRANDING["rapidpro.io"].update({
     "logo_link": env('BRANDING_LOGO_LINK', '/'),
     "styles": ['fonts/style.css', ],
@@ -282,6 +290,7 @@ BRANDING["rapidpro.io"].update({
     "allow_signups": env('BRANDING_ALLOW_SIGNUPS', True),
     "tiers": dict(import_flows=0, multi_user=0, multi_org=0),
     "version": None,
+    "default_plan": ORG_PLAN_ENGAGE,
     'has_sso': False,
     'sso_login_url': "",
     'sso_logout_url': "",
@@ -488,11 +497,6 @@ else:
 #Use CHAT_MODE_CHOICES to configure the chatmodes that are available to the Postmaster channel
 from engage.channels.types.postmaster.schemes import PM_Scheme_Default_Chats
 CHAT_MODE_CHOICES = PM_Scheme_Default_Chats
-
-ORG_PLAN_TOPUP = TOPUP_PLAN
-ORG_PLAN_ENGAGE = 'managed'
-# Default plan for new orgs
-DEFAULT_PLAN = ORG_PLAN_ENGAGE
 
 mwl = list(MIDDLEWARE)
 # replace BrandingMiddleware

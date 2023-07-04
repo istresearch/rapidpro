@@ -38,6 +38,9 @@ class AppConfig(BaseAppConfig):
 
         from .views.resthooks import ResthookFormOverrides
         ResthookFormOverrides.setClassOverrides()
+
+        from .views.sub_orgs import OrgViewSubOrgsOverrides
+        OrgViewSubOrgsOverrides.setClassOverrides()
     #enddef ready
 
 #endclass AppConfig
