@@ -24,6 +24,9 @@ class AppConfig(BaseAppConfig):
         from temba.utils import models as TUM
         from .models import RequireUpdateFieldsMixin
         TUM.RequireUpdateFieldsMixin = RequireUpdateFieldsMixin
+
+        from .views import BulkActionMixinOverrides
+        BulkActionMixinOverrides.setClassOverrides()
     #enddef ready
 
 #endclass AppConfig

@@ -16,6 +16,8 @@ class AppConfig(BaseAppConfig):
 
         from .views import ContactListOverrides
         ContactListOverrides.setClassOverrides()
+        from .views import ContactReadOverrides
+        ContactReadOverrides.setClassOverrides()
     #enddef ready
 
 #endclass AppConfig

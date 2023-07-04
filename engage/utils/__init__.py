@@ -26,7 +26,11 @@ def var_dump( aThing, aMsg=None ):
         print(aMsg)
     from pprint import pprint
     from copy import deepcopy
-    pprint(_var_dump(deepcopy(aThing)))
+    try:
+        pprint(_var_dump(deepcopy(aThing)))
+    except:
+        print(f"error, skipping '{aThing}'")
+    #endtry
 
 def get_required_arg(arg_name, kwargs, bCheckForEmpty=True):
     """

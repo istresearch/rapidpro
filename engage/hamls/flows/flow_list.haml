@@ -14,6 +14,11 @@
 
   #pjax
     -block pjax
+      -if org_perms.flows.flow_delete
+        %temba-dialog#delete-confirmation.hide(header='{{ _("Delete Selected Flows")|escapejs }}' primaryButtonName='{{ _("Delete")|escapejs }}' destructive='true')
+          .p-6
+            -trans "Are you sure you want to delete the selected flows? This cannot be undone."
+
       .lp-frame
         .left
           .flex.flex-col
@@ -154,6 +159,11 @@
                       .-mt-1.mr-2.glyph.icon-excel
                       -trans "Download Results"
 
+                    - if 'delete' in actions and org_perms.flows.flow_delete
+                      .button-action.button-danger(onclick='onDeleteClicked()')
+                        .-mt-1.mr-2.glyph.icon-remove
+                        -trans "Delete"
+
               .flex-grow.ml-2.items-center
                 -block title-text
                   .page-title.leading-tight
@@ -260,5 +270,18 @@
           modal.setAttribute("endpoint", endpoint + '?ids=' + ids);
         }
         modal.open = true;
+      }
+    {% endif %}
+    {% if org_perms.flows.flow_delete %}
+      function onDeleteClicked(e) {
+        var deleteConfirmation = document.querySelector("#delete-confirmation");
+        deleteConfirmation.classList.remove("hide");
+        deleteConfirmation.open = true;
+        deleteConfirmation.addEventListener("temba-button-clicked", function(e) {
+          if (!e.detail.button.secondary) {
+            runActionOnObjectRows("delete");
+          }
+          deleteConfirmation.open = false;
+        });
       }
     {% endif %}

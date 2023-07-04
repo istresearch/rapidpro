@@ -1,10 +1,10 @@
+from django.conf import settings
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel
 from temba.orgs.models import IntegrationType
 from temba.orgs.views import OrgCRUDL
-from temba.settings import ORG_PLAN_TOPUP
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 from engage.utils.logs import LogExtrasMixin
@@ -40,7 +40,7 @@ class HomeOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRUDL.Home
         org = user.get_org()
 
         # if we are on the topups plan, show our usual credits view
-        if org.plan == ORG_PLAN_TOPUP:
+        if org.plan == settings.ORG_PLAN_TOPUP:
             if self.has_org_perm("orgs.topup_list"):
                 formax.add_section("topups", reverse("orgs.topup_list"), icon="icon-coins", action="link")
 
@@ -162,4 +162,4 @@ class HomeOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRUDL.Home
         formax.add_section("archives", reverse("archives.archive_message"), icon="icon-box", action="link")
     #enddef derive_formax_sections
 
-#endclass HomeMixin
+#endclass HomeOverrides
