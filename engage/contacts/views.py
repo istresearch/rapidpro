@@ -5,6 +5,7 @@ from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 from engage.utils.middleware import RedirectTo
 
 from temba.contacts.views import ContactCRUDL
+from temba.utils.models import patch_queryset_count
 
 class ContactListOverrides(ClassOverrideMixinMustBeFirst, ContactCRUDL.List):
 
@@ -21,6 +22,30 @@ class ContactListOverrides(ClassOverrideMixinMustBeFirst, ContactCRUDL.List):
 
         return links
     #enddef get_gear_links
+
+    secondary_order_by = ["name"]
+
+    def get_queryset(self, **kwargs):
+        search_query = self.request.GET.get("search", None)
+        if search_query:
+            return self.getOrigClsAttr('get_queryset')(self, **kwargs)
+        else:
+            sort_on = self.request.GET.get("sort_on", None)
+            if sort_on:
+                self.sort_direction = "desc" if sort_on.startswith("-") else "asc"
+                self.sort_field = sort_on.lstrip("-")
+                sort_order = [sort_on]
+            else:
+                self.sort_direction = None
+                self.sort_field = None
+                sort_order = []
+            #endif
+            sort_order += self.secondary_order_by
+            qs = self.group.contacts.filter(org=self.request.org).order_by(*sort_order).prefetch_related("org", "groups")
+            patch_queryset_count(qs, self.group.get_member_count)
+            return qs
+        #endif search_query
+    #enddef get_queryset
 
 #endclass ContactListOverrides
 

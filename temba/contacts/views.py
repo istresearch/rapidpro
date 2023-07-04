@@ -286,7 +286,7 @@ class ContactListView(SpaMixin, OrgPermsMixin, BulkActionMixin, SmartListView):
         sort_on = self.request.GET.get("sort_on", "")
         page = self.request.GET.get("page", "1")
 
-        offset = (int(page) - 1) * 50
+        offset = (int(page) - 1) * self.paginate_by
 
         self.sort_direction = "desc" if sort_on.startswith("-") else "asc"
         self.sort_field = sort_on.lstrip("-")
