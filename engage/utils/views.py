@@ -1,8 +1,13 @@
+import logging
+
 from django.core.paginator import InvalidPage
-from django.http import Http404, QueryDict
+from django.forms import forms
+from django.http import Http404, QueryDict, HttpResponseForbidden
 from django.utils.translation import gettext_lazy as _
 from django.views import defaults
 from django.views.generic.list import MultipleObjectMixin, BaseListView
+
+from temba.utils.views import BulkActionMixin
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
 
@@ -131,3 +136,62 @@ class BaseListViewOverrides(ClassOverrideMixinMustBeFirst, BaseListView):
     #enddef get
 
 #endclass BaseListViewOverrides
+
+class BulkActionMixinOverrides(ClassOverrideMixinMustBeFirst, BulkActionMixin):
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handles a POSTed action form and returns a response
+        """
+        user = self.get_user()
+        org = user.get_org()
+        form = BulkActionMixin.Form(
+            self.get_bulk_actions(), self.get_queryset(), self.get_bulk_action_labels(), data=self.request.POST
+        )
+        action_error = None
+
+        if form.is_valid():
+            action = form.cleaned_data["action"]
+            objects = form.cleaned_data["objects"]
+            all_objects = form.cleaned_data["all"]
+            label = form.cleaned_data.get("label")
+
+            if all_objects:
+                objects = self.get_queryset()
+            else:
+                objects_ids = [o.id for o in objects]
+                self.kwargs["bulk_action_ids"] = objects_ids  # include in kwargs so is accessible in get call below
+
+                # convert objects queryset to one based only on org + ids
+                objects = self.model._default_manager.filter(org=org, id__in=objects_ids)
+            #endif
+            # check we have the required permission for this action
+            permission = self.get_bulk_action_permission(action)
+            if not user.has_perm(permission) and not user.has_org_perm(org, permission):
+                return HttpResponseForbidden()
+            #endif
+            try:
+                self.apply_bulk_action(user, action, objects, label)
+            except forms.ValidationError as e:
+                action_error = ", ".join(e.messages)
+            except Exception as ex:
+                logger = logging.getLogger()
+                logger.exception(f"error applying '{action}' to {self.model.__name__} objects", exc_info=ex, extra={
+                    'user': user.email,
+                    'model': self.model.__name__,
+                    'action': action,
+                    'ex': ex,
+                })
+                action_error = f"Failed: {ex}"
+            #endtry
+        #endif form is valid
+        response = self.get(request, *args, **kwargs)
+        if action_error:
+            response["Temba-Toast"] = action_error
+        elif hasattr(self, 'apply_bulk_action_toast') and self.apply_bulk_action_toast:
+            response["Temba-Toast"] = self.apply_bulk_action_toast
+        #endif
+        return response
+    #enddef post
+
+#endclass BulkActionMixinOverrides

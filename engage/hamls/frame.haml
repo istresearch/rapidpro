@@ -117,7 +117,13 @@
           %link{rel:"stylesheet", href:"{% static brand.final_style %}", type:"text/less"}
 
       -block extra-less
+
       -block extra-style
+
+      :css
+        .button-action.button-danger {
+          display: inherit;
+        }
 
     -for incl in brand.head_includes
       -include incl
