@@ -53,25 +53,54 @@
 {% block extra-script %}
 {{ block.super }}
 :javascript
-  {% if current_label.id %}
-    current_label_id = {{current_label.id}};
-  {% else %}
-    current_label_id = 0;
-  {% endif %}
-  $(document).on("click", '.multiselect-select-all', function(event) {
+  current_label_id = {% if current_label.id %}{{current_label.id}}{% else %}0{% endif %};
+
+  function onClickSelectAll( event ) {
+    function setCheckbox( aCheckbox, val ) {
+        var row = aCheckbox.parentElement.parentElement;
+        var tweak = new Map().set('animateChange', false);
+        var icon_el = aCheckbox.shadowRoot.querySelector("temba-icon");
+        var save_onclick = aCheckbox.getAttribute('onclick');
+        aCheckbox.removeAttribute('onclick');
+        aCheckbox.click();
+        if ( val ) {
+            icon_el.updated(tweak.set('name','check-square'));
+            icon_el.update();
+            row.classList.add('checked');
+        } else {
+            icon_el.updated(tweak.set('name','square'));
+            icon_el.update();
+            row.classList.remove('checked');
+        }
+        aCheckbox.setAttribute('onclick', save_onclick);
+    }
+
     $(this).toggleClass('checked');
     if ( $(this).hasClass('checked') ) {
-      $('tr:not(.checked) td temba-checkbox').each(function() { $(this)[0].click(); });
+      $('tr:not(.checked) > td > temba-checkbox').each(function() {
+        setCheckbox($(this)[0], true);
+      });
     } else {
-      $('tr.checked td temba-checkbox').each(function() { $(this)[0].click(); });
+      $('tr.checked > td > temba-checkbox').each(function() {
+        setCheckbox($(this)[0], false);
+      });
     }
-  });
 
-<script>
-  $(document).ready(function(){
-    $("th.header").click(function(evt){
+    var listButtons = $('.list-buttons-container');
+    var pageTitle = $('.page-title');
+    if ( $('tr.checked').length ) {
+        listButtons.addClass('visible');
+        pageTitle.addClass('hidden');
+    } else {
+        listButtons.removeClass('visible');
+        pageTitle.removeClass('hidden');
+    }
+    updateLabelMenu();
+  }
+
+  function onClickSortHeader( e ) {
       // build up our ordering
-      var field = evt.target.id.substr(evt.target.id.indexOf("-")+1)
+      var field = e.target.id.substr(e.target.id.indexOf("-")+1)
 
       {% if order_asc %}
       if (field == "{{order}}"){
@@ -80,8 +109,16 @@
       {% endif %}
 
       document.location = "{{url_params|urlencode}}_order=" + field;
-    });
+  }
+
+  function handlePjaxAreaListeners() {
+      $('.multiselect-select-all').off("click").on("click", onClickSelectAll);
+      $('th.header').off("click").on("click", onClickSortHeader);
+  }
+  $(document).ready(function() {
+    handlePjaxAreaListeners();
+    document.addEventListener('temba-pjax-complete', handlePjaxAreaListeners, false);
   });
-</script>
+
 
 {% endblock %}
