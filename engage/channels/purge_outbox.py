@@ -26,7 +26,7 @@ class PurgeOutboxMixin:
 
         @classmethod
         def derive_url_pattern(cls, path, action):
-            return r"^%s/(?P<channel_type>[^/]+)/(?P<channel_uuid>[^/]+)/$" % ('purge')
+            return r"^%s/(?P<channel_type>[^/]+)/(?P<channel_uuid>[^/]+)/$" % ('purge',)
 
         def dispatch(self, request: HttpRequest, *args, **kwargs):
             # non authenticated users without orgs get an error (not the org chooser)
