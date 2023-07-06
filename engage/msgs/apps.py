@@ -30,6 +30,14 @@ class AppConfig(BaseAppConfig):
 
         from .views.exporter import MsgExporterOverrides
         MsgExporterOverrides.setClassOverrides()
+
+        from temba.msgs.views import MsgCRUDL
+        from .views.read import Read
+        MsgCRUDL.Read = Read
+        MsgCRUDL.actions += ("read",)
+    #enddef on_apply_overrides
+
+
     #enddef ready
 
 #endclass AppConfig
