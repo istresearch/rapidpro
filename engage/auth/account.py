@@ -98,10 +98,21 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
         if self.has_perm(permission):
             return True
         org = self.get_org() if hasattr(self, 'get_org') and callable(self.get_org) else None
-        if org and hasattr(self, "has_org_perm"):
+        if org:
             return self.has_org_perm(org, permission)
         return False
     #enddef is_allowed
+
+    def is_any_allowed(self, perm_set: set) -> bool:
+        if self.is_superuser:
+            return True
+        #endif
+        if self.is_anonymous:
+            return False
+        #endif
+        org = self.get_org() if hasattr(self, 'get_org') and callable(self.get_org) else None
+        return org.is_any_allowed(self, perm_set) if org else False
+    #enddef is_any_allowed
 
     def get_org(self):
         """

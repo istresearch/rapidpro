@@ -1,5 +1,6 @@
 import pytz
 from django.conf import settings as siteconfig, settings
+from django.contrib.auth.models import User
 from django.db import transaction
 
 from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
@@ -102,5 +103,10 @@ class OrgModelOverride(ClassOverrideMixinMustBeFirst, Org):
         # outside the transaction since it is going to call mailroom for flow validation
         self.create_sample_flows(branding.get("api_link", ""))
     #enddef init_org
+
+    def is_any_allowed(self, user: User, perm_set: set) -> bool:
+        role = self.get_user_role(user)
+        return bool(perm_set & role.permissions) if role else False
+    #enddef is_any_allowed
 
 #endclass OrgModelOverride
