@@ -47,10 +47,6 @@ class LabelModelOverride(ClassOverrideMixinMustBeFirst, Label):
     class Meta:
         abstract = True
 
-    #MAX_ORG_LABELS = 250
-    # remove hard-coded limit in favor of settings-based max limit
-    MAX_ORG_LABELS = settings.MAX_ORG_LABELS
-
     def toggle_label(self, msgs, add):
         """
         Adds or removes this label from the given messages
