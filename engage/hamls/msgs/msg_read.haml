@@ -1,0 +1,138 @@
+-extends "smartmin/read.html"
+
+-load smartmin sms temba contacts i18n humanize
+
+-block extra-style
+  {{block.super}}
+  :css
+    temba-button {
+      display: block;
+    }
+
+-block page-title
+  {{title}}
+
+-block title-icon
+  %span.title-icon
+    .glyph.icon-inbox
+
+-block title
+  .flex.flex-wrap.flex-row.items-center
+    .mr-3
+      "Message Details"
+
+-block subtitle
+  .flex.flex-wrap.mt-1
+    {{ object.uuid }}
+
+
+-block buttons
+
+-block page-top
+
+-block content
+
+  %div.sms.object
+    %p
+      id:
+      %span
+        {{object.id}}
+      uuid:
+      %span
+        {{object.uuid}}
+      contact:
+      %span.whitespace-nowrap
+        {{ object.contact|name_or_urn:user_org }}
+    .time.whitespace-nowrap
+      -block message_time
+        {% short_datetime object.created_on %}
+    -if show_channel_logs and not user_org.is_anon
+      .inline-block.text-gray-400.linked.ml-3
+        {% channel_log_link object %}
+    %p
+      %span.msg_text
+      {% get_value object 'text' %}
+    {% if object.attachments %}
+      .value-attachments{ style:"margin-top: 5px" }
+        - for attachment in object.attachments
+          {% attachment_button attachment %}
+    {% endif %}
+
+    .data-field
+      {{ object.id }}
+    .data-field
+      {{ object.uuid }}
+    .data-field
+      {{ object.text }}
+    .data-field
+      {{ object.high_priority }}
+    .data-field
+      {{ object.created_on }}
+    .data-field
+      {{ object.modified_on }}
+    .data-field
+      {{ object.sent_on }}
+    .data-field
+      {{ object.queued_on }}
+    .data-field
+      {{ object.direction }}
+    .data-field
+      {{ object.status }}
+    .data-field
+      {{ object.visibility }}
+    .data-field
+      {{ object.msg_type }}
+    .data-field
+      {{ object.msg_count }}
+    .data-field
+      {{ object.error_count }}
+    .data-field
+      {{ object.next_attempt }}
+    .data-field
+      {{ object.external_id }}
+    .data-field
+      {{ object.attachments }}
+    .data-field
+      {{ object.metadata }}
+    .data-field
+      {{ object.broadcast_id }}
+    .data-field
+      {{ object.channel_id }}
+    .data-field
+      {{ object.contact_id }}
+    .data-field
+      {{ object.contact_urn_id }}
+    .data-field
+      {{ object.org_id }}
+    .data-field
+      {{ object.topup_id }}
+    .data-field
+      {{ object.failed_reason }}
+    .data-field
+      {{ object.flow_id }}
+
+-block extra-script
+  {{ block.super }}
+
+  :javascript
+    // plays an audio attachment on a message
+    function playAudioAttachment(audioId) {
+      var audio = $('audio#audio-' + audioId);
+      var parent = audio.parent();
+      var player = audio[0];
+
+      if (!parent.hasClass('playing')) {
+        audio.bind('ended', function(){
+          parent.removeClass('playing');
+
+        });
+
+        parent.addClass('playing');
+        player.currentTime = 0;
+        player.play();
+
+      } else {
+        parent.removeClass('playing');
+        player.pause();
+      }
+    }

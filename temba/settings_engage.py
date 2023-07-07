@@ -27,7 +27,8 @@ COURIER_URL = env('COURIER_URL', 'http://localhost:8080')
 DEFAULT_TPS = env('DEFAULT_TPS', 10)    # Default Transactions Per Second for newly create Channels.
 MAX_TPS = env('MAX_TPS', 50)            # Max configurable Transactions Per Second for newly Created Channels and Updated Channels.
 
-MAX_ORG_LABELS = int(env('MAX_ORG_LABELS', 500))
+ORG_LIMIT_DEFAULTS["channels"] = sys.maxsize
+ORG_LIMIT_DEFAULTS["labels"] = int(env('MAX_ORG_LABELS', 500))
 
 POST_OFFICE_API_URL = env('POST_OFFICE_API_URL', 'http://postoffice:8088/postoffice')
 POST_OFFICE_QR_URL = env('POST_OFFICE_QR_URL', f"{POST_OFFICE_API_URL}/engage/claim")
