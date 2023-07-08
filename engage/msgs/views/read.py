@@ -77,10 +77,15 @@ class Read(OrgPermsMixin, SmartReadView):
         org = self.request.user.get_org()
         context["org"] = org
 
-        context["show_channel_logs"] = self.show_channel_logs
-        self.logger.debug("context=", extra={
-            'context': context,
-        })
+        if self.show_channel_logs:
+            if obj.channel_logs:
+                sorted_logs = sorted(obj.channel_logs.filter(is_error=True), key=lambda l: l.created_on, reverse=True)
+                context["msg_channel_logs"] = sorted_logs
+                context["show_channel_logs"] = True
+            else:
+                context["msg_channel_logs"] = None
+                context["show_channel_logs"] = False
+        #endif
 
         msg_text = obj.text
         if msg_text:
@@ -97,16 +102,10 @@ class Read(OrgPermsMixin, SmartReadView):
         #endif
         context["msg_text"] = msg_text
 
-        msg_timestamps = [
-            {
-                'label': "Created:",
-                'value': obj.created_on,
-            },
-            {
-                'label': "Modified:",
-                'value': obj.modified_on,
-            },
-        ]
+        msg_timestamps = [{
+            'label': "Created:",
+            'value': obj.created_on,
+        }]
         if obj.queued_on:
             msg_timestamps.append({
                 'label': "Queued:",
@@ -115,8 +114,14 @@ class Read(OrgPermsMixin, SmartReadView):
         #endif
         if obj.sent_on:
             msg_timestamps.append({
-                'label': "Sent:" if obj.direction == 'O' else "Received:",
+                'label': "Sent:",
                 'value': obj.sent_on,
+            })
+        #endif
+        if obj.modified_on and obj.modified_on != obj.created_on:
+            msg_timestamps.append({
+                'label': "Modified:",
+                'value': obj.modified_on,
             })
         #endif
         if obj.next_attempt:
@@ -130,6 +135,7 @@ class Read(OrgPermsMixin, SmartReadView):
         context['msg_visibility'] = self.VISIBILITIES.get(obj.visibility)
         context['msg_type'] = MsgReadSerializer.TYPES.get(obj.msg_type)
 
+        #self.logger.debug("context=", extra={'context': context})
         return context
     #enddef get_context_data
 
