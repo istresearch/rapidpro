@@ -79,9 +79,11 @@ class Read(OrgPermsMixin, SmartReadView):
 
         if self.show_channel_logs:
             if obj.channel_logs:
-                sorted_logs = sorted(obj.channel_logs.filter(is_error=True), key=lambda l: l.created_on, reverse=True)
-                context["msg_channel_logs"] = sorted_logs
-                context["show_channel_logs"] = True
+                err_logs = sorted(obj.channel_logs.filter(is_error=True), key=lambda l: l.created_on, reverse=True)
+                context["err_channel_logs"] = err_logs if err_logs and len(err_logs) > 0 else None
+                msg_logs = sorted(obj.channel_logs.all(), key=lambda l: l.created_on, reverse=True)
+                context["msg_channel_logs"] = msg_logs if msg_logs and len(msg_logs) > 0 else None
+                context["show_channel_logs"] = msg_logs or err_logs
             else:
                 context["msg_channel_logs"] = None
                 context["show_channel_logs"] = False

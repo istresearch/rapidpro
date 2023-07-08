@@ -101,7 +101,7 @@
     {% if show_channel_logs and not user_org.is_anon %}
     .data-field
       .data-label
-        {% if msg_channel_logs %}
+        {% if err_channel_logs %}
           Errors:
           .inline-block.text-gray-400.linked.ml-3.button.button-danger
             {% channel_log_link object %}
@@ -109,9 +109,9 @@
           Channel Logs:
         {% endif %}
       .data-value
-        {% if msg_channel_logs %}
+        {% if err_channel_logs %}
           -block log-entries
-            {% for log in msg_channel_logs %}
+            {% for log in err_channel_logs %}
               -include "channels/channellog_log.haml"
             {% endfor %}
         {% else %}
