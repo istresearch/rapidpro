@@ -8,108 +8,178 @@
     temba-button {
       display: block;
     }
+    li {
+      list-style-type: disc;
+    }
+    .data-field {
+      display: flex;
+      margin-bottom: 1rem;
+    }
+    .data-label {
+      font-weight: bolder;
+      width: 12%;
+    }
+    .data-value {
+      font-weight: none;
+    }
+    .button-success {
+      background: lightgreen;
+    }
 
 -block page-title
-  {{title}}
+  {{ page_title }}
 
 -block title-icon
   %span.title-icon
     .glyph.icon-inbox
 
 -block title
-  .flex.flex-wrap.flex-row.items-center
-    .mr-3
-      "Message Details"
+  "Message Details"
+  %hr
 
 -block subtitle
-  .flex.flex-wrap.mt-1
-    {{ object.uuid }}
-
-
--block buttons
-
--block page-top
+  {% if object.direction == 'O' %}OUTGOING{% else %}INCOMING{% endif %}
 
 -block content
-
+  %hr
+  %br
   %div.sms.object
-    %p
-      id:
-      %span
-        {{object.id}}
-      uuid:
-      %span
-        {{object.uuid}}
-      contact:
-      %span.whitespace-nowrap
-        {{ object.contact|name_or_urn:user_org }}
-    .time.whitespace-nowrap
-      -block message_time
-        {% short_datetime object.created_on %}
-    -if show_channel_logs and not user_org.is_anon
-      .inline-block.text-gray-400.linked.ml-3
-        {% channel_log_link object %}
-    %p
-      %span.msg_text
-      {% get_value object 'text' %}
-    {% if object.attachments %}
-      .value-attachments{ style:"margin-top: 5px" }
-        - for attachment in object.attachments
-          {% attachment_button attachment %}
-    {% endif %}
+    .data-field
+      .data-label
+        UUID:
+      .data-value
+        {{ object.uuid }}
+    .data-field
+      .data-label
+        ID:
+      .data-value
+        {{ object.id }}
+    .data-field
+      .data-label
+        Contact:
+      .data-value
+        %div
+          {{ object.contact|urn:user_org }}
+        {% if object.contact|name:user_org %}
+        %div
+          {{ object.contact|name:user_org }}
+        {% endif %}
+    %hr
+    .data-field
 
+      .data-label
+        Text:
+      .data-value
+        {{ msg_text }}
+    %hr
     .data-field
-      {{ object.id }}
+      .data-label
+        Attachments:
+      .data-value
+        {% if object.attachments %}
+        .value-attachments{ style:"margin-top: 5px" }
+          - for attachment in object.attachments
+            {% attachment_button attachment %}
+        {% else %}
+        None
+        {% endif %}
     .data-field
-      {{ object.uuid }}
+      .data-label
+        Labels:
+      .data-value
+        .labels.flex.items-center.flex-wrap
+          -for label in object.labels.all
+            .lbl.linked.ml-2
+              {{ label.name }}
     .data-field
-      {{ object.text }}
+      .data-label
+        Channel:
+      .data-value
+        {{ object.channel }}<br>
+        address: {{ object.channel.address }}<br>
+        id: {{ object.channel_id }}
+    {% if show_channel_logs and not user_org.is_anon %}
     .data-field
-      {{ object.high_priority }}
+      .data-label
+        {% if err_channel_logs %}
+          Errors:
+          .inline-block.text-gray-400.linked.ml-3.button.button-danger
+            {% channel_log_link object %}
+        {% else %}
+          Channel Logs:
+        {% endif %}
+      .data-value
+        {% if err_channel_logs %}
+          -block log-entries
+            {% for log in err_channel_logs %}
+              -include "channels/channellog_log.haml"
+            {% endfor %}
+        {% else %}
+          .inline-block.linked.ml-3.button.button-success
+            {% channel_log_link object %}
+        {% endif %}
+    {% endif %}
+    {% if object.failed_reason %}
     .data-field
-      {{ object.created_on }}
+      .data-label
+        Failed Reason:
+      .data-value
+        {{ object.failed_reason }}
+    {% endif %}
+    {% for msg_ts in msg_timestamps %}
+    .data-field.flex
+      .data-label
+        {{ msg_ts.label }}
+      %ul.data-value
+        %li
+          {% format_datetime msg_ts.value %}
+        %li
+          {% short_datetime msg_ts.value %}
+        %li
+          {{ msg_ts.value|date:"c" }}
+        %li
+          {{ msg_ts.value|date:"r" }}
+    {% endfor %}
     .data-field
-      {{ object.modified_on }}
+      .data-label
+        Status:
+      .data-value
+        {{ msg_status }}
     .data-field
-      {{ object.sent_on }}
+      .data-label
+        Visibility:
+      .data-value
+        {{ msg_visibility }}
     .data-field
-      {{ object.queued_on }}
+      .data-label
+        Message Type:
+      .data-value
+        {{ msg_type }}
     .data-field
-      {{ object.direction }}
+      .data-label
+        Flow ID:
+      .data-value
+        {{ object.flow_id }}
     .data-field
-      {{ object.status }}
+      .data-label
+        Is High Priority:
+      .data-value
+        {{ object.high_priority }}
     .data-field
-      {{ object.visibility }}
+      .data-label
+        External ID:
+      .data-value
+        {{ object.external_id }}
     .data-field
-      {{ object.msg_type }}
+      .data-label
+        Metadata:
+      .data-value
+        {{ object.metadata }}
     .data-field
-      {{ object.msg_count }}
-    .data-field
-      {{ object.error_count }}
-    .data-field
-      {{ object.next_attempt }}
-    .data-field
-      {{ object.external_id }}
-    .data-field
-      {{ object.attachments }}
-    .data-field
-      {{ object.metadata }}
-    .data-field
-      {{ object.broadcast_id }}
-    .data-field
-      {{ object.channel_id }}
-    .data-field
-      {{ object.contact_id }}
-    .data-field
-      {{ object.contact_urn_id }}
-    .data-field
-      {{ object.org_id }}
-    .data-field
-      {{ object.topup_id }}
-    .data-field
-      {{ object.failed_reason }}
-    .data-field
-      {{ object.flow_id }}
+      .data-label
+        Broadcast ID:
+      .data-value
+        {{ object.broadcast_id }}
 
 -block extra-script
   {{ block.super }}
