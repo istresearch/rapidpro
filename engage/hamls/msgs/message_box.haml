@@ -210,7 +210,7 @@
 
                       %td
                         .flex.w-full.items-end.justify-end.pr-4
-                          .time.whitespace-nowrap.eng
+                          %a.time.whitespace-nowrap.eng{href:'{% url "msgs.msg_read" object.uuid %}'}
                             {% format_datetime object.created_on %}
 
                           -if show_channel_logs and not user_org.is_anon or perms.contacts.contact_break_anon
