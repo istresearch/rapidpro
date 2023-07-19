@@ -8,6 +8,10 @@ from temba.utils.models import patch_queryset_count
 
 class ContactListOverrides(ClassOverrideMixinMustBeFirst, ContactCRUDL.List):
 
+    def get_bulk_actions(self):
+        return ("label", "block", "archive", "send") if self.has_org_perm("contacts.contact_update") else ()
+    #enddef get_bulk_actions
+
     def get_gear_links(self):
         links = self.getOrigClsAttr('get_gear_links')(self)
 
