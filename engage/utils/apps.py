@@ -27,6 +27,9 @@ class AppConfig(BaseAppConfig):
 
         from .views import BulkActionMixinOverrides
         BulkActionMixinOverrides.setClassOverrides()
+
+        from .export import BaseExportTaskOverrides
+        BaseExportTaskOverrides.setClassOverrides()
     #enddef ready
 
 #endclass AppConfig
