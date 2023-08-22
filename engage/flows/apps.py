@@ -17,6 +17,9 @@ class AppConfig(BaseAppConfig):
 
         from .views import ArchivedViewOverrides
         ArchivedViewOverrides.setClassOverrides()
+
+        from .views import UploadMediaActionOverrides
+        UploadMediaActionOverrides.setClassOverrides()
     #enddef ready
 
 #endclass AppConfig
