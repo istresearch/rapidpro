@@ -32,7 +32,7 @@ DEFAULT_BRAND_OBJ.update({
     'support_email': env('BRANDING_SUPPORT_EMAIL', 'pulse@istresearch.com'),
     'link': env('BRANDING_LINK', 'https://twosixtech.com'),
     'api_link': env('BRANDING_API_LINK', ''),
-    'docs_link': env('BRANDING_DOCS_LINK', ''), #deprecated, not used anywhere
+    'docs_link': env('BRANDING_DOCS_LINK', ''),  # deprecated, not used anywhere
     'favico': env('BRANDING_FAVICO', 'brands/engage/images/engage.ico'),
     'splash': env('BRANDING_SPLASH', 'brands/engage/images/splash.png'),
     'logo': env('BRANDING_LOGO', 'brands/engage/images/logo.svg'),

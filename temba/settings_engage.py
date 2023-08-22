@@ -187,8 +187,9 @@ if AWS_STORAGE_BUCKET_NAME:
             #       127.0.0.1    s3.us-gov-west-1.dev.nostromo.box
             theBaseDomain = env('AWS_BASE_DOMAIN', 'amazonaws.com')
             # useful for local dev ngnix proxies, eg. 'location ^~ /s3/ {'
-            thePathPrefix = env('AWS_S3_PATH_PREFIX', '') # MUST START WITH A SLASH, eg. '/s3'
+            thePathPrefix = env('AWS_S3_PATH_PREFIX', '')  # MUST START WITH A SLASH, eg. '/s3'
             AWS_S3_DOMAIN = f"{theDefaultRegionDomainSegment}s3{theRegionDomainSegment}.{theBaseDomain}{thePathPrefix}"
+        #endif custom domain name
 
         # middleware still expects us-east-1 in special domain format with bucket leading the subdomain (legacy format).
         theBucketPathSegment = f"/{AWS_STORAGE_BUCKET_NAME}" if not IS_AWS_S3_REGION_DEFAULT else ''
