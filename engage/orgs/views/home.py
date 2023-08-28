@@ -22,7 +22,7 @@ class HomeOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRUDL.Home
             links.append(dict(title=_("Manage Channels"), href=reverse("channels.channel_manage"), as_btn=True))
 
         #call original overridden function, not super(), so we don't have to re-write it here.
-        links.extend(self.getOrigClsAttr('get_gear_links')(self))
+        links.extend(self.super_get_gear_links())
 
         theAddChannelUrl = reverse("channels.channel_claim")
         for item in links:

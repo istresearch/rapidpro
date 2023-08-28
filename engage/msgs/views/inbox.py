@@ -17,7 +17,7 @@ class MsgInboxViewOverrides(ClassOverrideMixinMustBeFirst, InboxView):
 
     """
     def pre_process(self, request, *args, **kwargs):
-        self.getOrigClsAttr('pre_process')(self, request, *args, **kwargs)
+        self.super_pre_process(request, *args, **kwargs)
         # give us the ability to override the pagination (super helpful in debugging)
         if 'r' in self.request.GET:
             self.refresh = self.request.GET['r']

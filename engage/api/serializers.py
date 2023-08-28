@@ -50,7 +50,7 @@ class MsgBulkActionSerializerOverride(ClassOverrideMixinMustBeFirst, MsgBulkActi
         if 'request' in self.context and 'action' in self.context['request'].data:
             return value
         else:
-            return self.getOrigClsAttr('validate_messages')(self, value)
+            return self.super_validate_messages(value)
         #endif
     #enddef validate_messages
 

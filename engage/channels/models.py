@@ -51,7 +51,7 @@ class ChannelOverrides(ClassOverrideMixinMustBeFirst, Channel):
     def claim(self, org, user, phone):
         # NOTE: leaving alert_email field empty, which is the user.email param.
         user.email = None
-        return self.getOrigClsAttr('claim')(self, org=org, user=user, phone=phone)
+        return self.super_claim(org=org, user=user, phone=phone)
     #enddef claim
 
     def release(self, user, *, trigger_sync: bool = True, check_dependent_flows: bool = True):
@@ -61,7 +61,7 @@ class ChannelOverrides(ClassOverrideMixinMustBeFirst, Channel):
                 raise ValueError(f"Cannot delete Channel: {self.get_name()}, used by {dependent_flows_count} flows")
             #endif
         #endif
-        return self.getOrigClsAttr('release')(self, user, trigger_sync=trigger_sync)
+        return self.super_release(user, trigger_sync=trigger_sync)
     #enddef release
 
 #endclass ChannelOverrides

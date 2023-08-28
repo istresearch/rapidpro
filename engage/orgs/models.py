@@ -20,12 +20,12 @@ class OrgModelOverride(ClassOverrideMixinMustBeFirst, Org):
         if siteconfig.ALT_CALLBACK_DOMAIN:
             return siteconfig.ALT_CALLBACK_DOMAIN
         else:
-            return self.getOrigClsAttr('get_brand_domain')(self)
+            return self.super_get_brand_domain()
     #enddef get_brand_domain
 
     def release(self, user, **kwargs):
         with transaction.atomic():
-            self.getOrigClsAttr('release')(self, user, **kwargs)
+            self.super_release(user, **kwargs)
         #endwith
     #enddef release
 

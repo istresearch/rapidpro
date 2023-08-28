@@ -30,7 +30,7 @@ class ContactOverrides(ClassOverrideMixinMustBeFirst, Contact):
 
     def get_urns(self):
         try:
-            return self.getOrigClsAttr('get_urns')(self)
+            return self.super_get_urns()
         except ValueError:
             return None
         #endtry

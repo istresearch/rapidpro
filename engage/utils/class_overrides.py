@@ -74,6 +74,11 @@ class ClassOverrideMixinMustBeFirst:
                     logger.debug(f"override: set attr {str(under_cls)}.{name} to {getattr(a_class, name)}")
                     orig_attr = getattr(under_cls, name, None)
                     under_cls.origattrs.update({name: orig_attr})
+                    # provide overridden method a "super_" prefix so that we can easily call it
+                    # more-or-less required to use this if overridden method is called by child classes, too.
+                    if callable(orig_attr):
+                        setattr(under_cls, f"super_{name}", orig_attr)
+                    #endif
                     setattr(under_cls, name, getattr(a_class, name))
                 #endif
             #endfor each attr
