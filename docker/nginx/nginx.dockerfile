@@ -18,4 +18,4 @@ COPY docker/nginx/nginx.conf /etc/nginx/
 
 # default healthcheck grabs a known small file with a fixed ua to avoid spamming access logs
 HEALTHCHECK --interval=20s --timeout=3s --retries=10 \
-    CMD "curl -m 3 http://localhost/sitestatic/favicon.ico -H 'User-Agent: nginx healthcheck' || exit 1"
+    CMD "curl -m 3 http://localhost/sitestatic/favicon.ico -H 'User-Agent: nginx healthcheck'  -I -s | grep Content-Length || exit 1"

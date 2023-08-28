@@ -78,7 +78,7 @@ class ChannelClaimOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Claim):
     #enddef channel_types_groups
 
     def get_context_data(self, **kwargs):
-        context = self.getOrigClsAttr('get_context_data')(self, **kwargs)
+        context = self.orig_get_context_data(**kwargs)
         # engage features a single channel
         context["featured_channel"] = Channel.get_type_from_code(PostmasterType.code)
         return context
