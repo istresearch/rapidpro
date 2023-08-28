@@ -4,16 +4,20 @@
   %tr(class="{{event|history_class}}")
     %td.flex
       .icon
-        %span.det(title='{% if event.obj.channel %}{{event.obj.channel.get_channel_type_name}} {{event.obj.channel.get_name}}{% endif %}')
+        %span.det(title='{% if event.channel %}{{event.channel.get_channel_type_name}} {{event.channel.get_name}}{% endif %}')
           {{ event|history_icon }}
-      - if event.obj.channel_event_type == 'mo_miss'
-        -for cmode in event.obj.channel.schemes
+      -if event.channel_event_type == 'mo_miss'
+        -for cmode in event.channel.schemes
           -#.glyph.icon-phone
           -if cmode != 'tel'
             .pl-2.mode-icon{id:'mode-icon-{{ cmode }}'}
               .mode-icon.hover-linked{class:"glyph {{ cmode|scheme_icon }}", style:"margin-top:0px"}
                 .tooltiptext
                   Received via {{ cmode }}
+          -#endif
+        -#endfor
+      -#endif missed call
+    -#endtd icon column
 
     %td.details.wrapped.w-full
       -if event.type == 'airtime_transferred'

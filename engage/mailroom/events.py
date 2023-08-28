@@ -37,6 +37,7 @@ def getHistoryContentFromMsg(org: Org, user: User, obj: Msg) -> dict:
             "msg_type": obj.msg_type,
             "logs_url": logs_url,
             "channel_log": channel_log,
+            "channel": obj.channel,
         }
     elif obj.broadcast and obj.broadcast.get_message_count() > 1:
         return {
@@ -50,6 +51,7 @@ def getHistoryContentFromMsg(org: Org, user: User, obj: Msg) -> dict:
             "recipient_count": obj.broadcast.get_message_count(),
             "logs_url": logs_url,
             "channel_log": channel_log,
+            "channel": obj.channel,
         }
     else:
         msg_event = {
@@ -60,6 +62,7 @@ def getHistoryContentFromMsg(org: Org, user: User, obj: Msg) -> dict:
             "status": obj.status,
             "logs_url": logs_url,
             "channel_log": channel_log,
+            "channel": obj.channel,
         }
 
         if obj.broadcast and obj.broadcast.created_by:
@@ -77,7 +80,7 @@ def getHistoryContentFromMsg(org: Org, user: User, obj: Msg) -> dict:
 
 def getHistoryContentFromChannelEvent(org: Org, user: User, obj: ChannelEvent) -> dict:
     """
-    Added channel as a key so we can show which scheme a call may have been received.
+    Added channel as a key, so we can show which scheme a call may have been received.
     """
     extra = obj.extra or {}
     return {
