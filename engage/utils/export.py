@@ -28,7 +28,7 @@ from temba.utils.export import BaseExportTask
 # #endclass BaseExportTaskOverrides
 
 class BaseExportTaskOverrides(MonkeyPatcher):
-    _patch_class: BaseExportTask
+    patch_class: BaseExportTask
 
     @classmethod
     def get_recent_unfinished(cls: type(BaseExportTask), org):

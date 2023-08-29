@@ -101,20 +101,20 @@ class ClassOverrideMixinMustBeFirst:
 #endclass ClassOverrideMixinMustBeFirst
 
 class MonkeyPatcher:
-    _patch_class: type[Any]
-    _patch_attrs: dict
+    patch_class: type[Any]
+    patch_attrs: dict
     on_apply_overrides: Callable  # only define if you have merges rather than overrides.
 
     @classmethod
     def getOrigClsAttr(cls, attr_name: str):
-        return cls._patch_attrs.get(attr_name)
+        return cls.patch_attrs.get(attr_name)
     #enddef getOrigAttr
 
     @classmethod
     def setClassOverrides(cls) -> None:
-        ignore_attrs = ('_patch_class', '_patch_attrs', 'on_apply_overrides', 'getOrigClsAttr', 'setClassOverrides',)
+        ignore_attrs = ('patch_class', 'patch_attrs', 'on_apply_overrides', 'getOrigClsAttr', 'setClassOverrides',)
         parents = cls.__bases__
-        under_cls = cls._patch_class
+        under_cls = cls.patch_class
         under_cls_members = dict(inspect.getmembers(under_cls))
         # stuff all mixins into temba_cls, too
         class_list = parents
@@ -128,7 +128,7 @@ class MonkeyPatcher:
                         'mem_name': name, 'mem_loc': memloc, 'mem_cls': under_cls_members[name] if name in under_cls_members else 'N/A',
                     })
                     orig_attr = getattr(under_cls, name, None)
-                    cls._patch_attrs.update({name: orig_attr})
+                    cls.patch_attrs.update({name: orig_attr})
                     # provide overridden method a "super_" prefix so that we can easily call it
                     # more-or-less required to use this if overridden method is called by child classes, too.
                     if callable(orig_attr):
