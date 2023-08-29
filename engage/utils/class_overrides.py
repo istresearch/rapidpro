@@ -110,7 +110,9 @@ class MonkeyPatcher:
     """
     patch_class: type[Any]
     patch_attrs: dict
-    on_apply_overrides: Callable  # only define if you have merges rather than overrides.
+    patch_ignore: list  # only define if your overridden obj contains class vars like Django Models.
+    on_apply_patches: Callable  # only need to define if you have merges rather than overrides.
+    on_apply_overrides: Callable  # alias for legacy code
 
     @classmethod
     def getOrigClsAttr(cls, attr_name: str):
@@ -119,7 +121,8 @@ class MonkeyPatcher:
 
     @classmethod
     def setClassOverrides(cls) -> None:
-        ignore_attrs = ('patch_class', 'patch_attrs', 'on_apply_overrides', 'getOrigClsAttr', 'setClassOverrides',)
+        ignore_attrs = getattr(cls, 'patch_ignore', ()) + \
+                       ('patch_class', 'patch_attrs', 'on_apply_overrides', 'getOrigClsAttr', 'setClassOverrides',)
         parents = cls.__bases__
         patch_cls = cls.patch_class
         patch_cls_attrs = dict(inspect.getmembers(patch_cls))
@@ -138,15 +141,19 @@ class MonkeyPatcher:
                     })
                     orig_attr = getattr(patch_cls, name, None)
                     cls.patch_attrs.update({name: orig_attr})
-                    # provide overridden method a "super_" prefix so that we can easily call it
-                    # more-or-less required to use this if overridden method is called by child classes, too.
+                    # provide patched method a "super_" prefix so that we can easily call it
+                    # more-or-less required to use this if a method is called by child classes, too.
                     if callable(orig_attr):
-                        setattr(cls, f"super_{name}", orig_attr)
+                        setattr(patch_cls, f"super_{name}", orig_attr)
                     #endif
                     setattr(patch_cls, name, getattr(a_class, name))
                 #endif
             #endfor each class member
         #endfor each parent
+        if getattr(cls, 'on_apply_patches', None) and callable(getattr(cls, 'on_apply_patches')):
+            logger.debug(f"calling {str(cls)}.on_apply_patches({patch_cls})")
+            cls.on_apply_patches(patch_cls)
+        #endif
         if getattr(cls, 'on_apply_overrides', None) and callable(getattr(cls, 'on_apply_overrides')):
             logger.debug(f"calling {str(cls)}.on_apply_overrides({patch_cls})")
             cls.on_apply_overrides(patch_cls)

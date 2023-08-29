@@ -8,6 +8,10 @@ from engage.utils.class_overrides import MonkeyPatcher
 from temba.orgs.models import Org, OrgRole
 from temba.utils import languages
 
+# needed for legacy db migration
+from django.contrib.auth.models import User as OldUser
+from django.db import models
+
 
 class OrgModelOverride(MonkeyPatcher):
     patch_class = Org
@@ -26,8 +30,6 @@ class OrgModelOverride(MonkeyPatcher):
     #enddef release
 
     # ensure old definition exists, so we can migrate to new schema
-    from django.contrib.auth.models import User as OldUser
-    from django.db import models
     Org.administrators = models.ManyToManyField(OldUser, related_name='org_admins')
     Org.editors = models.ManyToManyField(OldUser, related_name='org_editors')
     Org.viewers = models.ManyToManyField(OldUser, related_name='org_viewers')
