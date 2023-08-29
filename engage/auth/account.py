@@ -2,18 +2,14 @@ from django.contrib.auth.models import User as AuthUser
 from django.utils import timezone
 from django.utils.functional import cached_property
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.logs import LogExtrasMixin
 
 from temba.orgs.models import Org, User as TembaUser
 
 
-class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
-    override_ignore = ignoreDjangoModelAttrs(AuthUser)
-    # fake model, tell Django to ignore so that it does not try to create/migrate schema.
-
-    class Meta:
-        abstract = True
+class AuthUserOverrides(MonkeyPatcher):
+    patch_class = AuthUser
 
     # default optional property to False so it exists.
     using_token = False
@@ -184,12 +180,8 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
 
 #endclass AuthUserOverrides
 
-class TembaUserOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, TembaUser):
-    override_ignore = ignoreDjangoModelAttrs(TembaUser)
-    # fake model, tell Django to ignore so that it does not try to create/migrate schema.
-
-    class Meta:
-        abstract = True
+class TembaUserOverrides(MonkeyPatcher, LogExtrasMixin):
+    patch_class = TembaUser
 
     # default optional property to False so it exists.
     using_token = False

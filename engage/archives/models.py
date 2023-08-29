@@ -1,16 +1,12 @@
 import boto3
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.archives.models import Archive
 
 
-class ArchiveOverrides(ClassOverrideMixinMustBeFirst, Archive):
-    override_ignore = ignoreDjangoModelAttrs(Archive)
-
-    # we do not want Django to perform any magic inheritance
-    class Meta:
-        abstract = True
+class ArchiveOverrides(MonkeyPatcher):
+    patch_class = Archive
 
     @classmethod
     def s3_client(cls):

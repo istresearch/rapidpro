@@ -3,18 +3,14 @@ from django.conf import settings as siteconfig, settings
 from django.contrib.auth.models import User
 from django.db import transaction
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.orgs.models import Org, OrgRole
 from temba.utils import languages
 
 
-class OrgModelOverride(ClassOverrideMixinMustBeFirst, Org):
-    override_ignore = ignoreDjangoModelAttrs(Org)
-
-    # we do not want Django to perform any magic inheritance
-    class Meta:
-        abstract = True
+class OrgModelOverride(MonkeyPatcher):
+    patch_class = Org
 
     def get_brand_domain(self):
         if siteconfig.ALT_CALLBACK_DOMAIN:

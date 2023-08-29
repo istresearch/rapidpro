@@ -1,17 +1,13 @@
 from django.conf import settings
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.channels.models import Channel
 from temba.contacts.models import URN
 
 
-class ChannelOverrides(ClassOverrideMixinMustBeFirst, Channel):
-    override_ignore = ignoreDjangoModelAttrs(Channel)
-
-    # we do not want Django to perform any magic inheritance
-    class Meta:
-        abstract = True
+class ChannelOverrides(MonkeyPatcher):
+    patch_class = Channel
 
     CONFIG_DEVICE_ID = "device_id"
     CONFIG_DEVICE_NAME = "device_name"
@@ -68,8 +64,8 @@ class ChannelOverrides(ClassOverrideMixinMustBeFirst, Channel):
 
 
 from temba.channels.types.android.type import AndroidType
-class AndroidTypeOverrides(ClassOverrideMixinMustBeFirst, AndroidType):
-    override_ignore = ('_abc_impl',)
+class AndroidTypeOverrides(MonkeyPatcher):
+    patch_class = AndroidType
     # existing channels won't crash the system, but cannot add new channels of this type.
     beta_only = True
 #endclass

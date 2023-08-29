@@ -2,17 +2,13 @@ import logging
 
 from django.utils.translation import gettext_lazy as _
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.flows.models import Flow
 
 
-class FlowOverrides(ClassOverrideMixinMustBeFirst, Flow):
-    override_ignore = ignoreDjangoModelAttrs(Flow)
-
-    # we do not want Django to perform any magic inheritance
-    class Meta:
-        abstract = True
+class FlowOverrides(MonkeyPatcher):
+    patch_class = Flow
 
     TYPE_CHOICES = (
         (Flow.TYPE_MESSAGE, _("Messaging")),

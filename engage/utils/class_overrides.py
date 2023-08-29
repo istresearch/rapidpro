@@ -101,6 +101,13 @@ class ClassOverrideMixinMustBeFirst:
 #endclass ClassOverrideMixinMustBeFirst
 
 class MonkeyPatcher:
+    """
+    I believe this class to be superior to the earlier ClassOverrideMixinMustBeFirst. It is a small shift to being
+    explicitly NOT part of the class inheritance chain to avoid Django magically detecting model classes and such.
+    Additionally, we avoid the inherited attributes that muck up the waters for what should be overriden or not.
+    Just descend from this class (at minimum), assign `patch_class`, define your mixins and vars/methods. Then call
+    your new class' setClassOverrides() method in the apps.py ready() method.
+    """
     patch_class: type[Any]
     patch_attrs: dict
     on_apply_overrides: Callable  # only define if you have merges rather than overrides.
@@ -114,33 +121,35 @@ class MonkeyPatcher:
     def setClassOverrides(cls) -> None:
         ignore_attrs = ('patch_class', 'patch_attrs', 'on_apply_overrides', 'getOrigClsAttr', 'setClassOverrides',)
         parents = cls.__bases__
-        under_cls = cls.patch_class
-        under_cls_members = dict(inspect.getmembers(under_cls))
-        # stuff all mixins into temba_cls, too
-        class_list = parents
-        logger.debug(f"bases= {str(class_list)}")
+        patch_cls = cls.patch_class
+        patch_cls_attrs = dict(inspect.getmembers(patch_cls))
+        cls.patch_attrs = {}
+        # stuff all mixins into patch_cls, too
+        class_list = [parent for parent in parents if parent != MonkeyPatcher] + [cls]
         for a_class in class_list:
-            logger.debug(f"apply overrides from {str(a_class)}")
-            override_members = dict(inspect.getmembers(a_class))
-            for name, memloc in override_members.items():
-                if not name.startswith("__") and name not in ignore_attrs and (name not in under_cls_members or memloc != under_cls_members[name]):
-                    logger.debug(f"override: set attr {str(under_cls)}.{name} to {getattr(a_class, name)}", extra={
-                        'mem_name': name, 'mem_loc': memloc, 'mem_cls': under_cls_members[name] if name in under_cls_members else 'N/A',
+            logger.debug(f"apply patches from {str(a_class)}")
+            patch_members = dict(inspect.getmembers(a_class))
+            for name, mem_loc in patch_members.items():
+                if (not (name.startswith("__") and name.endswith("__"))) \
+                        and name not in ignore_attrs \
+                        and (name not in patch_cls_attrs or mem_loc != patch_cls_attrs[name]):
+                    logger.debug(f"patch: set attr {str(patch_cls)}.{name} to {getattr(a_class, name)}", extra={
+                        'attr': name, 'mem_loc': mem_loc, 'mem_cls': patch_cls_attrs[name] if name in patch_cls_attrs else 'N/A',
                     })
-                    orig_attr = getattr(under_cls, name, None)
+                    orig_attr = getattr(patch_cls, name, None)
                     cls.patch_attrs.update({name: orig_attr})
                     # provide overridden method a "super_" prefix so that we can easily call it
                     # more-or-less required to use this if overridden method is called by child classes, too.
                     if callable(orig_attr):
                         setattr(cls, f"super_{name}", orig_attr)
                     #endif
-                    setattr(under_cls, name, getattr(a_class, name))
+                    setattr(patch_cls, name, getattr(a_class, name))
                 #endif
             #endfor each class member
         #endfor each parent
         if getattr(cls, 'on_apply_overrides', None) and callable(getattr(cls, 'on_apply_overrides')):
-            logger.debug(f"calling {str(cls)}.on_apply_overrides({under_cls})")
-            cls.on_apply_overrides(under_cls)
+            logger.debug(f"calling {str(cls)}.on_apply_overrides({patch_cls})")
+            cls.on_apply_overrides(patch_cls)
         #endif
     #enddef setClassOverrides
 

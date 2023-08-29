@@ -1,14 +1,10 @@
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.contacts.models import ContactField, Contact
 
 
-class ContactFieldOverrides(ClassOverrideMixinMustBeFirst, ContactField):
-    override_ignore = ignoreDjangoModelAttrs(ContactField)
-
-    # we do not want Django to perform any magic inheritance
-    class Meta:
-        abstract = True
+class ContactFieldOverrides(MonkeyPatcher):
+    patch_class = ContactField
 
     @classmethod
     def get_or_create(cls, org, user, key: str, name: str = None, value_type=None):
@@ -21,12 +17,8 @@ class ContactFieldOverrides(ClassOverrideMixinMustBeFirst, ContactField):
 
 #endclass ContactFieldOverrides
 
-class ContactOverrides(ClassOverrideMixinMustBeFirst, Contact):
-    override_ignore = ignoreDjangoModelAttrs(Contact)
-
-    # we do not want Django to perform any magic inheritance
-    class Meta:
-        abstract = True
+class ContactOverrides(MonkeyPatcher):
+    patch_class = Contact
 
     def get_urns(self):
         try:
