@@ -1,16 +1,17 @@
 import logging
 
 from django.contrib import messages
-from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.orgs.views import UserCRUDL
 
 
-class UserViewDeleteOverride(ClassOverrideMixinMustBeFirst, UserCRUDL.Delete):
+class UserViewDeleteOverride(MonkeyPatcher):
+    patch_class = UserCRUDL.Delete
+
     fields = ("id",)
     permission = "auth.user_update"
 

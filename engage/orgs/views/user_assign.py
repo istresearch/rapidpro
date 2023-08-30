@@ -7,7 +7,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.logs import OrgPermLogInfoMixin
 
 from smartmin.views import (
@@ -21,7 +21,8 @@ from temba.orgs.views import OrgPermsMixin, OrgCRUDL
 
 logger = logging.getLogger()
 
-class OrgViewAssignUserMixin(ClassOverrideMixinMustBeFirst, OrgCRUDL):
+class OrgViewAssignUserMixin(MonkeyPatcher):
+    patch_class = OrgCRUDL
 
     @staticmethod
     def on_apply_overrides(under_cls) -> None:

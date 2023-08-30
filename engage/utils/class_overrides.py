@@ -61,13 +61,6 @@ class ClassOverrideMixinMustBeFirst:
         return cls._super_attrs.get(attr_name)
     #enddef getOrigAttr
 
-    @staticmethod
-    def setOrigMethod(under_cls, method_name: str) -> None:
-        # child class wonky super() makes this workaround necessary
-        setattr(under_cls, 'orig_'+method_name, under_cls.getOrigClsAttr(method_name))
-        logger.debug(f"override: set attr {str(under_cls)}.orig_{method_name} to {str(under_cls.getOrigClsAttr(method_name))}")
-    #enddef setOrigMethod
-
     @classmethod
     def setClassOverrides(cls) -> None:
         ignore_attrs = getattr(cls, 'override_ignore', ()) + ('override_ignore', 'on_apply_overrides',)

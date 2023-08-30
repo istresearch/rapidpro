@@ -6,13 +6,14 @@ from temba.channels.models import Channel
 from temba.orgs.models import IntegrationType
 from temba.orgs.views import OrgCRUDL
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.logs import LogExtrasMixin
 
 
-class HomeOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRUDL.Home):
+class HomeOverrides(MonkeyPatcher, LogExtrasMixin):
+    patch_class = OrgCRUDL.Home
 
-    def get_gear_links(self):
+    def get_gear_links(self: type(OrgCRUDL.Home)):
         links = []
 
         if self.has_org_perm("orgs.org_manage_accounts"):
@@ -34,7 +35,7 @@ class HomeOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRUDL.Home
 
         return links
 
-    def derive_formax_sections(self, formax, context):
+    def derive_formax_sections(self: type(OrgCRUDL.Home), formax, context):
         # add the channel option if we have one
         user = self.request.user
         org = user.get_org()

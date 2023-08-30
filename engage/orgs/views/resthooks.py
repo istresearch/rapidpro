@@ -4,14 +4,14 @@ from django import forms
 
 from temba.orgs.views import OrgCRUDL
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelFormAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 from temba.utils.fields import CheckboxWidget
 
 
-class ResthookFormOverrides(ClassOverrideMixinMustBeFirst, OrgCRUDL.Resthooks.ResthookForm):
-    override_ignore = ignoreDjangoModelFormAttrs(OrgCRUDL.Resthooks.ResthookForm)
+class ResthookFormOverrides(MonkeyPatcher):
+    patch_class = OrgCRUDL.Resthooks.ResthookForm
 
-    def add_remove_fields(self):
+    def add_remove_fields(self: type(OrgCRUDL.Resthooks.ResthookForm)):
         resthooks = []
         field_mapping = []
 

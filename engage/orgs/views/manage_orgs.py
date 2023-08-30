@@ -1,14 +1,16 @@
 from django.db.models import Sum
 from django.urls import reverse
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.logs import LogExtrasMixin
 from engage.utils.strings import str2bool
 
 from temba.orgs.views import OrgCRUDL
 
 
-class AdminManageOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRUDL.Manage):
+class AdminManageOverrides(MonkeyPatcher, LogExtrasMixin):
+    patch_class = OrgCRUDL.Manage
+
     title = "Workspaces"
     default_order = 'name'
 
@@ -30,7 +32,7 @@ class AdminManageOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRU
         return links
     #enddef get_gear_links
 
-    def derive_queryset(self, **kwargs):
+    def derive_queryset(self: type(OrgCRUDL.Manage), **kwargs):
         queryset = super(OrgCRUDL.Manage, self).derive_queryset(**kwargs)
         bActiveFilter = not self.request.GET.get("inactive")
         queryset = queryset.filter(is_active=bActiveFilter)
@@ -57,7 +59,7 @@ class AdminManageOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRU
         return queryset
     #enddef derive_queryset
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self: type(OrgCRUDL.Manage), **kwargs):
         context = super(OrgCRUDL.Manage, self).get_context_data(**kwargs)
         context["searches"] = []
         context["anon_query"] = str2bool(self.request.GET.get("anon"))
