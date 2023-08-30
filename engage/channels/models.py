@@ -15,9 +15,8 @@ class ChannelOverrides(MonkeyPatcher):
     CONFIG_CLAIM_CODE = "claim_code"
     CONFIG_ORG_ID = "org_id"
 
-    @classmethod
     def create(
-            cls,
+            cls: type[Channel],
             org,
             user,
             country,
@@ -39,7 +38,7 @@ class ChannelOverrides(MonkeyPatcher):
 
         tps = getattr(settings, "DEFAULT", 10)
 
-        return cls.getOrigClsAttr('create')(org=org, user=user, country=country, channel_type=channel_type,
+        return cls.super_create(org=org, user=user, country=country, channel_type=channel_type,
                 name=name, address=address, config=config, role=role, schemes=schemes, tps=tps, **kwargs
         )
     #enddef create

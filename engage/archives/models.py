@@ -8,8 +8,7 @@ from temba.archives.models import Archive
 class ArchiveOverrides(MonkeyPatcher):
     patch_class = Archive
 
-    @classmethod
-    def s3_client(cls):
+    def s3_client(cls: type[Archive]):
         # use same code as the currently working api/v2 s3 downloads
         return boto3.client("s3")
     #enddef s3_client

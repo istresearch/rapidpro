@@ -17,8 +17,7 @@ class AuthUserOverrides(MonkeyPatcher):
     def __str__(self):
         return self.name or self.username
 
-    @classmethod
-    def create(cls, email: str, first_name: str, last_name: str, password: str, language: str = None):
+    def create(cls: type[AuthUser], email: str, first_name: str, last_name: str, password: str, language: str = None):
         obj = cls.objects.create_user(
             username=email, email=email, first_name=first_name, last_name=last_name, password=password
         )

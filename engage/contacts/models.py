@@ -6,10 +6,9 @@ from temba.contacts.models import ContactField, Contact
 class ContactFieldOverrides(MonkeyPatcher):
     patch_class = ContactField
 
-    @classmethod
-    def get_or_create(cls, org, user, key: str, name: str = None, value_type=None):
+    def get_or_create(cls: type[ContactField], org, user, key: str, name: str = None, value_type=None):
         try:
-            return cls.getOrigClsAttr('get_or_create')(cls, org, user, key, name, value_type)
+            return cls.super_get_or_create(cls, org, user, key, name, value_type)
         except ValueError as ex:
             raise ValueError( str(ex).replace('campaigns', 'scenarios') )
         #endtry
