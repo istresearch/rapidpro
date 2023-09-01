@@ -158,11 +158,12 @@ class MonkeyPatcher:
     #enddef patchClassMethod
 
     @classmethod
-    def setClassOverrides(cls) -> None:
+    def applyPatches(cls) -> None:
         ignore_attrs = getattr(cls, 'patch_ignore', ()) + (
                 'patch_class', 'patch_attrs', 'patch_ignore',
                 'on_apply_patches', 'on_apply_overrides',
-                'getOrigClsAttr', 'inheritors', 'patchClassMethod', 'setClassOverrides',
+                'getOrigClsAttr', 'inheritors', 'patchClassMethod',
+                'applyPatches', 'setClassOverrides',
         )
         parents = cls.__bases__
         patch_cls = cls.patch_class
@@ -223,6 +224,14 @@ class MonkeyPatcher:
             logger.debug(f"calling {str(cls)}.on_apply_overrides({patch_cls})")
             cls.on_apply_overrides(patch_cls)
         #endif
+    #enddef applyPatches
+
+    @classmethod
+    def setClassOverrides(cls) -> None:
+        """
+        alias to help easily migrate legacy *Override classes to use MonkeyPatcher
+        """
+        cls.applyPatches()
     #enddef setClassOverrides
 
 #endclass MonkeyPatcher
