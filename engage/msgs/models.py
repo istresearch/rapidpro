@@ -1,17 +1,12 @@
-from django.conf import settings
 from django.utils import timezone
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.msgs.models import Msg, Label
 
 
-class MsgModelOverride(ClassOverrideMixinMustBeFirst, Msg):
-    override_ignore = ignoreDjangoModelAttrs(Msg)
-
-    # we do not want Django to perform any magic inheritance
-    class Meta:
-        abstract = True
+class MsgModelOverride(MonkeyPatcher):
+    patch_class = Msg
 
     def archive(self):
         """
@@ -40,12 +35,8 @@ class MsgModelOverride(ClassOverrideMixinMustBeFirst, Msg):
 #endclass MsgModelOverride
 
 
-class LabelModelOverride(ClassOverrideMixinMustBeFirst, Label):
-    override_ignore = ignoreDjangoModelAttrs(Label)
-
-    # we do not want Django to perform any magic inheritance
-    class Meta:
-        abstract = True
+class LabelModelOverride(MonkeyPatcher):
+    patch_class = Label
 
     def toggle_label(self, msgs, add):
         """

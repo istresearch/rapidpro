@@ -1,4 +1,4 @@
-from temba import settings
+from django.conf import settings
 
 class DatePickerMedia:
     js = ('{}js/bootstrap-datepicker.js'.format(settings.STATIC_URL),)

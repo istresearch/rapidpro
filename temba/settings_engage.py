@@ -46,7 +46,7 @@ INSTALLED_APPS = (
         'flatpickr',
         'temba.ext',
         'engage.api',
-        'engage.archives',
+        'engage.assets',
         'engage.auth',
         'engage.channels',
         'engage.contacts',
@@ -156,22 +156,29 @@ if env('CSRF_TRUSTED_ORIGINS', None) is not None:
 #endif
 
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', '')
-AWS_S3_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
-AWS_S3_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
 AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', 'us-east-1')
 IS_AWS_S3_REGION_DEFAULT = bool(AWS_S3_REGION_NAME == 'us-east-1')
 AWS_SIGNED_URL_DURATION = int(env('AWS_SIGNED_URL_DURATION', '1800'))
-AWS_DEFAULT_ACL = env('AWS_DEFAULT_ACL', '')
+AWS_DEFAULT_ACL = env('AWS_DEFAULT_ACL', None)
 AWS_LOCATION = env('AWS_LOCATION', '')
 AWS_QUERYSTRING_EXPIRE = '157784630'  # unsure why this is hardcoded as a string
 AWS_STATIC = bool(AWS_STORAGE_BUCKET_NAME) and env('AWS_STATIC', False)
 AWS_MEDIA = bool(AWS_STORAGE_BUCKET_NAME) and env('AWS_MEDIA', True)
 AWS_S3_USE_SSL = bool(env('AWS_S3_USE_SSL', True))
 AWS_S3_HTTP_SCHEME = "https" if AWS_S3_USE_SSL else "http"
-AWS_S3_VERIFY = env('AWS_S3_VERIFY', False)
+AWS_S3_VERIFY = env('AWS_S3_VERIFY', None)
 AWS_S3_CUSTOM_DOMAIN_NAME = env('AWS_S3_CUSTOM_DOMAIN_NAME', None)
 AWS_S3_URL = env('AWS_S3_CUSTOM_URL', None)
 AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', AWS_S3_URL)
+#TODO someday, clean all this up: https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
+#TODO also expand/re-use our utils/s3_config class
+AWS_S3_ADDRESSING_STYLE = env('AWS_S3_ADDRESSING_STYLE', None)  # 'virtual' or 'path'
+# As of boto3 version 1.13.21 the default signature version used for generating pre-signed
+# urls is still the legacy s3 (also known as v2) version. To be able to access your
+# s3 objects in all regions through pre-signed urls, explicitly set this to s3v4.
+AWS_S3_SIGNATURE_VERSION = env('AWS_S3_SIGNATURE_VERSION', 's3v4')
 
 if AWS_STORAGE_BUCKET_NAME:
     if AWS_S3_URL is None:

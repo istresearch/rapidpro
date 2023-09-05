@@ -1,19 +1,14 @@
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.contacts.models import ContactField, Contact
 
 
-class ContactFieldOverrides(ClassOverrideMixinMustBeFirst, ContactField):
-    override_ignore = ignoreDjangoModelAttrs(ContactField)
+class ContactFieldOverrides(MonkeyPatcher):
+    patch_class = ContactField
 
-    # we do not want Django to perform any magic inheritance
-    class Meta:
-        abstract = True
-
-    @classmethod
-    def get_or_create(cls, org, user, key: str, name: str = None, value_type=None):
+    def get_or_create(cls: type[ContactField], org, user, key: str, name: str = None, value_type=None):
         try:
-            return cls.getOrigClsAttr('get_or_create')(cls, org, user, key, name, value_type)
+            return cls.super_get_or_create(cls, org, user, key, name, value_type)
         except ValueError as ex:
             raise ValueError( str(ex).replace('campaigns', 'scenarios') )
         #endtry
@@ -21,16 +16,12 @@ class ContactFieldOverrides(ClassOverrideMixinMustBeFirst, ContactField):
 
 #endclass ContactFieldOverrides
 
-class ContactOverrides(ClassOverrideMixinMustBeFirst, Contact):
-    override_ignore = ignoreDjangoModelAttrs(Contact)
-
-    # we do not want Django to perform any magic inheritance
-    class Meta:
-        abstract = True
+class ContactOverrides(MonkeyPatcher):
+    patch_class = Contact
 
     def get_urns(self):
         try:
-            return self.getOrigClsAttr('get_urns')(self)
+            return self.super_get_urns()
         except ValueError:
             return None
         #endtry

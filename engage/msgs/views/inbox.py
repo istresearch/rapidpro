@@ -2,7 +2,7 @@ import logging
 
 from django.urls import reverse
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.strings import sanitize_text
 
 from temba.msgs.views import InboxView
@@ -10,14 +10,15 @@ from temba.msgs.views import InboxView
 
 logger = logging.getLogger()
 
-class MsgInboxViewOverrides(ClassOverrideMixinMustBeFirst, InboxView):
+class MsgInboxViewOverrides(MonkeyPatcher):
     """
     Sanitize the list of message contents to remove zero-width spaces and such.
     """
+    patch_class = InboxView
 
     """
     def pre_process(self, request, *args, **kwargs):
-        self.getOrigClsAttr('pre_process')(self, request, *args, **kwargs)
+        self.super_pre_process(request, *args, **kwargs)
         # give us the ability to override the pagination (super helpful in debugging)
         if 'r' in self.request.GET:
             self.refresh = self.request.GET['r']
@@ -49,25 +50,19 @@ class MsgInboxViewOverrides(ClassOverrideMixinMustBeFirst, InboxView):
         return aList
     #enddef _sanitizeMsgList
 
-    @staticmethod
-    def on_apply_overrides(under_cls) -> None:
-        ClassOverrideMixinMustBeFirst.setOrigMethod(under_cls, 'get_context_data')
-        ClassOverrideMixinMustBeFirst.setOrigMethod(under_cls, 'get_gear_links')
-    #enddef on_apply_overrides
-
-    def get_context_data(self, **kwargs):
+    def get_context_data(self: type(InboxView), **kwargs):
         org = self.request.user.get_org()
         if not org:
             from engage.utils.middleware import redirect_to
             redirect_to('/')
         #endif superuser
-        context = self.orig_get_context_data(**kwargs)
+        context = self.super_get_context_data(**kwargs)
         context['object_list'] = self._sanitizeMsgList(context['object_list'])
         return context
     #enddef get_context_data
 
-    def get_gear_links(self):
-        links = self.orig_get_gear_links()
+    def get_gear_links(self: type(InboxView)):
+        links = self.super_get_gear_links()
         links.append(
             dict(
                 title="Get PM",

@@ -1,13 +1,13 @@
 from django import forms
 from django.forms import JSONField
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelFormAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 from temba.channels.models import Channel
 from temba.channels.views import UpdateChannelForm
 
 
-class UpdateChannelFormOverrides(ClassOverrideMixinMustBeFirst, UpdateChannelForm):
-    override_ignore = ignoreDjangoModelFormAttrs(UpdateChannelForm)
+class UpdateChannelFormOverrides(MonkeyPatcher):
+    patch_class = UpdateChannelForm
 
     # needed for added fields in Meta sub-class
     tps = forms.IntegerField(label="Maximum Transactions per Second", required=False)
@@ -19,3 +19,6 @@ class UpdateChannelFormOverrides(ClassOverrideMixinMustBeFirst, UpdateChannelFor
         readonly = ()
         labels = {}
         helps = {}
+    #endclass Meta
+
+#endclass UpdateChannelFormOverrides

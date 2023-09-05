@@ -1,10 +1,11 @@
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.msgs.models import Label
 from temba.msgs.tests import LabelCRUDLTest
 
 
-class LabelCRUDLTestOverrides(ClassOverrideMixinMustBeFirst, LabelCRUDLTest):
+class LabelCRUDLTestOverrides(MonkeyPatcher):
+    patch_class = LabelCRUDLTest
 
     def test_label_delete_with_flow_dependency(self):
 
