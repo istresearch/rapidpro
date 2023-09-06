@@ -9,7 +9,7 @@ from django.views.generic.list import MultipleObjectMixin, BaseListView
 
 from temba.utils.views import BulkActionMixin
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 
 def permission_denied(request, exception=None):
@@ -58,7 +58,8 @@ def server_error(request):
     #endif
 #enddif server_error
 
-class MultipleObjectMixinOverrides(ClassOverrideMixinMustBeFirst, MultipleObjectMixin):
+class MultipleObjectMixinOverrides(MonkeyPatcher):
+    patch_class = MultipleObjectMixin
 
     def paginate_queryset(self, queryset, page_size):
         """
@@ -108,7 +109,8 @@ class MultipleObjectMixinOverrides(ClassOverrideMixinMustBeFirst, MultipleObject
 
 #endclass MultipleObjectMixinOverrides
 
-class BaseListViewOverrides(ClassOverrideMixinMustBeFirst, BaseListView):
+class BaseListViewOverrides(MonkeyPatcher):
+    patch_class = BaseListView
 
     def get(self, request, *args, **kwargs):
         self.object_list = self.get_queryset()
@@ -137,7 +139,8 @@ class BaseListViewOverrides(ClassOverrideMixinMustBeFirst, BaseListView):
 
 #endclass BaseListViewOverrides
 
-class BulkActionMixinOverrides(ClassOverrideMixinMustBeFirst, BulkActionMixin):
+class BulkActionMixinOverrides(MonkeyPatcher):
+    patch_class = BulkActionMixin
 
     def post(self, request, *args, **kwargs):
         """

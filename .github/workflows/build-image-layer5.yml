@@ -84,7 +84,7 @@ jobs:
                 ]
               },
               "deployment": {
-                "deploy_flag": "${{ github.ref_type != 'branchXXXX' }}",
+                "deploy_flag": "${{ github.ref_type != 'branch' }}",
                 "k8s": [ {
                   "project": "pulse-engage-nginx",
                   "container": "nginx",

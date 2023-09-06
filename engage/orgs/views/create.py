@@ -5,11 +5,10 @@ from django import forms
 from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.db import transaction
 from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from smartmin.views import SmartCreateView
 
@@ -86,7 +85,8 @@ class OrgCreateForm(forms.ModelForm):
 
 #endclass OrgCreateForm
 
-class OrgViewCreateOverride(ClassOverrideMixinMustBeFirst, OrgCRUDL):
+class OrgViewCreateOverride(MonkeyPatcher):
+    patch_class = OrgCRUDL
 
     @staticmethod
     def on_apply_overrides(under_cls) -> None:

@@ -6,16 +6,17 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.orgs.views import OrgCRUDL
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.logs import LogExtrasMixin
 
 
-class OrgViewSubOrgsOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, OrgCRUDL.SubOrgs):
+class OrgViewSubOrgsOverrides(MonkeyPatcher, LogExtrasMixin):
+    patch_class = OrgCRUDL.SubOrgs
 
     def get_gear_links(self):
         links = []
         #call original overridden function, not super(), so we don't have to re-write it here.
-        links.extend(self.getOrigClsAttr('get_gear_links')(self))
+        links.extend(self.super_get_gear_links())
 
         theUrl4OrgDashboard = reverse("dashboard.dashboard_home")
         theUrl4AddOrg = reverse("orgs.org_create_sub_org")

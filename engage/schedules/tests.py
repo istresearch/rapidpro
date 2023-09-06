@@ -1,13 +1,14 @@
 import datetime
 import pytz
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.schedules.models import Schedule
 from temba.schedules.tests import ScheduleTest
 
 
-class ScheduleTestOverrides(ClassOverrideMixinMustBeFirst, ScheduleTest):
+class ScheduleTestOverrides(MonkeyPatcher):
+    patch_class = ScheduleTest
 
     def create_schedule(self, user, repeat_period, repeat_days=(), start_date=None):
         if not start_date:

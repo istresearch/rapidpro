@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from engage.utils.bandwidth import BandwidthRestClient
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 from engage.orgs.bandwidth import (
     BW_APPLICATION_SID,
     BW_ACCOUNT_SID,
@@ -29,7 +29,8 @@ from temba.orgs.views import (
 )
 
 
-class BandwidthChannelViewsMixin(ClassOverrideMixinMustBeFirst, OrgCRUDL):
+class BandwidthChannelViewsMixin(MonkeyPatcher):
+    patch_class = OrgCRUDL
 
     @staticmethod
     def on_apply_overrides(under_cls) -> None:

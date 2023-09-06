@@ -13,7 +13,7 @@ class ContactListOverrides(ClassOverrideMixinMustBeFirst, ContactCRUDL.List):
     #enddef get_bulk_actions
 
     def get_gear_links(self):
-        links = self.getOrigClsAttr('get_gear_links')(self)
+        links = self.super_get_gear_links()
 
         # as_btn introduced to determine if placed in hamburger menu or as its own button
         el = [x for x in links if hasattr(x, 'id') and x.id == 'create-smartgroup']
@@ -31,7 +31,7 @@ class ContactListOverrides(ClassOverrideMixinMustBeFirst, ContactCRUDL.List):
     def get_queryset(self, **kwargs):
         search_query = self.request.GET.get("search", None)
         if search_query:
-            return self.getOrigClsAttr('get_queryset')(self, **kwargs)
+            return self.super_get_queryset(**kwargs)
         else:
             sort_on = self.request.GET.get("sort_on", None)
             if sort_on:
@@ -59,7 +59,7 @@ class ContactReadOverrides(ClassOverrideMixinMustBeFirst, ContactCRUDL.Read):
         if obj_org:
             return self.get_user().has_org_perm(obj_org, permission)
         else:
-            return self.getOrigClsAttr('has_org_perm')(self, permission)
+            return self.super_has_org_perm(permission)
         #endif
     #enddef
 

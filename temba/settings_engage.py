@@ -46,7 +46,7 @@ INSTALLED_APPS = (
         'flatpickr',
         'temba.ext',
         'engage.api',
-        'engage.archives',
+        'engage.assets',
         'engage.auth',
         'engage.channels',
         'engage.contacts',
@@ -151,31 +151,37 @@ if not is_empty(env('HTTP_ALLOWED_URL')):
 SECURE_PROXY_SSL_HEADER = (env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 INTERNAL_IPS = ('*',)
 ALLOWED_HOSTS = env('ALLOWED_HOSTS', HOSTNAME).split(';')
+if env('CSRF_TRUSTED_ORIGINS', None) is not None:
+    CSRF_TRUSTED_ORIGINS = env('CSRF_TRUSTED_ORIGINS', None).split(',')
+#endif
 
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', '')
-AWS_S3_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
-AWS_S3_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', '')
 AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', 'us-east-1')
 IS_AWS_S3_REGION_DEFAULT = bool(AWS_S3_REGION_NAME == 'us-east-1')
 AWS_SIGNED_URL_DURATION = int(env('AWS_SIGNED_URL_DURATION', '1800'))
-AWS_DEFAULT_ACL = env('AWS_DEFAULT_ACL', '')
+AWS_DEFAULT_ACL = env('AWS_DEFAULT_ACL', None)
 AWS_LOCATION = env('AWS_LOCATION', '')
 AWS_QUERYSTRING_EXPIRE = '157784630'  # unsure why this is hardcoded as a string
 AWS_STATIC = bool(AWS_STORAGE_BUCKET_NAME) and env('AWS_STATIC', False)
 AWS_MEDIA = bool(AWS_STORAGE_BUCKET_NAME) and env('AWS_MEDIA', True)
 AWS_S3_USE_SSL = bool(env('AWS_S3_USE_SSL', True))
 AWS_S3_HTTP_SCHEME = "https" if AWS_S3_USE_SSL else "http"
-AWS_S3_VERIFY = env('AWS_S3_VERIFY', False)
+AWS_S3_VERIFY = env('AWS_S3_VERIFY', None)
 AWS_S3_CUSTOM_DOMAIN_NAME = env('AWS_S3_CUSTOM_DOMAIN_NAME', None)
-AWS_S3_CUSTOM_URL = env('AWS_S3_CUSTOM_URL', None)
+AWS_S3_URL = env('AWS_S3_CUSTOM_URL', None)
+AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL', AWS_S3_URL)
+#TODO someday, clean all this up: https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
+#TODO also expand/re-use our utils/s3_config class
+AWS_S3_ADDRESSING_STYLE = env('AWS_S3_ADDRESSING_STYLE', None)  # 'virtual' or 'path'
+# As of boto3 version 1.13.21 the default signature version used for generating pre-signed
+# urls is still the legacy s3 (also known as v2) version. To be able to access your
+# s3 objects in all regions through pre-signed urls, explicitly set this to s3v4.
+AWS_S3_SIGNATURE_VERSION = env('AWS_S3_SIGNATURE_VERSION', 's3v4')
 
 if AWS_STORAGE_BUCKET_NAME:
-
-    if AWS_S3_CUSTOM_URL:
-        #TODO FUTURE, IF NEEDED: if there's replacements in string, do them
-        AWS_S3_ENDPOINT_URL = AWS_S3_CUSTOM_URL
-        AWS_S3_URL = AWS_S3_ENDPOINT_URL
-    else:
+    if AWS_S3_URL is None:
         if AWS_S3_CUSTOM_DOMAIN_NAME:
             AWS_S3_CUSTOM_DOMAIN = AWS_S3_CUSTOM_DOMAIN_NAME
             AWS_S3_DOMAIN = AWS_S3_CUSTOM_DOMAIN_NAME
@@ -188,16 +194,18 @@ if AWS_STORAGE_BUCKET_NAME:
             #       127.0.0.1    s3.us-gov-west-1.dev.nostromo.box
             theBaseDomain = env('AWS_BASE_DOMAIN', 'amazonaws.com')
             # useful for local dev ngnix proxies, eg. 'location ^~ /s3/ {'
-            thePathPrefix = env('AWS_S3_PATH_PREFIX', '') # MUST START WITH A SLASH, eg. '/s3'
+            thePathPrefix = env('AWS_S3_PATH_PREFIX', '')  # MUST START WITH A SLASH, eg. '/s3'
             AWS_S3_DOMAIN = f"{theDefaultRegionDomainSegment}s3{theRegionDomainSegment}.{theBaseDomain}{thePathPrefix}"
+        #endif custom domain name
 
         # middleware still expects us-east-1 in special domain format with bucket leading the subdomain (legacy format).
         theBucketPathSegment = f"/{AWS_STORAGE_BUCKET_NAME}" if not IS_AWS_S3_REGION_DEFAULT else ''
         AWS_S3_URL = f"{AWS_S3_HTTP_SCHEME}://{AWS_S3_DOMAIN}{theBucketPathSegment}"
+    #endif need to construct AWS_S3_URL
 
-    # explicity remove any trailing slash
     if AWS_S3_URL.endswith('/'):
         AWS_S3_URL = AWS_S3_URL[:-1]
+    #endif remove any trailing slash
 
     # Tell django-storages that when coming up with the URL for an item in S3 storage, keep
     # it simple - just use this domain plus the path. (If this isn't set, things get complicated).
@@ -216,15 +224,31 @@ if AWS_STORAGE_BUCKET_NAME:
         # you run `collectstatic`).
         STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
         COMPRESS_STORAGE = STATICFILES_STORAGE
+    #endif aws static in use
 
     if AWS_MEDIA:
         DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-        STORAGE_URL = AWS_S3_URL
-        MEDIA_URL = f"{AWS_S3_URL}/media/"
+        STORAGE_URL = env('STORAGE_URL', AWS_S3_URL)
+        if STORAGE_URL.endswith('/'):
+            STORAGE_URL = STORAGE_URL[:-1]
+        #endif remove any trailing slash
+        MEDIA_URL = env('MEDIA_URL', f"{STORAGE_URL}/media/")
+        if not MEDIA_URL.endswith('/'):
+            MEDIA_URL = MEDIA_URL+'/'
+        #endif ensure trailing slash
+    #endif aws media in use
+#endif aws s3 bucket name defined
 
 if not AWS_MEDIA:
     MEDIA_URL = env('MEDIA_URL', '/media/')
-    STORAGE_URL = MEDIA_URL[:-1]
+    if not MEDIA_URL.endswith('/'):
+        MEDIA_URL = MEDIA_URL+'/'
+    #endif ensure trailing slash
+    STORAGE_URL = env('STORAGE_URL', MEDIA_URL[:-1])
+    if STORAGE_URL.endswith('/'):
+        STORAGE_URL = STORAGE_URL[:-1]
+    #endif remove any trailing slash
+#endif not using aws s3 for media
 
 if not AWS_STATIC:
     # @see whitenoise middleware usage: https://whitenoise.evans.io/en/stable/django.html
@@ -234,7 +258,7 @@ if not AWS_STATIC:
     WHITENOISE_MANIFEST_STRICT = False
     #WHITENOISE_KEEP_ONLY_HASHED_FILES = True  # cannot keep only hashed unless we purge {STATIC_URL} from .haml files.
     DEBUG_PROPAGATE_EXCEPTIONS = True
-#endif not using aws for staticfiles
+#endif not using aws s3 for staticfiles
 
 STATIC_ROOT = os.path.join(PROJECT_DIR, "../sitestatic/")
 

@@ -2,18 +2,14 @@ from django.contrib.auth.models import User as AuthUser
 from django.utils import timezone
 from django.utils.functional import cached_property
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.logs import LogExtrasMixin
 
 from temba.orgs.models import Org, User as TembaUser
 
 
-class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
-    override_ignore = ignoreDjangoModelAttrs(AuthUser)
-    # fake model, tell Django to ignore so that it does not try to create/migrate schema.
-
-    class Meta:
-        abstract = True
+class AuthUserOverrides(MonkeyPatcher):
+    patch_class = AuthUser
 
     # default optional property to False so it exists.
     using_token = False
@@ -21,8 +17,7 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
     def __str__(self):
         return self.name or self.username
 
-    @classmethod
-    def create(cls, email: str, first_name: str, last_name: str, password: str, language: str = None):
+    def create(cls: type[AuthUser], email: str, first_name: str, last_name: str, password: str, language: str = None):
         obj = cls.objects.create_user(
             username=email, email=email, first_name=first_name, last_name=last_name, password=password
         )
@@ -184,12 +179,8 @@ class AuthUserOverrides(ClassOverrideMixinMustBeFirst, AuthUser):
 
 #endclass AuthUserOverrides
 
-class TembaUserOverrides(ClassOverrideMixinMustBeFirst, LogExtrasMixin, TembaUser):
-    override_ignore = ignoreDjangoModelAttrs(TembaUser)
-    # fake model, tell Django to ignore so that it does not try to create/migrate schema.
-
-    class Meta:
-        abstract = True
+class TembaUserOverrides(MonkeyPatcher, LogExtrasMixin):
+    patch_class = TembaUser
 
     # default optional property to False so it exists.
     using_token = False

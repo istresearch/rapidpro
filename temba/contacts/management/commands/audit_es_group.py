@@ -1,12 +1,14 @@
-import os
-
+import logging
 import requests
+import sys
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from temba.contacts.models import ContactGroup
 
+
+logger = logging.getLogger()
 
 class Command(BaseCommand):  # pragma: no cover
     help = "Checks group membership between Elasticsearch and the DB for the passed in group uuid"
@@ -15,7 +17,10 @@ class Command(BaseCommand):  # pragma: no cover
         parser.add_argument("group_uuid")
 
     def handle(self, *args, **options):
-        group = ContactGroup.all_groups.get(uuid=options["group_uuid"])
+        logger.info('Audit ES', extra={
+            'group_uuid': options["group_uuid"],
+        })
+        group = ContactGroup.objects.filter(uuid=options["group_uuid"]).first()
 
         search = {
             "_source": ["modified_on", "created_on", "uuid", "name"],
@@ -28,7 +33,7 @@ class Command(BaseCommand):  # pragma: no cover
         es_response = requests.get(settings.ELASTICSEARCH_URL + "/contacts/_search", json=search).json()
         if "hits" not in es_response:
             print(es_response)
-            os.exit(1)
+            sys.exit(1)
 
         es_contacts = es_response["hits"]["hits"]
         db_contacts = group.contacts.filter(is_active=True)

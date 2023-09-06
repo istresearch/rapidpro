@@ -1,6 +1,7 @@
 from datetime import timedelta
 import logging
 
+from django.conf import settings
 from django.http import HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.utils import timezone
@@ -14,6 +15,8 @@ from smartmin.views import SmartUpdateView
 from temba.mailroom import FlowValidationException
 from temba.orgs.views import OrgObjPermsMixin
 from temba.utils import analytics, json
+from temba.utils.s3 import public_file_storage
+from temba.utils.uuid import uuid4
 from temba.utils.views import NonAtomicMixin
 from temba.flows.models import (
     FlowUserConflictException,
@@ -130,13 +133,32 @@ class ArchivedViewOverrides(ClassOverrideMixinMustBeFirst, FlowCRUDL.Archived):
         self.apply_bulk_action_toast = None
         if action == "delete":
             num_obj = len(objects)
-            self.getOrigClsAttr('apply_bulk_action')(self, user, action, objects, label)
+            self.super_apply_bulk_action(user, action, objects, label)
             if num_obj > 1:
                 self.apply_bulk_action_toast = f"All {num_obj} flows deleted"
             #endif
         else:
-            self.getOrigClsAttr('apply_bulk_action')(self, user, action, objects, label)
+            self.super_apply_bulk_action(user, action, objects, label)
         #endif
     #enddef apply_bulk_action
 
-#endclass Archived
+#endclass ArchivedViewOverrides
+
+class UploadMediaActionOverrides(ClassOverrideMixinMustBeFirst, FlowCRUDL.UploadMediaAction):
+    # bugfix: respect STORAGE_URL
+
+    def save_media_upload(self, file):
+        flow = self.get_object()
+
+        # browsers might send m4a files but correct MIME type is audio/mp4
+        extension = file.name.split(".")[-1]
+        if extension == "m4a":
+            file.content_type = "audio/mp4"
+
+        path = f"attachments/{flow.org.id}/{flow.id}/steps/{str(uuid4())}/{file.name}"
+        path = public_file_storage.save(path, file)  # storage classes can rewrite saved paths
+
+        return {"type": file.content_type, "url": f"{settings.STORAGE_URL}/{path}"}
+    #enddef save_media_upload
+
+#endclass UploadMediaActionOverrides

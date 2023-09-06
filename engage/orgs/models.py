@@ -3,35 +3,33 @@ from django.conf import settings as siteconfig, settings
 from django.contrib.auth.models import User
 from django.db import transaction
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.orgs.models import Org, OrgRole
 from temba.utils import languages
 
+# needed for legacy db migration
+from django.contrib.auth.models import User as OldUser
+from django.db import models
 
-class OrgModelOverride(ClassOverrideMixinMustBeFirst, Org):
-    override_ignore = ignoreDjangoModelAttrs(Org)
 
-    # we do not want Django to perform any magic inheritance
-    class Meta:
-        abstract = True
+class OrgModelOverride(MonkeyPatcher):
+    patch_class = Org
 
     def get_brand_domain(self):
         if siteconfig.ALT_CALLBACK_DOMAIN:
             return siteconfig.ALT_CALLBACK_DOMAIN
         else:
-            return self.getOrigClsAttr('get_brand_domain')(self)
+            return self.super_get_brand_domain()
     #enddef get_brand_domain
 
     def release(self, user, **kwargs):
         with transaction.atomic():
-            self.getOrigClsAttr('release')(self, user, **kwargs)
+            self.super_release(user, **kwargs)
         #endwith
     #enddef release
 
     # ensure old definition exists, so we can migrate to new schema
-    from django.contrib.auth.models import User as OldUser
-    from django.db import models
     Org.administrators = models.ManyToManyField(OldUser, related_name='org_admins')
     Org.editors = models.ManyToManyField(OldUser, related_name='org_editors')
     Org.viewers = models.ManyToManyField(OldUser, related_name='org_viewers')

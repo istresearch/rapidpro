@@ -33,7 +33,7 @@ class ChannelCRUDLOverrides(ClassOverrideMixinMustBeFirst, ManageChannelMixin,
 class ChannelReadOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Read):
 
     def get_gear_links(self):
-        links = self.getOrigClsAttr('get_gear_links')(self)
+        links = self.super_get_gear_links()
 
         # as_btn introduced to determine if placed in hamburger menu or as its own button
         el = [x for x in links if hasattr(x, 'id') and x.id == 'update-channel']
@@ -78,7 +78,7 @@ class ChannelClaimOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Claim):
     #enddef channel_types_groups
 
     def get_context_data(self, **kwargs):
-        context = self.getOrigClsAttr('get_context_data')(self, **kwargs)
+        context = self.super_get_context_data(**kwargs)
         # engage features a single channel
         context["featured_channel"] = Channel.get_type_from_code(PostmasterType.code)
         return context
@@ -122,7 +122,7 @@ class ChannelDeleteOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Delete)
 
     def post(self, request, *args, **kwargs):
         try:
-            return self.getOrigClsAttr('post')(self, request=request, *args, **kwargs)
+            return self.super_post(request=request, *args, **kwargs)
         except ValueError as vex:
             messages.error(request, vex)
             from django.http import HttpResponse
@@ -141,7 +141,7 @@ class ChannelDeleteOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Delete)
 class ChannelUpdateOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Update):
 
     def pre_save(self, obj):
-        obj = self.getOrigClsAttr('pre_save')(self, obj)
+        obj = self.super_pre_save(obj)
         if hasattr(obj, 'tps'):
             max_tps = getattr(settings, "MAX_TPS", 50)
             def_tps = getattr(settings, "DEFAULT_TPS", 10)
@@ -162,7 +162,7 @@ class ChannelListOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.List):
     link_url = 'uuid@channels.channel_read'
 
     def get_queryset(self, **kwargs):
-        queryset = self.getOrigClsAttr('get_queryset')(self, **kwargs)
+        queryset = self.super_get_queryset(**kwargs)
 
         req = self.request
         if req and req.user and req.user.is_superuser and not req.GET.get("showall"):

@@ -1,6 +1,6 @@
 import bandwidth
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst, ignoreDjangoModelAttrs
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.orgs.models import Org
 
@@ -18,11 +18,8 @@ BWI_ENCODING = "BWI_ENCODING"
 BWI_SENDER = "BWI_SENDER"
 
 
-class BandwidthOrgModelOverrides(ClassOverrideMixinMustBeFirst, Org):
-    # fake model, tell Django to ignore so it does not try to create/migrate schema.
-    class Meta:
-        abstract = True
-    override_ignore = ignoreDjangoModelAttrs(Org)
+class BandwidthOrgModelOverrides(MonkeyPatcher):
+    patch_class = Org
 
     def connect_bandwidth(self, account_sid, account_token, account_secret, application_sid, user):
         self.config.update({
