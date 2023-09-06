@@ -88,7 +88,7 @@ RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
  && notify "installed needed OS libs required"
 
 RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && npm install -g npm@latest node-gyp less \
+ && npm install -g npm@16 node-gyp less \
  && notify "installed/built global runtime npm libs" \
  && su-exec engage:engage npm install \
  && tar -zxf floweditor.tar.gz --directory node_modules/@nyaruka/flow-editor \
