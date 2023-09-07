@@ -118,13 +118,3 @@ RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
 RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
  && set -x; su-exec engage:engage ./install-pylibs.sh; set +x \
  && notify "installed/built python libs"
-
-RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && runDeps="$( \
-    scanelf --needed --nobanner --recursive /venv \
-      | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
-      | sort -u \
-      | xargs -r apk info --installed \
-      | sort -u \
-    )" \
- && notify "installed runtime pylibs"
