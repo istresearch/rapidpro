@@ -64,7 +64,7 @@ chardet = "^4.0.0"
 openpyxl = "^3.0.9"
 python-json-logger = "2.0.0"
 #----- engage
-bandwidth-sdk = "14.5.0"
+bandwidth-sdk = "^14.0.0"
 # to install via IntelliJ, use https://github.com/bandwidthcom/python-bandwidth-iris#egg=iris_sdk
 iris_sdk = {git = "https://github.com/bandwidthcom/python-bandwidth-iris"}
 amqp = "5.1.1"
