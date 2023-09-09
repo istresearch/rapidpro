@@ -67,8 +67,7 @@ class MonkeyPatcher:
     def applyPatches(cls) -> None:
         ignore_attrs = getattr(cls, 'patch_ignore', ()) + (
                 'patch_class', 'patch_attrs', 'patch_ignore', 'on_apply_patches',
-                'getOrigClsAttr', 'inheritors', 'patchClassMethod',
-                'applyPatches', 'applyPatches',
+                'getOrigClsAttr', 'inheritors', 'patchClassMethod', 'applyPatches'
         )
         parents = cls.__bases__
         patch_cls = cls.patch_class
