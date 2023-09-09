@@ -15,29 +15,26 @@ class AppConfig(BaseAppConfig):
         smartmin.widgets.DatePickerWidget.Media = DatePickerMedia
 
         from .models import MsgModelOverride, LabelModelOverride
-        MsgModelOverride.setClassOverrides()
-        LabelModelOverride.setClassOverrides()
+        MsgModelOverride.applyPatches()
+        LabelModelOverride.applyPatches()
 
         from .tests import LabelCRUDLTestOverrides
-        LabelCRUDLTestOverrides.setClassOverrides()
+        LabelCRUDLTestOverrides.applyPatches()
 
         from .views.inbox import MsgInboxViewOverrides
-        MsgInboxViewOverrides.setClassOverrides()
+        MsgInboxViewOverrides.applyPatches()
 
         # override base inbox class before child classes
         from .inbox_msgfailed import ViewInboxFailedMsgsOverrides
-        ViewInboxFailedMsgsOverrides.setClassOverrides()
+        ViewInboxFailedMsgsOverrides.applyPatches()
 
         from .views.exporter import MsgExporterOverrides
-        MsgExporterOverrides.setClassOverrides()
+        MsgExporterOverrides.applyPatches()
 
         from temba.msgs.views import MsgCRUDL
         from .views.read import Read
         MsgCRUDL.Read = Read
         MsgCRUDL.actions += ("read",)
-    #enddef on_apply_overrides
-
-
     #enddef ready
 
 #endclass AppConfig

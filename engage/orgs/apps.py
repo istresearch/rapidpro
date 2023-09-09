@@ -10,37 +10,37 @@ class AppConfig(BaseAppConfig):
 
     def ready(self):
         from .bandwidth import BandwidthOrgModelOverrides
-        BandwidthOrgModelOverrides.setClassOverrides()
+        BandwidthOrgModelOverrides.applyPatches()
 
         from .models import OrgModelOverride
-        OrgModelOverride.setClassOverrides()
+        OrgModelOverride.applyPatches()
 
         from .views.user_assign import OrgViewAssignUserMixin
-        OrgViewAssignUserMixin.setClassOverrides()
+        OrgViewAssignUserMixin.applyPatches()
 
         from .views.user_delete import UserViewDeleteOverride
-        UserViewDeleteOverride.setClassOverrides()
+        UserViewDeleteOverride.applyPatches()
 
         from .views.user_list import OrgViewListUserOverrides
-        OrgViewListUserOverrides.setClassOverrides()
+        OrgViewListUserOverrides.applyPatches()
 
         from .views.bandwidth import BandwidthChannelViewsMixin
-        BandwidthChannelViewsMixin.setClassOverrides()
+        BandwidthChannelViewsMixin.applyPatches()
 
         from .views.home import HomeOverrides
-        HomeOverrides.setClassOverrides()
+        HomeOverrides.applyPatches()
 
         from .views.manage_orgs import AdminManageOverrides
-        AdminManageOverrides.setClassOverrides()
+        AdminManageOverrides.applyPatches()
 
         from .views.create import OrgViewCreateOverride
-        OrgViewCreateOverride.setClassOverrides()
+        OrgViewCreateOverride.applyPatches()
 
         from .views.resthooks import ResthookFormOverrides
-        ResthookFormOverrides.setClassOverrides()
+        ResthookFormOverrides.applyPatches()
 
         from .views.sub_orgs import OrgViewSubOrgsOverrides
-        OrgViewSubOrgsOverrides.setClassOverrides()
+        OrgViewSubOrgsOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig

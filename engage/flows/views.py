@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from smartmin.views import SmartUpdateView
 
@@ -27,7 +27,8 @@ from temba.flows.views import FlowCRUDL
 
 logger = logging.getLogger()
 
-class FlowCRUDLOverrides(ClassOverrideMixinMustBeFirst, FlowCRUDL):
+class FlowCRUDLOverrides(MonkeyPatcher):
+    patch_class = FlowCRUDL
 
     class Json(NonAtomicMixin, FlowCRUDL.AllowOnlyActiveFlowMixin, OrgObjPermsMixin, SmartUpdateView):
         slug_url_kwarg = "uuid"
@@ -115,10 +116,11 @@ class FlowCRUDLOverrides(ClassOverrideMixinMustBeFirst, FlowCRUDL):
 
 #endclass FlowCRUDLOverrides
 
-class ArchivedViewOverrides(ClassOverrideMixinMustBeFirst, FlowCRUDL.Archived):
+class ArchivedViewOverrides(MonkeyPatcher):
+    patch_class = FlowCRUDL.Archived
     bulk_action_permissions = {"delete": "flows.flow_delete"}
 
-    def get_bulk_actions(self):
+    def get_bulk_actions(self: FlowCRUDL.Archived):
         actions = []
         if self.has_org_perm("flows.flow_update"):
             actions.append("restore")
@@ -129,7 +131,7 @@ class ArchivedViewOverrides(ClassOverrideMixinMustBeFirst, FlowCRUDL.Archived):
         return actions
     #enddef get_bulk_actions
 
-    def apply_bulk_action(self, user, action, objects, label):
+    def apply_bulk_action(self: FlowCRUDL.Archived, user, action, objects, label):
         self.apply_bulk_action_toast = None
         if action == "delete":
             num_obj = len(objects)
@@ -144,10 +146,11 @@ class ArchivedViewOverrides(ClassOverrideMixinMustBeFirst, FlowCRUDL.Archived):
 
 #endclass ArchivedViewOverrides
 
-class UploadMediaActionOverrides(ClassOverrideMixinMustBeFirst, FlowCRUDL.UploadMediaAction):
+class UploadMediaActionOverrides(MonkeyPatcher):
+    patch_class = FlowCRUDL.UploadMediaAction
     # bugfix: respect STORAGE_URL
 
-    def save_media_upload(self, file):
+    def save_media_upload(self: FlowCRUDL.UploadMediaAction, file):
         flow = self.get_object()
 
         # browsers might send m4a files but correct MIME type is audio/mp4

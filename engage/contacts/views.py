@@ -1,14 +1,15 @@
 from django.core.handlers.wsgi import WSGIRequest
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.middleware import RedirectTo
 
 from temba.contacts.views import ContactCRUDL
 from temba.utils.models import patch_queryset_count
 
-class ContactListOverrides(ClassOverrideMixinMustBeFirst, ContactCRUDL.List):
+class ContactListOverrides(MonkeyPatcher):
+    patch_class = ContactCRUDL.List
 
-    def get_bulk_actions(self):
+    def get_bulk_actions(self: ContactCRUDL.List):
         return ("label", "block", "archive", "send") if self.has_org_perm("contacts.contact_update") else ()
     #enddef get_bulk_actions
 
@@ -28,7 +29,7 @@ class ContactListOverrides(ClassOverrideMixinMustBeFirst, ContactCRUDL.List):
 
     secondary_order_by = ["name"]
 
-    def get_queryset(self, **kwargs):
+    def get_queryset(self: ContactCRUDL.List, **kwargs):
         search_query = self.request.GET.get("search", None)
         if search_query:
             return self.super_get_queryset(**kwargs)
@@ -52,9 +53,10 @@ class ContactListOverrides(ClassOverrideMixinMustBeFirst, ContactCRUDL.List):
 
 #endclass ContactListOverrides
 
-class ContactReadOverrides(ClassOverrideMixinMustBeFirst, ContactCRUDL.Read):
+class ContactReadOverrides(MonkeyPatcher):
+    patch_class = ContactCRUDL.Read
 
-    def has_org_perm(self, permission):
+    def has_org_perm(self: ContactCRUDL.Read, permission):
         obj_org = self.get_object_org()
         if obj_org:
             return self.get_user().has_org_perm(obj_org, permission)
@@ -63,7 +65,7 @@ class ContactReadOverrides(ClassOverrideMixinMustBeFirst, ContactCRUDL.Read):
         #endif
     #enddef
 
-    def has_permission(self, request: WSGIRequest, *args, **kwargs):
+    def has_permission(self: ContactCRUDL.Read, request: WSGIRequest, *args, **kwargs):
         user = self.get_user()
         # if user has permission to the org this contact resides, just switch the org for them
         obj_org = self.get_object_org()

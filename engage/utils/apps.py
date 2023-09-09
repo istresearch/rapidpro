@@ -16,20 +16,20 @@ class AppConfig(BaseAppConfig):
 
     def ready(self):
         from .views import BaseListViewOverrides
-        BaseListViewOverrides.setClassOverrides()
+        BaseListViewOverrides.applyPatches()
 
         from .views import MultipleObjectMixinOverrides
-        MultipleObjectMixinOverrides.setClassOverrides()
+        MultipleObjectMixinOverrides.applyPatches()
 
         from temba.utils import models as TUM
         from .models import RequireUpdateFieldsMixin
         TUM.RequireUpdateFieldsMixin = RequireUpdateFieldsMixin
 
         from .views import BulkActionMixinOverrides
-        BulkActionMixinOverrides.setClassOverrides()
+        BulkActionMixinOverrides.applyPatches()
 
         from .export import BaseExportTaskOverrides
-        BaseExportTaskOverrides.setClassOverrides()
+        BaseExportTaskOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig

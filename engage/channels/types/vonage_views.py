@@ -2,7 +2,7 @@ import logging
 import phonenumbers
 import re
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.channels.models import Channel
 from temba.channels.types.vonage.type import VonageType
@@ -11,7 +11,8 @@ from temba.channels.types.vonage.views import ClaimView
 
 logger = logging.getLogger()
 
-class ClaimViewOverrides(ClassOverrideMixinMustBeFirst, ClaimView):
+class ClaimViewOverrides(MonkeyPatcher):
+    patch_class = ClaimView
 
     def get_existing_numbers(self, org):
         numbers = []

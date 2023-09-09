@@ -89,9 +89,9 @@ class OrgViewCreateOverride(MonkeyPatcher):
     patch_class = OrgCRUDL
 
     @staticmethod
-    def on_apply_overrides(under_cls) -> None:
+    def on_apply_patches(under_cls) -> None:
         under_cls.actions += ('create',)
-    #enddef on_apply_overrides
+    #enddef on_apply_patches
 
     class Create(SmartCreateView):
         title = _("Create Workspace")

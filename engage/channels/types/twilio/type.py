@@ -2,7 +2,7 @@ import logging
 
 from django.urls import reverse
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.channels.models import Channel
 from temba.channels.types.twilio.type import TwilioType
@@ -10,7 +10,8 @@ from temba.channels.types.twilio.type import TwilioType
 
 logger = logging.getLogger()
 
-class TwilioTypeOverrides(ClassOverrideMixinMustBeFirst, TwilioType):
+class TwilioTypeOverrides(MonkeyPatcher):
+    patch_class = TwilioType
 
     def enable_flow_server(self, channel):
         """

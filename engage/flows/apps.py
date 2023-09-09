@@ -10,16 +10,16 @@ class AppConfig(BaseAppConfig):
 
     def ready(self):
         from .models import FlowOverrides
-        FlowOverrides.setClassOverrides()
+        FlowOverrides.applyPatches()
 
         from .views import FlowCRUDLOverrides
-        FlowCRUDLOverrides.setClassOverrides()
+        FlowCRUDLOverrides.applyPatches()
 
         from .views import ArchivedViewOverrides
-        ArchivedViewOverrides.setClassOverrides()
+        ArchivedViewOverrides.applyPatches()
 
         from .views import UploadMediaActionOverrides
-        UploadMediaActionOverrides.setClassOverrides()
+        UploadMediaActionOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig

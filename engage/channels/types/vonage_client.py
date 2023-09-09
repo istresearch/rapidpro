@@ -2,16 +2,17 @@ import logging
 
 from django.urls import reverse
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.channels.types.vonage.client import VonageClient
 
 
 logger = logging.getLogger()
 
-class VonageClientOverrides(ClassOverrideMixinMustBeFirst, VonageClient):
+class VonageClientOverrides(MonkeyPatcher):
+    patch_class = VonageClient
 
-    def create_application(self, domain, channel_uuid):
+    def create_application(self: VonageClient, domain, channel_uuid):
         """
         Vonage got bought out and changed their API.
         :param domain:

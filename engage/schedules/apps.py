@@ -10,7 +10,7 @@ class AppConfig(BaseAppConfig):
 
     def ready(self):
         from .tests import ScheduleTestOverrides
-        ScheduleTestOverrides.setClassOverrides()
+        ScheduleTestOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig
