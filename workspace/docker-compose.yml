@@ -68,9 +68,6 @@ services:
       # copy & paste the result in .env between the single quotes.
       #OIDC_RSA_PRIVATE_KEY_BASE64='
       #'
-      #- KEYCLOAK_URL=http://host.docker.internal:8008
-      - KEYCLOAK_CLIENT_ID
-      - KEYCLOAK_CLIENT_SECRET
       - VERSION_TAG=ci-local-dev
       - VERSION_CI=1.0.0
       #---- <*)))><: I found these settings worked best for dev
@@ -332,17 +329,6 @@ services:
       - initialBuckets=${AWS_S3_BUCKET}
       - retainFilesOnExit=true
       - debug=true
-    restart: unless-stopped
-
-  keycloak:
-    container_name: keycloak
-    image: quay.io/keycloak/keycloak:17.0.0
-    entrypoint: /opt/keycloak/bin/kc.sh start-dev
-    ports:
-      - 8008:8080
-    environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
     restart: unless-stopped
 
 volumes:
