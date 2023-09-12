@@ -1,3 +1,5 @@
+user_fname = "dev"
+user_lname = "one"
 user_email = "dev@twosixtech.com"
 user_pass = "abc123"
 superuser_name = "admin"
@@ -34,7 +36,7 @@ org = Org.objects.create(
 org.initialize(topup_size=org_topup)
 
 #Create user and set as Org admin
-user = TembaUser.create(user_email, 'admin', 'admin', user_pass)
+user = TembaUser.create(user_email, user_fname, user_lname, user_pass)
 org.add_user(user, OrgRole.ADMINISTRATOR)
 
 token = APIToken.get_or_create(org, superuser)
