@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.utils import on_transaction_commit
 
@@ -18,12 +18,13 @@ from temba.msgs.views import MsgCRUDL
 
 logger = logging.getLogger()
 
-class MsgExporterOverrides(ClassOverrideMixinMustBeFirst, MsgCRUDL.Export):
+class MsgExporterOverrides(MonkeyPatcher):
+    patch_class = MsgCRUDL.Export
     """
     Export messages override to allow for ASYNC/SYNC behavior.
     """
 
-    def form_valid(self, form):
+    def form_valid(self: MsgCRUDL.Export, form):
         user = self.request.user
         org = user.get_org()
 

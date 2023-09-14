@@ -10,14 +10,14 @@ class AppConfig(BaseAppConfig):
 
     def ready(self):
         from .models import ContactFieldOverrides
-        ContactFieldOverrides.setClassOverrides()
+        ContactFieldOverrides.applyPatches()
         from .models import ContactOverrides
-        ContactOverrides.setClassOverrides()
+        ContactOverrides.applyPatches()
 
         from .views import ContactListOverrides
-        ContactListOverrides.setClassOverrides()
+        ContactListOverrides.applyPatches()
         from .views import ContactReadOverrides
-        ContactReadOverrides.setClassOverrides()
+        ContactReadOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig

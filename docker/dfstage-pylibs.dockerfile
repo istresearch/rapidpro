@@ -88,7 +88,7 @@ RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
  && notify "installed needed OS libs required"
 
 RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && npm install -g npm@latest node-gyp less \
+ && npm install -g node-gyp less \
  && notify "installed/built global runtime npm libs" \
  && su-exec engage:engage npm install \
  && tar -zxf floweditor.tar.gz --directory node_modules/@nyaruka/flow-editor \
@@ -118,13 +118,3 @@ RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
 RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
  && set -x; su-exec engage:engage ./install-pylibs.sh; set +x \
  && notify "installed/built python libs"
-
-RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
- && runDeps="$( \
-    scanelf --needed --nobanner --recursive /venv \
-      | awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
-      | sort -u \
-      | xargs -r apk info --installed \
-      | sort -u \
-    )" \
- && notify "installed runtime pylibs"

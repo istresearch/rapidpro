@@ -33,14 +33,14 @@ class BandwidthChannelViewsMixin(MonkeyPatcher):
     patch_class = OrgCRUDL
 
     @staticmethod
-    def on_apply_overrides(under_cls) -> None:
+    def on_apply_patches(under_cls) -> None:
         under_cls.actions += (
             "bandwidth_connect",
             "bandwidth_international_connect",
             "bandwidth_account",
             "bandwidth_international_account",
         )
-    #enddef on_apply_overrides
+    #enddef on_apply_patches
 
     class BandwidthConnect(ModalMixin, InferOrgMixin, OrgPermsMixin, SmartFormView):
 

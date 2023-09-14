@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.channels.views import UpdateChannelForm
 from temba.channels.types.telegram.type import TelegramType
@@ -27,6 +27,7 @@ class UpdateTelegramForm(UpdateChannelForm):
 #endclass UpdateTelegramForm
 
 
-class TelegramTypeOverrides(ClassOverrideMixinMustBeFirst, TelegramType):
+class TelegramTypeOverrides(MonkeyPatcher):
+    patch_class = TelegramType
     update_form = UpdateTelegramForm
 #endclass TelegramTypeOverrides

@@ -10,10 +10,10 @@ class AppConfig(BaseAppConfig):
 
     def ready(self):
         from .account import AuthUserOverrides
-        AuthUserOverrides.setClassOverrides()
+        AuthUserOverrides.applyPatches()
 
         from .account import TembaUserOverrides
-        TembaUserOverrides.setClassOverrides()
+        TembaUserOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig

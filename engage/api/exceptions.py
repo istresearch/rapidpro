@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.exceptions import APIException
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 
 class ExceptionWithCauseMixin:
@@ -21,7 +21,8 @@ class ExceptionWithCauseMixin:
 
 #endclass ExceptionWithCauseMixin
 
-class APIExceptionOverride(ClassOverrideMixinMustBeFirst, ExceptionWithCauseMixin, APIException):
+class APIExceptionOverride(MonkeyPatcher, ExceptionWithCauseMixin):
+    patch_class = APIException
     """
     append a static method to the generic APIException class so we can start
     using a more standardized API response especially when an error occurs.

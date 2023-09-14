@@ -47,7 +47,7 @@ jobs:
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
           echo "${FROM_LAYER#**:}" > base_tag.txt
           source scm/utils.sh
-          IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "base_tag.txt" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json")
+          IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "base_tag.txt" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json" "VERSION_FlowEditor")
           IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
           echo "::notice::Layer2: ${IMAGE_NAME}:${IMAGE_TAG}"
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT

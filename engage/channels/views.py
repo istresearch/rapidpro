@@ -8,29 +8,31 @@ from .manage import ManageChannelMixin
 from .purge_outbox import PurgeOutboxMixin
 from .types.postmaster.apks import APIsForDownloadPostmaster
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.channels.models import Channel
 from temba.channels.types.postmaster.type import PostmasterType
 from temba.channels.views import ChannelCRUDL
 
 
-class ChannelCRUDLOverrides(ClassOverrideMixinMustBeFirst, ManageChannelMixin,
-                            PurgeOutboxMixin, APIsForDownloadPostmaster, ChannelCRUDL):
-    override_ignore = ('get_actions',)
+class ChannelCRUDLOverrides(MonkeyPatcher, ManageChannelMixin,
+                            PurgeOutboxMixin, APIsForDownloadPostmaster):
+    patch_class = ChannelCRUDL
+    patch_ignore = ('get_actions',)
 
     @staticmethod
-    def on_apply_overrides(under_cls):
+    def on_apply_patches(under_cls):
         under_cls.actions += \
            ManageChannelMixin.get_actions() + \
            PurgeOutboxMixin.get_actions() + \
            APIsForDownloadPostmaster.get_actions()
-    #enddef on_apply_overrides
+    #enddef on_apply_patches
 
 #endclass ChannelCRUDLOverrides
 
 
-class ChannelReadOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Read):
+class ChannelReadOverrides(MonkeyPatcher):
+    patch_class = ChannelCRUDL.Read
 
     def get_gear_links(self):
         links = self.super_get_gear_links()
@@ -56,9 +58,10 @@ class ChannelReadOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Read):
 #endclass ChannelReadOverrides
 
 
-class ChannelClaimOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Claim):
+class ChannelClaimOverrides(MonkeyPatcher):
+    patch_class = ChannelCRUDL.Claim
 
-    def channel_types_groups(self):
+    def channel_types_groups(self: ChannelCRUDL.Claim):
         user = self.request.user
 
         # fetch channel types, sorted by category and name
@@ -87,9 +90,10 @@ class ChannelClaimOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Claim):
 #endclass ChannelClaimOverrides
 
 
-class ChannelClaimAllOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.ClaimAll):
+class ChannelClaimAllOverrides(MonkeyPatcher):
+    patch_class = ChannelCRUDL.ClaimAll
 
-    def channel_types_groups(self):
+    def channel_types_groups(self: ChannelCRUDL.ClaimAll):
         user = self.request.user
 
         types_by_category = defaultdict(list)
@@ -109,9 +113,10 @@ class ChannelClaimAllOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Claim
 #endclass ChannelClaimAllOverrides
 
 
-class ChannelDeleteOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Delete):
+class ChannelDeleteOverrides(MonkeyPatcher):
+    patch_class = ChannelCRUDL.Delete
 
-    def get_success_url(self):
+    def get_success_url(self: ChannelCRUDL.Delete):
         # if we're deleting a child channel, redirect to parent afterwards
         channel = self.get_object()
         if channel.parent:
@@ -120,7 +125,7 @@ class ChannelDeleteOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Delete)
         return reverse("channels.channel_manage")
     #enddef get_success_url
 
-    def post(self, request, *args, **kwargs):
+    def post(self: ChannelCRUDL.Delete, request, *args, **kwargs):
         try:
             return self.super_post(request=request, *args, **kwargs)
         except ValueError as vex:
@@ -138,7 +143,8 @@ class ChannelDeleteOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Delete)
 
 #endclass ChannelDeleteOverrides
 
-class ChannelUpdateOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Update):
+class ChannelUpdateOverrides(MonkeyPatcher):
+    patch_class = ChannelCRUDL.Update
 
     def pre_save(self, obj):
         obj = self.super_pre_save(obj)
@@ -158,10 +164,11 @@ class ChannelUpdateOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.Update)
 
 #endclass ChannelUpdateOverrides
 
-class ChannelListOverrides(ClassOverrideMixinMustBeFirst, ChannelCRUDL.List):
+class ChannelListOverrides(MonkeyPatcher):
+    patch_class = ChannelCRUDL.List
     link_url = 'uuid@channels.channel_read'
 
-    def get_queryset(self, **kwargs):
+    def get_queryset(self: ChannelCRUDL.List, **kwargs):
         queryset = self.super_get_queryset(**kwargs)
 
         req = self.request

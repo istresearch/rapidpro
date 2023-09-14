@@ -4,7 +4,7 @@ from rest_framework.exceptions import ParseError
 
 from temba.api.v2.serializers import MsgBulkActionSerializer
 
-from engage.utils.class_overrides import ClassOverrideMixinMustBeFirst
+from engage.utils.class_overrides import MonkeyPatcher
 
 from .exceptions import FinancialException
 
@@ -44,9 +44,10 @@ class WriteSerializer(serializers.Serializer):
 #endclass WriteSerializer
 
 
-class MsgBulkActionSerializerOverride(ClassOverrideMixinMustBeFirst, MsgBulkActionSerializer):
+class MsgBulkActionSerializerOverride(MonkeyPatcher):
+    patch_class = MsgBulkActionSerializer
 
-    def validate_messages(self, value):
+    def validate_messages(self: MsgBulkActionSerializer, value):
         if 'request' in self.context and 'action' in self.context['request'].data:
             return value
         else:

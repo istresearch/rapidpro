@@ -39,50 +39,50 @@ class AppConfig(BaseAppConfig):
         self._add_pm_types()
 
         from .models import ChannelOverrides, AndroidTypeOverrides
-        ChannelOverrides.setClassOverrides()
-        AndroidTypeOverrides.setClassOverrides()
+        ChannelOverrides.applyPatches()
+        AndroidTypeOverrides.applyPatches()
 
         from .types.telegram.type import TelegramTypeOverrides
-        TelegramTypeOverrides.setClassOverrides()
+        TelegramTypeOverrides.applyPatches()
 
         from .types.twilio.type import TwilioTypeOverrides
-        TwilioTypeOverrides.setClassOverrides()
+        TwilioTypeOverrides.applyPatches()
 
         from .types.twitter.views import TwitterUpdateFormMetaOverrides
-        TwitterUpdateFormMetaOverrides.setClassOverrides()
+        TwitterUpdateFormMetaOverrides.applyPatches()
 
         from .types.viber_public.views import ViberPublicUpdateFormMetaOverrides
-        ViberPublicUpdateFormMetaOverrides.setClassOverrides()
+        ViberPublicUpdateFormMetaOverrides.applyPatches()
 
         from .types.vonage_client import VonageClientOverrides
-        VonageClientOverrides.setClassOverrides()
+        VonageClientOverrides.applyPatches()
 
         from .types.vonage_views import ClaimViewOverrides
-        ClaimViewOverrides.setClassOverrides()
+        ClaimViewOverrides.applyPatches()
 
         from .update_channel_form import UpdateChannelFormOverrides
-        UpdateChannelFormOverrides.setClassOverrides()
+        UpdateChannelFormOverrides.applyPatches()
 
         from .views import ChannelCRUDLOverrides
-        ChannelCRUDLOverrides.setClassOverrides()
+        ChannelCRUDLOverrides.applyPatches()
 
         from .views import ChannelReadOverrides
-        ChannelReadOverrides.setClassOverrides()
+        ChannelReadOverrides.applyPatches()
 
         from .views import ChannelClaimOverrides
-        ChannelClaimOverrides.setClassOverrides()
+        ChannelClaimOverrides.applyPatches()
 
         from .views import ChannelClaimAllOverrides
-        ChannelClaimAllOverrides.setClassOverrides()
+        ChannelClaimAllOverrides.applyPatches()
 
         from .views import ChannelDeleteOverrides
-        ChannelDeleteOverrides.setClassOverrides()
+        ChannelDeleteOverrides.applyPatches()
 
         from .views import ChannelUpdateOverrides
-        ChannelUpdateOverrides.setClassOverrides()
+        ChannelUpdateOverrides.applyPatches()
 
         from .views import ChannelListOverrides
-        ChannelListOverrides.setClassOverrides()
+        ChannelListOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig
