@@ -163,7 +163,8 @@ IS_AWS_S3_REGION_DEFAULT = bool(AWS_S3_REGION_NAME == 'us-east-1')
 AWS_SIGNED_URL_DURATION = int(env('AWS_SIGNED_URL_DURATION', '1800'))
 AWS_DEFAULT_ACL = env('AWS_DEFAULT_ACL', None)
 AWS_LOCATION = env('AWS_LOCATION', '')
-AWS_QUERYSTRING_EXPIRE = '157784630'  # unsure why this is hardcoded as a string
+# AWS now saying that it must be less than a week, i.e. < 604800
+AWS_QUERYSTRING_EXPIRE = env('AWS_QUERYSTRING_EXPIRE', 604800-1)
 AWS_STATIC = bool(AWS_STORAGE_BUCKET_NAME) and env('AWS_STATIC', False)
 AWS_MEDIA = bool(AWS_STORAGE_BUCKET_NAME) and env('AWS_MEDIA', True)
 AWS_S3_USE_SSL = bool(env('AWS_S3_USE_SSL', True))
