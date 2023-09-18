@@ -301,14 +301,16 @@ services:
     container_name: postgresql
     image: kartoza/postgis:14-3.3
     environment:
-      - POSTGRES_DB=rapidpro
+      - POSTGRES_DBNAME=rapidpro,postoffice
       - POSTGRES_USER=${PG_DB_USER}
-      - POSTGRES_PASSWORD=${PG_DB_PSWD}
+      - POSTGRES_PASS=${PG_DB_PSWD}
+      - POSTGRES_MULTIPLE_EXTENSIONS=postgis,hstore,postgis_topology,postgis_raster,uuid-ossp
+      - ALL_DATABASES=TRUE
     volumes:
-      - ./postgres-rp-extensions.sh:/docker-entrypoint-initdb.d/pg01.sh
+      #- ./postgres-rp-extensions.sh:/docker-entrypoint-initdb.d/pg01.sh
       # NOTE: If you have an existing rp db, run this command to create PO schema via:
       # docker exec -it postgresql docker-entrypoint-initdb.d/pg02.sh
-      - ./postgres-po-init.sh:/docker-entrypoint-initdb.d/pg02.sh
+      #- ./postgres-po-init.sh:/docker-entrypoint-initdb.d/pg02.sh
       - data4pgsql:/var/lib/postgresql/data
     ports:
       - "5432:5432"
