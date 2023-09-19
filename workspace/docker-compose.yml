@@ -11,27 +11,19 @@ services:
     ports:
       - 8000:8000
     volumes:
-      - data4media:/rapidpro/media
       #---- <*)))><: I found placing the local-static files far outside
       #----  the IDE/git pervuew prevented Docker from locking up.
-      - ~/engage-sitestatic:/rapidpro/sitestatic
       #- ./local_settings.py:/rapidpro/temba/local_settings.py
+      - ./uwsgi_conf.ini:/rapidpro/uwsgi_conf.ini
       - ./engage_initialsetup.py:/rapidpro/engage_initialsetup.py
-      - ../scm/src-refresh.sh:/opt/dev/src-refresh.sh
-      - ../docker/customizations/any:/opt/dev/any
-      - ../docker/customizations/engage:/opt/dev/brand
-      #- ../docker/customizations/generic:/opt/dev/brand
-      - ../engage:/opt/dev/rp/engage
-      - ../temba:/opt/dev/rp/temba
+
     environment:
+      - STARTUP_CMD=${STARTUP_CMD}
       #- SUB_DIR=UNSUPPORTED-since-4.0.12
       - SEND_CALLS=on
       - SEND_EMAILS=off
       - SEND_MESSAGES=on
       - SEND_WEBHOOKS=on
-      - CLEAR_COMPRESSOR_CACHE=off
-      - MANAGEPY_COLLECTSTATIC=off
-      - MANAGEPY_COMPRESS=off
       - MANAGEPY_INIT_DB=off
       - MANAGEPY_MIGRATE=off
       - DOMAIN_NAME=localhost
@@ -76,24 +68,17 @@ services:
       # copy & paste the result in .env between the single quotes.
       #OIDC_RSA_PRIVATE_KEY_BASE64='
       #'
-      - OIDC_RSA_PRIVATE_KEY_BASE64
-      #- KEYCLOAK_URL=http://host.docker.internal:8008
-      - KEYCLOAK_CLIENT_ID
-      - KEYCLOAK_CLIENT_SECRET
       - VERSION_TAG=ci-local-dev
       - VERSION_CI=1.0.0
       #---- <*)))><: I found these settings worked best for dev
       - UWSGI_DISABLE_LOGGING=True
-      - DJANGO_DEBUG=on
-      - DJANGO_COMPRESSOR=off
+      - DJANGO_DEBUG=off
       - DJANGO_LOG_LEVEL=WARNING
       - LOG_LEVEL=DEBUG
-      - DEV_STATIC=on
-      - DEV_CODE_ONLY=0
-      - CLEAR_SITESTATIC=0
+      - IS_PROD=on
 
-  celery:
-    container_name: celery
+  celery_worker:
+    container_name: celery_worker
     image: istresearch/p4-engage:$IMG_TAG_ENGAGE
     depends_on:
       - engage
@@ -113,7 +98,31 @@ services:
       - SECRET_KEY=notsecureatall
       - POST_OFFICE_API_KEY
       - POST_OFFICE_API_URL=http://host.docker.internal:8088/postoffice
-    command: ["/venv/bin/celery", "--beat", "--app=temba", "worker", "--loglevel=INFO", "--queues=celery,flows,msgs,handler"]
+    command: ["/venv/bin/celery", "worker", "--loglevel=INFO", "--queues=celery,flows,msgs,handler"]
+    restart: unless-stopped
+
+  celery_beat:
+    container_name: celery_beat
+    image: istresearch/p4-engage:$IMG_TAG_ENGAGE
+    depends_on:
+      - engage
+    links:
+      - redis
+      - postgresql
+    volumes:
+      - data4media:/rapidpro/media
+    environment:
+      - SEND_CALLS=on
+      - SEND_MESSAGES=on
+      - SEND_AIRTIME=on
+      - SEND_WEBHOOKS=on
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - DATABASE_URL=${RP_DB_URL}
+      - REDIS_URL=redis://redis:6379/1
+      - SECRET_KEY=notsecureatall
+      - POST_OFFICE_API_KEY
+      - POST_OFFICE_API_URL=http://host.docker.internal:8088/postoffice
+    command: [ "/venv/bin/celery", "--app=temba", "beat", "--loglevel=INFO" ]
     restart: unless-stopped
 
   courier:
@@ -227,11 +236,11 @@ services:
 
   nginx:
     container_name: nginx
-    image: nginx
+    image: istresearch/p4-engage:nginx-$IMG_TAG_ENGAGE
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx-server-locations.conf:/etc/nginx/in_server.d/99-loc-website.conf
     ports:
-      - 80:8888
+      - "80:8001"
     depends_on:
       - engage
     restart: unless-stopped
@@ -290,17 +299,19 @@ services:
 
   postgresql:
     container_name: postgresql
-    image: mdillon/postgis:10
+    image: kartoza/postgis:14-3.3
     environment:
-      - POSTGRES_DB=rapidpro
+      - POSTGRES_DBNAME=rapidpro,postoffice
       - POSTGRES_USER=${PG_DB_USER}
-      - POSTGRES_PASSWORD=${PG_DB_PSWD}
+      - POSTGRES_PASS=${PG_DB_PSWD}
+      - POSTGRES_MULTIPLE_EXTENSIONS=postgis,hstore,postgis_topology,postgis_raster,uuid-ossp
+      - ALL_DATABASES=TRUE
     volumes:
-      - ./postgres-rp-extensions.sh:/docker-entrypoint-initdb.d/pg01.sh
+      #- ./postgres-rp-extensions.sh:/docker-entrypoint-initdb.d/pg01.sh
       # NOTE: If you have an existing rp db, run this command to create PO schema via:
       # docker exec -it postgresql docker-entrypoint-initdb.d/pg02.sh
-      - ./postgres-po-init.sh:/docker-entrypoint-initdb.d/pg02.sh
-      - data4pgsql:/var/lib/postgresql/data
+      #- ./postgres-po-init.sh:/docker-entrypoint-initdb.d/pg02.sh
+      - data4pgsql:/var/lib/postgresql
     ports:
       - "5432:5432"
     #command: ["postgres", "-c", "log_statement=all"]
@@ -320,17 +331,6 @@ services:
       - initialBuckets=${AWS_S3_BUCKET}
       - retainFilesOnExit=true
       - debug=true
-    restart: unless-stopped
-
-  keycloak:
-    container_name: keycloak
-    image: quay.io/keycloak/keycloak:17.0.0
-    entrypoint: /opt/keycloak/bin/kc.sh start-dev
-    ports:
-      - 8008:8080
-    environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
     restart: unless-stopped
 
 volumes:
