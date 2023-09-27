@@ -21,17 +21,17 @@ class JoinOverrides(MonkeyPatcher, LogExtrasMixin):
 
         invite = self.get_invitation()
         if invite:
-            user = TembaUser.objects.filter(username=invite.email, is_active=True).first()
+            has_user = TembaUser.objects.filter(username=invite.email, is_active=True).exists()
 
-            if user:
+            if has_user:
                 join_accept_url = reverse("orgs.org_join_accept", args=[secret])
                 if invite.email == request.user.username:
                     return HttpResponseRedirect(join_accept_url)
-                elif user.password[0] == '!' and settings.OAUTH2_CONFIG.is_enabled:
+                elif settings.OAUTH2_CONFIG.is_enabled:
                     return HttpResponseRedirect(settings.OAUTH2_CONFIG.get_login_url(join_accept_url))
 
             logout(request)
-            if not user:
+            if not has_user:
                 return HttpResponseRedirect(reverse("orgs.org_create_login", args=[secret]))
 
         else:
