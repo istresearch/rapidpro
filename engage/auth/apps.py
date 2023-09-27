@@ -14,6 +14,9 @@ class AppConfig(BaseAppConfig):
 
         from .account import TembaUserOverrides
         TembaUserOverrides.applyPatches()
+
+        from .oauth import OAuthOverrides
+        OAuthOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig
