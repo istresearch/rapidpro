@@ -14,7 +14,6 @@ class OAuthOverrides(MonkeyPatcher):
     patch_class = AuthenticationBackend
 
     def get_or_create_user(self, request, id_claims: Dict, access_token: str):
-        print("get or create")
         claims = self.get_full_claims(request, id_claims, access_token)
         username = settings.OIDC_DJANGO_USERNAME_FUNC(claims)
         user, created = TembaUser.objects.get_or_create(username=username)
@@ -28,7 +27,6 @@ class OAuthOverrides(MonkeyPatcher):
         return user
 
     def get_user(self, user_id):
-        print("In auth get_user")
         try:
             user = TembaUser.objects.get(pk=user_id)
         except TembaUser.DoesNotExist:  # pragma: no cover
