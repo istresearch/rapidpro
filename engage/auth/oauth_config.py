@@ -64,6 +64,8 @@ class OAuthConfig:
 
         self.is_enabled = self.OIDC_ENABLED
         self.is_login_replaced = self.KEYCLOAK_REPLACES_LOGIN
+
+        self.OIDC_UNUSABLE_PASSWORD: bool = str2bool(env('OIDC_UNUSABLE_PASSWORD', True))
     #enddef init
 
     def get_discovery_url(self):

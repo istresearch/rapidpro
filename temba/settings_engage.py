@@ -492,6 +492,8 @@ if not is_empty(env('KEYCLOAK_URL', None)):
         #     "oauth2_authcodeflow.middleware.RefreshSessionMiddleware"
         # )
 
+        OIDC_UNUSABLE_PASSWORD = OAUTH2_CONFIG.OIDC_UNUSABLE_PASSWORD
+
         # callback to use email as the username, which is a non-standard thing for Django.
         from engage.auth.oauth_utils import oauth_username_is_email
         OIDC_DJANGO_USERNAME_FUNC = oauth_username_is_email
