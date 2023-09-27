@@ -1,3 +1,5 @@
+user_fname = "dev"
+user_lname = "one"
 user_email = "dev@twosixtech.com"
 user_pass = "abc123"
 superuser_name = "admin"
@@ -17,7 +19,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 from temba.api.models import APIToken
-from temba.orgs.models import Org, OrgRole
+from temba.orgs.models import Org, OrgRole, User as TembaUser
 
 # Create Super User (named admin)
 superuser = User.objects.create_superuser(superuser_name, superuser_email, superuser_pass)
@@ -34,7 +36,7 @@ org = Org.objects.create(
 org.initialize(topup_size=org_topup)
 
 #Create user and set as Org admin
-user = Org.create_user(user_email, user_pass)
+user = TembaUser.create(user_email, user_fname, user_lname, user_pass)
 org.add_user(user, OrgRole.ADMINISTRATOR)
 
 token = APIToken.get_or_create(org, superuser)

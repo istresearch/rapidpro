@@ -41,6 +41,9 @@ class AppConfig(BaseAppConfig):
 
         from .views.sub_orgs import OrgViewSubOrgsOverrides
         OrgViewSubOrgsOverrides.applyPatches()
+
+        from .views.join import JoinOverrides
+        JoinOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig

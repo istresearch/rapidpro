@@ -1,4 +1,5 @@
 from django.apps import AppConfig as BaseAppConfig
+from django.conf import settings
 
 class AppConfig(BaseAppConfig):
     """
@@ -14,6 +15,12 @@ class AppConfig(BaseAppConfig):
 
         from .account import TembaUserOverrides
         TembaUserOverrides.applyPatches()
+
+        # Need this for static file generation, since there is no SSO enabled
+        if settings.OAUTH2_CONFIG.is_enabled:
+            from .oauth import OAuthOverrides
+            OAuthOverrides.applyPatches()
+
     #enddef ready
 
 #endclass AppConfig
