@@ -72,16 +72,19 @@ class OAuthConfig:
         return f"{kc_host}realms/{kc_realm}/.well-known/openid-configuration"
     #enddef get_discovery_url
 
-    def get_login_url(self):
+    def get_login_url(self, next_url='/sso_signin'):
         url = '/oidc/authenticate'
-        next_url = '/sso_signin'
         fail_url = '/?error={error}'  #docs said the error param was optional... nope.
+        next_url = urllib.parse.quote(next_url)
         return f"{url}?next={next_url}&fail={fail_url}"
     #enddef get_login_url
 
-    def get_logout_url(self):
+    def get_logout_url(self, redirect_url=None):
         url="/oidc/total_logout"
-        redurl = urllib.parse.quote(self.REDIRECT_URL)
+        if redirect_url is None:
+            redurl = urllib.parse.quote(self.REDIRECT_URL)
+        else:
+            redurl = urllib.parse.quote(redirect_url)
         fail_url = '/?error={error}'  #docs said the error param was optional... nope.
         return f"{url}?next={redurl}&fail={fail_url}"
     #enddef get_logout_redirect
