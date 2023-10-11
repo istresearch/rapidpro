@@ -18,6 +18,8 @@ class AppConfig(BaseAppConfig):
         ContactListOverrides.applyPatches()
         from .views import ContactReadOverrides
         ContactReadOverrides.applyPatches()
+        from .views import ContactHistoryOverrides
+        ContactHistoryOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig
