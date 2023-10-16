@@ -85,7 +85,6 @@ brotli = "1.0.9"
 django-oauth2-authcodeflow = "1.0.0"
 #----- update advisories
 certifi = "^2023.7.22"
-postcss = "^8.4.31"
 urllib3 = "^1.26.17"
 
 [tool.poetry.dev-dependencies]
