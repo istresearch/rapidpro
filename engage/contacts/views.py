@@ -82,3 +82,29 @@ class ContactReadOverrides(MonkeyPatcher):
     #enddef
 
 #endclass ContactReadOverrides
+
+class ContactHistoryOverrides(MonkeyPatcher):
+    patch_class = ContactCRUDL.History
+
+    def as_json(self, context):
+        """
+        Don't reply back with the channel log or channel Django models on response. We use those custom fields on some Hamls, but
+        we don't want it when this is JSON serialized. Things break.
+        """
+        events = []
+        for e in context["events"]:
+            e["channel_log"] = []
+            e["channel"] = None
+            events.append(e)
+
+        return {
+            "has_older": context["has_older"],
+            "recent_only": context["recent_only"],
+            "next_before": context["next_before"],
+            "next_after": context["next_after"],
+            "start_date": context["start_date"],
+            "events": events,
+        }
+    #enddef
+
+#endclass ContactHistoryOverrides
