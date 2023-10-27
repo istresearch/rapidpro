@@ -30,7 +30,7 @@ services:
       - MANAGEPY_MIGRATE=off
       - DOMAIN_NAME=localhost
       - ALLOWED_HOSTS=*
-      - DATABASE_URL=${RP_DB_URL}&application_name=rapidpro
+      - DATABASE_URL=${RP_DB_URL}&application_name=web
       - REDIS_URL=redis://redis:6379/1
       - MAILROOM_URL=http://host.docker.internal:8091
       - SECRET_KEY=notsecureatall
