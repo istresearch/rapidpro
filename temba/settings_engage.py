@@ -445,6 +445,8 @@ GROUP_PERMISSIONS['Administrators'] += (
 GROUP_PERMISSIONS['Editors'] += (
     "channels.channellog_read",
 )
+
+# remove "delete channel" from the Editors Role
 GROUP_PERMISSIONS['Editors'] = tuple(
     item for item in GROUP_PERMISSIONS['Editors'] if item != "channels.channel_delete"
 )
