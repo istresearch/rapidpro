@@ -11,10 +11,10 @@ class HttpResponseNoContent(HttpResponse):
     def __init__(self, content="", mimetype=None, status=None, content_type=None, headers=None):
         super().__init__(status=HTTP_204_NO_CONTENT if status is None else status, headers=headers)
 
-        if "Content-Type" in self._headers:
-            del self._headers["Content-Type"]
-        if "content-type" in self._headers:
-            del self._headers["content-type"]
+        if "Content-Type" in self.headers:
+            del self.headers["Content-Type"]
+        if "content-type" in self.headers:
+            del self.headers["content-type"]
     #enddef init
 
     def _set_content(self, value):
