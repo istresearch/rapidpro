@@ -98,7 +98,7 @@ DATABASE_URL = env('DATABASE_URL', required=True)
 _db_rw_config = dj_database_url.parse(
     url=DATABASE_URL,
     engine="django.contrib.gis.db.backends.postgis",
-    conn_max_age=60,
+    conn_max_age=env('DATABASE_CONN_MAX_AGE', 60),
 )
 _db_rw_config["ATOMIC_REQUESTS"] = True
 _db_rw_config["DISABLE_SERVER_SIDE_CURSORS"] = True

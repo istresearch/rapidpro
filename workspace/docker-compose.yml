@@ -16,6 +16,8 @@ services:
       #- ./local_settings.py:/rapidpro/temba/local_settings.py
       - ./uwsgi_conf.ini:/rapidpro/uwsgi_conf.ini
       - ./engage_initialsetup.py:/rapidpro/engage_initialsetup.py
+      - ../engage:/rapidpro/engage
+      - ../temba/settings_engage.py:/rapidpro/temba/settings_engage.py
 
     environment:
       - STARTUP_CMD=${STARTUP_CMD}
@@ -28,7 +30,7 @@ services:
       - MANAGEPY_MIGRATE=off
       - DOMAIN_NAME=localhost
       - ALLOWED_HOSTS=*
-      - DATABASE_URL=${RP_DB_URL}
+      - DATABASE_URL=${RP_DB_URL}&application_name=rapidpro
       - REDIS_URL=redis://redis:6379/1
       - MAILROOM_URL=http://host.docker.internal:8091
       - SECRET_KEY=notsecureatall
@@ -93,7 +95,7 @@ services:
       - SEND_AIRTIME=on
       - SEND_WEBHOOKS=on
       - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - DATABASE_URL=${RP_DB_URL}
+      - DATABASE_URL=${RP_DB_URL}&application_name=celery
       - REDIS_URL=redis://redis:6379/1
       - SECRET_KEY=notsecureatall
       - POST_OFFICE_API_KEY
@@ -117,7 +119,7 @@ services:
       - SEND_AIRTIME=on
       - SEND_WEBHOOKS=on
       - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - DATABASE_URL=${RP_DB_URL}
+      - DATABASE_URL=${RP_DB_URL}&application_name=celery_beat
       - REDIS_URL=redis://redis:6379/1
       - SECRET_KEY=notsecureatall
       - POST_OFFICE_API_KEY
@@ -131,7 +133,7 @@ services:
     environment:
       - COURIER_SPOOL_DIR=/tmp/courier/
       - COURIER_DOMAIN=localhost
-      - COURIER_DB=${RP_DB_URL}
+      - COURIER_DB=${RP_DB_URL}&application_name=courier
       - COURIER_REDIS=redis://redis:6379/1
       - COURIER_S3_ENDPOINT=http://s3mock:9090
       - COURIER_S3_FORCE_PATH_STYLE=true
@@ -162,7 +164,7 @@ services:
     environment:
       - MAILROOM_ELASTIC=http://elasticsearch:9200
       - MAILROOM_REDIS=redis://redis:6379/1
-      - MAILROOM_DB=${RP_DB_URL}
+      - MAILROOM_DB=${RP_DB_URL}&application_name=mailroom
       - MAILROOM_S3_MEDIA_BUCKET=${AWS_S3_BUCKET}
       - MAILROOM_AWS_ACCESS_KEY_ID=s3mock
       - MAILROOM_AWS_SECRET_ACCESS_KEY=s3mock
@@ -181,7 +183,7 @@ services:
     depends_on:
       - engage
     environment:
-      - INDEXER_DB=${RP_DB_URL}
+      - INDEXER_DB=${RP_DB_URL}&application_name=indexer
       - INDEXER_ELASTIC_URL=http://elasticsearch:9200
     restart: unless-stopped
 
@@ -193,12 +195,12 @@ services:
     depends_on:
       - redis
     environment: &po-env
-      PO_APP_DB_URL: ${PO_DB_URL}
+      PO_APP_DB_URL: ${PO_DB_URL}&application_name=postoffice
       PO_APP_DB_STATSINTERVAL: 300s
       PO_APP_ELASTICSEARCH_URL: http://elasticsearch:9200
       PO_RAPIDPRO_APIKEY: $PO_RAPIDPRO_APIKEY
       PO_RAPIDPRO_ENDPOINT: http://host.docker.internal:8000
-      PO_RAPIDPRO_DB_URL: ${RP_DB_URL}
+      PO_RAPIDPRO_DB_URL: ${RP_DB_URL}&application_name=postoffice
       PO_MAILROOM_ENDPOINT: http://host.docker.internal:8091/mr/ivr/c/
       PO_REDIS_HOST: redis
       PO_REDIS_DB: 2
