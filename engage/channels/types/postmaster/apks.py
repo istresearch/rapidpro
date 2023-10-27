@@ -78,10 +78,12 @@ class APIsForDownloadPostmaster(LogExtrasMixin):
             try:
                 pm_info = self.pm_config.fetch_apk_link()
                 if pm_info:
-                    pm_info['link'] = request.build_absolute_uri(reverse('channels.channel_download_postmaster',
-                        args=(self.pm_config.url_nonce_po_only,),
-                    ))
-                    r = HttpResponse(json.dumps(pm_info), content_type='application/json')
+                    the_nonce = settings.PM_CONFIG.get_nonce()
+                    response_payload = pm_info.copy()
+                    response_payload['link'] = settings.HOST_ORIGIN + reverse('channels.channel_download_postmaster',
+                        args=(the_nonce,),
+                    )
+                    r = HttpResponse(json.dumps(response_payload), content_type='application/json')
                     return r
                 else:
                     return HttpResponse('resource not found', status=404)
