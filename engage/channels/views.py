@@ -9,6 +9,7 @@ from .purge_outbox import PurgeOutboxMixin
 from .types.postmaster.apks import APIsForDownloadPostmaster
 
 from engage.utils.class_overrides import MonkeyPatcher
+from engage.utils.middleware import RedirectTo
 
 from temba.channels.models import Channel
 from temba.channels.types.postmaster.type import PostmasterType
@@ -54,6 +55,22 @@ class ChannelReadOverrides(MonkeyPatcher):
 
         return links
     #enddef get_gear_links
+
+    def has_permission(self: ChannelCRUDL.Read, request, *args, **kwargs):
+        user = self.get_user()
+        # if user has permission to the org this channel resides, just switch the org for them
+        obj_org = self.get_object_org()
+        if user.has_org_perm(obj_org, self.permission):
+            if obj_org.pk != user.get_org().pk:
+                user.set_org(obj_org)
+                request.session["org_id"] = obj_org.pk
+                raise RedirectTo(request.build_absolute_uri())
+            #endif
+            return True
+        else:
+            return False
+        #endif
+    #enddef
 
 #endclass ChannelReadOverrides
 
