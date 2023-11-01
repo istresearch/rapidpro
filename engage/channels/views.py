@@ -2,7 +2,10 @@ from collections import defaultdict
 
 from django.conf import settings
 from django.contrib import messages
+from django.http import HttpResponse
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
+from twilio.base.exceptions import TwilioRestException
 
 from .manage import ManageChannelMixin
 from .purge_outbox import PurgeOutboxMixin
@@ -143,18 +146,31 @@ class ChannelDeleteOverrides(MonkeyPatcher):
     #enddef get_success_url
 
     def post(self: ChannelCRUDL.Delete, request, *args, **kwargs):
+        channel = self.get_object()
+
         try:
-            return self.super_post(request=request, *args, **kwargs)
-        except ValueError as vex:
-            messages.error(request, vex)
-            from django.http import HttpResponse
-            return HttpResponse(
-                vex,
-                headers={
-                    "Temba-Success": self.cancel_url,
-                },
-                status=204,
+            channel.release(request.user, check_dependent_flows=False)
+        except TwilioRestException as e:
+            messages.error(
+                request,
+                _(
+                    f"Twilio reported an error removing your channel (error code {e.code}). Please try again later."
+                ),
             )
+
+            response = HttpResponse()
+            response["Temba-Success"] = self.cancel_url
+            return response
+
+        # override success message for Twilio channels
+        if channel.channel_type == "T" and not channel.is_delegate_sender():
+            messages.info(request, self.success_message_twilio)
+        else:
+            messages.info(request, self.success_message)
+
+        response = HttpResponse()
+        response["Temba-Success"] = self.get_success_url()
+        return response
         #endtry
     #enddef post
 
