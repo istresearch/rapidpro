@@ -18,7 +18,7 @@ class FlowOverrides(MonkeyPatcher):
     )
 
     @classmethod
-    def apply_action_delete(cls: type[Flow], user, flows):
+    def apply_action_delete(cls: type[Flow], user, flows, *args):
         logger = logging.getLogger()
         org = user.get_org()
         for flow in flows:
