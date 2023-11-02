@@ -17,11 +17,7 @@ class FlowOverrides(MonkeyPatcher):
         # (Flow.TYPE_SURVEY, _("Surveyor")), # P4-1483
     )
 
-    @classmethod
-    def apply_action_delete(cls: type[Flow], user, flows, *args):
-        # start: not enough params passed in, expected 3, got 2
-        # after monkeypatch fix, got too many params, 4 instead of 3; added *args here
-        # now we get: Failed: type object 'Flow' has no attribute 'get_org'
+    def apply_action_delete(cls: type[Flow], user, flows):
         logger = logging.getLogger()
         org = user.get_org()
         for flow in flows:

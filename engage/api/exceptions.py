@@ -6,16 +6,14 @@ from engage.utils.class_overrides import MonkeyPatcher
 
 class ExceptionWithCauseMixin:
 
-    @staticmethod
-    def withCause(cls, cause: str = 'Unknown', msg: str = 'Derp'):
+    def withCause(cls: type[Exception], cause: str = 'Unknown', msg: str = 'Derp'):
         return cls(detail={"error": {
             'cause': cause,
             'message': msg,
         }})
     #enddef withCause
 
-    @staticmethod
-    def with_cause(cls, cause: str = 'Unknown', msg: str = 'Derp'):
+    def with_cause(cls: type[Exception], cause: str = 'Unknown', msg: str = 'Derp'):
         return cls.withCause(cause, msg)
     #enddef with_cause
 
@@ -24,7 +22,7 @@ class ExceptionWithCauseMixin:
 class APIExceptionOverride(MonkeyPatcher, ExceptionWithCauseMixin):
     patch_class = APIException
     """
-    append a static method to the generic APIException class so we can start
+    append a class method to the generic APIException class so we can start
     using a more standardized API response especially when an error occurs.
     """
     pass
