@@ -85,10 +85,9 @@ class MonkeyPatcher:
                     orig_attr = getattr(patch_cls, name, None)
                     cls.patch_attrs.update({name: orig_attr})
                     patch_val = getattr(a_class, name)
-                    # if overriding a classmethod, much special sauce needs to be mixed
-                    #    OR if we are adding a new classmethod, mix the same sauce.
-                    if ( inspect.ismethod(orig_attr) and orig_attr.__self__ is patch_cls ) \
-                            or ( orig_attr is None and inspect.ismethod(patch_val) and patch_val.__self__ is cls ):
+                    patch_method_args = inspect.signature(patch_val).parameters if callable(patch_val) else None
+                    # if adding or overriding a class method, DO NOT USE @classmethod decorator, just make first arg 'cls'.
+                    if (patch_method_args is not None) and (len(patch_method_args) > 0) and (next(iter(patch_method_args)) == 'cls'):
                         patch_attr = cls.patchClassMethod(patch_cls, patch_val)
                         bPatchInheritors = True
                         logger.debug(f"patch: set classmethod {str(patch_cls)}.{name} to {patch_attr}", extra={
