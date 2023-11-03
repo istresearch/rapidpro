@@ -295,12 +295,12 @@ SEND_AIRTIME = env('SEND_AIRTIME', 'off') == 'on'
 SEND_CALLS = env('SEND_CALLS', 'off') == 'on'
 IP_ADDRESSES = tuple(filter(None, env('IP_ADDRESSES', '').split(',')))
 
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', 'server@temba.io')
-FLOW_FROM_EMAIL = env('FLOW_FROM_EMAIL', "no-reply@temba.io")
-EMAIL_HOST = env('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', 'server@temba.io')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', '')
+FLOW_FROM_EMAIL = env('FLOW_FROM_EMAIL', '')
+EMAIL_HOST = env('EMAIL_HOST', '')
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', '')
 EMAIL_PORT = int(env('EMAIL_PORT', 25))
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', 'mypassword')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = env('EMAIL_USE_TLS', 'on') == 'on'
 EMAIL_USE_SSL = env('EMAIL_USE_SSL', 'off') == 'on'
 

@@ -44,6 +44,9 @@ class AppConfig(BaseAppConfig):
 
         from .views.join import JoinOverrides
         JoinOverrides.applyPatches()
+
+        from .views.manage_accounts import OrgManageAccountsOverrides
+        OrgManageAccountsOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig
