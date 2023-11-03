@@ -2,7 +2,7 @@ import logging
 
 from django import forms
 from django.contrib import messages
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import AnonymousUser, Group
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -37,6 +37,9 @@ class OrgViewAssignUserMixin(MonkeyPatcher):
 
         def has_permission(self, request, *args, **kwargs):
             user = request.user
+            if user is AnonymousUser or user.is_anonymous:
+                return False
+            #endif is anon user
             if user.is_authenticated:
                 if user.has_perm(self.permission):
                     return True
