@@ -59,6 +59,15 @@ class ChannelReadOverrides(MonkeyPatcher):
         return links
     #enddef get_gear_links
 
+    def has_org_perm(self: ChannelCRUDL.Read, permission):
+        obj_org = self.get_object_org()
+        if obj_org:
+            return self.get_user().has_org_perm(obj_org, permission)
+        else:
+            return self.super_has_org_perm(permission)
+        #endif
+    #enddef
+
     def has_permission(self: ChannelCRUDL.Read, request, *args, **kwargs):
         user = self.get_user()
         # if user has permission to the org this channel resides, just switch the org for them
