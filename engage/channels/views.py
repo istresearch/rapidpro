@@ -2,6 +2,7 @@ from collections import defaultdict
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.models import AnonymousUser
 from django.http import HttpResponse
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
@@ -70,6 +71,9 @@ class ChannelReadOverrides(MonkeyPatcher):
 
     def has_permission(self: ChannelCRUDL.Read, request, *args, **kwargs):
         user = self.get_user()
+        if user is AnonymousUser or user.is_anonymous:
+            return False
+        #endif is anon user
         # if user has permission to the org this channel resides, just switch the org for them
         obj_org = self.get_object_org()
         if user.has_org_perm(obj_org, self.permission):

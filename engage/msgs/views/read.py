@@ -1,4 +1,5 @@
 import logging
+from django.contrib.auth.models import AnonymousUser
 from django.core.handlers.wsgi import WSGIRequest
 from django.utils.translation import gettext_lazy as _
 
@@ -43,6 +44,9 @@ class Read(OrgPermsMixin, SmartReadView):
 
     def has_permission(self, request: WSGIRequest, *args, **kwargs):
         user = self.get_user()
+        if user is AnonymousUser or user.is_anonymous:
+            return False
+        #endif is anon user
         # if user has permission to the org this contact resides, just switch the org for them
         obj_org = self.get_object().org
         self.logger.debug(f"user={user}", extra={

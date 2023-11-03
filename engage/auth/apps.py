@@ -16,10 +16,14 @@ class AppConfig(BaseAppConfig):
         from .account import TembaUserOverrides
         TembaUserOverrides.applyPatches()
 
+        from .account import AnonUserOverrides
+        AnonUserOverrides.applyPatches()
+
         # Need this for static file generation, since there is no SSO enabled
         if settings.OAUTH2_CONFIG.is_enabled:
             from .oauth import OAuthOverrides
             OAuthOverrides.applyPatches()
+        #endif
 
     #enddef ready
 

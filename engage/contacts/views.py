@@ -1,3 +1,4 @@
+from django.contrib.auth.models import AnonymousUser
 from django.core.handlers.wsgi import WSGIRequest
 
 from engage.utils.class_overrides import MonkeyPatcher
@@ -67,6 +68,9 @@ class ContactReadOverrides(MonkeyPatcher):
 
     def has_permission(self: ContactCRUDL.Read, request: WSGIRequest, *args, **kwargs):
         user = self.get_user()
+        if user is AnonymousUser or user.is_anonymous:
+            return False
+        #endif is anon user
         # if user has permission to the org this contact resides, just switch the org for them
         obj_org = self.get_object_org()
         if user.has_org_perm(obj_org, self.permission):
