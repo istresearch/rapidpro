@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User as AuthUser
+from django.contrib.auth.models import User as AuthUser, AnonymousUser
 from django.utils import timezone
 from django.utils.functional import cached_property
 
@@ -7,6 +7,25 @@ from engage.utils.logs import LogExtrasMixin
 
 from temba.orgs.models import Org, User as TembaUser
 
+class AnonUserOverrides(MonkeyPatcher):
+    """
+    Add some stubs so that we avoid 502 errors with certain links if clicked on
+    before the user has logged in.
+    """
+    patch_class = AnonymousUser
+
+    def has_org_perm(self, org, permission: str) -> bool:
+        return False
+    #enddef has_org_perm
+
+    def is_allowed(self, permission) -> bool:
+        return False
+    #enddef is_allowed
+
+    def is_any_allowed(self, perm_set: set) -> bool:
+        return False
+    #enddef is_any_allowed
+#endclass AnonUserOverrides
 
 class AuthUserOverrides(MonkeyPatcher):
     patch_class = AuthUser

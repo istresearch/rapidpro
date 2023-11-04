@@ -2,13 +2,18 @@ from collections import defaultdict
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.models import AnonymousUser
+from django.http import HttpResponse
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
+from twilio.base.exceptions import TwilioRestException
 
 from .manage import ManageChannelMixin
 from .purge_outbox import PurgeOutboxMixin
 from .types.postmaster.apks import APIsForDownloadPostmaster
 
 from engage.utils.class_overrides import MonkeyPatcher
+from engage.utils.middleware import RedirectTo
 
 from temba.channels.models import Channel
 from temba.channels.types.postmaster.type import PostmasterType
@@ -54,6 +59,34 @@ class ChannelReadOverrides(MonkeyPatcher):
 
         return links
     #enddef get_gear_links
+
+    def has_org_perm(self: ChannelCRUDL.Read, permission):
+        obj_org = self.get_object_org()
+        if obj_org:
+            return self.get_user().has_org_perm(obj_org, permission)
+        else:
+            return self.super_has_org_perm(permission)
+        #endif
+    #enddef
+
+    def has_permission(self: ChannelCRUDL.Read, request, *args, **kwargs):
+        user = self.get_user()
+        if user is AnonymousUser or user.is_anonymous:
+            return False
+        #endif is anon user
+        # if user has permission to the org this channel resides, just switch the org for them
+        obj_org = self.get_object_org()
+        if user.has_org_perm(obj_org, self.permission):
+            if obj_org.pk != user.get_org().pk:
+                user.set_org(obj_org)
+                request.session["org_id"] = obj_org.pk
+                raise RedirectTo(request.build_absolute_uri())
+            #endif
+            return True
+        else:
+            return False
+        #endif
+    #enddef
 
 #endclass ChannelReadOverrides
 
@@ -126,18 +159,31 @@ class ChannelDeleteOverrides(MonkeyPatcher):
     #enddef get_success_url
 
     def post(self: ChannelCRUDL.Delete, request, *args, **kwargs):
+        channel = self.get_object()
+
         try:
-            return self.super_post(request=request, *args, **kwargs)
-        except ValueError as vex:
-            messages.error(request, vex)
-            from django.http import HttpResponse
-            return HttpResponse(
-                vex,
-                headers={
-                    "Temba-Success": self.cancel_url,
-                },
-                status=204,
+            channel.release(request.user, check_dependent_flows=False)
+        except TwilioRestException as e:
+            messages.error(
+                request,
+                _(
+                    f"Twilio reported an error removing your channel (error code {e.code}). Please try again later."
+                ),
             )
+
+            response = HttpResponse()
+            response["Temba-Success"] = self.cancel_url
+            return response
+
+        # override success message for Twilio channels
+        if channel.channel_type == "T" and not channel.is_delegate_sender():
+            messages.info(request, self.success_message_twilio)
+        else:
+            messages.info(request, self.success_message)
+
+        response = HttpResponse()
+        response["Temba-Success"] = self.get_success_url()
+        return response
         #endtry
     #enddef post
 
