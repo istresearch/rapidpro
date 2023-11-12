@@ -25,6 +25,7 @@ class ChannelOverrides(MonkeyPatcher):
             address=None,
             config=None,
             role=Channel.DEFAULT_ROLE,
+            tps=10,
             schemes=None,
             **kwargs,
     ):
@@ -36,7 +37,7 @@ class ChannelOverrides(MonkeyPatcher):
             config[Channel.CONFIG_ALLOW_INTERNATIONAL] = True
         #endif
 
-        tps = getattr(settings, "DEFAULT", 10)
+        tps = getattr(settings, "DEFAULT_TPS", tps)
 
         return cls.super_create(org=org, user=user, country=country, channel_type=channel_type,
                 name=name, address=address, config=config, role=role, schemes=schemes, tps=tps, **kwargs
