@@ -41,9 +41,10 @@ if POST_MASTER_DL_QRCODE is not None and not POST_MASTER_DL_QRCODE.startswith("d
 
 MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 
+# noinspection PyUnresolvedReferences
 INSTALLED_APPS = (
     tuple(filter(lambda tup: tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
-        'flatpickr',
+        'django_flatpickr',
         'temba.ext',
         'engage.api',
         'engage.assets',
@@ -147,6 +148,7 @@ if not is_empty(env('HTTP_ALLOWED_URL')):
     USE_X_FORWARDED_HOST = True
     HTTP_ALLOWED_URL = env('HTTP_ALLOWED_URL')
 #endif
+
 
 SECURE_PROXY_SSL_HEADER = (env('SECURE_PROXY_SSL_HEADER', 'HTTP_X_FORWARDED_PROTO'), 'https')
 INTERNAL_IPS = ('*',)
@@ -469,9 +471,11 @@ if not is_empty(env('KEYCLOAK_URL', None)):
             LOGOUT_REDIRECT_URL = OAUTH2_CONFIG.KEYCLOAK_LOGOUT_REDIRECT
         #endif logout redirect is defined
 
+        # noinspection PyUnresolvedReferences
         INSTALLED_APPS += (
             'oauth2_authcodeflow',
         )
+        # noinspection PyUnresolvedReferences
         AUTHENTICATION_BACKENDS = (
             'oauth2_authcodeflow.auth.AuthenticationBackend',
         ) + AUTHENTICATION_BACKENDS
@@ -524,10 +528,11 @@ else:
     NON_ISO6391_LANGUAGES = None
 # setting the above ^ to None means all are allowed.
 
-#Use CHAT_MODE_CHOICES to configure the chatmodes that are available to the Postmaster channel
+#Use CHAT_MODE_CHOICES to configure the chat modes that are available to the Postmaster channel
 from engage.channels.types.postmaster.schemes import PM_Scheme_Default_Chats
 CHAT_MODE_CHOICES = PM_Scheme_Default_Chats
 
+# noinspection PyUnboundLocalVariable
 mwl = list(MIDDLEWARE)
 # replace BrandingMiddleware
 idx = mwl.index("temba.middleware.BrandingMiddleware")
@@ -541,3 +546,8 @@ ALT_CALLBACK_DOMAIN = env('ALT_CALLBACK_DOMAIN', None)
 ASYNC_MESSAGE_EXPORT = env('ASYNC_MESSAGE_EXPORT', 'on') == 'on'
 
 EXPORT_TASK_CHECK_HOURS = env('EXPORT_TASK_CHECK_HOURS', 4)
+
+MAUTH_DOMAIN = env('MAUTH_DOMAIN', required=False)
+if not is_empty(MAUTH_DOMAIN):
+    MIDDLEWARE += ("engage.utils.middleware.MutualAuthMiddleware",)
+#endif

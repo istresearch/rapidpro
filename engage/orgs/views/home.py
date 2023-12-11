@@ -38,6 +38,7 @@ class HomeOverrides(MonkeyPatcher, LogExtrasMixin):
 
     def get_context_data(self, *args, **kwargs):
         context = super(OrgCRUDL.Home, self).get_context_data(*args, **kwargs)
+        # we skip calling super_get_context_data because we don't want the super slow "channels" context.
         org = self.request.user.get_org()
         if org and org.config:
             context['mauth_enabled'] = org.config.get('mauth_enabled', 0)

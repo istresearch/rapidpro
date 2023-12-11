@@ -69,18 +69,6 @@ class OrgViewOverrides(MonkeyPatcher):
             return context
         #enddef get_context_data
 
-        '''
-        def get_form(self):
-            form = super().get_form()
-            def_choice = 0
-            if self.org and self.org.config:
-                def_choice = self.org.config.get('mauth_enabled', def_choice)
-            #endif
-            form.fields["mauth_enabled"].initial = def_choice
-            return form
-        #enddef get_form
-        '''
-
         def form_valid(self, form):
             try:
                 self.org.config.update({'mauth_enabled': int(form.cleaned_data["mauth_enabled"])})
