@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from temba.channels.models import Channel
 from temba.orgs.models import IntegrationType
-from temba.orgs.views import OrgCRUDL
+from temba.orgs.views import OrgCRUDL, SmartReadView
 
 from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.logs import LogExtrasMixin
@@ -34,6 +34,16 @@ class HomeOverrides(MonkeyPatcher, LogExtrasMixin):
         #endfor each link item
 
         return links
+    #enddef get_gear_links
+
+    def get_context_data(self, *args, **kwargs):
+        context = super(OrgCRUDL.Home, self).get_context_data(*args, **kwargs)
+        org = self.request.user.get_org()
+        if org and org.config:
+            context['mauth_enabled'] = org.config.get('mauth_enabled', 0)
+        #endif
+        return context
+    #enddef get_context_data
 
     def derive_formax_sections(self: type(OrgCRUDL.Home), formax, context):
         # add the channel option if we have one
@@ -125,6 +135,12 @@ class HomeOverrides(MonkeyPatcher, LogExtrasMixin):
                 formax.add_section(
                     "two_factor", reverse("orgs.user_two_factor_enable"), icon="icon-two-factor", action="link"
                 )
+
+        if self.has_org_perm("orgs.org_edit"):
+            formax.add_section(
+                'mauth_required', reverse('orgs.org_mutual_auth_config'), icon='icon-two-factor',
+            )
+        #endif
 
         if self.has_org_perm("orgs.org_edit"):
             formax.add_section("org", reverse("orgs.org_edit"), icon="icon-office")
