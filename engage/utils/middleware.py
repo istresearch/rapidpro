@@ -81,14 +81,14 @@ class MutualAuthMiddleware:
 
     def __call__(self, request):
         if ( settings.MAUTH_DOMAIN
-            #and request.is_secure()
+            and request.is_secure()
             and 'Authorization' in request.headers
             and request.headers.get('Authorization').startswith('Token ')
         ):
             org = request.user.get_org()
             if org and org.config and org.config.get('mauth_enabled', 0):
                 if not ( 'X-Forwarded-For' in request.headers
-                    and request.headers.get('X-Forwarded-For') == settings.MAUTH_DOMAIN
+                    and request.headers.get('X-Forwarded-Host') == settings.MAUTH_DOMAIN
                 ):
                     return HttpResponseForbidden()
                 #endif did not use the mauth domain
