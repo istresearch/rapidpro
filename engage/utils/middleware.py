@@ -81,7 +81,7 @@ class MutualAuthMiddleware:
 
     def __call__(self, request):
         if ( settings.MAUTH_DOMAIN
-            and request.is_secure()
+            #and request.is_secure()
             and 'Authorization' in request.headers
             and request.headers.get('Authorization').startswith('Token ')
         ):
