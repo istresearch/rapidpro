@@ -14,8 +14,8 @@ class APITokenAuthenticationOverride(MonkeyPatcher):
         if ( settings.MAUTH_DOMAIN and request.is_secure() ):
             org = user.get_org() if user.is_authenticated else None
             if org and org.config and org.config.get('mauth_enabled', 0):
-                if not ( 'X-Forwarded-Host' in request.headers
-                    and request.headers.get('X-Forwarded-Host') == settings.MAUTH_DOMAIN
+                if not ( 'Host' in request.headers
+                    and request.headers.get('Host') == settings.MAUTH_DOMAIN
                 ):
                     raise AuthenticationFailed("Forbidden")
                 #endif did not use the mauth domain
