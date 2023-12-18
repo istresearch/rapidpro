@@ -85,9 +85,9 @@ class MutualAuthMiddleware:
             and 'Authorization' in request.headers
             and request.headers.get('Authorization').startswith('Token ')
         ):
-            org = request.user.get_org()
+            org = request.user.get_org() if request.user.is_authenticated else None
             if org and org.config and org.config.get('mauth_enabled', 0):
-                if not ( 'X-Forwarded-For' in request.headers
+                if not ( 'X-Forwarded-Host' in request.headers
                     and request.headers.get('X-Forwarded-Host') == settings.MAUTH_DOMAIN
                 ):
                     return HttpResponseForbidden()

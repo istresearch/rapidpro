@@ -548,6 +548,8 @@ ASYNC_MESSAGE_EXPORT = env('ASYNC_MESSAGE_EXPORT', 'on') == 'on'
 EXPORT_TASK_CHECK_HOURS = env('EXPORT_TASK_CHECK_HOURS', 4)
 
 MAUTH_DOMAIN = env('MAUTH_DOMAIN', required=False)
-if not is_empty(MAUTH_DOMAIN):
-    MIDDLEWARE += ("engage.utils.middleware.MutualAuthMiddleware",)
+# Middleware for mauth is useless due to Django Rest framework silliness
+# @see https://groups.google.com/g/django-rest-framework/c/GFLECShysFM
+#if not is_empty(MAUTH_DOMAIN):
+#    MIDDLEWARE += ("engage.utils.middleware.MutualAuthMiddleware",)
 #endif
