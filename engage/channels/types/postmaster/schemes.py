@@ -53,7 +53,7 @@ PM_Schemes_Meta = [
     Schemes_Meta(PM_Schemes.PM_MASTODON_SCHEME,   _("Postmaster Mastodon Identifier"),  "icon-mastodon",                   "MAST",  _("Mastodon")),
     Schemes_Meta(PM_Schemes.PM_YOUTUBE_SCHEME,    _("Postmaster Youtube Identifier"),   "icon-youtube",                    "YT",    _("Youtube")),
     Schemes_Meta(PM_Schemes.PM_TIKTOK_SCHEME,     _("Postmaster TikTok Identifier"),    "icon-tiktok",                     "TIK",   _("TikTok")),
-    Schemes_Meta(PM_Schemes.PM_SERVICE_SCHEME,    _("Postmaster Service Channel"),      "icon-postmaster",                 "SVC",   _("Postmaster")),
+    Schemes_Meta(PM_Schemes.PM_SERVICE_SCHEME,    _("Postmaster Service Channel"),      "icon-postmaster",                 "PM",    _("Postmaster")),
 ]
 
 PM_Scheme_Icons = { ico.scheme: ico.iconclass for ico in PM_Schemes_Meta }
