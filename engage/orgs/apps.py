@@ -30,6 +30,9 @@ class AppConfig(BaseAppConfig):
         from .views.home import HomeOverrides
         HomeOverrides.applyPatches()
 
+        from .views.mutual_auth_config import OrgViewOverrides
+        OrgViewOverrides.applyPatches()
+
         from .views.manage_orgs import AdminManageOverrides
         AdminManageOverrides.applyPatches()
 

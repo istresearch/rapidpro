@@ -40,7 +40,8 @@ SHELL ["/bin/bash", "-c"]
 ARG ARG_PIP_RETRIES=120
 ARG ARG_PIP_TIMEOUT=400
 ARG ARG_PIP_DEFAULT_TIMEOUT=400
-ARG ARG_PIP_EXTRA_INDEX_URL=https://bullseye.wheelhouse.praekelt.org/simple
+#ARG ARG_PIP_EXTRA_INDEX_URL=https://bullseye.wheelhouse.praekelt.org/simple
+ARG ARG_PIP_EXTRA_INDEX_URL
 
 ENV PIP_RETRIES=$ARG_PIP_RETRIES \
     PIP_TIMEOUT=$ARG_PIP_TIMEOUT \

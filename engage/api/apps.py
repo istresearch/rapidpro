@@ -14,6 +14,9 @@ class AppConfig(BaseAppConfig):
 
         from .exceptions import APIExceptionOverride
         APIExceptionOverride.applyPatches()
+
+        from .support import APITokenAuthenticationOverride
+        APITokenAuthenticationOverride.applyPatches()
     #enddef ready
 
 #endclass AppConfig
