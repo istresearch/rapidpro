@@ -49,6 +49,7 @@ INSTALLED_APPS = (
         'engage.api',
         'engage.assets',
         'engage.auth',
+        'engage.campaigns',
         'engage.channels',
         'engage.contacts',
         'engage.flows',
