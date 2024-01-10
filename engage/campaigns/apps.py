@@ -9,6 +9,8 @@ class AppConfig(BaseAppConfig):
     verbose_name = "Engage Campaigns"
 
     def ready(self):
+        from .models import CampaignOverrides
+        CampaignOverrides.applyPatches()
         from .views import CampaignCRUDLOverrides
         CampaignCRUDLOverrides.applyPatches()
         from .views import CampaignArchivedOverrides

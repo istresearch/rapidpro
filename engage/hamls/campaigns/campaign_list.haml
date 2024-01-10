@@ -20,6 +20,15 @@
 -block content
     #pjax
       -block pjax
+        -if 'delete' in actions and org_perms.campaigns.campaign_update
+          %temba-dialog#delete-confirmation.hide(header='{{ _("Delete Selected Scenarios")|escapejs }}' primaryButtonName='{{ _("Delete")|escapejs }}' destructive='true')
+            .p-6
+              -trans "Are you sure you want to delete the selected items? This cannot be undone."
+
+          %temba-dialog#delete-all-confirmation.hide(header='{{ _("Delete All Scenarios")|escapejs }}' primaryButtonName='{{ _("Delete")|escapejs }}' destructive='true')
+            .p-6
+              -blocktrans trimmed with count=paginator.count
+                Are you sure you want to delete all {{ count }} archived items? This cannot be undone.
 
         .lp-frame
 

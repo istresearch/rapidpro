@@ -1,3 +1,4 @@
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from engage.utils.class_overrides import MonkeyPatcher
@@ -18,7 +19,7 @@ class CampaignCRUDLOverrides(MonkeyPatcher):
         success_message = _("Scenario deleted")
 
         def save(self, obj):
-            obj.apply_action_archive(self.request.user, Campaign.objects.filter(id=obj.id))
+            obj.apply_action_delete(self.request.user, Campaign.objects.filter(id=obj.id))
             return obj
     #endclass Delete
 
@@ -32,18 +33,17 @@ class CampaignArchivedOverrides(MonkeyPatcher):
         self.bulk_actions += ("delete",)
     #enddef on_apply_patches
 
-    def get_gear_links(self):
-        links = self.super_get_gear_links()
-        links.append(
-            dict(
-                title=_("Delete All"),
-                style="btn-default",
-                on_click="handleDeleteAll(event)",
-                js_class="campaigns-btn-delete-all",
-                href="#",
-            )
-        )
-        return links
-    #enddef get_gear_links
+    # def get_gear_links(self):
+    #     links = []
+    #     links.append(
+    #         dict(
+    #             title=_("Delete All"),
+    #             on_click="handleDeleteAllContent(event)",
+    #             js_class="button-danger",
+    #             href=reverse("campaigns.delete"),
+    #         )
+    #     )
+    #     return links
+    # #enddef get_gear_links
 
 #endclass CampaignArchivedOverrides
