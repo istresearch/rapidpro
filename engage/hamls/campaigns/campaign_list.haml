@@ -1,5 +1,5 @@
 -extends "smartmin/list.html"
--load smartmin sms temba compress i18n humanize
+-load smartmin sms temba compress i18n humanize static
 
 -block extra-style
   {{block.super}}
@@ -57,6 +57,11 @@
                           .-mt-1.mr-2.glyph.icon-box
                           -trans "Archive"
 
+                      -if 'delete' in actions
+                        .button-action.button-danger(onclick='handleDeleteSelectedContent()')
+                          .-mt-1.mr-2.glyph.icon-remove
+                          -trans "Delete"
+
               .flex-grow.ml-2.items-center
                 -block title-text
                   .page-title.leading-tight
@@ -108,3 +113,10 @@
                   -include "includes/results_count.html"
                 .flex-grow
                   -include "includes/pages.html"
+
+-block extra-script
+  {{ block.super }}
+
+  {% if 'delete' in actions and org_perms.campaigns.campaign_update %}
+    <script type="text/javascript" src="{% static 'engage/js/delete-content.js' %}"></script>
+  {% endif %}

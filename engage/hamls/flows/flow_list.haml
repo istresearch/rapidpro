@@ -1,5 +1,5 @@
 -extends "smartmin/list.html"
--load smartmin sms temba compress i18n humanize
+-load smartmin sms temba compress i18n humanize static
 
 -block page-title
   -trans "Flows"
@@ -160,7 +160,7 @@
                       -trans "Download Results"
 
                     - if 'delete' in actions and org_perms.flows.flow_delete
-                      .button-action.button-danger(onclick='onDeleteClicked()')
+                      .button-action.button-danger(onclick='handleDeleteSelectedContent()')
                         .-mt-1.mr-2.glyph.icon-remove
                         -trans "Delete"
 
@@ -273,16 +273,7 @@
         modal.open = true;
       }
     {% endif %}
-    {% if org_perms.flows.flow_delete %}
-      function onDeleteClicked(e) {
-        var deleteConfirmation = document.querySelector("#delete-confirmation");
-        deleteConfirmation.classList.remove("hide");
-        deleteConfirmation.open = true;
-        deleteConfirmation.addEventListener("temba-button-clicked", function(e) {
-          if (!e.detail.button.secondary) {
-            runActionOnObjectRows("delete");
-          }
-          deleteConfirmation.open = false;
-        });
-      }
-    {% endif %}
+
+  {% if 'delete' in actions and org_perms.flows.flow_delete %}
+    <script type="text/javascript" src="{% static 'engage/js/delete-content.js' %}"></script>
+  {% endif %}
