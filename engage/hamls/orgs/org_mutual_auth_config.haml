@@ -1,0 +1,14 @@
+-extends 'smartmin/form.html'
+-load smartmin i18n
+
+-block fields
+  {% render_field 'mauth_enabled' %}
+
+-block summary
+  {% if mauth_enabled %}
+    .flex.items-center
+      .flex-grow.mr-4
+        -trans "Mutual Authentication is being ENFORCED."
+  {% else %}
+    -trans "Mutual Authentication is not enforced."
+  {% endif %}

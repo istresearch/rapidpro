@@ -3,7 +3,7 @@
 
 -block page-title
   {{user_org.name|capfirst}}
-  
+
 -block title
   {{user_org.name|capfirst}}
 
@@ -33,7 +33,7 @@
 
   :javascript
     $(function() {
-        var section = $("#id-" + "{{request.GET.open}}");
+        let section = $("#id-" + "{{request.GET.open}}");
         section.data('fixed', 'true');
     });
 

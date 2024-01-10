@@ -1,5 +1,7 @@
 from django import shortcuts
 from django.conf import settings
+from django.http import HttpResponseForbidden
+
 
 class RedirectTo(Exception):
     def __init__(self, url):
@@ -66,4 +68,32 @@ class BrandingMiddleware:
         response = self.get_response(request)
         return response
     #enddef call
-#endclass
+#endclass BrandingMiddleware
+
+class MutualAuthMiddleware:
+    """
+    If not logged in already and the org has Mutual Auth enabled, enforce traffic
+    forwarded from the configured domain.
+    """
+    def __init__(self, get_response=None):
+        self.get_response = get_response
+    #enddef init
+
+    def __call__(self, request):
+        if ( settings.MAUTH_DOMAIN
+            and request.is_secure()
+            and 'Authorization' in request.headers
+            and request.headers.get('Authorization').startswith('Token ')
+        ):
+            org = request.user.get_org() if request.user.is_authenticated else None
+            if org and org.config and org.config.get('mauth_enabled', 0):
+                if not ( 'X-Forwarded-Host' in request.headers
+                    and request.headers.get('X-Forwarded-Host') == settings.MAUTH_DOMAIN
+                ):
+                    return HttpResponseForbidden()
+                #endif did not use the mauth domain
+            #endif org is configured for mauth
+        #endif mauth configured and used a token as auth
+        return self.get_response(request)
+    #enddef call
+#endclass MutualAuthMiddleware
