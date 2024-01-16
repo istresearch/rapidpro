@@ -17,6 +17,9 @@ class AppConfig(BaseAppConfig):
 
         from .support import APITokenAuthenticationOverride
         APITokenAuthenticationOverride.applyPatches()
+
+        from .views import BroadcastsEndpointOverrides
+        BroadcastsEndpointOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig
