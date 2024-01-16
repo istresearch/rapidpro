@@ -11,18 +11,18 @@ class AppConfig(BaseAppConfig):
     @staticmethod
     def _add_pm_types():
         from temba.contacts.models import URN as TembaURN
-        from .types.postmaster.schemes import PM_Schemes, PM_Scheme_Labels, PM_Scheme_Icons
+        from .types.postmaster.schemes import PM_CHANNEL_MODES, PM_Scheme_Labels, PM_Scheme_Icons
 
         # Sort PM schemes alphabetically
         Processed_TembaURN_Scheme_Choices = TembaURN.SCHEME_CHOICES + \
             tuple([t[1] for t in sorted((lambda x: [[y[1].split(" ")[1], y] for y in x])(PM_Scheme_Labels))])
 
         # URN is a static-only class, add in our needs
-        for key, value in PM_Schemes.__dict__.items():
-            if not (key.startswith('__') and key.endswith('__')):
-                setattr(TembaURN, key, value)
-            #endif
-        #endfor each scheme
+        for PM_Schemes in PM_CHANNEL_MODES.values():
+            key = PM_Schemes.scheme.upper() + '_SCHEME'
+            value = PM_Schemes.scheme
+            setattr(TembaURN, key, value)
+        #endfor each chat mode
         TembaURN.SCHEME_CHOICES = Processed_TembaURN_Scheme_Choices
         TembaURN.VALID_SCHEMES = {s[0] for s in TembaURN.SCHEME_CHOICES}
         #debug
