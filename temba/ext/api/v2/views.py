@@ -98,14 +98,10 @@ class ExtChannelWriteSerializer(WriteSerializer):
 
             if channel.config["device_name"] != data.get("device_name"):
                 import temba.contacts.models as Contacts
-                prefix = 'PM_'
-                if channel.config.get("chat_mode") == 'SMS':
-                    prefix = ''
-
-                scheme_to_check = '{}{}_SCHEME'.format(prefix, dict(type_from_code.claim_view.Form.CHAT_MODE_CHOICES)[channel.config.get("chat_mode")]).upper()
+                scheme_to_check = f'{dict(type_from_code.claim_view.Form.CHAT_MODE_CHOICES)[channel.config.get("chat_mode")]}_SCHEME'.upper()
                 schemes = [getattr(Contacts.URN, scheme_to_check)]
 
-                channel.name = '{} [{}]'.format(data.get("device_name"), schemes[0])
+                channel.name = f'{data.get("device_name")} [{schemes[0]}]'
                 channel.config["device_name"] = data.get("device_name")
 
                 save_resp = channel.save(update_fields=["name", "config"])
