@@ -136,7 +136,7 @@ _*/
 
 # container build layers tag info
 scm/*_tag.txt
-workspace/info/
+workspace/
 
 !/engage/hamls/smartmin/*
 
