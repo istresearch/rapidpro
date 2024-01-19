@@ -105,7 +105,7 @@ class BroadcastsEndpointOverrides(MonkeyPatcher):
         # does not allow dynamic docstrings to render variables. MonkeyPatcher to the rescue!
         under_cls.__doc__ = under_cls.__doc__.replace(
             '* **text** - the text of the message to send (string, limited to 640 characters)',
-            f'the text of the message to send (string, limited to {Broadcast.MAX_TEXT_LEN} characters)',
+            f'* **text** - the text of the message to send (string, limited to {Broadcast.MAX_TEXT_LEN} characters)',
         ).replace(
             '* **text** - the message text (string or translations object)',
             '* **text** - a dict of strings with a key of the first org language, if defined, else "base". NOTE: the key is the [ISO-639-3](https://en.wikipedia.org/wiki/List_of_ISO_639-3_codes) code for the language.',
