@@ -563,9 +563,17 @@ temba-modax#send-via-pm_service > div.send-via-btn {
   overflow: hidden;
 }
 //messages: calls
-#msgs-label-C td.w-full {
-  max-width: 50vw;
-  overflow: hidden;
+#msgs-label-C {
+  table.list.lined tr {
+    border-bottom-width: 1px;
+  }
+  table.list.lined td {
+    border-bottom-width: unset;
+  }
+  td.w-full {
+    max-width: 50vw;
+    overflow: hidden;
+  }
 }
 //messages: scheduled
 #msgs-label-E td.value-text {
