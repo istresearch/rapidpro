@@ -115,7 +115,7 @@ class FlowStartWriteSerializerOverride(MonkeyPatcher):
         if not isinstance(value, dict):
             raise serializers.ValidationError("Must be a valid JSON object")
 
-        return self.my_normalize_extra(value)
+        return self.my_normalize_extra(value, -1)[0]
     #enddef validate_extra
 
 #endclass FlowStartWriteSerializerOverride
