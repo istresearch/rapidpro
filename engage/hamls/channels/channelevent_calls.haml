@@ -33,7 +33,7 @@
                 .glyph.icon-phone
                 -if cmode != 'tel'
                   .pl-2.mode-icon{id:'mode-icon-{{ cmode }}'}
-                    .mode-icon.hover-linked{class:"glyph {{ cmode|scheme_icon }}", style:"margin-top:0px"}
+                    .mode-icon.hover-linked{class:"glyph {{ cmode|scheme_icon }}"}
                       .tooltiptext
                         Received via {{ cmode }}
           %td.w-full

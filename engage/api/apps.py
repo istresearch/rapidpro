@@ -12,11 +12,17 @@ class AppConfig(BaseAppConfig):
         from .serializers import MsgBulkActionSerializerOverride
         MsgBulkActionSerializerOverride.applyPatches()
 
+        from .serializers import FlowStartWriteSerializerOverride
+        FlowStartWriteSerializerOverride.applyPatches()
+
         from .exceptions import APIExceptionOverride
         APIExceptionOverride.applyPatches()
 
         from .support import APITokenAuthenticationOverride
         APITokenAuthenticationOverride.applyPatches()
+
+        from .views import BroadcastsEndpointOverrides
+        BroadcastsEndpointOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig

@@ -33,7 +33,7 @@
           .p-6
             -trans "Are you sure you want to delete the selected messages? This cannot be undone."
 
-      .lp-frame
+      .lp-frame(id='msgs-label-{{current_label}}')
         .left
           .flex.flex-col
             -if org_perms.msgs.broadcast_send

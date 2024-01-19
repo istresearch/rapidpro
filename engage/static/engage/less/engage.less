@@ -391,6 +391,7 @@ temba-modax#send-via-pm_service > div.send-via-btn {
   height: @chatIconSize;
   width: @chatIconSize;
   margin-top: 0px;
+  filter: invert(1);
 }
 /* ----------------------------------------------------*/
 
@@ -534,4 +535,58 @@ temba-modax#send-via-pm_service > div.send-via-btn {
     display: inline;
     vertical-align: sub;
   }
+}
+
+//messages: inbox
+#msgs-label-I td.w-full .text-break {
+  max-width: 64vw;
+  overflow: hidden;
+}
+//messages: flows
+#msgs-label-W td.w-full .text-break {
+  max-width: 50vw;
+  overflow: hidden;
+}
+//messages: archived
+#msgs-label-A td.w-full .text-break {
+  max-width: 50vw;
+  overflow: hidden;
+}
+//messages: outbox
+#msgs-label-O td.value-text {
+  max-width: 50vw;
+  overflow: hidden;
+}
+//messages: sent
+#msgs-label-S td.w-full .text-break {
+  max-width: 64vw;
+  overflow: hidden;
+}
+//messages: calls
+#msgs-label-C {
+  table.list.lined tr {
+    border-bottom-width: 1px;
+  }
+  table.list.lined td {
+    border-bottom-width: 0;
+  }
+  td.w-full {
+    max-width: 50vw;
+    overflow: hidden;
+  }
+}
+//messages: scheduled
+#msgs-label-E td.value-text {
+  max-width: 64vw;
+  overflow: hidden;
+}
+//messages: failed outgoing
+#msgs-label-X td.w-full .text-break {
+  max-width: 50vw;
+  overflow: hidden;
+}
+//messages: custom labeled
+[id^='msgs-label-'] .text-break {
+  max-width: 50vw;
+  overflow: hidden;
 }

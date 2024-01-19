@@ -155,7 +155,7 @@ class OrgViewAssignUserMixin(MonkeyPatcher):
                         logger.error("assigned_user not found", extra=self.withLogInfo({
                             'assigned_user': theName,
                         }))
-                        messages.warning(self.request, _("Username/Email '{}' not found.").format(theName))
+                        messages.error(self.request, _(f"Username/Email '{theName}' not found."))
                 else:
                     theRole = user_group
                     logger.error("role not found", extra=self.withLogInfo({

@@ -14,6 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from smartmin.views import SmartFormView
 
 from temba import settings
+from temba.contacts.models import URN as ContactsURN
 from temba.utils import analytics
 
 from ...models import Org
@@ -206,16 +207,9 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
             Channel.CONFIG_ORG_ID: org_id
         }
 
-        import temba.contacts.models as Contacts
-        prefix = 'PM_'
-        if chat_mode == 'SMS':
-            prefix = ''
-
-        scheme_to_check = '{}{}_SCHEME'.format(prefix, dict(ClaimView.Form.CHAT_MODE_CHOICES)[chat_mode]).upper()
-
-        schemes = [getattr(Contacts.URN, scheme_to_check)]
-
-        name_with_scheme = '{} [{}]'.format(device_name, schemes[0])
+        scheme_to_check = f'{dict(ClaimView.Form.CHAT_MODE_CHOICES)[chat_mode]}_SCHEME'.upper()
+        schemes = [getattr(ContactsURN, scheme_to_check)]
+        name_with_scheme = f'{device_name} [{schemes[0]}]'
 
         channel = Channel.create(
             org, user, None, self.code, name=name_with_scheme, address=device_id, role=role, config=config,
