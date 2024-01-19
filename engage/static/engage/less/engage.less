@@ -553,7 +553,7 @@ temba-modax#send-via-pm_service > div.send-via-btn {
   overflow: hidden;
 }
 //messages: outbox
-#msgs-label-O td.w-full .text-break {
+#msgs-label-O td.value-text {
   max-width: 50vw;
   overflow: hidden;
 }
@@ -563,13 +563,14 @@ temba-modax#send-via-pm_service > div.send-via-btn {
   overflow: hidden;
 }
 //messages: calls
-#msgs-label-C td.w-full .text-break {
+#msgs-label-C td.w-full {
   max-width: 50vw;
   overflow: hidden;
 }
 //messages: scheduled
-#msgs-label-E td.w-full .text-break {
-  max-width: 74vw;
+#msgs-label-E td.value-text {
+  max-width: 64vw;
+  overflow: hidden;
 }
 //messages: failed outgoing
 #msgs-label-X td.w-full .text-break {
@@ -577,7 +578,7 @@ temba-modax#send-via-pm_service > div.send-via-btn {
   overflow: hidden;
 }
 //messages: custom labeled
-[id^='msgs-label-'] .lp-frame {
+[id^='msgs-label-'] .text-break {
   max-width: 50vw;
   overflow: hidden;
 }
