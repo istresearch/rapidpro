@@ -1,11 +1,15 @@
 import logging
+import numbers
+from collections import OrderedDict
+
 from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import ParseError
 
 from temba.api.v2.serializers import (
     MsgBulkActionSerializer,
-    FlowStartWriteSerializer, normalize_extra,
+    FlowStartWriteSerializer,
+    INVALID_EXTRA_KEY_CHARS,
 )
 
 from engage.utils.class_overrides import MonkeyPatcher
@@ -65,17 +69,53 @@ class MsgBulkActionSerializerOverride(MonkeyPatcher):
 class FlowStartWriteSerializerOverride(MonkeyPatcher):
     patch_class = FlowStartWriteSerializer
 
+    def my_normalize_extra(self, extra, count):
+        def normalize_key(key):
+            return INVALID_EXTRA_KEY_CHARS.sub("_", key)[:255]
+
+        if isinstance(extra, str):
+            max_text_leng = settings.MSG_FIELD_SIZE
+            return extra[:max_text_leng], count + 1
+
+        elif isinstance(extra, numbers.Number) or isinstance(extra, bool):
+            return extra, count + 1
+
+        elif isinstance(extra, dict):
+            count += 1
+            normalized = OrderedDict()
+            for (k, v) in extra.items():
+                (normalized[normalize_key(k)], count) = self.my_normalize_extra(v, count)
+
+                if count >= settings.FLOW_START_PARAMS_SIZE:
+                    break
+
+            return normalized, count
+
+        elif isinstance(extra, list):
+            count += 1
+            normalized = OrderedDict()
+            for (i, v) in enumerate(extra):
+                (normalized[str(i)], count) = self.my_normalize_extra(v, count)
+
+                if count >= settings.FLOW_START_PARAMS_SIZE:
+                    break
+
+            return normalized, count
+
+        elif extra is None:
+            return "", count + 1
+
+        else:  # pragma: no cover
+            raise ValueError("Unsupported type %s in extra" % str(type(extra)))
+    #enddef my_normalize_extra
+
     def validate_extra(self, value):
         # request is parsed by DRF.JSONParser, and if extra is a valid json it gets deserialized as dict
         # in any other case we need to raise a ValidationError
         if not isinstance(value, dict):
             raise serializers.ValidationError("Must be a valid JSON object")
 
-        max_text_leng = settings.MSG_FIELD_SIZE
-        if isinstance(value, str):
-            return value[:max_text_leng]
-        else:
-            return normalize_extra(value)
+        return self.my_normalize_extra(value)
     #enddef validate_extra
 
 #endclass FlowStartWriteSerializerOverride
