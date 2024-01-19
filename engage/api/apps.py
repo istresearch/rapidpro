@@ -12,6 +12,9 @@ class AppConfig(BaseAppConfig):
         from .serializers import MsgBulkActionSerializerOverride
         MsgBulkActionSerializerOverride.applyPatches()
 
+        from .serializers import FlowStartWriteSerializerOverride
+        FlowStartWriteSerializerOverride.applyPatches()
+
         from .exceptions import APIExceptionOverride
         APIExceptionOverride.applyPatches()
 
