@@ -537,6 +537,18 @@ temba-modax#send-via-pm_service > div.send-via-btn {
   }
 }
 
+//messages
+[id^='msgs-label-'] {
+  .text-break {
+    max-width: 50vw;
+    overflow: hidden;
+  }
+  tr.sender-is-pm {
+    td {
+      background-color: #57f5f5;
+    }
+  }
+}
 //messages: inbox
 #msgs-label-I td.w-full .text-break {
   max-width: 64vw;
@@ -582,11 +594,6 @@ temba-modax#send-via-pm_service > div.send-via-btn {
 }
 //messages: failed outgoing
 #msgs-label-X td.w-full .text-break {
-  max-width: 50vw;
-  overflow: hidden;
-}
-//messages: custom labeled
-[id^='msgs-label-'] .text-break {
   max-width: 50vw;
   overflow: hidden;
 }
