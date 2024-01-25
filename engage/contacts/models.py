@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from engage.utils.class_overrides import MonkeyPatcher
 
 from temba.contacts.models import ContactField, Contact
@@ -26,5 +28,10 @@ class ContactOverrides(MonkeyPatcher):
             return None
         #endtry
     #enddef get_urns
+
+    @property
+    def is_pm(self):
+        return self.name.startswith(settings.SERVICE_CHANNEL_CONTACT_PREFIX) if self.name else False
+    #enddef is_pm
 
 #endclass ContactOverrides
