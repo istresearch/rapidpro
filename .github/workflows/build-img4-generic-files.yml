@@ -117,7 +117,7 @@ jobs:
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
                   "BRAND_NAME=generic",
-                  "FROM_STAGE=${{ env.FROM_LAYER }}",
+                  "FROM_STAGE=${{ env.FROM_LAYER }}"
                 ]
               },
               "callback": {

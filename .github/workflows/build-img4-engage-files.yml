@@ -8,7 +8,6 @@ env:
   IMAGE_STAGE: pyfiles
   DOCKERFILE2USE: docker/dfstage-pyfiles.dockerfile
   FROM_LAYER: ${{ github.event.client_payload.layer }}
-  FROM_LAYER_TAG: ${{ github.event.client_payload.layer_tag }}
 
 jobs:
   build_result:
@@ -118,7 +117,7 @@ jobs:
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
                   "BRAND_NAME=engage",
-                  "FROM_STAGE=${{ env.FROM_LAYER }}",
+                  "FROM_STAGE=${{ env.FROM_LAYER }}"
                 ]
               },
               "callback": {
