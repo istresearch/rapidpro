@@ -7,7 +7,7 @@ on:
 env:
   IMAGE_STAGE: pyfiles
   DOCKERFILE2USE: docker/dfstage-pyfiles.dockerfile
-  FROM_LAYER: ${{ github.event.client_payload.layer }}
+  FROM_LAYER: ${{ github.event.client_payload.image.layer }}
 
 jobs:
   build_result:

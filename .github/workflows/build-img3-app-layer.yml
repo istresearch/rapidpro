@@ -99,7 +99,6 @@ jobs:
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
-                  "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ needs.build_cfg.outputs.VER_NUM }}",
                   "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_TAG }}"
                 ]
@@ -116,7 +115,6 @@ jobs:
                   "image": {
                     "tag": "${{ needs.build_cfg.outputs.VERSION_TAG }}",
                     "ver_num": "${{ needs.build_cfg.outputs.VER_NUM }}",
-                    "layer_tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                     "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
                   }
                 }
