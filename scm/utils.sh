@@ -463,6 +463,16 @@ function CalcFileArgsMD5()
   fi
 }
 
+function CalcFileArgsHash()
+{
+  cat "$@" | sha256sum - | awk '{ print $1 }'
+}
+
+function CalcDirArgsHash()
+{
+  find "$@" -xdev -type f -print0 | LC_COLLATE=C sort -z | xargs -0 cat | sha256sum - | awk '{ print $1 }'
+}
+
 ####################
 # Concatenate the args with a dot, "."; e.g. $(buildVersionNum 3 1 4)="3.1.4".
 function buildVersionNum
