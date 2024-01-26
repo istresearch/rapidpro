@@ -129,7 +129,9 @@ jobs:
                     "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
                     "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
                   },
-                  "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                  "image": {
+                    "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                  }
                 }
               }
             }
@@ -151,6 +153,8 @@ jobs:
                 "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
                 "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
               },
-              "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+              "image": {
+                "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+              }
             }
   #endjob trigger-next-stage
