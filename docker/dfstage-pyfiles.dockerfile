@@ -28,7 +28,7 @@ FROM ${FROM_STAGE}
 
 # apply branding
 COPY --from=load-files --chown=engage:engage /opt/code2use /opt/ov/brand
-RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
+RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand || true
 
 USER engage
 
