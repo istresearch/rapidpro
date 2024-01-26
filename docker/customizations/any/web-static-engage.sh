@@ -12,8 +12,12 @@ if [[ -z $SECRET_KEY ]]; then
 fi
 
 echo 'Collecting static website files in engage/static/engage…'
-echo "STATICFILES_DIRS = (os.path.join(PROJECT_DIR, "engage/static/engage"))" > temba.local_settings.py
+SETTINGS_FILE=temba/local_settings.py
+echo "from django.conf import settings" > "${SETTINGS_FILE}"
+echo "import os" >> "${SETTINGS_FILE}"
+echo "PROJECT_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)))" >> "${SETTINGS_FILE}"
+echo "STATICFILES_DIRS = (os.path.join(PROJECT_DIR, '../engage/static/engage'),)" >> "${SETTINGS_FILE}"
 python manage.py collectstatic --noinput --settings=temba.settings
-rm temba.local_settings.py
+rm temba/local_settings.py
 echo ""  # ensure we end up on fresh line
 echo 'Finished compressing static website files.'
