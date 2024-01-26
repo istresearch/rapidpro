@@ -4,11 +4,6 @@ on:
   repository_dispatch:
     types: [build_layer_generic, build_layer_generic_files_error]
 
-env:
-  VERSION_STR: ${{ github.event.client_payload.image.tag }}
-  VER_NUM: ${{ github.event.client_payload.image.ver_num }}
-  FROM_LAYER: ${{ github.event.client_payload.image.layer }}
-
 jobs:
   build_result:
     name: "Build Generic Files Layer Result [#${{ github.event.client_payload.run_number }}]"
@@ -31,6 +26,8 @@ jobs:
     needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
+    env:
+      VERSION_STR: ${{ github.event.client_payload.image.tag }}
     outputs:
       DOCKERFILE2USE: ${{ steps.config_step.outputs.DOCKERFILE2USE }}
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
@@ -92,8 +89,8 @@ jobs:
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
-                  "FROM_STAGE=${{ env.FROM_LAYER }}",
-                  "VERSION_CI=${{ env.VER_NUM }}",
+                  "FROM_STAGE=${{ github.event.client_payload.image.layer }}",
+                  "VERSION_CI=${{ github.event.client_payload.image.ver_num }}",
                   "VERSION_TAG=${{ needs.build_cfg.outputs.IMAGE_TAG }}"
                 ]
               },
@@ -109,7 +106,7 @@ jobs:
                   "image": {
                     "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                     "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-                    "ver_num": "${{ env.VER_NUM }}",
+                    "ver_num": "${{ github.event.client_payload.image.ver_num }}",
                     "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
                   },
                   "deploy": 0
