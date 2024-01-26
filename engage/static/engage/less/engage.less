@@ -110,29 +110,29 @@ h5.contact-signup {
 
 // vars
 @s01-bigcircle-r : 15px;
-@s01-bigcircle-d : calc(var(@s01-bigcircle-r) * 2);
+@s01-bigcircle-d : calc(@s01-bigcircle-r * 2);
 
 @s01-smallcircle-r : 5px;
-@s01-smallcircle-d : calc(var(@s01-smallcircle-r) * 2);
+@s01-smallcircle-d : calc(@s01-smallcircle-r * 2);
 
 .spinner-01 {
-  height: var(@s01-bigcircle-d);
+  height: @s01-bigcircle-d;
   .spinner {
-    width: var(@s01-bigcircle-d);
-    height: var(@s01-bigcircle-d);
+    width: @s01-bigcircle-d;
+    height: @s01-bigcircle-d;
     &:before {
       display: block;
       position: absolute;
       top: 0; bottom: 0; right: 0; left: 0;
-      border-top: solid var(@s01-smallcircle-r) var(@accent-2);
-      border-bottom: solid var(@s01-smallcircle-r) var(@accent-2);
-      border-left: solid var(@s01-smallcircle-r) transparent;
-      border-right: solid var(@s01-smallcircle-r) transparent;
+      border-top: solid @s01-smallcircle-r @accent-2;
+      border-bottom: solid @s01-smallcircle-r @accent-2;
+      border-left: solid @s01-smallcircle-r transparent;
+      border-right: solid @s01-smallcircle-r transparent;
       content: "";
-      -moz-border-radius: var(@s01-bigcircle-r);
-      -webkit-border-radius: var(@s01-bigcircle-r);
-      -o-border-radius: var(@s01-bigcircle-r);
-      border-radius: var(@s01-bigcircle-r);
+      -moz-border-radius: @s01-bigcircle-r;
+      -webkit-border-radius: @s01-bigcircle-r;
+      -o-border-radius: @s01-bigcircle-r;
+      border-radius: @s01-bigcircle-r;
       -webkit-animation: spinner-01 1s infinite ease;
       -moz-animation: spinner-01 1s infinite ease;
       -ms-animation: spinner-01 1s infinite ease;
@@ -144,14 +144,14 @@ h5.contact-signup {
       position: absolute;
       top: 0; bottom: 0; right: 0; left: 0;
       margin: auto;
-      width: var(@s01-smallcircle-d);
-      height: var(@s01-smallcircle-d);
-      background-color: var(@accent-1);
+      width: @s01-smallcircle-d;
+      height: @s01-smallcircle-d;
+      background-color: @accent-1;
       content: "";
-      -moz-border-radius: var(@s01-smallcircle-r);
-      -webkit-border-radius: var(@s01-smallcircle-r);
-      -o-border-radius: var(@s01-smallcircle-r);
-      border-radius: var(@s01-smallcircle-r);
+      -moz-border-radius: @s01-smallcircle-r;
+      -webkit-border-radius: @s01-smallcircle-r;
+      -o-border-radius: @s01-smallcircle-r;
+      border-radius: @s01-smallcircle-r;
     }
   }
 }
@@ -506,7 +506,7 @@ temba-modax#send-via-pm_service > div.send-via-btn {
   margin-right: 1em;
   font-size: small;
 
-  #spinner4org {
+  #busy-spinner {
     align-self: start;
     height: 28px;
     width: 28px;

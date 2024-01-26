@@ -17,7 +17,7 @@ $(document).ready(function() {
             }
         });
     }
-    const theOrgSpinner = $('#spinner4org');
+    const theBusySpinner = $('#busy-spinner');
     let theOrgHomeBtn = $('#btn-org-home');
     const theOrgPicker = $('#org-picker');
     if ( theOrgPicker ) {
@@ -51,7 +51,7 @@ $(document).ready(function() {
     if ( !theOrgHomeBtn ) {
         theOrgHomeBtn = $('#org-name');
         theOrgHomeBtn.on('click', function(evt) {
-            theOrgSpinner.removeClass('hidden');
+            theBusySpinner.removeClass('hidden');
             let theOrgPK = theOrgPicker ? theOrgPicker.find(':selected').val() : '0';
             let theUrl = org_home_url_format.sprintf(theOrgPK);
             evt.stopPropagation();
@@ -63,7 +63,7 @@ $(document).ready(function() {
         });
     } else {
         theOrgHomeBtn.on('click', function() {
-            theOrgSpinner.removeClass('hidden');
+            theBusySpinner.removeClass('hidden');
             return true;
         });
     }
