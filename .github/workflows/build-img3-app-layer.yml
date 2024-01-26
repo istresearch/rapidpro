@@ -1,4 +1,4 @@
-name: "Build App Layer (3 of 6)"
+name: "Build (3 of 6) App Layer"
 
 on:
   repository_dispatch:
@@ -38,7 +38,7 @@ jobs:
       VERSION_TAG: ${{ steps.config_step.outputs.VERSION_TAG }}
       VER_NUM: ${{ steps.config_step.outputs.VER_NUM }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.client_payload.repo.ref_name }}
 

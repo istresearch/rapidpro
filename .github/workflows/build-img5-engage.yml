@@ -1,4 +1,4 @@
-name: "Build Engage Brand (5 of 6)"
+name: "Build (5 of 6) Engage Brand"
 
 on:
   repository_dispatch:
@@ -36,7 +36,7 @@ jobs:
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.client_payload.repo.ref_name }}
 

@@ -1,4 +1,4 @@
-name: "Build Lib Layer (2 of 6)"
+name: "Build (2 of 6) Lib Layer"
 
 on:
   repository_dispatch:
@@ -37,7 +37,7 @@ jobs:
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
       FLOW_EDITOR: ${{ steps.config_step.outputs.FLOW_EDITOR }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.client_payload.repo.ref_name }}
 

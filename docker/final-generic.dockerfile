@@ -23,3 +23,5 @@ COPY --from=load-files --chown=engage:engage /opt/code2use /opt/ov/brand
 RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
 
 USER engage
+
+RUN ./web-static-engage.sh

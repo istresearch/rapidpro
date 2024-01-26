@@ -1,4 +1,4 @@
-name: "Build Generic Files Layer (4 of 6)"
+name: "Build (4 of 6) Generic Files Layer"
 
 on:
   repository_dispatch:
@@ -35,7 +35,7 @@ jobs:
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.client_payload.repo.ref_name }}
 

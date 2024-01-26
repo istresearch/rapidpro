@@ -1,4 +1,4 @@
-name: "Build Base OS Layer (1 of 6)"
+name: "Build (1 of 6) Base OS Layer"
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: "Determine Tag To Use"
         id: config_step

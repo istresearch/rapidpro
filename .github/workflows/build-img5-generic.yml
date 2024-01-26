@@ -1,4 +1,4 @@
-name: "Build Generic Brand (5 of 6)"
+name: "Build (5 of 6) Generic Brand"
 
 on:
   repository_dispatch:
@@ -37,7 +37,7 @@ jobs:
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
       BUILD_FLAG: ${{ steps.config_step.outputs.BUILD_FLAG }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.client_payload.repo.ref_name }}
 

@@ -27,6 +27,4 @@ RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
 
 USER engage
 
-RUN echo "STATICFILES_DIRS = (os.path.join(PROJECT_DIR, "engage/static/engage"))" > temba.local_settings.py \
- && python manage.py collectstatic --noinput --settings=temba.settings \
- && rm temba.local_settings.py
+RUN ./web-static-engage.sh
