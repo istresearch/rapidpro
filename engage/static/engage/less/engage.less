@@ -96,6 +96,89 @@ h5.contact-signup {
   color: rgba(255, 255, 255, var(--tw-text-opacity));
 }
 
+// +++++ BEGIN SPINNER
+
+// colors
+@accent-1 : rgb(40,170,220); //reddish
+@accent-2 : #8a9faa; //light IST blue
+
+.spinner {
+  position: absolute;
+  z-index: 1;
+  margin: 12px 4px 4px 10px;
+}
+
+// vars
+@s01-bigcircle-r : 15px;
+@s01-bigcircle-d : '@{s01-bigcircle-r}*2';
+
+@s01-smallcircle-r : 5px;
+@s01-smallcircle-d : '@{s01-smallcircle-r}*2';
+
+.spinner-01 {
+  height: '@{s01-bigcircle-d}';
+  .spinner {
+    width: '@{s01-bigcircle-d}';
+    height: '@{s01-bigcircle-d}';
+    &:before {
+      display: block;
+      position: absolute;
+      top: 0; bottom: 0; right: 0; left: 0;
+      border-top: solid '@{s01-smallcircle-r}' '@{accent-2}';
+      border-bottom: solid '@{s01-smallcircle-r}' '@{accent-2}';
+      border-left: solid '@{s01-smallcircle-r}' transparent;
+      border-right: solid '@{s01-smallcircle-r}' transparent;
+      content: "";
+      -moz-border-radius: '@{s01-bigcircle-r}';
+      -webkit-border-radius: '@{s01-bigcircle-r}';
+      -o-border-radius: '@{s01-bigcircle-r}';
+      border-radius: '@{s01-bigcircle-r}';
+      -webkit-animation: spinner-01 1s infinite ease;
+      -moz-animation: spinner-01 1s infinite ease;
+      -ms-animation: spinner-01 1s infinite ease;
+      -o-animation: spinner-01 1s infinite ease;
+      animation: spinner-01 1s infinite ease;
+    }
+    &:after {
+      display: block;
+      position: absolute;
+      top: 0; bottom: 0; right: 0; left: 0;
+      margin: auto;
+      width: '@{s01-smallcircle-d}';
+      height: '@{s01-smallcircle-d}';
+      background-color: '@{accent-1}';
+      content: "";
+      -moz-border-radius: '@{s01-smallcircle-r}';
+      -webkit-border-radius: '@{s01-smallcircle-r}';
+      -o-border-radius: '@{s01-smallcircle-r}';
+      border-radius: '@{s01-smallcircle-r}';
+    }
+  }
+}
+
+@-webkit-keyframes spinner-01 {
+  from { -webkit-transform: rotate(0deg) }
+  to { -webkit-transform: rotate(360deg) }
+}
+@-moz-keyframes spinner-01 {
+  from { -moz-transform: rotate(0deg) }
+  to { -moz-transform: rotate(360deg) }
+}
+@-ms-keyframes spinner-01 {
+  from { -ms-transform: rotate(0deg) }
+  to { -ms-transform: rotate(360deg) }
+}
+@-o-keyframes spinner-01 {
+  from { -o-transform: rotate(0deg) }
+  to { -o-transform: rotate(360deg) }
+}
+@keyframes spinner-01 {
+  from { transform: rotate(0deg) }
+  to { transform: rotate(360deg) }
+}
+
+// ===== END SPINNER
+
 /* HEADER now using Flex box for all its elements, unset some prior CSS hacks. */
 #header {
   padding: unset;
