@@ -5,6 +5,7 @@ ARG FROM_STAGE
 FROM ${FROM_STAGE} as load-files
 
 WORKDIR /opt/code2use
+COPY docker/customizations/any/web-static-engage.sh .
 COPY docker/customizations/engage .
 
 # ========================================================================
