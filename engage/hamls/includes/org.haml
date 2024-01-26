@@ -2,9 +2,9 @@
 
 #org-area
   {% if user_org %}
-	  #spinner4org.hidden
-	    %section.spinner-01
-	      .spinner
+    #spinner4org.hidden
+      %section.spinner-01
+        .spinner
 
     %a#btn-org-home{href:'{% url "orgs.org_home" %}?org={{ user_org.id }}'}
       -# house icon
