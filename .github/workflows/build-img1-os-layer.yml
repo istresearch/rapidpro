@@ -71,9 +71,9 @@ jobs:
   #endjob build_cfg
 
   trigger-build:
-    if: needs.check_build_image.outputs.BUILD_STAGE == 1
+    if: needs.build_cfg.outputs.BUILD_STAGE == 1
     runs-on: ubuntu-latest
-    needs: [build_cfg, check_build_image]
+    needs: [build_cfg]
     environment: default
     steps:
       - name: Trigger Container Build
@@ -116,9 +116,9 @@ jobs:
   #endjob trigger-build
 
   trigger-next-stage:
-    if: needs.check_build_image.outputs.BUILD_STAGE == 0
+    if: needs.build_cfg.outputs.BUILD_STAGE == 0
     runs-on: ubuntu-latest
-    needs: [build_cfg, check_build_image]
+    needs: [build_cfg]
     environment: default
     steps:
       - name: Trigger Next Stage
