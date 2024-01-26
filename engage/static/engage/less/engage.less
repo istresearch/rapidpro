@@ -99,40 +99,40 @@ h5.contact-signup {
 // +++++ BEGIN SPINNER
 
 // colors
-@accent-1 : rgb(40,170,220); //reddish
-@accent-2 : #8a9faa; //light IST blue
+@accent-1 : var(--orgname-bkgd);
+@accent-2 : #8a9faa;
 
 .spinner {
   position: absolute;
   z-index: 1;
-  margin: 12px 4px 4px 10px;
+  margin: 2px 2px 2px 2px;
 }
 
 // vars
 @s01-bigcircle-r : 15px;
-@s01-bigcircle-d : '@{s01-bigcircle-r}*2';
+@s01-bigcircle-d : calc(var(@s01-bigcircle-r) * 2);
 
 @s01-smallcircle-r : 5px;
-@s01-smallcircle-d : '@{s01-smallcircle-r}*2';
+@s01-smallcircle-d : calc(var(@s01-smallcircle-r) * 2);
 
 .spinner-01 {
-  height: '@{s01-bigcircle-d}';
+  height: var(@s01-bigcircle-d);
   .spinner {
-    width: '@{s01-bigcircle-d}';
-    height: '@{s01-bigcircle-d}';
+    width: var(@s01-bigcircle-d);
+    height: var(@s01-bigcircle-d);
     &:before {
       display: block;
       position: absolute;
       top: 0; bottom: 0; right: 0; left: 0;
-      border-top: solid '@{s01-smallcircle-r}' '@{accent-2}';
-      border-bottom: solid '@{s01-smallcircle-r}' '@{accent-2}';
-      border-left: solid '@{s01-smallcircle-r}' transparent;
-      border-right: solid '@{s01-smallcircle-r}' transparent;
+      border-top: solid var(@s01-smallcircle-r) var(@accent-2);
+      border-bottom: solid var(@s01-smallcircle-r) var(@accent-2);
+      border-left: solid var(@s01-smallcircle-r) transparent;
+      border-right: solid var(@s01-smallcircle-r) transparent;
       content: "";
-      -moz-border-radius: '@{s01-bigcircle-r}';
-      -webkit-border-radius: '@{s01-bigcircle-r}';
-      -o-border-radius: '@{s01-bigcircle-r}';
-      border-radius: '@{s01-bigcircle-r}';
+      -moz-border-radius: var(@s01-bigcircle-r);
+      -webkit-border-radius: var(@s01-bigcircle-r);
+      -o-border-radius: var(@s01-bigcircle-r);
+      border-radius: var(@s01-bigcircle-r);
       -webkit-animation: spinner-01 1s infinite ease;
       -moz-animation: spinner-01 1s infinite ease;
       -ms-animation: spinner-01 1s infinite ease;
@@ -144,14 +144,14 @@ h5.contact-signup {
       position: absolute;
       top: 0; bottom: 0; right: 0; left: 0;
       margin: auto;
-      width: '@{s01-smallcircle-d}';
-      height: '@{s01-smallcircle-d}';
-      background-color: '@{accent-1}';
+      width: var(@s01-smallcircle-d);
+      height: var(@s01-smallcircle-d);
+      background-color: var(@accent-1);
       content: "";
-      -moz-border-radius: '@{s01-smallcircle-r}';
-      -webkit-border-radius: '@{s01-smallcircle-r}';
-      -o-border-radius: '@{s01-smallcircle-r}';
-      border-radius: '@{s01-smallcircle-r}';
+      -moz-border-radius: var(@s01-smallcircle-r);
+      -webkit-border-radius: var(@s01-smallcircle-r);
+      -o-border-radius: var(@s01-smallcircle-r);
+      border-radius: var(@s01-smallcircle-r);
     }
   }
 }
@@ -505,6 +505,13 @@ temba-modax#send-via-pm_service > div.send-via-btn {
   margin-bottom: 0.6em;
   margin-right: 1em;
   font-size: small;
+
+  #spinner4org {
+    align-self: start;
+    height: 28px;
+    width: 28px;
+    margin-right: 30px;
+  }
 
   #btn-org-home {
     align-self: start;
