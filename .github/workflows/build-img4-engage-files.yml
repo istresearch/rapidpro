@@ -48,7 +48,7 @@ jobs:
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
           echo "${FROM_LAYER#**:}" > base_tag.txt
           source scm/utils.sh
-          CalcDirArgsHash static media "engage/static" > dir_hash.txt
+          CalcDirArgsHash static media "engage/static" "engage/hamls" > dir_hash.txt
           IMAGE_TAG_HASH=$(CalcFileArgsHash "${DOCKERFILE2USE}" "base_tag.txt" "package-lock.json" "package.json" "dir_hash.txt")
           IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
           
