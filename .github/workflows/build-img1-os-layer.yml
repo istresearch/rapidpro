@@ -49,7 +49,7 @@ jobs:
           echo "REPO_TAG=${REPO_TAG}" >> $GITHUB_OUTPUT
 
       - id: check_image_exist
-        uses: ./.github/workflows/util-docker-image-exists.yml
+        uses: .github/workflows/util-docker-image-exists.yml
         with:
           name: ${{ needs.build_cfg.outputs.IMAGE_NAME }}
           tag: ${{ needs.build_cfg.outputs.IMAGE_TAG }}
