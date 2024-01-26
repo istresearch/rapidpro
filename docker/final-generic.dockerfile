@@ -21,7 +21,7 @@ LABEL org.label-schema.name="Engage" \
 
 # apply branding
 COPY --from=load-files --chown=engage:engage /opt/code2use /opt/ov/brand
-RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand
+RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand 2>/dev/null
 
 USER engage
 
