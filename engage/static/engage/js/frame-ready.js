@@ -34,6 +34,13 @@ $(document).ready(function() {
     for (let ls = document.links, numLinks = ls.length, i=0; i<numLinks; i++) {
         ls[i].onclick= showSpinner;
     }
+    //if using the Back button to return to a page where the spinner was shown before navigating away, handle it
+    window.addEventListener('pageshow', function (e) {
+        //typescript would need: (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming).type
+        if ( e.persisted || performance.getEntriesByType("navigation")[0].type === 'back_forward' ) {
+            hideSpinner();
+        }
+    });
 
     let theOrgHomeBtn = $('#btn-org-home');
     const theOrgPicker = $('#org-picker');
