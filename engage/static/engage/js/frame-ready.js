@@ -1,3 +1,4 @@
+window.app_spin_count = 0;
 $(document).ready(function() {
     if (navigator.appVersion.indexOf("Win")!==-1) {
         $("html").addClass("windows");
@@ -19,21 +20,19 @@ $(document).ready(function() {
     }
 
     const theBusySpinner = $('#busy-spinner');
-    function interceptClickEvent(e) {
-        const target = e.target || e.srcElement;
-        if ( target.tagName === 'A' ) {
-            const href = target.getAttribute('href');
-            if ( href ) {
-                theBusySpinner.removeClass('hidden');
-                //once the new page loads, spinner will be hidden again
-            }
+    function showSpinner() {
+        if ( window.app_spin_count++ === 0 ) {
+            theBusySpinner.removeClass('hidden');
         }
     }
-    //listen for link click events at the document level for all hyperlink clicks
-    if (document.addEventListener) {
-        document.addEventListener('click', interceptClickEvent);
-    } else if (document.attachEvent) {
-        document.attachEvent('onclick', interceptClickEvent);
+    function hideSpinner() {
+        if ( window.app_spin_count-- === 1 ) {
+            window.app_spin_count = 0;
+            theBusySpinner.addClass('hidden');
+        }
+    }
+    for (let ls = document.links, numLinks = ls.length, i=0; i<numLinks; i++) {
+        ls[i].onclick= showSpinner;
     }
 
     let theOrgHomeBtn = $('#btn-org-home');
