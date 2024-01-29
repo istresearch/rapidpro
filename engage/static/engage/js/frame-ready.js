@@ -1,5 +1,5 @@
 $(document).ready(function() {
-    if (navigator.appVersion.indexOf("Win")!=-1) {
+    if (navigator.appVersion.indexOf("Win")!==-1) {
         $("html").addClass("windows");
     }
 
@@ -9,7 +9,7 @@ $(document).ready(function() {
     if ( theOrgListBtn ) {
         theOrgListBtn.on('click', function(evt) {
             evt.stopPropagation();
-            let header = $('.org-header');
+            const header = $('.org-header');
             if (header.hasClass('expanded')) {
                 header.removeClass('expanded');
             } else {
@@ -17,7 +17,25 @@ $(document).ready(function() {
             }
         });
     }
+
     const theBusySpinner = $('#busy-spinner');
+    function interceptClickEvent(e) {
+        const target = e.target || e.srcElement;
+        if ( target.tagName === 'A' ) {
+            const href = target.getAttribute('href');
+            if ( href ) {
+                theBusySpinner.removeClass('hidden');
+                //once the new page loads, spinner will be hidden again
+            }
+        }
+    }
+    //listen for link click events at the document level for all hyperlink clicks
+    if (document.addEventListener) {
+        document.addEventListener('click', interceptClickEvent);
+    } else if (document.attachEvent) {
+        document.attachEvent('onclick', interceptClickEvent);
+    }
+
     let theOrgHomeBtn = $('#btn-org-home');
     const theOrgPicker = $('#org-picker');
     if ( theOrgPicker ) {
@@ -51,20 +69,15 @@ $(document).ready(function() {
     if ( !theOrgHomeBtn ) {
         theOrgHomeBtn = $('#org-name');
         theOrgHomeBtn.on('click', function(evt) {
-            theBusySpinner.removeClass('hidden');
             let theOrgPK = theOrgPicker ? theOrgPicker.find(':selected').val() : '0';
             let theUrl = org_home_url_format.sprintf(theOrgPK);
             evt.stopPropagation();
             if (evt.ctrlKey || evt.metaKey){
                 window.open(theUrl,'_blank')
             } else {
+                theBusySpinner.removeClass('hidden');
                 window.location = theUrl;
             }
-        });
-    } else {
-        theOrgHomeBtn.on('click', function() {
-            theBusySpinner.removeClass('hidden');
-            return true;
         });
     }
 
