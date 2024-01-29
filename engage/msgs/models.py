@@ -8,7 +8,7 @@ from temba.msgs.models import Msg, Label
 class MsgModelOverride(MonkeyPatcher):
     patch_class = Msg
 
-    def archive(self):
+    def archive(self: Msg):
         """
         Archives this message
         """
@@ -20,7 +20,7 @@ class MsgModelOverride(MonkeyPatcher):
         self.save(update_fields=("visibility", "modified_on"))
     #enddef archive
 
-    def restore(self):
+    def restore(self: Msg):
         """
         Restores (i.e. un-archives) this message
         """
@@ -31,6 +31,11 @@ class MsgModelOverride(MonkeyPatcher):
         self.visibility = Msg.VISIBILITY_VISIBLE
         self.save(update_fields=("visibility", "modified_on"))
     #enddef restore
+
+    @property
+    def flag_id(self: Msg):
+        return self.text.startswith('[FLAG37]') if self.text else None
+    #enddef flag_id
 
 #endclass MsgModelOverride
 

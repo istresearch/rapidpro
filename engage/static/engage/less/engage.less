@@ -179,6 +179,18 @@ h5.contact-signup {
 
 // ===== END SPINNER
 
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes flag37 {
+  50% {
+    opacity: 0;
+  }
+}
+
 /* HEADER now using Flex box for all its elements, unset some prior CSS hacks. */
 #header {
   padding: unset;
@@ -633,10 +645,15 @@ temba-modax#send-via-pm_service > div.send-via-btn {
     max-width: 50vw;
     overflow: hidden;
   }
-  table.list.selectable tbody tr.sender-is-pm {
+  table.list.selectable tbody tr[data-sender-is-pm='true'] {
     td {
       background-color: #9fffff;
-      text-shadow: 0px 1px 0px black;
+      text-shadow: 0 1px 0 black;
+    }
+    &tr[data-flag-id='37'] td {
+      background-color: #ff0000;
+      text-shadow: 0 1px 0 black;
+      animation: flag37 1s linear 60s;
     }
   }
 }

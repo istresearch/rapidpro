@@ -21,12 +21,17 @@ $(document).ready(function() {
 
     const theBusySpinner = $('#busy-spinner');
     function showSpinner() {
-        if ( window.app_spin_count++ === 0 ) {
+        if ( window.app_spin_count === 0 ) {
+            window.app_spin_count = 1;
             theBusySpinner.removeClass('hidden');
+        } else {
+            window.app_spin_count += 1;
         }
     }
     function hideSpinner() {
-        if ( window.app_spin_count-- === 1 ) {
+        if ( window.app_spin_count >= 1 ) {
+            window.app_spin_count -= 1;
+        } else {
             window.app_spin_count = 0;
             theBusySpinner.addClass('hidden');
         }

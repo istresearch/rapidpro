@@ -59,3 +59,75 @@ function createContactChoice(term, data) {
 String.prototype.sprintf = function() {
     return [...arguments].reduce((p,c) => p.replace(/%s/,c), this);
 }
+
+function refresh(onSuccess, forceReload){
+    let url = params; //from haml
+    if ( url === '' ) {
+        url = '?';
+    } else {
+        const url_params = new Proxy(new URLSearchParams(window.location.search), {
+          get: (searchParams, aProp) => searchParams.get(aProp),
+        });
+        if ( url_params.get('norefresh') ) {
+            return;
+        }
+        const page_num = url_params.get('page');
+        if ( page_num ) {
+            url += "page="+page_num;
+        }
+    }
+
+    url += '&ts=' + new Date().getTime() + "&refresh=" + refreshTimeout;
+
+    document.dispatchEvent(new Event("temba-refresh-begin"));
+    fetchPJAXContent(url, '#pjax', {
+        onSuccess: function() {
+            if ( onSuccess ) {
+                onSuccess();
+            }
+            document.dispatchEvent(new Event("temba-refresh-complete"));
+            //do not decay refresh rate
+            //refreshTimeout = Math.floor(refreshTimeout * 1.1)
+            scheduleRefresh();
+        },
+        shouldIgnore: function() {
+            if ( forceReload ) {
+                return false;
+            }
+            const pjax = document.querySelector("#pjax");
+            if ( pjax ) {
+                return eval(document.querySelector("#pjax").dataset.noPjax);
+            }
+            return true;
+        },
+        onIgnore: function() {
+            const pjax = document.querySelector("#pjax");
+            if ( pjax ) {
+                scheduleRefresh();
+            }
+        }
+    });
+}
+
+document.addEventListener("temba-redirected", function(event){
+  document.location.href = event.detail.url;
+});
+
+const btnSound = document.getElementById('btnSound');
+btnSound.addClass('hidden');
+function playSound() {
+    const theId = btnSound.dataset.sound_id || '37';
+    btnSound.audioFile = new Audio(`engage/audio/notify_${theId}.mp3`);
+    btnSound.audioFile.loop = true;
+    btnSound.audioFile.play();
+}
+function performSound( aID ){
+    if ( aID ) {
+        btnSound.dataset.sound_id = aID;
+    }
+    btnSound.click();
+}
+function stopSound(){
+    btnSound.audioFile.pause();
+    btnSound.audioFile.currentTime = 0;
+}
