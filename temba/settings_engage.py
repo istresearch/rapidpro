@@ -555,4 +555,4 @@ MAUTH_DOMAIN = env('MAUTH_DOMAIN', required=False)
 #    MIDDLEWARE += ("engage.utils.middleware.MutualAuthMiddleware",)
 #endif
 
-SERVICE_CHANNEL_CONTACT_PREFIX = env('SERVICE_CHANNEL_CONTACT_PREFIX', '__PM_', required=False)
+SERVICE_CHANNEL_CONTACT_PREFIX = env('SERVICE_CHANNEL_CONTACT_PREFIX', '__PM-', required=False)
