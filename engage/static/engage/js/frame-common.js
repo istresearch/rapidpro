@@ -117,8 +117,8 @@ const btnSound = document.getElementById('btnSound');
 btnSound.style.visibility = 'hidden';
 function playSound() {
     const theId = btnSound.dataset.sound_id || '37';
-    if ( btnSound && btnSound.audioFileSrc !== '../../../engage/audio/notify_'+theId+'.mp3' ) {
-        btnSound.audioFileSrc = '../../../engage/audio/notify_'+theId+'.mp3';
+    if ( btnSound && btnSound.audioFileSrc !== '/sitestatic/engage/audio/notify_'+theId+'.mp3' ) {
+        btnSound.audioFileSrc = '/sitestatic/engage/audio/notify_'+theId+'.mp3';
         btnSound.audioFile = new Audio(btnSound.audioFileSrc);
         btnSound.audioFile.loop = true;
     }
