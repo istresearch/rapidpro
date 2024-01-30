@@ -40,7 +40,7 @@ class MsgModelOverride(MonkeyPatcher):
     def flag_id(self: Msg):
         flag = re.match(self.flag_id_regex, self.text) if self.text else None
         if flag is not None:
-            return flag.group(0)
+            return flag.group(1)
         else:
             return 0
         #endif
