@@ -68,10 +68,10 @@ function refresh(onSuccess, forceReload){
         const url_params = new Proxy(new URLSearchParams(window.location.search), {
           get: (searchParams, aProp) => searchParams.get(aProp),
         });
-        if ( url_params.get('norefresh') ) {
+        if ( url_params.norefresh ) {
             return;
         }
-        const page_num = url_params.get('page');
+        const page_num = url_params.page;
         if ( page_num ) {
             url += "page="+page_num;
         }
