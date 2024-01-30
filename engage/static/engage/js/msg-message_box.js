@@ -41,13 +41,14 @@ function handlePjaxAreaListeners() {
     }
 
     const rowsWithFlag37 = document.querySelector("tr[data-flag-id='37']");
-    rowsWithFlag37.addEventListener("animationstart", () => {
-        performSound(rowsWithFlag37.dataset.flag_id);
-    });
-    rowsWithFlag37.addEventListener("animationend", () => {
-        stopSound();
-    });
-
+    if ( rowsWithFlag37 ) {
+        rowsWithFlag37.addEventListener("animationstart", () => {
+            performSound(rowsWithFlag37.dataset.flag_id);
+        });
+        rowsWithFlag37.addEventListener("animationend", () => {
+            stopSound();
+        });
+    }
 }
 
 $(document).ready(function() {

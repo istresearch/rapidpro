@@ -114,10 +114,10 @@ document.addEventListener("temba-redirected", function(event){
 });
 
 const btnSound = document.getElementById('btnSound');
-btnSound.addClass('hidden');
+btnSound.style.visibility = 'hidden';
 function playSound() {
     const theId = btnSound.dataset.sound_id || '37';
-    btnSound.audioFile = new Audio(`engage/audio/notify_${theId}.mp3`);
+    btnSound.audioFile = new Audio('@{resEngagePath}/audio/notify_'+theId+'.mp3');
     btnSound.audioFile.loop = true;
     btnSound.audioFile.play();
 }
