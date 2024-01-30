@@ -1,3 +1,5 @@
+import re
+
 from django.utils import timezone
 
 from engage.utils.class_overrides import MonkeyPatcher
@@ -32,9 +34,16 @@ class MsgModelOverride(MonkeyPatcher):
         self.save(update_fields=("visibility", "modified_on"))
     #enddef restore
 
+    flag_id_regex = re.compile('\[FLAG-(\d+)]')
+
     @property
     def flag_id(self: Msg):
-        return self.text.startswith('[FLAG37]') if self.text else None
+        flag = re.match(self.flag_id_regex, self.text) if self.text else None
+        if flag is not None:
+            return flag.group(0)
+        else:
+            return 0
+        #endif
     #enddef flag_id
 
 #endclass MsgModelOverride
