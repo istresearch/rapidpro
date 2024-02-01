@@ -57,6 +57,7 @@ INSTALLED_APPS = (
         'engage.msgs',
         'engage.orgs',
         'engage.schedules',
+        'engage.triggers',
         'engage.utils',
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
