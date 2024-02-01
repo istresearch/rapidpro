@@ -103,6 +103,9 @@ jobs:
                   "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_TAG }}"
                 ]
               },
+              "deployment": {
+                "deploy_flag": "0"
+              },
               "callback": {
                 "repository": "${{ github.repository }}",
                 "event_type": "build_layer_files",

@@ -6,7 +6,7 @@ FROM ${FROM_STAGE} as load-files
 
 WORKDIR /opt/code2use
 ARG BRAND_NAME=engage
-COPY "docker/customizations/${BRAND_NAME}" .
+COPY docker/customizations/${BRAND_NAME} .
 
 ARG REPO_UN
 ARG REPO_PW

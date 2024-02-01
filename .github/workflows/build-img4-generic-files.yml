@@ -48,7 +48,7 @@ jobs:
           IMAGE_NAME=${{ github.repository_owner }}/rapidpro
           echo "${FROM_LAYER#**:}" > base_tag.txt
           source scm/utils.sh
-          CalcDirArgsHash static media "engage/static" "engage/hamls" > dir_hash.txt
+          CalcDirArgsHash static media "engage/static" "engage/hamls" "docker/customizations/generic/static" > dir_hash.txt
           IMAGE_TAG_HASH=$(CalcFileArgsHash "${DOCKERFILE2USE}" "base_tag.txt" "package-lock.json" "package.json" "dir_hash.txt")
           IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
           
@@ -121,6 +121,9 @@ jobs:
                   "BRAND_NAME=generic",
                   "FROM_STAGE=${{ env.FROM_LAYER }}"
                 ]
+              },
+              "deployment": {
+                "deploy_flag": "0"
               },
               "callback": {
                 "repository": "${{ github.repository }}",

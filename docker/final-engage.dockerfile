@@ -28,10 +28,9 @@ LABEL org.label-schema.name="Engage" \
       org.label-schema.schema-version="1.0"
 
 # apply branding
-COPY --from=load-files --chown=engage:engage /opt/code2use /tmp/appfiles
-RUN rsync -a /tmp/appfiles ./ && rm -R /tmp/appfiles || true
+COPY --from=load-files --chown=engage:engage /opt/code2use ./
 
-# copy over the webapp static files
+COPY --from=filesrc /rapidpro/locale /rapidpro/locale
 COPY --from=filesrc /rapidpro/sitestatic /rapidpro/sitestatic
 
 USER engage

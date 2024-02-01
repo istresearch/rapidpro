@@ -95,6 +95,9 @@ jobs:
                   "VERSION_TAG=${{ needs.build_cfg.outputs.IMAGE_TAG }}"
                 ]
               },
+              "deployment": {
+                "deploy_flag": "0"
+              },
               "callback": {
                 "repository": "${{ github.repository }}",
                 "event_type": "build_nginx",

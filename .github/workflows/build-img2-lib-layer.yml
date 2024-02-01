@@ -122,6 +122,9 @@ jobs:
                   "REPO_PW=%REPO_PW"
                 ]
               },
+              "deployment": {
+                "deploy_flag": "0"
+              },
               "callback": {
                 "repository": "${{ github.repository }}",
                 "event_type": "build_layer_app",
