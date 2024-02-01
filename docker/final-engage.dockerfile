@@ -1,5 +1,7 @@
-# while doing the build, no interaction possible
-ARG DEBIAN_FRONTEND=noninteractive
+ARG STATICFILES_FROM_IMAGE=changeme
+FROM ${STATICFILES_FROM_IMAGE} as filesrc
+
+# ========================================================================
 
 ARG FROM_STAGE
 FROM ${FROM_STAGE} as load-files
@@ -23,7 +25,10 @@ LABEL org.label-schema.name="Engage" \
       org.label-schema.schema-version="1.0"
 
 # apply branding
-COPY --from=load-files --chown=engage:engage /opt/code2use /opt/ov/brand
-RUN rsync -a /opt/ov/brand/ ./ && rm -R /opt/ov/brand || true
+COPY --from=load-files --chown=engage:engage /opt/code2use /tmp/appfiles
+RUN rsync -a /tmp/appfiles ./ && rm -R /tmp/appfiles || true
+
+# copy over the webapp static files
+COPY --from=filesrc /rapidpro/sitestatic /rapidpro/sitestatic
 
 USER engage

@@ -75,6 +75,7 @@ jobs:
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
                   "FROM_STAGE=${{ github.event.client_payload.image.layer }}",
+                  "STATICFILES_FROM_IMAGE=${{ github.event.client_payload.image.pyfiles }}",
                   "VERSION_CI=${{ github.event.client_payload.image.ver_num }}",
                   "VERSION_TAG=${{ needs.build_cfg.outputs.IMAGE_TAG }}"
                 ]
