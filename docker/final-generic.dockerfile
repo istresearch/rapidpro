@@ -1,3 +1,5 @@
+ARG FROM_STAGE
+
 ARG STATICFILES_FROM_IMAGE=changeme
 FROM ${STATICFILES_FROM_IMAGE} as filesrc
 
@@ -12,6 +14,7 @@ COPY docker/customizations/generic .
 
 # ========================================================================
 
+ARG FROM_STAGE
 FROM ${FROM_STAGE}
 
 ARG VERSION_TAG
