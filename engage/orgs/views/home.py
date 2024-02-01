@@ -27,7 +27,7 @@ class HomeOverrides(MonkeyPatcher, LogExtrasMixin):
 
         #PE-207: hide ticket feature
         theAddTicketSvc = reverse("tickets.ticketer_connect")
-        links[:] = [item for item in links if (item['href'] == theAddTicketSvc)]
+        links[:] = [item for item in links if ('href' in item and item['href'] == theAddTicketSvc)]
 
         theAddChannelUrl = reverse("channels.channel_claim")
         for item in links:
