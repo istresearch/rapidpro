@@ -25,6 +25,10 @@ class HomeOverrides(MonkeyPatcher, LogExtrasMixin):
         #call original overridden function, not super(), so we don't have to re-write it here.
         links.extend(self.super_get_gear_links())
 
+        #PE-207: hide ticket feature
+        theAddTicketSvc = reverse("tickets.ticketer_connect")
+        links[:] = [item for item in links if ('href' in item and item['href'] == theAddTicketSvc)]
+
         theAddChannelUrl = reverse("channels.channel_claim")
         for item in links:
             if item['href'] == theAddChannelUrl:
