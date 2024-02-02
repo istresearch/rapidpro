@@ -14,8 +14,8 @@ RUN function notify() { echo -e "\n----[ $1 ]----\n"; } \
  && if [ "${FLOW_EDITOR}" = "" ]; then echo "FLOW_EDITOR build arg not set"; exit 1; fi \
  && if [ "${REPO_UN}" = "" ]; then echo "REPO_PW build arg not set"; exit 1; fi \
  && if [ "${REPO_PW}" = "" ]; then echo "REPO_PW build arg not set"; exit 1; fi \
- && notify "using build from repo://engage/floweditor/floweditor-v${FLOW_EDITOR#v}_${ARCH}.tar.gz"
-ADD https://${REPO_UN}:${REPO_PW}@repo.istresearch.com/engage/floweditor/floweditor-v${FLOW_EDITOR#v}_${ARCH}.tar.gz /opt/code2use/floweditor.tar.gz
+ && notify "using build from repo://engage/floweditor/floweditor-v${FLOW_EDITOR}_${ARCH}.tar.gz"
+ADD https://${REPO_UN}:${REPO_PW}@repo.istresearch.com/engage/floweditor/floweditor-v${FLOW_EDITOR}_${ARCH}.tar.gz /opt/code2use/floweditor.tar.gz
 
 COPY pyproject.toml /opt/code2use/
 COPY poetry.lock /opt/code2use/
