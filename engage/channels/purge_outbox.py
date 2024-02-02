@@ -20,6 +20,7 @@ class PurgeOutboxMixin:
         return (
             "purge_outbox",
         )
+    #enddef get_actions
 
     class PurgeOutbox(OrgPermLogInfoMixin, OrgPermsMixin, View):  # pragma: no cover
         permission = "msgs.broadcast_send"
@@ -27,6 +28,34 @@ class PurgeOutboxMixin:
         @classmethod
         def derive_url_pattern(cls, path, action):
             return r"^%s/(?P<channel_type>[^/]+)/(?P<channel_uuid>[^/]+)/$" % ('purge',)
+        #enddef derive_url_pattern
+
+        def postCourierPurgeReqest(self, aBaseCourierURL, aChannelType, aChannelUUID):
+            logger = logging.getLogger()
+            theEndpoint = f"{aBaseCourierURL}/purge/{aChannelType}/{aChannelUUID}"
+            logger.info("purge outbox started", extra=self.withLogInfo({
+                'channel_type': aChannelType,
+                'channel_uuid': aChannelUUID,
+            }))
+            try:
+                r = requests.post(theEndpoint, headers={"Content-Type": "application/json"})
+                theMessage = json.loads(r.content)['message']
+                logger.info(f"purge outbox returned {r.status_code}", extra=self.withLogInfo({
+                    'channel_type': aChannelType,
+                    'channel_uuid': aChannelUUID,
+                    'status_code': r.status_code,
+                    'courier_response': theMessage,
+                }))
+                return HttpResponse(f"The courier service returned with status {r.status_code}: {theMessage}")
+            except ConnectionError as ex:
+                logger.error("purge outbox cannot reach courier", extra=self.withLogInfo({
+                    'channel_type': aChannelType,
+                    'channel_uuid': aChannelUUID,
+                    'courier_url': aBaseCourierURL,
+                }))
+                return HttpResponse("A fatal error has occurred, action may not have fully finished.", status=500)
+            #endtry
+        #enddef
 
         def dispatch(self, request: HttpRequest, *args, **kwargs):
             # non authenticated users without orgs get an error (not the org chooser)
@@ -35,6 +64,7 @@ class PurgeOutboxMixin:
                 return HttpResponse('Not authorized', status=401)
 
             return super().dispatch(request, *args, **kwargs)
+        #enddef dispatch
 
         def get(self, request: HttpRequest, *args, **kwargs):
             logger = logging.getLogger()
@@ -69,28 +99,13 @@ class PurgeOutboxMixin:
             except ValueError as vx:
                 return HttpResponse(vx, status=400)
 
-            theEndpoint = f"{theBaseCourierURL}/purge/{theChannelType}/{theChannelUUID}"
-            logger.info("purge outbox started", extra=self.withLogInfo({
-                'channel_type': theChannelType,
-                'channel_uuid': theChannelUUID,
-            }))
-            try:
-                r = requests.post(theEndpoint, headers={"Content-Type": "application/json"})
-                theMessage = json.loads(r.content)['message']
-                logger.info(f"purge outbox returned {r.status_code}", extra=self.withLogInfo({
-                    'channel_type': theChannelType,
-                    'channel_uuid': theChannelUUID,
-                    'status_code': r.status_code,
-                    'courier_response': theMessage,
-                }))
-                return HttpResponse(f"The courier service returned with status {r.status_code}: {theMessage}")
-            except ConnectionError as ex:
-                logger.error("purge outbox cannot reach courier", extra=self.withLogInfo({
-                    'channel_type': theChannelType,
-                    'channel_uuid': theChannelUUID,
-                    'courier_url': theBaseCourierURL,
-                }))
-                return HttpResponse("A fatal error has occured, action may not have fully finished.", status=500)
+            if theChannelType == '4org':
+                print('call the thingy for all channels in org')
+            else:
+                return self.postCourierPurgeReqest(theBaseCourierURL, theChannelType, theChannelUUID)
+            #endif
+        #enddef get
 
         def post(self, request, *args, **kwargs):
             return HttpResponse("METHOD not allowed", status=405)
+        #enddef post

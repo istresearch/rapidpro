@@ -320,7 +320,7 @@
                 &nbsp;&nbsp;{{ sync_event.network_type }}
 
 -block post-content
-  - if org_perms.channels.channel_delete
+  - if org_perms.msgs.broadcast_send
     %temba-dialog#purge-confirmation.hide(
         header='{{ _("Purge Outbox")|escapejs }}'
         primaryButtonName='{{ _("Purge")|escapejs }}'
@@ -346,7 +346,7 @@
         cancelButtonName='Ok'
     )
       .p-6.important
-        -trans "An error has occured:"
+        -trans "An error has occurred:"
       %p.fail-msg
         "Unknown error"
 
@@ -379,10 +379,10 @@
     <script src="{% static 'bower/highcharts/highcharts.js' %}"></script>
 
   :javascript
-    {% if org_perms.channels.channel_delete %}
+    {% if org_perms.msgs.broadcast_send %}
       window.addEventListener('DOMContentLoaded', function(e) {
-        var menuitemPurge = document.querySelector("#action-purge");
-        var dlgPurge = document.querySelector("#purge-confirmation");
+        const menuitemPurge = document.querySelector("#action-purge");
+        const dlgPurge = document.querySelector("#purge-confirmation");
         if ( menuitemPurge && dlgPurge ) {
           menuitemPurge.addEventListener("click", function(e) {
             dlgPurge.classList.remove("hide");
@@ -398,15 +398,15 @@
         }
       });
 
-      var doPurgeOutbox = function( aUrl ) {
+      const doPurgeOutbox = function( aUrl ) {
         $.ajax({ type: "GET", url: aUrl,
             success: function( data, textStatus, xhr ) {
-              var dlg = document.querySelector("#purge-success");
+              const dlg = document.querySelector("#purge-success");
               dlg.classList.remove("hide");
               dlg.open = true;
             },
             error: function( req, status, error ) {
-              var dlg = document.querySelector("#purge-fail");
+              const dlg = document.querySelector("#purge-fail");
               dlg.querySelector('.fail-msg').innerHTML = req.status + " " + error;
               dlg.classList.remove("hide");
               dlg.open = true;
