@@ -54,7 +54,7 @@ jobs:
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           
           FLOW_EDITOR=$(cat VERSION_FlowEditor)
-          echo "FLOW_EDITOR=${FLOW_EDITOR}" >> $GITHUB_OUTPUT
+          echo "FLOW_EDITOR=${FLOW_EDITOR#v}" >> $GITHUB_OUTPUT
   #endjob build_cfg
 
   check_image_exist:
