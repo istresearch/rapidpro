@@ -85,7 +85,8 @@ jobs:
           if [[ '${{ needs.check_image_exist.outputs.exists }}' == '0' ]]; then
             BUILD_STAGE=1
           else
-            BUILD_STAGE=0
+            # just always build, idk why we get files not found sometimes.
+            BUILD_STAGE=1
           fi
           echo "::notice::Build Stage?=${BUILD_STAGE}"
           echo "BUILD_STAGE=${BUILD_STAGE}" >> $GITHUB_OUTPUT
