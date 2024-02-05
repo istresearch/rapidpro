@@ -10,7 +10,7 @@ class ContactFieldOverrides(MonkeyPatcher):
 
     def get_or_create(cls: type[ContactField], org, user, key: str, name: str = None, value_type=None):
         try:
-            return cls.super_get_or_create(cls, org, user, key, name, value_type)
+            return cls.super_get_or_create(org, user, key, name, value_type)
         except ValueError as ex:
             raise ValueError( str(ex).replace('campaigns', 'scenarios') )
         #endtry
