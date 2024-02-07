@@ -5,6 +5,7 @@ from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 from rest_framework.views import View
 
+from temba.channels.models import Channel
 from temba.orgs.models import Org
 from temba.orgs.views import OrgPermsMixin
 from temba.utils import json
@@ -100,7 +101,22 @@ class PurgeOutboxMixin:
                 return HttpResponse(vx, status=400)
 
             if theChannelType == '4org':
-                print('call the thingy for all channels in org')
+                org = user.get_org()
+                if theChannelUUID.replace('-', '') == org.uuid.hex:
+                    theOverallRespMsg = 'All channels for this org have started purging themselves.'
+                    theOverallRespStatus = 200
+                    theChannelList = Channel.objects.filter(org_id=org.id, is_active=True).order_by('last_seen')
+                    for theChannel in theChannelList:
+                        resp = self.postCourierPurgeReqest(theBaseCourierURL, theChannel.type, theChannel.uuid)
+                        if resp.status_code < 200 or resp.status_code > 299:
+                            theOverallRespStatus = 500
+                            theOverallRespMsg += "\nError Report: "+resp.content
+                        #endif
+                    #endfor
+                    return HttpResponse(theOverallRespMsg, status=theOverallRespStatus)
+                else:
+                    return HttpResponse('Org ambiguous, please rectify', status=400)
+                #endif
             else:
                 return self.postCourierPurgeReqest(theBaseCourierURL, theChannelType, theChannelUUID)
             #endif

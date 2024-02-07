@@ -18,7 +18,7 @@ class MsgInboxViewOverrides(MonkeyPatcher):
 
     """
     def pre_process(self, request, *args, **kwargs):
-        self.super_pre_process(request, *args, **kwargs)
+        self.InboxView_pre_process(request, *args, **kwargs)
         # give us the ability to override the pagination (super helpful in debugging)
         if 'r' in self.request.GET:
             self.refresh = self.request.GET['r']
@@ -56,13 +56,13 @@ class MsgInboxViewOverrides(MonkeyPatcher):
             from engage.utils.middleware import redirect_to
             redirect_to('/')
         #endif superuser
-        context = self.super_get_context_data(**kwargs)
+        context = self.InboxView_get_context_data(**kwargs)
         context['object_list'] = self._sanitizeMsgList(context['object_list'])
         return context
     #enddef get_context_data
 
     def get_gear_links(self: type(InboxView)):
-        links = self.super_get_gear_links()
+        links = self.InboxView_get_gear_links()
         links.append(
             dict(
                 title="Get PM",

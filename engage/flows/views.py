@@ -135,12 +135,12 @@ class ArchivedViewOverrides(MonkeyPatcher):
         self.apply_bulk_action_toast = None
         if action == "delete":
             num_obj = len(objects)
-            self.super_apply_bulk_action(user, action, objects, label)
+            self.Archived_apply_bulk_action(user, action, objects, label)
             if num_obj > 1:
                 self.apply_bulk_action_toast = f"All {num_obj} flows deleted"
             #endif
         else:
-            self.super_apply_bulk_action(user, action, objects, label)
+            self.Archived_apply_bulk_action(user, action, objects, label)
         #endif
     #enddef apply_bulk_action
 

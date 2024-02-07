@@ -39,7 +39,7 @@ class ChannelOverrides(MonkeyPatcher):
 
         tps = getattr(settings, "DEFAULT_TPS", tps)
 
-        return cls.super_create(org=org, user=user, country=country, channel_type=channel_type,
+        return cls.Channel_create(org=org, user=user, country=country, channel_type=channel_type,
                 name=name, address=address, config=config, role=role, schemes=schemes, tps=tps, **kwargs
         )
     #enddef create
@@ -47,7 +47,7 @@ class ChannelOverrides(MonkeyPatcher):
     def claim(self, org, user, phone):
         # NOTE: leaving alert_email field empty, which is the user.email param.
         user.email = None
-        return self.super_claim(org=org, user=user, phone=phone)
+        return self.Channel_claim(org=org, user=user, phone=phone)
     #enddef claim
 
     def release(self, user, *, trigger_sync: bool = True, check_dependent_flows: bool = True):
@@ -57,7 +57,7 @@ class ChannelOverrides(MonkeyPatcher):
                 raise ValueError(f"Cannot delete Channel: {self.get_name()}, used by {dependent_flows_count} flows")
             #endif
         #endif
-        return self.super_release(user, trigger_sync=trigger_sync)
+        return self.Channel_release(user, trigger_sync=trigger_sync)
     #enddef release
 
 #endclass ChannelOverrides

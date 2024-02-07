@@ -103,7 +103,7 @@ class MonkeyPatcher:
                     setattr(patch_cls, name, patch_attr)
                     if callable(orig_attr):
                         # provide patched method a "super_" prefix so that we can easily call orig method
-                        setattr(patch_cls, f"super_{name}", orig_attr)
+                        setattr(patch_cls, f"{patch_cls.__name__}_{name}", orig_attr)
                         if bPatchInheritors:
                             patch_cls_inheritors = cls.inheritors(patch_cls)
                             for child_patch_cls in patch_cls_inheritors:
