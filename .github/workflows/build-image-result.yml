@@ -3,14 +3,8 @@ name: "Display Build Conclusions"
 on:
   repository_dispatch:
     types:
-      - build_generic_success
-      - build_generic_error
-      - build_rp_success
-      - build_rp_error
       - build_nginx_success
       - build_nginx_error
-      - build_webstatic_success
-      - build_webstatic_error
 
 jobs:
   build_result:

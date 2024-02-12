@@ -8,7 +8,7 @@ class OrgManageAccountsOverrides(MonkeyPatcher):
     patch_class = OrgCRUDL.ManageAccounts
 
     def get_context_data(self: type(OrgCRUDL.Manage), **kwargs):
-        context = self.super_get_context_data(**kwargs)
+        context = self.ManageAccounts_get_context_data(**kwargs)
         context["is_email_available"] = settings.SEND_EMAILS
         return context
     #enddef get_context_data

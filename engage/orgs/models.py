@@ -20,12 +20,12 @@ class OrgModelOverride(MonkeyPatcher):
         if siteconfig.ALT_CALLBACK_DOMAIN:
             return siteconfig.ALT_CALLBACK_DOMAIN
         else:
-            return self.super_get_brand_domain()
+            return self.Org_get_brand_domain()
     #enddef get_brand_domain
 
     def release(self, user, **kwargs):
         with transaction.atomic():
-            self.super_release(user, **kwargs)
+            self.Org_release(user, **kwargs)
         #endwith
     #enddef release
 
@@ -50,8 +50,13 @@ class OrgModelOverride(MonkeyPatcher):
             date_format = self.date_format
         #endif
         # if we have a default UI language, use that as the default flow language too
-        default_flow_language = languages.alpha2_to_alpha3(self.language)
-        self.flow_languages = [default_flow_language] if default_flow_language else ["eng"]
+        if self.language:
+            default_flow_language = languages.alpha2_to_alpha3(self.language)
+            self.flow_languages = [default_flow_language] if default_flow_language else ["eng"]
+        else:
+            self.language = "eng"
+            self.flow_languages = ["eng"]
+        #endif
 
         org = Org.objects.create(
             name=name,

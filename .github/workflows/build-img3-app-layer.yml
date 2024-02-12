@@ -1,18 +1,18 @@
-name: "Build App Layer (3 of 4)"
+name: "Build (3 of 6) App Layer"
 
 on:
   repository_dispatch:
-    types: [build_layer3, build_layer2_error]
+    types: [build_layer_app, build_layer_lib_error]
 
 env:
   IMAGE_STAGE: pyapp
   DOCKERFILE2USE: docker/dfstage-pyapp.dockerfile
-  FROM_LAYER: ${{ github.event.client_payload.layer2 }}
-  FROM_LAYER_TAG: ${{ github.event.client_payload.layer2tag }}
+  FROM_LAYER: ${{ github.event.client_payload.layer }}
+  FROM_LAYER_TAG: ${{ github.event.client_payload.layer_tag }}
 
 jobs:
   build_result:
-    name: "Build Layer 2 Result [#${{ github.event.client_payload.run_number }}]"
+    name: "Build Lib Layer Result [#${{ github.event.client_payload.run_number }}]"
     runs-on: ubuntu-latest
     env:
       RUN_URL: "[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
@@ -38,7 +38,7 @@ jobs:
       VERSION_TAG: ${{ steps.config_step.outputs.VERSION_TAG }}
       VER_NUM: ${{ steps.config_step.outputs.VER_NUM }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.client_payload.repo.ref_name }}
 
@@ -80,7 +80,7 @@ jobs:
     environment: default
     steps:
       - name: Trigger Container Build
-        uses: peter-evans/repository-dispatch@v2
+        uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.CI_WEBHOOK_TOKEN }}
           repository: istresearch/ci-docker
@@ -99,15 +99,17 @@ jobs:
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
-                  "FROM_STAGE_TAG=${{ env.FROM_LAYER_TAG }}",
                   "VERSION_CI=${{ needs.build_cfg.outputs.VER_NUM }}",
                   "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_TAG }}"
                 ]
               },
+              "deployment": {
+                "deploy_flag": "0"
+              },
               "callback": {
                 "repository": "${{ github.repository }}",
-                "event_type": "build_layer4",
-                "error_type": "build_layer3_error",
+                "event_type": "build_layer_files",
+                "error_type": "build_layer_app_error",
                 "payload": {
                   "repo": {
                     "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
@@ -116,8 +118,7 @@ jobs:
                   "image": {
                     "tag": "${{ needs.build_cfg.outputs.VERSION_TAG }}",
                     "ver_num": "${{ needs.build_cfg.outputs.VER_NUM }}",
-                    "layer3tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-                    "layer3": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                    "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
                   }
                 }
               }

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os.path
 from copy import deepcopy
 
 # -----------------------------------------------------------------------------------
@@ -17,6 +18,8 @@ from engage.utils.s3_config import AwsS3Config
 
 from temba.settings_common import *  # noqa
 
+
+ENGAGE_DIR = os.path.join(PROJECT_DIR, "../engage")
 SUB_DIR = env('SUB_DIR', required=False)
 # NOTE: we do not support SUB_DIR anymore, kits no longer use it. Feel free to rip out.
 if not is_empty(SUB_DIR):
@@ -57,6 +60,7 @@ INSTALLED_APPS = (
         'engage.msgs',
         'engage.orgs',
         'engage.schedules',
+        'engage.triggers',
         'engage.utils',
     ) + tuple(filter(None, env('EXTRA_INSTALLED_APPS', '').split(',')))
 )
@@ -72,10 +76,10 @@ HANDLER_404 = 'engage.utils.views.page_not_found'
 HANDLER_500 = 'engage.utils.views.server_error'
 
 TEMPLATES[0]['DIRS'].insert(0,
-    os.path.join(PROJECT_DIR, "../engage/hamls"),
+    os.path.join(ENGAGE_DIR, "hamls"),
 )
 STATICFILES_DIRS = STATICFILES_DIRS + (
-    os.path.join(PROJECT_DIR, "../engage/static"),
+    os.path.join(ENGAGE_DIR, "static"),
     os.path.join(PROJECT_DIR, "../node_config"),
 )
 
@@ -279,15 +283,14 @@ if COMPRESS_ENABLED:
     COMPRESS_URL = STATIC_URL
     COMPRESS_ROOT = STATIC_ROOT
     #COMPRESS_STORAGE = STATICFILES_STORAGE
-
-    # compress_precompilers used for static LESS files whether or not COMPRESS_ENABLED==True
-    COMPRESS_PRECOMPILERS = (
-        ("text/less", 'lessc --include-path="%s:%s" {infile} {outfile}' % (
-            os.path.join(COMPRESS_ROOT, "less"),
-            os.path.join(COMPRESS_ROOT, "engage", "less"),
-        )),
-    )
-#endif compress on
+#endif
+# compress_precompilers used for static LESS files whether or not COMPRESS_ENABLED==True
+COMPRESS_PRECOMPILERS = (
+    ("text/less", 'lessc --include-path="%s" {infile} {outfile}' % ":".join([
+        f"{PROJECT_DIR}/../static/less",
+        f"{ENGAGE_DIR}/static/engage/less",
+    ])),
+)
 
 MAGE_AUTH_TOKEN = env('MAGE_AUTH_TOKEN', None)
 MAGE_API_URL = env('MAGE_API_URL', 'http://localhost:8026/api/v1')
@@ -554,3 +557,5 @@ MAUTH_DOMAIN = env('MAUTH_DOMAIN', required=False)
 #if not is_empty(MAUTH_DOMAIN):
 #    MIDDLEWARE += ("engage.utils.middleware.MutualAuthMiddleware",)
 #endif
+
+SERVICE_CHANNEL_CONTACT_PREFIX = env('SERVICE_CHANNEL_CONTACT_PREFIX', '__PM-', required=False)

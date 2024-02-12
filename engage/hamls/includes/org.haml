@@ -1,6 +1,9 @@
 -load smartmin i18n humanize temba compress
 
 #org-area
+  #busy-spinner.hidden
+    %section.spinner-01
+      .spinner
   {% if user_org %}
     %a#btn-org-home{href:'{% url "orgs.org_home" %}?org={{ user_org.id }}'}
       -# house icon

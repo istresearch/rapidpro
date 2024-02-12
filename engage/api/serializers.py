@@ -59,7 +59,7 @@ class MsgBulkActionSerializerOverride(MonkeyPatcher):
         if 'request' in self.context and 'action' in self.context['request'].data:
             return value
         else:
-            return self.super_validate_messages(value)
+            return self.MsgBulkActionSerializer_validate_messages(value)
         #endif
     #enddef validate_messages
 

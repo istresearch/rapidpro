@@ -15,7 +15,7 @@ class ContactListOverrides(MonkeyPatcher):
     #enddef get_bulk_actions
 
     def get_gear_links(self):
-        links = self.super_get_gear_links()
+        links = self.List_get_gear_links()
 
         # as_btn introduced to determine if placed in hamburger menu or as its own button
         el = [x for x in links if hasattr(x, 'id') and x.id == 'create-smartgroup']
@@ -33,7 +33,7 @@ class ContactListOverrides(MonkeyPatcher):
     def get_queryset(self: ContactCRUDL.List, **kwargs):
         search_query = self.request.GET.get("search", None)
         if search_query:
-            return self.super_get_queryset(**kwargs)
+            return self.List_get_queryset(**kwargs)
         else:
             sort_on = self.request.GET.get("sort_on", None)
             if sort_on:
@@ -62,7 +62,7 @@ class ContactReadOverrides(MonkeyPatcher):
         if obj_org:
             return self.get_user().has_org_perm(obj_org, permission)
         else:
-            return self.super_has_org_perm(permission)
+            return self.Read_has_org_perm(permission)
         #endif
     #enddef
 

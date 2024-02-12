@@ -40,7 +40,7 @@ class ChannelReadOverrides(MonkeyPatcher):
     patch_class = ChannelCRUDL.Read
 
     def get_gear_links(self):
-        links = self.super_get_gear_links()
+        links = self.Read_get_gear_links()
 
         # as_btn introduced to determine if placed in hamburger menu or as its own button
         el = [x for x in links if hasattr(x, 'id') and x.id == 'update-channel']
@@ -65,7 +65,7 @@ class ChannelReadOverrides(MonkeyPatcher):
         if obj_org:
             return self.get_user().has_org_perm(obj_org, permission)
         else:
-            return self.super_has_org_perm(permission)
+            return self.Read_has_org_perm(permission)
         #endif
     #enddef
 
@@ -114,7 +114,7 @@ class ChannelClaimOverrides(MonkeyPatcher):
     #enddef channel_types_groups
 
     def get_context_data(self, **kwargs):
-        context = self.super_get_context_data(**kwargs)
+        context = self.Claim_get_context_data(**kwargs)
         # engage features a single channel
         context["featured_channel"] = Channel.get_type_from_code(PostmasterType.code)
         return context
@@ -193,7 +193,7 @@ class ChannelUpdateOverrides(MonkeyPatcher):
     patch_class = ChannelCRUDL.Update
 
     def pre_save(self, obj):
-        obj = self.super_pre_save(obj)
+        obj = self.Update_pre_save(obj)
         if hasattr(obj, 'tps'):
             max_tps = getattr(settings, "MAX_TPS", 50)
             def_tps = getattr(settings, "DEFAULT_TPS", 10)
@@ -215,7 +215,7 @@ class ChannelListOverrides(MonkeyPatcher):
     link_url = 'uuid@channels.channel_read'
 
     def get_queryset(self: ChannelCRUDL.List, **kwargs):
-        queryset = self.super_get_queryset(**kwargs)
+        queryset = self.List_get_queryset(**kwargs)
 
         req = self.request
         if req and req.user and req.user.is_superuser and not req.GET.get("showall"):

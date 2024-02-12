@@ -10,18 +10,21 @@ class APITokenAuthenticationOverride(MonkeyPatcher):
     patch_class = APITokenAuthentication
 
     def authenticate(self, request):
-        user, token = self.super_authenticate(request)
-        if ( settings.MAUTH_DOMAIN and request.is_secure() ):
-            org = user.get_org() if user.is_authenticated else None
-            if org and org.config and org.config.get('mauth_enabled', 0):
-                if not ( 'Host' in request.headers
-                    and request.headers.get('Host') == settings.MAUTH_DOMAIN
-                ):
-                    raise AuthenticationFailed("Forbidden")
-                #endif did not use the mauth domain
-            #endif org is configured for mauth
-        #endif mauth configured and used a token as auth
-        return user, token
+        theResult = self.APITokenAuthentication_authenticate(request)
+        if theResult is not None:
+            if settings.MAUTH_DOMAIN and request.is_secure():
+                user, token = theResult
+                org = user.get_org() if user.is_authenticated else None
+                if org and org.config and org.config.get('mauth_enabled', 0):
+                    if not ( 'Host' in request.headers
+                        and request.headers.get('Host') == settings.MAUTH_DOMAIN
+                    ):
+                        raise AuthenticationFailed("Forbidden")
+                    #endif did not use the mauth domain
+                #endif org is configured for mauth
+            #endif mauth configured and used a token as auth
+        #endif
+        return theResult
     #enddef authenticate
 
 #endclass APITokenAuthenticationOverride

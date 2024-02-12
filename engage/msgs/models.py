@@ -1,3 +1,5 @@
+import re
+
 from django.utils import timezone
 
 from engage.utils.class_overrides import MonkeyPatcher
@@ -8,7 +10,7 @@ from temba.msgs.models import Msg, Label
 class MsgModelOverride(MonkeyPatcher):
     patch_class = Msg
 
-    def archive(self):
+    def archive(self: Msg):
         """
         Archives this message
         """
@@ -20,7 +22,7 @@ class MsgModelOverride(MonkeyPatcher):
         self.save(update_fields=("visibility", "modified_on"))
     #enddef archive
 
-    def restore(self):
+    def restore(self: Msg):
         """
         Restores (i.e. un-archives) this message
         """
@@ -31,6 +33,18 @@ class MsgModelOverride(MonkeyPatcher):
         self.visibility = Msg.VISIBILITY_VISIBLE
         self.save(update_fields=("visibility", "modified_on"))
     #enddef restore
+
+    flag_id_regex = re.compile('\[FLAG-(\d+)]')
+
+    @property
+    def flag_id(self: Msg):
+        flag = re.match(self.flag_id_regex, self.text) if self.text else None
+        if flag is not None:
+            return flag.group(1)
+        else:
+            return 0
+        #endif
+    #enddef flag_id
 
 #endclass MsgModelOverride
 

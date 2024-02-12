@@ -21,10 +21,12 @@ class AppConfig(BaseAppConfig):
         from .tests import LabelCRUDLTestOverrides
         LabelCRUDLTestOverrides.applyPatches()
 
+        # override base inbox class before child classes
         from .views.inbox import MsgInboxViewOverrides
         MsgInboxViewOverrides.applyPatches()
-
-        # override base inbox class before child classes
+        # now we can override "child inbox" classes
+        from .views.outbox import ViewMsgsOutboxOverrides
+        ViewMsgsOutboxOverrides.applyPatches()
         from .inbox_msgfailed import ViewInboxFailedMsgsOverrides
         ViewInboxFailedMsgsOverrides.applyPatches()
 

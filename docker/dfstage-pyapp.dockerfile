@@ -39,7 +39,7 @@ USER root
 # runtime libs we need/want to keep around
 RUN apt-get update && apt-get install -y -q --no-install-recommends \
     gettext \
-	rsync \
+    rsync \
     tar \
  && rm -rf /var/lib/apt/lists/*
 
