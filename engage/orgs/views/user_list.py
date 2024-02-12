@@ -24,7 +24,7 @@ class OrgViewListUserOverrides(MonkeyPatcher):
         """
         override to fix sort order bug: descending uses a leading "-" which fails "if in fields" check.
         """
-        queryset = self.super_get_queryset(**kwargs)
+        queryset = self.List_get_queryset(**kwargs)
 
         # org users see channels for their org, superuser sees all
         if not self.request.user.is_superuser:

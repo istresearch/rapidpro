@@ -113,6 +113,35 @@ document.addEventListener("temba-redirected", function(event){
   document.location.href = event.detail.url;
 });
 
+const theBusySpinner = $('#busy-spinner');
+function showSpinner() {
+    if ( window.app_spin_count === 0 ) {
+        window.app_spin_count = 1;
+        theBusySpinner.removeClass('hidden');
+    } else {
+        window.app_spin_count += 1;
+    }
+}
+function hideSpinner() {
+    if ( window.app_spin_count > 1 ) {
+        window.app_spin_count -= 1;
+    } else {
+        window.app_spin_count = 0;
+        theBusySpinner.addClass('hidden');
+    }
+}
+function resetSpinner() {
+    window.app_spin_count = 1;
+    hideSpinner();
+}
+//if using the Back button to return to a page where the spinner was shown before navigating away, handle it
+window.addEventListener('pageshow', function (e) {
+    //typescript would need: (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming).type
+    if ( e.persisted || performance.getEntriesByType("navigation")[0].type === 'back_forward' ) {
+        resetSpinner();
+    }
+});
+
 const btnSound = document.getElementById('btnSound');
 btnSound.style.visibility = 'hidden';
 function playSound() {

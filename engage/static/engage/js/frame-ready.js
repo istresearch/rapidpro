@@ -19,27 +19,6 @@ $(document).ready(function() {
         });
     }
 
-    const theBusySpinner = $('#busy-spinner');
-    function showSpinner() {
-        if ( window.app_spin_count === 0 ) {
-            window.app_spin_count = 1;
-            theBusySpinner.removeClass('hidden');
-        } else {
-            window.app_spin_count += 1;
-        }
-    }
-    function hideSpinner() {
-        if ( window.app_spin_count > 1 ) {
-            window.app_spin_count -= 1;
-        } else {
-            window.app_spin_count = 0;
-            theBusySpinner.addClass('hidden');
-        }
-    }
-    function resetSpinner() {
-        window.app_spin_count = 1;
-        hideSpinner();
-    }
     for (let ls = document.links, numLinks = ls.length, i=0; i<numLinks; i++) {
         ls[i].onclick= showSpinner;
     }
@@ -47,13 +26,6 @@ $(document).ready(function() {
     if ( elems ) {
         elems.click(showSpinner);
     }
-    //if using the Back button to return to a page where the spinner was shown before navigating away, handle it
-    window.addEventListener('pageshow', function (e) {
-        //typescript would need: (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming).type
-        if ( e.persisted || performance.getEntriesByType("navigation")[0].type === 'back_forward' ) {
-            resetSpinner();
-        }
-    });
 
     let theOrgHomeBtn = $('#btn-org-home');
     const theOrgPicker = $('#org-picker');

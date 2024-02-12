@@ -20,12 +20,12 @@ class OrgModelOverride(MonkeyPatcher):
         if siteconfig.ALT_CALLBACK_DOMAIN:
             return siteconfig.ALT_CALLBACK_DOMAIN
         else:
-            return self.super_get_brand_domain()
+            return self.Org_get_brand_domain()
     #enddef get_brand_domain
 
     def release(self, user, **kwargs):
         with transaction.atomic():
-            self.super_release(user, **kwargs)
+            self.Org_release(user, **kwargs)
         #endwith
     #enddef release
 

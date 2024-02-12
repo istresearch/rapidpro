@@ -57,3 +57,77 @@
     -if object_list.count
       .paginator
         -include "smartmin/sidebar_pagination.haml"
+
+-block post-content
+  - if org_perms.msgs.broadcast_send
+    %temba-dialog#purge-confirmation.hide(
+        header='{{ _("Purge Outbox")|escapejs }}'
+        primaryButtonName='{{ _("Purge")|escapejs }}'
+        destructive='true'
+    )
+      .p-6.confirmation-body
+        %p
+          -trans "Purge all messages from the outbox?"
+        %p
+          -trans "Once the outbox is purged, it's messages will be gone forever. There is no way to undo this operation."
+
+    %temba-dialog#purge-success.hide(
+        header='{{ _("Purge Outbox")|escapejs }}'
+        primaryButtonName=''
+        cancelButtonName='Ok'
+    )
+      .p-6
+        -trans "Purge Successful"
+
+    %temba-dialog#purge-fail.hide(
+        header='{{ _("Purge Outbox")|escapejs }}'
+        primaryButtonName=''
+        cancelButtonName='Ok'
+    )
+      .p-6.important
+        -trans "An error has occurred:"
+      %p.fail-msg
+        "Unknown error"
+
+-block extra-script
+  {{ block.super }}
+
+  :javascript
+    {% if org_perms.msgs.broadcast_send %}
+      window.addEventListener('DOMContentLoaded', function(e) {
+        const menuitemPurge = document.querySelector("#action-purge");
+        const dlgPurge = document.querySelector("#purge-confirmation");
+        if ( menuitemPurge && dlgPurge ) {
+          menuitemPurge.addEventListener("click", function(e) {
+            dlgPurge.classList.remove("hide");
+            dlgPurge.open = true;
+          });
+
+          dlgPurge.addEventListener("temba-button-clicked", function(e) {
+            if ( !e.detail.button.secondary ) {
+              doPurgeOutbox("{% url 'channels.channel_purge_outbox' '4org' org.uuid %}");
+            }
+            dlgPurge.open = false;
+          });
+        }
+      });
+
+      const doPurgeOutbox = function( aUrl ) {
+        showSpinner();
+        $.ajax({ type: "GET", url: aUrl,
+            success: function( data, textStatus, xhr ) {
+              const dlg = document.querySelector("#purge-success");
+              dlg.classList.remove("hide");
+              dlg.open = true;
+              hideSpinner();
+            },
+            error: function( req, status, error ) {
+              const dlg = document.querySelector("#purge-fail");
+              dlg.querySelector('.fail-msg').innerHTML = req.status + " " + error;
+              dlg.classList.remove("hide");
+              dlg.open = true;
+              hideSpinner();
+            }
+        });
+      };
+    {% endif %}
