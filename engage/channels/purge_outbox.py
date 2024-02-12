@@ -107,7 +107,7 @@ class PurgeOutboxMixin:
                     theOverallRespStatus = 200
                     theChannelList = Channel.objects.filter(org_id=org.id, is_active=True).order_by('last_seen')
                     for theChannel in theChannelList:
-                        resp = self.postCourierPurgeReqest(theBaseCourierURL, theChannel.type, theChannel.uuid)
+                        resp = self.postCourierPurgeReqest(theBaseCourierURL, theChannel.channel_type, theChannel.uuid)
                         if resp.status_code < 200 or resp.status_code > 299:
                             theOverallRespStatus = 500
                             theOverallRespMsg += "\nError Report: "+resp.content
