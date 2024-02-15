@@ -2,7 +2,7 @@ name: "Build (4 of 6) Generic Files Layer"
 
 on:
   repository_dispatch:
-    types: [build_layer_files, build_layer_app_error]
+    types: [build_layer_files]
 
 env:
   IMAGE_STAGE: pyfiles
@@ -34,7 +34,9 @@ jobs:
     outputs:
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
-      IS_BUILDABLE: ${{ github.event.client_payload.repo.ref_name == 'ci-develop' || github.event.client_payload.repo.ref_type == 'tag' }}
+      XIS_BUILDABLE: ${{ github.event.client_payload.repo.ref_name == 'ci-develop' || github.event.client_payload.version.kind == 'gold' }}
+      # restricting gen build to releases only until requested otherwise
+      IS_BUILDABLE: ${{ github.event.client_payload.version.kind == 'gold' }}
     steps:
       - uses: actions/checkout@v4
         with:

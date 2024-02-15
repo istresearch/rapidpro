@@ -47,7 +47,8 @@ jobs:
           if [[ "${{ github.event.client_payload.version.kind }}" == "gold" ]]; then
             BUILD_FLAG=1
           else
-            BUILD_FLAG=0
+            # setting to 1 here, too, as logic moved to img4-generic; if this is called, just build.
+            BUILD_FLAG=1
           fi
           echo "BUILD_FLAG=${BUILD_FLAG}" >> $GITHUB_OUTPUT
   #endjob build_cfg
