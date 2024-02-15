@@ -12,6 +12,8 @@ jobs:
   build_cfg:
     runs-on: ubuntu-latest
     environment: default
+    env:
+      REF_NAME: ${{ github.ref_name }}
     outputs:
       VERSION_STR: ${{ steps.config_step.outputs.VERSION_STR }}
       VERSION_INT: ${{ steps.config_step.outputs.VERSION_INT }}

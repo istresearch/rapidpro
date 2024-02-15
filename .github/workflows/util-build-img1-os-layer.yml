@@ -125,7 +125,7 @@ jobs:
                 "payload": {
                   "repo": {
                     "ref_type": "${{ github.ref_type }}",
-                    "ref_name": "${{ github.ref_name }}",
+                    "ref_name": "${{ github.ref_name }}"
                   },
                   "layer_tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                   "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}",
@@ -154,7 +154,7 @@ jobs:
             {
               "repo": {
                 "ref_type": "${{ github.ref_type }}",
-                "ref_name": "${{ github.ref_name }}",
+                "ref_name": "${{ github.ref_name }}"
               },
               "layer_tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
               "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}",
