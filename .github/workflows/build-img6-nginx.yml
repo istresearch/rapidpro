@@ -38,6 +38,10 @@ jobs:
       DOCKERFILE2USE: "docker/nginx/nginx.dockerfile"
       IMAGE_NAME: "${{ github.event.client_payload.image.name }}"
       IMAGE_TAG: "nginx-${{ github.event.client_payload.version.str }}"
+    steps:
+      - name: "no op"
+        id: config_step
+        run: ''
   #endjob build_cfg
 
   trigger-build:

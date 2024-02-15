@@ -30,6 +30,10 @@ jobs:
       DOCKERFILE2USE: "docker/final-engage.dockerfile"
       IMAGE_NAME: "${{ github.repository_owner }}/p4-engage"
       IMAGE_TAG: "${{ github.event.client_payload.version.str }}"
+    steps:
+      - name: "no op"
+        id: config_step
+        run: ''
   #endjob build_cfg
 
   trigger-build:

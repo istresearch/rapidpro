@@ -43,7 +43,7 @@ jobs:
 
   build_image:
     needs: [build_cfg]
-    uses: ./.github/workflows/build-img1-os-layer.yml
+    uses: ./.github/workflows/util-build-img1-os-layer.yml
     secrets: inherit
     with:
       repo_ref_type: ${{ github.ref_type }}
