@@ -26,28 +26,10 @@ jobs:
     needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
-    env:
-      VERSION_STR: ${{ github.event.client_payload.image.tag }}
     outputs:
-      DOCKERFILE2USE: ${{ steps.config_step.outputs.DOCKERFILE2USE }}
-      IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
-      IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.client_payload.repo.ref_name }}
-
-      - name: "Config For Engage Build"
-        id: config_step
-        run: |-
-          DOCKERFILE2USE="docker/final-engage.dockerfile"
-          echo "DOCKERFILE2USE=${DOCKERFILE2USE}" >> $GITHUB_OUTPUT
-
-          IMAGE_NAME=${{ github.repository_owner }}/p4-engage
-          IMAGE_TAG=${VERSION_STR}
-          echo "::notice::Build: ${IMAGE_NAME}:${IMAGE_TAG}"
-          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
-          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+      DOCKERFILE2USE: "docker/final-engage.dockerfile"
+      IMAGE_NAME: "${{ github.repository_owner }}/p4-engage"
+      IMAGE_TAG: "${{ github.event.client_payload.version.str }}"
   #endjob build_cfg
 
   trigger-build:
@@ -76,8 +58,8 @@ jobs:
                 "build_args": [
                   "FROM_STAGE=${{ github.event.client_payload.image.layer }}",
                   "STATICFILES_FROM_IMAGE=${{ github.event.client_payload.image.pyfiles }}",
-                  "VERSION_CI=${{ github.event.client_payload.image.ver_num }}",
-                  "VERSION_TAG=${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                  "VERSION_CI=${{ github.event.client_payload.version.int }}",
+                  "VERSION_TAG=${{ github.event.client_payload.version.str }}"
                 ]
               },
               "deployment": {
@@ -107,11 +89,15 @@ jobs:
                   },
                   "image": {
                     "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
-                    "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-                    "ver_num": "${{ github.event.client_payload.image.ver_num }}",
                     "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
                   },
-                  "deploy": ${{ github.ref_type == 'branch' }}
+                  "version": {
+                    "str": "${{ github.event.client_payload.version.str }}",
+                    "int": "${{ github.event.client_payload.version.int }}",
+                    "kind": "${{ github.event.client_payload.version.kind }}",
+                    "alt": "${{ github.event.client_payload.version.alt }}"
+                  },
+                  "deploy": ${{ github.event.client_payload.version.kind == 'dev' }}
                 }
               }
             }

@@ -8,147 +8,63 @@ on:
     tags:
       - 'v*'
 
-env:
-  IMAGE_STAGE: base
-  DOCKERFILE2USE: docker/dfstage-base.dockerfile
-
 jobs:
   build_cfg:
     runs-on: ubuntu-latest
     environment: default
     outputs:
-      REPO_BRANCH: ${{ steps.config_step.outputs.REPO_BRANCH }}
-      REPO_TAG: ${{ steps.config_step.outputs.REPO_TAG }}
-      IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
-      IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
+      VERSION_STR: ${{ steps.config_step.outputs.VERSION_STR }}
+      VERSION_INT: ${{ steps.config_step.outputs.VERSION_INT }}
+      VERSION_KIND: ${{ steps.config_step.outputs.VERSION_KIND }}
+      ALT_TAGS: ${{ steps.config_step.outputs.ALT_TAGS }}
     steps:
-      - uses: actions/checkout@v4
-
       - name: "Determine Tag To Use"
         id: config_step
         run: |-
-          IMAGE_NAME=${{ github.repository_owner }}/p4-engage
-          source scm/utils.sh
-          IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
-          IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
-          echo "::notice::OS Layer: ${IMAGE_NAME}:${IMAGE_TAG}"
-          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
-          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          
-          if [[ ${{ github.ref_type }} == 'tag' ]]; then
-            REPO_BRANCH=
-            REPO_TAG=${{ github.ref_name }}
+          #VER_KIND = 'alpha' (not deployed) | 'dev' | 'beta' | 'gold'
+          if [[ "${REF_NAME%/**}" == "dev" || "${REF_NAME}" == "develop" ]]; then
+            VER_KIND=dev
           else
-            REPO_BRANCH=${{ github.ref_name }}
-            REPO_TAG=
+            VER_KIND=alpha
           fi
-          echo "::notice::Repo Branch=${REPO_BRANCH}"
-          echo "REPO_BRANCH=${REPO_BRANCH}" >> $GITHUB_OUTPUT
-          echo "::notice::Repo Tag=${REPO_TAG}"
-          echo "REPO_TAG=${REPO_TAG}" >> $GITHUB_OUTPUT
+          
+          VER_BUILD=$(date +%H%M)
+          # limit to only first 3 chars
+          VER_BUILD=${VER_BUILD:0:3}
+          # recreate as INT, leaving 0's in place; creates a 'reasonable' 32-bit signed int.
+          VERSION_INT="$(date +%y)$(date +%m)$(date +%d)${VER_BUILD}"
+
+          ALT_TAGS=""
+          if [[ ${{ github.ref_name }} =~ ^(v)([[:digit:]]+\..*)$ ]]; then
+            VER_KIND=gold
+            VERSION_STR=${BASH_REMATCH[2]}
+          else          
+            # 'strict' semver segments cannot start with 0
+            VERSION_NUM="$(date +%y).$(date +%-m).$(date +%-d).${VER_BUILD#0}"  
+            VERSION_STR=ci-${VERSION_NUM}
+            if [[ "${REF_NAME}" == "develop" ]]; then
+              ALT_TAGS+=",ci-develop"
+            else
+              ALT_TAGS=",ci-dev-${REF_NAME#**/}"
+            fi
+          fi
+          echo "VERSION_INT=${VERSION_INT}" >> $GITHUB_OUTPUT
+          echo "VERSION_STR=${VERSION_STR}" >> $GITHUB_OUTPUT
+          echo "VERSION_KIND=${VER_KIND}" >> $GITHUB_OUTPUT
+          echo "ALT_TAGS=${ALT_TAGS}" >> $GITHUB_OUTPUT
+
+          echo "::notice::Version KIND=${VER_KIND}, STR=${VERSION_STR}${ALT_TAGS}, INT=${VERSION_INT}"
   #endjob build_cfg
 
-  check_image_exist:
+  build_image:
     needs: [build_cfg]
-    uses: ./.github/workflows/util-docker-image-exists.yml
+    uses: ./.github/workflows/build-img1-os-layer.yml
     secrets: inherit
     with:
-      name: ${{ needs.build_cfg.outputs.IMAGE_NAME }}
-      tag: ${{ needs.build_cfg.outputs.IMAGE_TAG }}
-  #endjob check_image_exist
-
-  check_build_image:
-    runs-on: ubuntu-latest
-    needs: [check_image_exist]
-    environment: default
-    env:
-      BUILD_ERR_MSG: ${{ needs.check_image_exist.outputs.err_msg }}
-    outputs:
-      BUILD_STAGE: ${{ steps.is_building.outputs.BUILD_STAGE }}
-    steps:
-      - name: Set BUILD_STAGE output
-        id: is_building
-        run: |-
-          if [[ -n "${BUILD_ERR_MSG}" ]]; then
-            echo "${BUILD_ERR_MSG}"
-            exit 1
-          fi
-          if [[ '${{ needs.check_image_exist.outputs.exists }}' == '0' ]]; then
-            BUILD_STAGE=1
-          else
-            BUILD_STAGE=0
-          fi
-          echo "::notice::Build Stage?=${BUILD_STAGE}"
-          echo "BUILD_STAGE=${BUILD_STAGE}" >> $GITHUB_OUTPUT
-  #endjob check_build_image
-
-  trigger-build:
-    if: needs.check_build_image.outputs.BUILD_STAGE == 1
-    runs-on: ubuntu-latest
-    needs: [build_cfg, check_build_image]
-    environment: default
-    steps:
-      - name: Trigger Container Build
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.CI_WEBHOOK_TOKEN }}
-          repository: istresearch/ci-docker
-          event-type: build-repo
-          client-payload: |-
-            {
-              "repo": {
-                "name": "${{ github.repository }}",
-                "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
-                "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}"
-              },
-              "image": {
-                "dockerfile": "${{ env.DOCKERFILE2USE }}",
-                "arch_allowed": "amd64 arm64",
-                "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
-                "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-                "build_args": [
-                ]
-              },
-              "deployment": {
-                "deploy_flag": "0"
-              },
-              "callback": {
-                "repository": "${{ github.repository }}",
-                "event_type": "build_layer_lib",
-                "error_type": "build_layer_os_error",
-                "payload": {
-                  "repo": {
-                    "ref_type": "${{ github.ref_type }}",
-                    "ref_name": "${{ github.ref_name }}",
-                    "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
-                    "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}"
-                  },
-                  "layer_tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-                  "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
-                }
-              }
-            }
-  #endjob trigger-build
-
-  trigger-next-stage:
-    if: needs.check_build_image.outputs.BUILD_STAGE == 0
-    runs-on: ubuntu-latest
-    needs: [build_cfg, check_build_image]
-    environment: default
-    steps:
-      - name: Trigger Next Stage
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          event-type: build_layer_lib
-          client-payload: |-
-            {
-              "repo": {
-                "ref_type": "${{ github.ref_type }}",
-                "ref_name": "${{ github.ref_name }}",
-                "branch": "${{ needs.build_cfg.outputs.REPO_BRANCH }}",
-                "tag": "${{ needs.build_cfg.outputs.REPO_TAG }}"
-              },
-              "layer_tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-              "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
-            }
-  #endjob trigger-next-stage
+      repo_ref_type: ${{ github.ref_type }}
+      repo_ref_name: ${{ github.ref_name }}
+      version_str: ${{ needs.build_cfg.outputs.VERSION_STR }}
+      version_int: ${{ needs.build_cfg.outputs.VERSION_INT }}
+      version_kind: ${{ needs.build_cfg.outputs.VERSION_KIND }}
+      alt_tags: ${{ needs.build_cfg.outputs.ALT_TAGS }}
+  #endjob build_image

@@ -7,7 +7,7 @@ on:
 env:
   IMAGE_STAGE: pyfiles
   DOCKERFILE2USE: docker/dfstage-pyfiles.dockerfile
-  FROM_LAYER: ${{ github.event.client_payload.image.layer }}
+  FROM_LAYER: ${{ github.event.client_payload.layer }}
 
 jobs:
   build_result:
@@ -134,10 +134,14 @@ jobs:
                     "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
                   },
                   "image": {
-                    "tag": "${{ github.event.client_payload.image.tag }}",
-                    "ver_num": "${{ github.event.client_payload.image.ver_num }}",
                     "layer": "${{ env.FROM_LAYER }}",
                     "pyfiles": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                  },
+                  "version": {
+                    "str": "${{ github.event.client_payload.version.str }}",
+                    "int": "${{ github.event.client_payload.version.int }}",
+                    "kind": "${{ github.event.client_payload.version.kind }}",
+                    "alt": "${{ github.event.client_payload.version.alt }}"
                   }
                 }
               }
@@ -161,10 +165,14 @@ jobs:
                 "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
               },
               "image": {
-                "tag": "${{ github.event.client_payload.image.tag }}",
-                "ver_num": "${{ github.event.client_payload.image.ver_num }}",
                 "layer": "${{ env.FROM_LAYER }}",
                 "pyfiles": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+              },
+              "version": {
+                "str": "${{ github.event.client_payload.version.str }}",
+                "int": "${{ github.event.client_payload.version.int }}",
+                "kind": "${{ github.event.client_payload.version.kind }}",
+                "alt": "${{ github.event.client_payload.version.alt }}"
               }
             }
   #endjob trigger-next-stage

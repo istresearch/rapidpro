@@ -35,8 +35,6 @@ jobs:
     outputs:
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
-      VERSION_TAG: ${{ steps.config_step.outputs.VERSION_TAG }}
-      VER_NUM: ${{ steps.config_step.outputs.VER_NUM }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -49,29 +47,12 @@ jobs:
           REF_NAME: "${{ github.event.client_payload.repo.ref_name }}"
         run: |-
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
-          VERSION_STR=$(cat VERSION)
-
-          if [[ "${{ github.event.client_payload.repo.ref_type }}" == "tag" ]]; then
-            IMAGE_TAG_HASH="${REF_NAME#*v}"
-          elif [[ "${REF_NAME}" == "develop" ]]; then
-            IMAGE_TAG_HASH="ci-develop"
-          elif [ "${REF_NAME}" != "master" ] && [ "${REF_NAME}" != "main" ]; then
-            IMAGE_TAG_HASH="ci-${VERSION_STR}-${REF_NAME#**/}"
-          else
-            IMAGE_TAG_HASH="ci-${VERSION_STR}"
-          fi
-          IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
+          VERSION_STR=${{ github.event.client_payload.version.str }}
+          IMAGE_TAG="${IMAGE_STAGE}-${VERSION_STR}"
           
-          VER_BUILD=$(date +%H%M)
-          VER_NUM="$(date +%y).$(date +%m).$(date +%d).${VER_BUILD:0:3}"
-          VER_INT=${VER_NUM//.}
-          echo "::notice::Version Timestamp=${VER_NUM}"
-          echo "VER_NUM=${VER_NUM}" >> $GITHUB_OUTPUT
-
           echo "::notice::Layer3: ${IMAGE_NAME}:${IMAGE_TAG}"
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          echo "VERSION_TAG=${IMAGE_TAG_HASH}" >> $GITHUB_OUTPUT
   #endjob build_cfg
 
   trigger-build:
@@ -99,8 +80,8 @@ jobs:
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
                   "FROM_STAGE=${{ env.FROM_LAYER }}",
-                  "VERSION_CI=${{ needs.build_cfg.outputs.VER_NUM }}",
-                  "VERSION_TAG=${{ needs.build_cfg.outputs.VERSION_TAG }}"
+                  "VERSION_CI=${{ github.event.client_payload.version.int }}",
+                  "VERSION_TAG=${{ github.event.client_payload.version.str }}"
                 ]
               },
               "deployment": {
@@ -115,11 +96,13 @@ jobs:
                     "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
                     "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
                   },
-                  "image": {
-                    "tag": "${{ needs.build_cfg.outputs.VERSION_TAG }}",
-                    "ver_num": "${{ needs.build_cfg.outputs.VER_NUM }}",
-                    "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
-                  }
+                  "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+                  "version": {
+                    "str": "${{ github.event.client_payload.version.str }}",
+                    "int": "${{ github.event.client_payload.version.int }}",
+                    "kind": "${{ github.event.client_payload.version.kind }}",
+                    "alt": "${{ github.event.client_payload.version.alt }}"
+                  }                  
                 }
               }
             }

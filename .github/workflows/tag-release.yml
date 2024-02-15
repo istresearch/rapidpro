@@ -1,0 +1,55 @@
+name: "Tag Release"
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build_cfg:
+    runs-on: ubuntu-latest
+    outputs:
+      VERSION_STR: ${{ steps.config_step.outputs.VERSION_STR }}
+      VERSION_INT: ${{ steps.config_step.outputs.VERSION_INT }}
+    permissions:
+      contents: write
+    steps:
+      - name: "Create Version STR"
+        id: config_step
+        run: |-
+          VER_BUILD=$(date +%H%M)
+          # limit to only first 3 chars
+          VER_BUILD=${VER_BUILD:0:3}
+          # 'strict' semver segments cannot start with 0
+          VERSION_NUM="$(date +%y).$(date +%-m).$(date +%-d).${VER_BUILD#0}"
+          # recreate as INT, leaving 0's in place; creates a 'reasonable' 32-bit signed int.
+          VERSION_INT="$(date +%y)$(date +%m)$(date +%d)${VER_BUILD}"
+          echo "VERSION_INT=${VERSION_INT}" >> $GITHUB_OUTPUT
+          VERSION_STR=${VERSION_NUM}
+          echo "VERSION_STR=${VERSION_STR}" >> $GITHUB_OUTPUT
+          echo "::notice::Version STR=${VERSION_STR}, INT=${VERSION_INT}"
+
+      - name: "Create Release"
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.config_step.outputs.VERSION_STR }}
+          release_name: ${{ steps.config_step.outputs.VERSION_STR }}
+          generate_release_notes: true
+          target_commitish: ${{ github.ref_name }}
+  #endjob build_cfg
+
+  build_image:
+    needs: [build_cfg]
+    uses: ./.github/workflows/build-img1-os-layer.yml
+    secrets: inherit
+    with:
+      repo_ref_type: ${{ github.ref_type }}
+      repo_ref_name: ${{ github.ref_name }}
+      version_str: ${{ needs.build_cfg.outputs.VERSION_STR }}
+      version_int: ${{ needs.build_cfg.outputs.VERSION_INT }}
+      version_kind: gold
+      alt_tags: ",ci-main"
+  #endjob build_image
