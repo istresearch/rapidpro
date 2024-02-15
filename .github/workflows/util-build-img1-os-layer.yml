@@ -1,60 +1,57 @@
-name: "Build (2 of 6) Lib Layer"
+name: "Utility - Build (1 of 6) Base OS Layer"
 
 on:
-  repository_dispatch:
-    types: [build_layer_lib, build_layer_os_error]
+  workflow_call:
+    inputs:
+      repo_ref_type:
+        description: 'ref_name is either a "tag" or a "branch"'
+        required: true
+        type: string
+      repo_ref_name:
+        description: 'Check out the repository with this ref name.'
+        required: true
+        type: string
+      version_str:
+        description: 'The version STR to use.'
+        required: true
+        type: string
+      version_int:
+        description: 'The version INT to use.'
+        required: true
+        type: string
+      version_kind:
+        description: 'The version KIND (alpha|dev|gold).'
+        required: true
+        type: string
+      alt_tags:
+        description: 'Additional image tags to use.'
+        required: false
+        type: string
 
 env:
-  IMAGE_STAGE: pylibs
-  DOCKERFILE2USE: docker/dfstage-pylibs.dockerfile
-  FROM_LAYER: ${{ github.event.client_payload.layer }}
-  FROM_LAYER_TAG: ${{ github.event.client_payload.layer_tag }}
+  IMAGE_STAGE: base
+  DOCKERFILE2USE: docker/dfstage-base.dockerfile
 
 jobs:
-  build_result:
-    name: "Build OS Layer Result [#${{ github.event.client_payload.run_number }}]"
-    runs-on: ubuntu-latest
-    env:
-      RUN_URL: "[Run #${{ github.event.client_payload.run_number }}](${{ github.event.client_payload.run_url }})"
-    steps:
-      - name: "Display Error Msg"
-        if: github.event.client_payload.error_msg != ''
-        run: |-
-          echo -e "::error::${RUN_URL}%0A${{ github.event.client_payload.error_msg }}"
-          exit 1
-      - name: "Display Success Msg"
-        if: github.event.client_payload.build_msg != ''
-        run: |-
-          echo -e "::notice::${RUN_URL}%0A${{ github.event.client_payload.build_msg }}"
-  #endjob build_result
-
   build_cfg:
-    needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
     outputs:
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
-      FLOW_EDITOR: ${{ steps.config_step.outputs.FLOW_EDITOR }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.client_payload.repo.ref_name }}
 
       - name: "Determine Tag To Use"
         id: config_step
         run: |-
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
-          echo "${FROM_LAYER#**:}" > base_tag.txt
           source scm/utils.sh
-          IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}" "base_tag.txt" "poetry.lock" "pyproject.toml" "package-lock.json" "package.json" "VERSION_FlowEditor")
+          IMAGE_TAG_HASH=$(CalcFileArgsMD5 "${DOCKERFILE2USE}")
           IMAGE_TAG="${IMAGE_STAGE}-${IMAGE_TAG_HASH}"
-          echo "::notice::Lib Layer: ${IMAGE_NAME}:${IMAGE_TAG}"
+          echo "::notice::OS Layer: ${IMAGE_NAME}:${IMAGE_TAG}"
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          
-          FLOW_EDITOR=$(cat VERSION_FlowEditor)
-          echo "FLOW_EDITOR=${FLOW_EDITOR#v}" >> $GITHUB_OUTPUT
   #endjob build_cfg
 
   check_image_exist:
@@ -107,8 +104,8 @@ jobs:
             {
               "repo": {
                 "name": "${{ github.repository }}",
-                "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
-                "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
+                "ref_name": "${{ github.ref_name }}",
+                "ref_type": "${{ github.ref_type }}"
               },
               "image": {
                 "dockerfile": "${{ env.DOCKERFILE2USE }}",
@@ -116,10 +113,6 @@ jobs:
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
-                  "FROM_STAGE=${{ env.FROM_LAYER }}",
-                  "FLOW_EDITOR=${{ needs.build_cfg.outputs.FLOW_EDITOR }}",
-                  "REPO_UN=%REPO_UN",
-                  "REPO_PW=%REPO_PW"
                 ]
               },
               "deployment": {
@@ -127,20 +120,20 @@ jobs:
               },
               "callback": {
                 "repository": "${{ github.repository }}",
-                "event_type": "build_layer_app",
-                "error_type": "build_layer_lib_error",
+                "event_type": "build_layer_lib",
+                "error_type": "build_layer_os_error",
                 "payload": {
                   "repo": {
-                    "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
-                    "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
+                    "ref_type": "${{ github.ref_type }}",
+                    "ref_name": "${{ github.ref_name }}"
                   },
                   "layer_tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                   "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                   "version": {
-                    "str": "${{ github.event.client_payload.version.str }}",
-                    "int": "${{ github.event.client_payload.version.int }}",
-                    "kind": "${{ github.event.client_payload.version.kind }}",
-                    "alt": "${{ github.event.client_payload.version.alt }}"
+                    "str": "${{ inputs.version_str }}",
+                    "int": "${{ inputs.version_int }}",
+                    "kind": "${{ inputs.version_kind }}",
+                    "alt": "${{ inputs.alt_tags }}"
                   }
                 }
               }
@@ -153,23 +146,23 @@ jobs:
     needs: [build_cfg, check_build_image]
     environment: default
     steps:
-      - name: "Trigger Next Stage"
+      - name: Trigger Next Stage
         uses: peter-evans/repository-dispatch@v3
         with:
-          event-type: build_layer_app
+          event-type: build_layer_lib
           client-payload: |-
             {
               "repo": {
-                "ref_type": "${{ github.event.client_payload.repo.ref_type }}",
-                "ref_name": "${{ github.event.client_payload.repo.ref_name }}"
+                "ref_type": "${{ github.ref_type }}",
+                "ref_name": "${{ github.ref_name }}"
               },
               "layer_tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
               "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}",
               "version": {
-                "str": "${{ github.event.client_payload.version.str }}",
-                "int": "${{ github.event.client_payload.version.int }}",
-                "kind": "${{ github.event.client_payload.version.kind }}",
-                "alt": "${{ github.event.client_payload.version.alt }}"
+                "str": "${{ inputs.version_str }}",
+                "int": "${{ inputs.version_int }}",
+                "kind": "${{ inputs.version_kind }}",
+                "alt": "${{ inputs.alt_tags }}"
               }
             }
   #endjob trigger-next-stage

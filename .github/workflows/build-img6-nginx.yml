@@ -8,8 +8,8 @@ on:
       - build_generic_error
 
 env:
-  VERSION_STR: ${{ github.event.client_payload.image.tag }}
-  VER_NUM: ${{ github.event.client_payload.image.ver_num }}
+  VERSION_STR: ${{ github.event.client_payload.version.str }}
+  VER_NUM: ${{ github.event.client_payload.version.int }}
   FROM_LAYER: ${{ github.event.client_payload.image.layer }}
 
 jobs:
@@ -34,27 +34,14 @@ jobs:
     needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
-    env:
-      DOCKERFILE2USE: "docker/nginx/nginx.dockerfile"
-      IMAGE_NAME: ${{ github.event.client_payload.image.name }}
     outputs:
-      DOCKERFILE2USE: ${{ steps.config_step.outputs.DOCKERFILE2USE }}
-      IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
-      IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
+      DOCKERFILE2USE: "docker/nginx/nginx.dockerfile"
+      IMAGE_NAME: "${{ github.event.client_payload.image.name }}"
+      IMAGE_TAG: "nginx-${{ github.event.client_payload.version.str }}"
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.client_payload.repo.ref_name }}
-
-      - name: "Config For Nginx Build"
+      - name: "no op"
         id: config_step
-        run: |-
-          echo "DOCKERFILE2USE=${DOCKERFILE2USE}" >> $GITHUB_OUTPUT
-
-          IMAGE_TAG=nginx-${VERSION_STR}
-          echo "::notice::Build: ${IMAGE_NAME}:${IMAGE_TAG}"
-          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
-          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+        run: ''
   #endjob build_cfg
 
   trigger-build:

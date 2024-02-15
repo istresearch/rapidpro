@@ -26,38 +26,19 @@ jobs:
     needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
-    env:
-      VERSION_STR: ${{ github.event.client_payload.image.tag }}
     outputs:
-      DOCKERFILE2USE: ${{ steps.config_step.outputs.DOCKERFILE2USE }}
-      IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
-      IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
+      DOCKERFILE2USE: "docker/final-generic.dockerfile"
+      IMAGE_NAME: "${{ github.repository_owner }}/rapidpro"
+      IMAGE_TAG: "${{ github.event.client_payload.version.str }}-generic"
       BUILD_FLAG: ${{ steps.config_step.outputs.BUILD_FLAG }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.client_payload.repo.ref_name }}
-
       - name: "Config For Generic Build"
         id: config_step
         env:
           REF_NAME: "${{ github.event.client_payload.repo.ref_name }}"
         run: |-
-          DOCKERFILE2USE="docker/final-generic.dockerfile"
-          echo "DOCKERFILE2USE=${DOCKERFILE2USE}" >> $GITHUB_OUTPUT
-
-          IMAGE_NAME=${{ github.repository_owner }}/rapidpro
-          IMAGE_TAG=${VERSION_STR}-generic
-          echo "::notice::Build: ${IMAGE_NAME}:${IMAGE_TAG}"
-          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
-          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          
-          if [[ "${{ github.event.client_payload.repo.ref_type }}" == "tag" ]]; then
+          if [[ "${{ github.event.client_payload.version.kind }}" == "gold" ]]; then
             BUILD_FLAG=1
-          elif [[ "${REF_NAME}" == "develop" ]]; then
-            BUILD_FLAG=1
-          elif [[ "${REF_NAME}" =~ dev[-\/].* ]]; then
-            BUILD_FLAG=0
           else
             BUILD_FLAG=0
           fi
@@ -91,8 +72,8 @@ jobs:
                 "build_args": [
                   "FROM_STAGE=${{ github.event.client_payload.image.layer }}",
                   "STATICFILES_FROM_IMAGE=${{ github.event.client_payload.image.pyfiles }}",
-                  "VERSION_CI=${{ github.event.client_payload.image.ver_num }}",
-                  "VERSION_TAG=${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                  "VERSION_CI=${{ github.event.client_payload.version.int }}",
+                  "VERSION_TAG=${{ github.event.client_payload.version.str }}"
                 ]
               },
               "deployment": {
@@ -109,9 +90,13 @@ jobs:
                   },
                   "image": {
                     "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
-                    "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
-                    "ver_num": "${{ github.event.client_payload.image.ver_num }}",
                     "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
+                  },
+                  "version": {
+                    "str": "${{ github.event.client_payload.version.str }}",
+                    "int": "${{ github.event.client_payload.version.int }}",
+                    "kind": "${{ github.event.client_payload.version.kind }}",
+                    "alt": "${{ github.event.client_payload.version.alt }}"
                   },
                   "deploy": 0
                 }
