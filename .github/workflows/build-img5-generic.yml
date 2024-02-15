@@ -26,10 +26,13 @@ jobs:
     needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
+    env:
+      ALT_TAG: ${{ github.event.client_payload.version.alt }}
     outputs:
       DOCKERFILE2USE: "docker/final-generic.dockerfile"
       IMAGE_NAME: "${{ github.repository_owner }}/rapidpro"
       IMAGE_TAG: "${{ github.event.client_payload.version.str }}-generic"
+      ALT_TAG: ${{ steps.config_step.outputs.ALT_TAG }}
       BUILD_FLAG: ${{ steps.config_step.outputs.BUILD_FLAG }}
     steps:
       - name: "Config For Generic Build"
@@ -37,6 +40,10 @@ jobs:
         env:
           REF_NAME: "${{ github.event.client_payload.repo.ref_name }}"
         run: |-
+          if [[ -n "${{ github.event.client_payload.version.alt }}" ]]; then
+            ALT_TAG=",${ALT_TAG#,}-generic"
+            echo "ALT_TAG=${ALT_TAG}" >> GITHUB_OUTPUT
+          fi
           if [[ "${{ github.event.client_payload.version.kind }}" == "gold" ]]; then
             BUILD_FLAG=1
           else
@@ -68,7 +75,7 @@ jobs:
                 "dockerfile": "${{ needs.build_cfg.outputs.DOCKERFILE2USE }}",
                 "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
-                "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+                "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}${{ needs.build_cfg.outputs.ALT_TAG }}",
                 "build_args": [
                   "FROM_STAGE=${{ github.event.client_payload.image.layer }}",
                   "STATICFILES_FROM_IMAGE=${{ github.event.client_payload.image.pyfiles }}",

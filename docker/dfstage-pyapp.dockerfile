@@ -13,7 +13,6 @@ COPY ./temba       temba
 COPY ./templates   templates
 COPY ./LICENSE     LICENSE
 COPY ./manage.py   manage.py
-COPY ./VERSION     VERSION
 
 RUN apt-get update && apt-get install -y -q --no-install-recommends \
 	rsync \

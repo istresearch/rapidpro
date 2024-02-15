@@ -58,7 +58,7 @@ jobs:
                 "dockerfile": "${{ needs.build_cfg.outputs.DOCKERFILE2USE }}",
                 "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
-                "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+                "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}${{ github.event.client_payload.version.alt }}",
                 "build_args": [
                   "FROM_STAGE=${{ github.event.client_payload.image.layer }}",
                   "STATICFILES_FROM_IMAGE=${{ github.event.client_payload.image.pyfiles }}",

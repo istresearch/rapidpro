@@ -34,14 +34,21 @@ jobs:
     needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
+    env:
+      ALT_TAG: ${{ github.event.client_payload.version.alt }}
     outputs:
       DOCKERFILE2USE: "docker/nginx/nginx.dockerfile"
-      IMAGE_NAME: "${{ github.event.client_payload.image.name }}"
+      IMAGE_NAME: ${{ github.event.client_payload.image.name }}
       IMAGE_TAG: "nginx-${{ github.event.client_payload.version.str }}"
+      ALT_TAG: ${{ steps.config_step.outputs.ALT_TAG }}
     steps:
-      - name: "no op"
+      - name: "Determine alt tags, if any"
         id: config_step
-        run: ''
+        run: |-
+          if [[ -n "${{ github.event.client_payload.version.alt }}" ]]; then
+            ALT_TAG=",nginx-${ALT_TAG#,}"
+            echo "ALT_TAG=${ALT_TAG}" >> GITHUB_OUTPUT
+          fi
   #endjob build_cfg
 
   trigger-build:
@@ -66,7 +73,7 @@ jobs:
                 "dockerfile": "${{ needs.build_cfg.outputs.DOCKERFILE2USE }}",
                 "arch_allowed": "amd64 arm64",
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
-                "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+                "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}${{ needs.build_cfg.outputs.ALT_TAG }}",
                 "build_args": [
                   "STATICFILES_FROM_IMAGE=${{ env.FROM_LAYER }}"
                 ]
@@ -76,7 +83,7 @@ jobs:
                 "k8s": [ {
                   "project": "pulse-engage-nginx",
                   "container": "nginx",
-                  "deploy_msg": ""
+                  "image": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
                 } ]
               },
               "callback": {
