@@ -333,6 +333,32 @@ span.glyph.icon-channel-bandwidth{
   height: 64px;
   width: 64px;
 }
+.pm-icon.icon-postmaster {
+  background: url("@{imgEngagePath}/postmaster.svg");
+  background-size: 1.6rem;
+  height: 1.6rem;
+  width: 1.6rem;
+  &:hover {
+    filter: invert(100%);
+  }
+}
+.active .pm-icon.icon-postmaster {
+  filter: invert(100%);
+}
+#title-area {
+  width: 100%;
+  .pm-icon.icon-postmaster {
+    filter: invert(100%);
+    height: 2.4rem;
+    width: 2.4rem;
+    background-size: 2.4rem;
+    margin-right: 1rem;
+  }
+  .search-input-area {
+    align-self: center;
+    margin-left: auto;
+  }
+}
 .icon-channel-postmaster:before {
   display: inline-block;
   content: ' ';
