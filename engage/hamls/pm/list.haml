@@ -79,7 +79,7 @@
                   {% get_label field %}
         %tbody
           - for obj in object_list
-            %tr.object-row{id: 'id-row-{{object.id}}', data-object-id:'{{ object.id }}', data-object-uuid:'{{ object.uuid }}',
+            %tr.object-row{id: 'id-row-{{obj.id}}', data-object-id:'{{ obj.id }}', data-object-uuid:'{{ obj.uuid }}',
                 class:'{% cycle "row2" "row1" %} {% if not obj.is_active and obj|is_smartobject %}inactive{% endif %}',
                 onclick:'handleRowClicked(event)'}
               -if actions

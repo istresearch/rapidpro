@@ -1,0 +1,137 @@
+-extends "smartmin/read.html"
+
+-load smartmin sms temba i18n humanize
+
+-block extra-style
+  {{block.super}}
+  :css
+    temba-button {
+      display: block;
+    }
+    li {
+      list-style-type: disc;
+    }
+    .data-field {
+      display: flex;
+      margin-bottom: 1rem;
+    }
+    .data-label {
+      font-weight: bolder;
+      width: 12%;
+    }
+    .data-value {
+      font-weight: none;
+    }
+    .button-success {
+      background: lightgreen;
+    }
+
+-block page-title
+  {{ page_title }}
+
+-block title-icon
+  %span.title-icon
+    .glyph.icon-inbox
+
+-block title
+  {{ device_name }}
+
+-block content
+  %hr
+  %br
+  %div.object
+    .data-field
+      .data-label
+        Address:
+      .data-value
+        {{ object.address }}
+    .data-field
+      .data-label
+        UUID:
+      .data-value
+        {{ object.uuid }}
+    .data-field
+      .data-label
+        Device ID:
+      .data-value
+        {{ device_id }}
+    .data-field
+      .data-label
+        ID:
+      .data-value
+        {{ object.id }}
+    .data-field
+      .data-label
+        Schemes:
+      .data-value
+        %div
+          {{ object.apps }}
+    %hr
+    .data-field
+      .data-label
+        Last Seen:
+      .data-value
+        {{ object.last_seen }}
+    .data-field
+      .data-label
+        Created:
+      .data-value
+        {{ object.created_on }}
+    .data-field
+      .data-label
+        Modified:
+      .data-value
+        {{ object.modified_on }}
+    .data-field
+      .data-label
+        Name:
+      .data-value
+        {{ object.name }}
+    .data-field
+      .data-label
+        Device Name:
+      .data-value
+        {{ device_name }}
+    .data-field
+      .data-label
+        Country:
+      .data-value
+        {{ object.country }}
+    .data-field
+      .data-label
+        Device:
+      .data-value
+        {{ object.device }}
+    .data-field
+      .data-label
+        OS:
+      .data-value
+        {{ object.os }}
+    .data-field
+      .data-label
+        Alert Email:
+      .data-value
+        {{ object.alert_email }}
+    .data-field
+      .data-label
+        Role:
+      .data-value
+        {{ object.role }}
+    .data-field
+      .data-label
+        bod(?):
+      .data-value
+        {{ object.bod }}
+    .data-field
+      .data-label
+        TPS (Transactions Per Second):
+      .data-value
+        {{ object.tps }}
+    .data-field
+      .data-label
+        config:
+      .data-value
+        {{ object.config }}
+
+-block extra-script
+  {{ block.super }}
