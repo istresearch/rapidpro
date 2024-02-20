@@ -19,11 +19,10 @@ from temba.utils import analytics
 
 from ...models import Org
 
-from . import postoffice, PostmasterType
+from . import postoffice
 
 from ...models import Channel
 from ...views import (
-    ALL_COUNTRIES,
     BaseClaimNumberMixin,
     ClaimViewMixin,
     UpdateChannelForm,
@@ -36,7 +35,6 @@ from engage.utils.strings import is_empty
 logger = logging.getLogger(__name__)
 
 class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
-    code = PostmasterType.code
     uuid = None
     extra_links = None
     pm_app_url: str = getattr(settings, "POST_MASTER_DL_URL", '')
@@ -48,7 +46,7 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         device_name = forms.CharField(label="You must provide a Device Name", help_text=_("Postmaster Device Name"))
         device_id = forms.CharField(label="You must provide a Device ID", help_text=_("Postmaster Device ID"))
         chat_mode = forms.ChoiceField(label="Postmaster Chat Mode", help_text=_("Postmaster Chat Mode"),
-                                         choices=CHAT_MODE_CHOICES)
+                                      choices=CHAT_MODE_CHOICES)
         claim_code = forms.CharField(label="Claim Code", help_text=_("Claim Code"))
         org_id = forms.IntegerField(label="Org ID", help_text=_("Org ID"))
 
@@ -72,16 +70,20 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
 
             if org_id is not None:
                 channel = None
-                channels = Channel.objects.filter(channel_type=ClaimView.code, is_active=True)
+                channels = Channel.objects.filter(channel_type=self.channel_type, is_active=True, org=org_id,
+                                                  config__contains=f'"device_id": "{device_id}"')
                 for ch in channels:
-                    if ch.config.get('chat_mode') == chat_mode and ch.config.get('device_id') == device_id and \
-                            ch.org.id == org_id:
+                    if ch.config.get('chat_mode') == chat_mode:
                         channel = ch
                         break
 
                 if channel is not None:
-                    raise ValidationError(_("A chat mode for {} already exists for the org with ID {}"
-                                            .format(dict(self.CHAT_MODE_CHOICES)[chat_mode], org_id)))
+                    raise ValidationError(
+                        _("A PM chat mode for {} already exists for the device {} and org ID {}".format(
+                            dict(self.CHAT_MODE_CHOICES)[chat_mode], device_id, org_id
+                        ))
+                    )
+                #endif
 
             return self.cleaned_data
         #enddef clean
@@ -93,16 +95,10 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         self.client = None
 
     def get_search_countries_tuple(self):
-        if self.channel_type.code == self.code:
-            return ["US"]
-        else:
-            return ALL_COUNTRIES
+        return ["US"]
 
     def get_supported_countries_tuple(self):
-        if self.channel_type.code == self.code:
-            return ["US"]
-        else:
-            return ALL_COUNTRIES
+        return ["US"]
 
     def get_search_url(self):
         return ""
@@ -160,7 +156,8 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         return context
 
     def get_success_url(self):
-        return reverse("channels.channel_read", args=[self.uuid])
+        return reverse("pm.pm_read", args=[self.uuid])
+    #enddef get_success_url
 
     form_class = Form
     submit_button_name = "Save"
@@ -175,8 +172,11 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         claim_code = form.cleaned_data["claim_code"]
         org_id = form.cleaned_data["org_id"]
         try:
-            channel = self.create_channel(self.request.user, org_id, Channel.ROLE_SEND + Channel.ROLE_CALL, device_id,
-                                          device_name, chat_mode, claim_code)
+            roles = Channel.ROLE_SEND + Channel.ROLE_CALL + Channel.ROLE_RECEIVE \
+                if chat_mode != 'PM' else Channel.ROLE_USSD
+            channel = self.create_channel(self.request.user, org_id, roles,
+                device_id, device_name, chat_mode, claim_code,
+            )
             self.uuid = channel.uuid
             return HttpResponseRedirect(self.get_success_url())
         except Exception as ex:
@@ -194,7 +194,7 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         return None
     #enddef claim_number
 
-    def create_channel(self, user, org_id, role, device_id, device_name, chat_mode, claim_code):
+    def create_channel(self, user, org_id, roles, device_id, device_name, chat_mode, claim_code):
         org = Org.objects.filter(id=org_id).first()
         self.uuid = uuid4()
         callback_domain = org.get_brand_domain()
@@ -212,86 +212,25 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         name_with_scheme = f'{device_name} [{schemes[0]}]'
 
         channel = Channel.create(
-            org, user, None, self.code, name=name_with_scheme, address=device_id, role=role, config=config,
-            uuid=self.uuid, schemes=schemes
+            org, user, None, self.channel_type, name=name_with_scheme, address=device_id,
+            role=roles, config=config, uuid=self.uuid, schemes=schemes
         )
 
         analytics.track(user, "temba.channel_claim_postmaster", properties=dict(number=device_id))
 
         return channel
     #enddef create_channel
+
 #endclass ClaimView
 
 
 class UpdatePostmasterForm(UpdateChannelForm):
-    CHAT_MODE_CHOICES = getattr(settings, "CHAT_MODE_CHOICES", ())
-
-    def __init__(self, *args, **kwargs):
-        super(UpdatePostmasterForm, self).__init__(*args, **kwargs)
 
     class Meta(UpdateChannelForm.Meta):
         fields = "name", "address", "schemes", "tps"
         readonly = ("address", "schemes")
         helps = {"schemes": _("The Chat Mode that Postmaster will operate under.")}
         labels = {"schemes": _("Chat Mode")}
-
-        chat_mode_choices = []
-        for value, label in ClaimView.Form.CHAT_MODE_CHOICES:
-            prefix = 'PM_' if value != 'SMS' else ''
-            chat_mode_choices.append((f'{prefix}{label}'.lower(), label))
-        #endfor
-        chat_mode_choices = tuple(chat_mode_choices)
     #endclass Meta
-
-    def clean(self):
-        self._validate_unique = True
-        config = self.object.config
-        scheme = None
-        if hasattr(self.cleaned_data, 'scheme'):
-            scheme = self.cleaned_data['schemes'][0]
-        #endif
-        channel = self.object
-        if channel.org is not None and scheme is not None:
-            channels = Channel.objects.filter(channel_type=ClaimView.code, is_active=True, address=config['device_id'])
-            for ch in channels:
-                if ch.config.get('chat_mode') == scheme and ch.org.id == channel.org.id:
-                    if not ch.__eq__(channel):
-                        raise ValidationError(
-                            _(f"A chat mode for {scheme} already exists for the {channel.org.name} org")
-                        )
-                    #endif
-                    break
-                #endif
-            #endfor
-        #endif
-        return self.cleaned_data
-    #enddef clean
-
-    def save(self, commit=True):
-        config = self.object.config
-
-        if hasattr(self.cleaned_data, 'schemes'):
-            config[Channel.CONFIG_CHAT_MODE] = self.cleaned_data['schemes'][0]
-
-        import temba.contacts.models as Contacts
-        prefix = 'PM_'
-        pm_chat_mode = config['chat_mode']
-
-        if len(pm_chat_mode.split('pm_')) > 1:
-            pm_chat_mode = pm_chat_mode.split('pm_')[1]
-            for value, label in ClaimView.Form.CHAT_MODE_CHOICES:
-                if label.lower() == pm_chat_mode:
-                    pm_chat_mode = value
-
-        if pm_chat_mode.upper() == 'SMS':
-            pm_chat_mode = 'SMS'
-            prefix = ''
-
-        schemes = [
-            getattr(ContactsURN, f'{prefix}{dict(ClaimView.Form.CHAT_MODE_CHOICES)[pm_chat_mode]}_SCHEME'.upper()),
-        ]
-        self.object.schemes = schemes
-        return super().save(commit=commit)
-    #enddef save
 
 #endclass UpdatePostmasterForm
