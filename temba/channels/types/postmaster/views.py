@@ -6,6 +6,7 @@ import traceback
 from uuid import uuid4
 
 from django import forms
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.http import HttpResponseRedirect, HttpResponseServerError
 from django.urls import reverse
@@ -13,14 +14,12 @@ from django.utils.translation import gettext_lazy as _
 
 from smartmin.views import SmartFormView
 
-from temba import settings
 from temba.contacts.models import URN as ContactsURN
 from temba.utils import analytics
 
 from ...models import Org
 
-from . import postoffice
-from engage.channels.types.postmaster.apks import APIsForDownloadPostmaster
+from . import postoffice, PostmasterType
 
 from ...models import Channel
 from ...views import (
@@ -36,7 +35,7 @@ from engage.utils.strings import is_empty
 logger = logging.getLogger(__name__)
 
 class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
-    code = "PSM"
+    code = PostmasterType.code
     uuid = None
     extra_links = None
     pm_app_url: str = getattr(settings, "POST_MASTER_DL_URL", '')

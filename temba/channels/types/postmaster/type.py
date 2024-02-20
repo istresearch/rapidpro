@@ -80,7 +80,7 @@ class UpdatePostmasterForm(UpdateChannelForm):
 
 class PostmasterType(ChannelType):
     """
-    An IST Postmaster channel
+    Postmaster channel
     """
 
     code = "PSM"
@@ -91,7 +91,7 @@ class PostmasterType(ChannelType):
     name = "Postmaster"
     icon = "icon-tembatoo-postmaster"
     claim_blurb = _(
-        """Use Postmaster compatible android devices with Pulse Engage"""
+        """Use Postmaster compatible Android devices"""
     )
     claim_view = ClaimView
 

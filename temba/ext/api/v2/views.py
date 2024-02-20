@@ -18,6 +18,7 @@ from temba.api.v2.views_base import (
 from temba.channels.models import Channel
 from temba.api.models import APIPermission
 from temba.api.v2.serializers import (ReadSerializer, WriteSerializer)
+from temba.channels.types.postmaster import PostmasterType
 from temba.orgs.models import Org
 
 from engage.api.permissions import SSLorLocalTrafficPermission, SiteAdminPermission
@@ -89,7 +90,7 @@ class ExtChannelWriteSerializer(WriteSerializer):
         type_from_code = Channel.get_type_from_code(channel_type)
         type_from_code.claim_view.request = self.context['request']
 
-        if channel_type == "PSM" and len(data.get("uuid", "")) > 0:
+        if channel_type == PostmasterType.code and len(data.get("uuid", "")) > 0:
             channels = Channel.objects.filter(uuid=data.get("uuid"), is_active=True)
             if len(channels) < 0:
                 raise InvalidQueryError(_("Invalid channel UUID provided"))
