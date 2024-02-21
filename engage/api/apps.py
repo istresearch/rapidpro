@@ -24,10 +24,10 @@ class AppConfig(BaseAppConfig):
         from .support import APITokenAuthenticationOverride
         APITokenAuthenticationOverride.applyPatches()
 
-        from .views import BroadcastsEndpointOverrides
+        from .endpoint.broadcasts import BroadcastsEndpointOverrides
         BroadcastsEndpointOverrides.applyPatches()
 
-        from .views import ContactsEndpointOverrides
+        from .endpoint.contacts import ContactsEndpointOverrides
         ContactsEndpointOverrides.applyPatches()
     #enddef ready
 

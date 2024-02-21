@@ -16,14 +16,7 @@ from django.utils.encoding import force_bytes
 from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
 
-from engage.utils.class_overrides import MonkeyPatcher
-
-from temba.api.v2.views import (
-    BroadcastsEndpoint,
-    ContactsEndpoint,
-)
 from temba.channels.models import Channel
-from temba.msgs.models import Broadcast
 
 
 class AttachmentsEndpoint(View):
@@ -38,6 +31,7 @@ class AttachmentsEndpoint(View):
     @csrf_exempt
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
+    #enddef dispatch
 
     def post(self, request, format=None, *args, **kwargs):
         response = self.handle(request)
@@ -45,6 +39,7 @@ class AttachmentsEndpoint(View):
         response.accepted_media_type = "application/json"
         response.renderer_context = {}
         return response
+    #enddef post
 
     def handle(self, request):
         try:
@@ -97,42 +92,6 @@ class AttachmentsEndpoint(View):
             data = {'error': str(e)}
 
         return Response(data, status=status.HTTP_400_BAD_REQUEST)
+    #enddef handle
+
 #endclass AttachmentsEndpoint
-
-
-class BroadcastsEndpointOverrides(MonkeyPatcher):
-    patch_class = BroadcastsEndpoint
-
-    @staticmethod
-    def on_apply_patches(under_cls) -> None:
-        # Django rest_framework API doc rendering in use is the BrowsableAPIRenderer which
-        # does not allow dynamic docstrings to render variables. MonkeyPatcher to the rescue!
-        under_cls.__doc__ = under_cls.__doc__.replace(
-            '* **text** - the text of the message to send (string, limited to 640 characters)',
-            f'* **text** - the text of the message to send (string, limited to {Broadcast.MAX_TEXT_LEN} characters)',
-        ).replace(
-            '* **text** - the message text (string or translations object)',
-            '* **text** - a dict of strings with a key of the first org language, if defined, else "base". NOTE: the key is the [ISO-639-3](https://en.wikipedia.org/wiki/List_of_ISO_639-3_codes) code for the language.',
-        ).replace(
-            '"text": "hello world",',
-            '"text": {"eng": "hello world"},',
-        )
-    #enddef on_apply_patches
-
-#endclass BroadcastsEndpointOverrides
-
-
-class ContactsEndpointOverrides(MonkeyPatcher):
-    patch_class = ContactsEndpoint
-
-    @staticmethod
-    def on_apply_patches(under_cls) -> None:
-        # Django rest_framework API doc rendering in use is the BrowsableAPIRenderer which
-        # does not allow dynamic docstrings to render variables. MonkeyPatcher to the rescue!
-        under_cls.__doc__ = under_cls.__doc__.replace(
-            '* **groups**',
-            f"* **channels** - the contact's set channels by URN\n     * **groups**",
-        )
-    #enddef on_apply_patches
-
-#endclass ContactsEndpointOverrides
