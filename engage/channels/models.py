@@ -50,7 +50,7 @@ class ChannelOverrides(MonkeyPatcher):
         return self.Channel_claim(org=org, user=user, phone=phone)
     #enddef claim
 
-    def release(self, user, *, trigger_sync: bool = True, check_dependent_flows: bool = True):
+    def release(self: Channel, user, *, trigger_sync: bool = True, check_dependent_flows: bool = True):
         if check_dependent_flows:
             dependent_flows_count = self.dependent_flows.count()
             if dependent_flows_count > 0:
@@ -59,6 +59,21 @@ class ChannelOverrides(MonkeyPatcher):
         #endif
         return self.Channel_release(user, trigger_sync=trigger_sync)
     #enddef release
+
+    @property
+    def apps(self: Channel):
+        return self.config['apps'] if 'apps' in self.config else ''
+    #enddef apps
+
+    @property
+    def device_id(self: Channel):
+        return self.config['device_id'] if 'device_id' in self.config else ''
+    #enddef device_id
+
+    @property
+    def device_name(self: Channel):
+        return self.config['device_name'] if 'device_name' in self.config else ''
+    #enddef device_name
 
 #endclass ChannelOverrides
 
