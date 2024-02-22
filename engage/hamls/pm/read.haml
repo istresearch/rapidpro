@@ -25,6 +25,11 @@
     .button-success {
       background: lightgreen;
     }
+    .data-value-uuid {
+      font-variant: all-small-caps;
+      font-size: large;
+    }
+
 
 -block page-title
   {{ page_title }}
@@ -48,7 +53,7 @@
     .data-field
       .data-label
         UUID:
-      .data-value
+      .data-value.data-value-uuid
         {{ object.uuid }}
     .data-field
       .data-label
@@ -114,7 +119,7 @@
         {{ object.alert_email }}
     .data-field
       .data-label
-        Role:
+        Roles:
       .data-value
         {{ object.role }}
     .data-field
@@ -124,7 +129,7 @@
         {{ object.bod }}
     .data-field
       .data-label
-        TPS (Transactions Per Second):
+        TPS:
       .data-value
         {{ object.tps }}
     .data-field
