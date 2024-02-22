@@ -34,6 +34,11 @@
       background-position: 98% 50%;
     }
 
+    #pm_devices .value-uuid {
+      font-variant: all-small-caps;
+      font-size: large;
+    }
+
 -block page-top
   #title-area.inline-flex.flex-column
     -block title
@@ -61,7 +66,7 @@
 
   - block table
     .table-scroll.shadow.rounded-lg.overflow-x-auto
-      %table.list.object-list.lined.selectable
+      %table#pm_devices.list.object-list.lined.selectable
         %thead
           %tr
             - if actions
