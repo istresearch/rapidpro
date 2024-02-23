@@ -1,10 +1,6 @@
-from django import forms
-from django.conf import settings
-from django.utils.translation import gettext_lazy as _
-
+from engage.flows.view.forms import FlowChannelsFormMixin
 from engage.utils.class_overrides import MonkeyPatcher
 
-from temba.channels.models import Channel
 from temba.flows.models import Flow
 from temba.flows.views import FlowCRUDL
 from temba.utils.fields import (
@@ -15,7 +11,7 @@ from temba.utils.fields import (
 class FlowViewCreate(MonkeyPatcher):
     patch_class = FlowCRUDL.Create
 
-    class CreateFlowForm(FlowCRUDL.Create.Form):
+    class CreateFlowForm(FlowChannelsFormMixin, FlowCRUDL.Create.Form):
 
         # Tricky to include this as the "default" changes based on Flow type which is another widget
         # expires_after_minutes = forms.ChoiceField(
@@ -26,19 +22,7 @@ class FlowViewCreate(MonkeyPatcher):
         #     widget=SelectWidget(attrs={"widget_only": False}),
         # )
 
-        flow_channels = forms.MultipleChoiceField(
-            label=_("Use Specific Channels"),
-            #help_text=_("Choose the channels for your flow"),
-            choices=settings.CHAT_MODE_CHOICES,
-            widget=forms.CheckboxSelectMultiple(),
-        )
-
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.fields['flow_channels'].choices = (
-                Channel.objects.filter(is_active=True, org=self.org).order_by('name').values_list('uuid', 'name')
-            )
-        #enddef init
+        flow_channels = FlowChannelsFormMixin.flow_channels
 
         class Meta:
             model = Flow

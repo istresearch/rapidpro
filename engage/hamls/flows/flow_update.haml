@@ -1,0 +1,26 @@
+-extends 'includes/modax.haml'
+-load smartmin i18n
+
+-block fields
+
+  -render_field 'name'
+
+  .keywords(class="{% if form.flow_type.value == 'B' or form.flow_type.value == 'S' %}hidden{%endif%}")
+    -render_field 'keyword_triggers'
+
+  .flex.items-start
+    -if form.fields.expires_after_minutes
+      .w-half.flex.flex-col
+        -render_field 'expires_after_minutes'
+
+    -if form.fields.ivr_retry
+      .flex-grow.flex-col
+        -render_field 'ivr_retry'
+
+  -if form.fields.ignore_triggers
+    .flex.flex-col
+      -render_field 'ignore_triggers'
+
+  -if form.fields.flow_channels
+    .flex.flex-col{style:"overflow-y: auto;max-height: 8em;"}
+      -render_field 'flow_channels'
