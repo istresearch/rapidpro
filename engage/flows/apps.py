@@ -12,6 +12,9 @@ class AppConfig(BaseAppConfig):
         from .models import FlowOverrides
         FlowOverrides.applyPatches()
 
+        from .view.create import CreateFlowOverrides
+        CreateFlowOverrides.applyPatches()
+
         from .views import FlowCRUDLOverrides
         FlowCRUDLOverrides.applyPatches()
 
