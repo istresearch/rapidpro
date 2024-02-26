@@ -12,6 +12,7 @@ class FlowChannelsFormMixin:
         #help_text=_("Choose the channels for your flow"),
         choices=settings.CHAT_MODE_CHOICES,
         widget=forms.CheckboxSelectMultiple(),
+        required=False,
     )
 
     def __init__(self, *args, **kwargs):
