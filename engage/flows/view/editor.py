@@ -4,8 +4,11 @@ from django.core.handlers.wsgi import WSGIRequest
 from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.middleware import RedirectTo
 
+from temba.flows.views import FlowCRUDL
 
-class EditorOverrides(MonkeyPatcher):
+
+class FlowViewEditor(MonkeyPatcher):
+    patch_class = FlowCRUDL.Editor
 
     def has_permission(self, request: WSGIRequest, *args, **kwargs):
         user = self.get_user()
@@ -31,4 +34,4 @@ class EditorOverrides(MonkeyPatcher):
         #endif
     #enddef
 
-#endclass EditorOverrides
+#endclass FlowViewEditor
