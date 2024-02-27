@@ -850,7 +850,11 @@ class Flow(LegacyUUIDMixin, TembaModel, DependencyMixin):
             is_system_rev = False
 
         with transaction.atomic():
-            new_metadata = self.metadata | Flow.get_metadata(flow_info)
+            new_metadata = Flow.get_metadata(flow_info)
+
+            # IVR retry is the only value in metadata that doesn't come from flow inspection
+            if self.metadata and Flow.METADATA_IVR_RETRY in self.metadata:
+                new_metadata[Flow.METADATA_IVR_RETRY] = self.metadata[Flow.METADATA_IVR_RETRY]
 
             # update our flow fields
             self.base_language = definition.get(Flow.DEFINITION_LANGUAGE, None)

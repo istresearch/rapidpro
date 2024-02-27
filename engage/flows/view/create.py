@@ -57,7 +57,7 @@ class FlowViewCreate(MonkeyPatcher):
             base_language=obj.base_language,
             create_revision=True,
             ignore_triggers=obj.ignore_triggers,
-            metadata={'channels': self.form.cleaned_data["flow_channels"]},
+            channels=self.form.cleaned_data["flow_channels"],
         )
     #enddef save
 
