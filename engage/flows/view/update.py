@@ -49,4 +49,10 @@ class FlowViewUpdate(MonkeyPatcher):
         return obj
     #enddef pre_save
 
+    def post_save(self: FlowCRUDL.Update, obj):
+        obj = self.Update_post_save(obj)
+        obj.save_revision(self.get_user(), obj.get_definition())
+        return obj
+    #enddef post_save
+
 #endclass FlowViewUpdate
