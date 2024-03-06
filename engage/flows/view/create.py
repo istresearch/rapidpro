@@ -22,6 +22,7 @@ class FlowViewCreate(MonkeyPatcher):
         #     widget=SelectWidget(attrs={"widget_only": False}),
         # )
 
+        flow_schemes = FlowChannelsFormMixin.flow_schemes
         flow_channels = FlowChannelsFormMixin.flow_channels
 
         class Meta:

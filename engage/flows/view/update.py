@@ -12,6 +12,7 @@ class FlowViewUpdate(MonkeyPatcher):
     patch_class = FlowCRUDL.Update
 
     class UpdateFlowMsgForm(FlowChannelsFormMixin, FlowCRUDL.Update.MessagingForm):
+        flow_schemes = FlowChannelsFormMixin.flow_schemes
         flow_channels = FlowChannelsFormMixin.flow_channels
 
         class Meta:

@@ -22,5 +22,61 @@
       -render_field 'ignore_triggers'
 
   -if form.fields.flow_channels
-    .flex.flex-col{style:"overflow-y: auto;max-height: 8em;"}
-      -render_field 'flow_channels'
+    #flow_channel_pickers.flex.items-start
+      .mr-10
+        -render_field 'flow_schemes'
+      .flex-grow
+        -render_field 'flow_channels'
+
+-block modal-script
+  {{block.super}}
+
+  :css
+    .control-group.field_flow_channels #id_flow_channels,
+    .control-group.field_flow_schemes #id_flow_schemes {
+      overflow-y: auto;
+      max-height: 12em;
+    }
+
+  :javascript
+    //# sourceURL=update-flow.js
+    var modalBody = document.querySelector("#edit-flow").shadowRoot;
+    var flowSchemesCheckboxes = modalBody.querySelectorAll("input[type=checkbox][name=flow_schemes]");
+    var flowChannelsCheckboxes = modalBody.querySelectorAll("input[type=checkbox][name=flow_channels]");
+    var flowChannelFilter = [];
+    for (let idxSchemes = 0; idxSchemes < flowSchemesCheckboxes.length; idxSchemes++) {
+      flowSchemesCheckboxes[idxSchemes].addEventListener("change", function(e) {
+        let uuid_list = e.target.value.split(',');
+        if ( e.target.checked ) {
+          flowChannelFilter = flowChannelFilter.concat(uuid_list);
+          for (let i = 0; i < flowChannelsCheckboxes.length; i++) {
+            let channel_uuid = flowChannelsCheckboxes[i].value;
+            if ( flowChannelFilter.includes(channel_uuid) ) {
+              flowChannelsCheckboxes[i].closest("div").classList.remove("hidden");
+            } else {
+              flowChannelsCheckboxes[i].checked = false;
+              flowChannelsCheckboxes[i].closest("div").classList.add("hidden");
+            }
+          }
+        } else {
+          flowChannelFilter = flowChannelFilter.filter( ( el ) => !uuid_list.includes( el ) );
+          for (let i = 0; i < flowChannelsCheckboxes.length; i++) {
+            let channel_uuid = flowChannelsCheckboxes[i].value;
+            if ( flowChannelFilter.includes(channel_uuid) || flowChannelFilter.length == 0 ) {
+              flowChannelsCheckboxes[i].closest("div").classList.remove("hidden");
+            } else {
+              flowChannelsCheckboxes[i].checked = false;
+              flowChannelsCheckboxes[i].closest("div").classList.add("hidden");
+            }
+          }
+        }
+      });
+    }
+    //initial channel list
+    if ({% if form.flow_channels.value %}true{% else %}false{% endif %}) {
+      for (let i = 0; i < flowChannelsCheckboxes.length; i++) {
+        if ( !flowChannelsCheckboxes[i].checked ) {
+          flowChannelsCheckboxes[i].closest("div").classList.add("hidden");
+        }
+      }
+    }
