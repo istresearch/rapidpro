@@ -8,7 +8,7 @@ class FlowChannelsFormMixin:
 
     flow_schemes = forms.MultipleChoiceField(
         label=_("Channel Schemes"),
-        #help_text=_("?"),
+        help_text=_("Only filters the channel choices ↗"),
         choices=('CHANGE_ME', '1'),
         widget=forms.CheckboxSelectMultiple(),
         required=False,
@@ -16,7 +16,7 @@ class FlowChannelsFormMixin:
 
     flow_channels = forms.MultipleChoiceField(
         label=_("Use Specific Channels"),
-        #help_text=_("Choose the channels for your flow"),
+        help_text=_("Restrict the channels used for this flow"),
         choices=('CHANGE_ME', '1'),
         widget=forms.CheckboxSelectMultiple(),
         required=False,

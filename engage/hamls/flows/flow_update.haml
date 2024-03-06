@@ -37,6 +37,25 @@
       overflow-y: auto;
       max-height: 12em;
     }
+    .control-label {
+      font-family: var(--font-family);
+      padding: 0px;
+      margin-left: 4px;
+      display: block;
+      font-weight: 400;
+      font-size: var(--label-size);
+      letter-spacing: 0.05em;
+      line-height: normal;
+      color: rgb(119, 119, 119);
+    }
+    .help-block {
+      font-size: var(--help-text-size);
+      line-height: normal;
+      color: var(--color-text-help);
+      margin-left: var(--help-text-margin-left);
+      transition: opacity 100ms ease-in-out 0s, margin-top 200ms ease-in-out 0s;
+      pointer-events: none;
+    }
 
   :javascript
     //# sourceURL=update-flow.js
