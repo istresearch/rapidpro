@@ -32,7 +32,7 @@ class FlowViewEditor(MonkeyPatcher):
         # use str() to avoid "TypeError: Object of type __proxy__ is not JSON serializable"
         return [
             {
-                "scheme": str(mode),
+                "scheme": str(x.scheme),
                 "name": str(x.urn_name),
                 "path": str(x.label),
             } for mode, x in PM_CHANNEL_MODES.items()
