@@ -47,7 +47,7 @@ jobs:
         run: |-
           if [[ -n "${{ github.event.client_payload.version.alt }}" ]]; then
             ALT_TAG=",nginx-${ALT_TAG#,}"
-            echo "ALT_TAG=${ALT_TAG}" >> GITHUB_OUTPUT
+            echo "ALT_TAG=${ALT_TAG}" >> $GITHUB_OUTPUT
           fi
   #endjob build_cfg
 

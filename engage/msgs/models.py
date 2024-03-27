@@ -34,7 +34,7 @@ class MsgModelOverride(MonkeyPatcher):
         self.save(update_fields=("visibility", "modified_on"))
     #enddef restore
 
-    flag_id_regex = re.compile('\[FLAG-(\d+)]')
+    flag_id_regex = re.compile('\[FLAG_(\d+)]')
 
     @property
     def flag_id(self: Msg):

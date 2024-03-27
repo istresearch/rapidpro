@@ -156,7 +156,7 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         return context
 
     def get_success_url(self):
-        return reverse("pm.pm_read", args=[self.uuid])
+        return reverse("pm.postmaster_read", args=[self.uuid])
     #enddef get_success_url
 
     form_class = Form
