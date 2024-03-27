@@ -15,6 +15,9 @@ class AppConfig(BaseAppConfig):
         from .serializers import FlowStartWriteSerializerOverride
         FlowStartWriteSerializerOverride.applyPatches()
 
+        from .serializers import ContactReadSerializerOverrides
+        ContactReadSerializerOverrides.applyPatches()
+
         from .exceptions import APIExceptionOverride
         APIExceptionOverride.applyPatches()
 
@@ -23,6 +26,9 @@ class AppConfig(BaseAppConfig):
 
         from .views import BroadcastsEndpointOverrides
         BroadcastsEndpointOverrides.applyPatches()
+
+        from .views import ContactsEndpointOverrides
+        ContactsEndpointOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig
