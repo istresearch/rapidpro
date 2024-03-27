@@ -3,6 +3,7 @@ from unittest.mock import patch
 from django.urls import reverse
 
 from temba.channels.models import Channel
+from temba.channels.types.postmaster import PostmasterType
 from temba.tests import TembaTest
 from twilio.request_validator import RequestValidator
 
@@ -56,7 +57,7 @@ class PostmasterTypeTest(TembaTest):
         # make channel support sms by clearing both applications
         postmaster_channel.role = Channel.ROLE_SEND + Channel.ROLE_RECEIVE + Channel.ROLE_ANSWER
         postmaster_channel.save()
-        self.assertEqual("PSMS", postmaster_channel.channel_type)
+        self.assertEqual(PostmasterType.code, postmaster_channel.channel_type)
 
 
 class MockRequestValidator(RequestValidator):

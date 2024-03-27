@@ -59,6 +59,7 @@ INSTALLED_APPS = (
         'engage.mailroom',
         'engage.msgs',
         'engage.orgs',
+        'engage.pm',
         'engage.schedules',
         'engage.triggers',
         'engage.utils',
@@ -69,6 +70,7 @@ APP_URLS += (
     'temba.ext.urls',
     'engage.api.urls',
     'engage.auth.urls',
+    'engage.pm.urls',
     'engage.utils.user_guide',
 )
 HANDLER_403 = 'engage.utils.views.permission_denied'

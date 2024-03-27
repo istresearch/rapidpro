@@ -96,6 +96,25 @@ h5.contact-signup {
   color: rgba(255, 255, 255, var(--tw-text-opacity));
 }
 
+.chevron-bar-left {
+  background-image: url('@{imgEngagePath}/chevron-bar-left.svg');
+}
+.chevron-bar-right {
+  background-image: url('@{imgEngagePath}/chevron-bar-right.svg');
+}
+.chevron-left {
+  background-image: url('@{imgEngagePath}/chevron-left.svg');
+}
+.chevron-right {
+  background-image: url('@{imgEngagePath}/chevron-right.svg');
+}
+.chevron-double-left {
+  background-image: url('@{imgEngagePath}/chevron-double-left.svg');
+}
+.chevron-double-right {
+  background-image: url('@{imgEngagePath}/chevron-double-right.svg');
+}
+
 // +++++ BEGIN SPINNER
 
 // colors
@@ -332,6 +351,32 @@ span.glyph.icon-channel-bandwidth{
   background-size: 64px 64px;
   height: 64px;
   width: 64px;
+}
+.pm-icon.icon-postmaster {
+  background: url("@{imgEngagePath}/postmaster.svg");
+  background-size: 1.6rem;
+  height: 1.6rem;
+  width: 1.6rem;
+  &:hover {
+    filter: invert(100%);
+  }
+}
+.active .pm-icon.icon-postmaster {
+  filter: invert(100%);
+}
+#title-area {
+  width: 100%;
+  .pm-icon.icon-postmaster {
+    filter: invert(100%);
+    height: 2.4rem;
+    width: 2.4rem;
+    background-size: 2.4rem;
+    margin-right: 1rem;
+  }
+  .search-input-area {
+    align-self: center;
+    margin-left: auto;
+  }
 }
 .icon-channel-postmaster:before {
   display: inline-block;

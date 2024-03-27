@@ -1,0 +1,144 @@
+-extends "smartmin/list.html"
+-load smartmin i18n static compress pm
+
+-block extra-style
+  :css
+    tr:nth-child(even) {background: #FFF}
+    .button-light{
+      padding-bottom: 8px;
+      padding-top: 8px;
+      padding-left: 18px;
+      padding-right: 18px;
+    }
+
+    .list_channels_channel {
+      width:100%;
+    }
+    tr {
+      text-align: left;
+    }
+    table .headerSortUp, table .headerSortDown {
+      background-color: rgba(141, 192, 219, 0.25);
+      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.75);
+    }
+
+    table .headerSortDown {
+      background-image: url({% static 'img/sort_dsc.png' %});
+      background-repeat: no-repeat;
+      background-position: 98% 50%;
+    }
+
+    table .headerSortUp {
+      background-image: url({% static 'img/sort_asc.png' %});
+      background-repeat: no-repeat;
+      background-position: 98% 50%;
+    }
+
+    #pm_devices .value-uuid {
+      font-variant: all-small-caps;
+      font-size: large;
+    }
+
+-block page-top
+  #title-area.inline-flex.flex-column
+    -block title
+      -block title-icon
+        .pm-icon.icon-postmaster
+      -block title-text
+        .title-text
+          %h1{style:"font-size: xx-large; font-weight: 100;"}
+            {{title}}
+      .search-input-area
+        %form{style:'width:30em;'}
+          %temba-textinput.search-query{type:'text', placeholder:'Search', name:"search", value:"{{search}}"}
+      .action-menu-area
+        -include "gear_links_include.haml"
+
+-block top-form
+  - if view.search_fields
+    - block search-form
+      %form#search-form
+        %input.input-medium.search-query{type:'text', placeholder:'Search', name:"search", value:"{{search}}"}
+
+
+{% block content %}
+  - block pre-table
+
+  - block table
+    .table-scroll.shadow.rounded-lg.overflow-x-auto
+      %table#pm_devices.list.object-list.lined.selectable
+        %thead
+          %tr
+            - if actions
+              %th
+                %div.multiselect-header
+                  %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.object-row-checkbox
+                  %div.multiselect-label
+                    %span
+                      Select all
+            - for field in fields
+              %th{ class:'{% if field|sort_by not in view.non_sort_fields %}header{% if field|sort_by == view.sort_field %} {% if not view.sort_direction or view.sort_direction == "asc" %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}', id:'header-{{field}}' }
+                - if field not in view.non_sort_fields
+                  <a href="?sort_on={% if field|sort_by == view.sort_field %}{% if view.sort_direction == 'asc' %}-{% endif %}{% endif %}{{field|sort_by}}{% if search is not null %}&search={{search}}{% endif %}">{% get_label field %}</a>
+                - else
+                  {% get_label field %}
+        %tbody
+          - for obj in object_list
+            %tr.object-row{id: 'id-row-{{obj.id}}', data-object-id:'{{ obj.id }}', data-object-uuid:'{{ obj.uuid }}',
+                class:'{% cycle "row2" "row1" %} {% if not obj.is_active and obj|is_smartobject %}inactive{% endif %}'}
+              -if actions
+                %td.checkbox.object-row-check
+                  %temba-checkbox{onclick:"handleRowSelection(this)"}
+              -for field in fields
+                %td{ class:'value-{{field}} {% get_class field obj %}{% if field in link_fields %} clickable{% endif %}'}
+                  - if field in link_fields
+                    <a {% if pjax %}data-pjax='{{ pjax }}'{% endif %} href="{% get_field_link field obj %}">{% get_value obj field %}</a>
+                  - else
+                    <span>{% get_value obj field %}</span>
+
+          - empty
+            %tr.empty_list
+              - if actions
+                %td
+              - for field in fields
+                %td
+
+    - block extra-rows
+
+  - block post-table
+
+  - block paginator
+    .row
+      - include "smartmin/sidebar_pagination.haml"
+
+{% endblock content %}
+
+-block extra-script
+  {{ block.super }}
+  :javascript
+    function handleRowClicked(event) {
+        if (event.target.tagName !== "TEMBA-CHECKBOX") {
+          const row = event.target.closest("tr");
+          const uuid = row.getAttribute("data-object-uuid");
+          gotoLink("/pm/read/" + uuid + "/");
+        }
+    }
+
+    $(document).ready(function(){
+      $("th.header").click(function(evt){
+        // build up our ordering
+        var field = evt.target.id.substr(evt.target.id.indexOf("-")+1)
+
+        {% if order_asc %}
+        if (field == "{{order}}"){
+          field = "-" + field;
+        }
+        {% endif %}
+
+        if ($(this).find('a:first').length > 0) {
+          if ($(this).find('a:first')[0].href !=null) {
+            document.location = $(this).find('a:first')[0].href
+          }
+        }
+      });
+    });

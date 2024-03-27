@@ -20,7 +20,9 @@ $(document).ready(function() {
     }
 
     for (let ls = document.links, numLinks = ls.length, i=0; i<numLinks; i++) {
-        ls[i].onclick= showSpinner;
+        if ( ls[i].attributes.href.value ) {
+            ls[i].onclick= showSpinner;
+        }
     }
     let elems = $('[href][onclick^="goto(event"]');
     if ( elems ) {

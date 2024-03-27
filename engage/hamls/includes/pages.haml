@@ -1,0 +1,77 @@
+-load humanize
+- if paginator and paginator.num_pages > 1
+  .flex.w-full.justify-end.text-gray-700.flex-wrap.items-baseline.h-5
+    - if page_obj.number > 5
+      .flex-col.page-num.mx-3
+        .linked(onclick="goto(event)" href="{{request.path}}{{url_params|safe}}page=1")
+          .inline-block.h-5.w-5.chevron-bar-left{style:"margin:-5px;"}
+          First
+
+    - if page_obj.number > 10
+      .flex-col.page-num.mx-3
+        .linked(onclick="goto(event)" href="{{request.path}}{{url_params|safe}}page={{page_obj.number|add:-10}}")
+          .inline-block.h-5.w-5.chevron-double-left{style:"margin:-5px;"}
+          {{'-'}}10
+
+    - if page_obj.has_previous
+      .flex-col.prev.mr-4
+        .linked(onclick="goto(event)" href="{{request.path}}{{url_params|safe}}page={{page_obj.previous_page_number}}")<
+          .inline-block.h-5.w-5.chevron-left{style:"margin:-5px;"}
+          Previous
+    - else
+      .flex-col.prev.disabled.mr-4.text-gray-400
+        .inline-block.h-5.w-5.chevron-left{style:"margin:-5px;"}
+        Previous
+
+    - for page_num in paginator.page_range
+      - if page_obj.number < 5
+        - if page_num < 10
+          - if not page_num == page_obj.number
+            .page-num.mx-3
+              .linked(onclick="goto(event)" href="{{request.path}}{{url_params|safe}}page={{page_num}}")
+                {{ page_num }}
+          - else
+            .page-num.active.mx-3.rounded-full.bg-gray-200.px-2
+              {{ page_num }}
+
+      - elif page_num < page_obj.number|add:"5" and page_num > page_obj.number|add:"-5"
+        - if not page_num == page_obj.number
+          .page_num.mx-3
+            .linked(onclick="goto(event)" href="{{request.path}}{{url_params|safe}}page={{page_num}}")
+              {{ page_num }}
+        - else
+          .page_num.active.mx-3.rounded-full.bg-gray-200.px-2
+            {{ page_num }}
+
+      - elif page_obj.number > paginator.num_pages|add:"-5"
+        - if page_num > paginator.num_pages|add:"-9"
+          - if not page_num == page_obj.number
+            .page-num.mx-3
+              .linked(onclick="goto(event)" href="{{request.path}}{{url_params|safe}}page={{page_num}}")
+                {{ page_num }}
+          - else
+            .page-num.active.mx-3.rounded-full.bg-gray-200.px-2
+              {{ page_num }}
+
+
+    - if page_obj.has_next
+      .flex-col.next.ml-6
+        .linked(onclick="goto(event)" href="{{request.path}}{{url_params|safe}}page={{page_obj.next_page_number}}")
+          Next
+          .inline-block.h-5.w-5.chevron-right{style:"margin:-5px;"}
+    - else
+      .flex-col.next.disabled.text-gray-400.ml-4
+        Next
+        .inline-block.h-5.w-5.chevron-right{style:"margin:-5px;"}
+
+    - if page_obj.number|add:10 < paginator.num_pages
+      .flex-col.page-num.mx-3
+        .linked(onclick="goto(event)" href="{{request.path}}{{url_params|safe}}page={{page_obj.number|add:10}}")
+          {{'+'}}10
+          .inline-block.h-5.w-5.chevron-double-right{style:"margin:-5px;"}
+
+    - if page_obj.number|add:5 < paginator.num_pages
+      .flex-col.page-num.mx-3
+        .linked(onclick="goto(event)" href="{{request.path}}{{url_params|safe}}page={{paginator.num_pages}}")
+          Last
+          .inline-block.h-5.w-5.chevron-bar-right{style:"margin:-5px;"}
