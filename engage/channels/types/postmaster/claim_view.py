@@ -15,11 +15,15 @@ logger = logging.getLogger()
 class ClaimViewOverrides(MonkeyPatcher):
     patch_class = ClaimView
 
-    def fetch_qr_code(self, data):
+    def fetch_qr_code(self: type(ClaimView), data):
         if po_server_url is not None and po_api_key is not None:
+            user = self.get_user()
             r = requests.post(
                 "{}/engage/claim".format(po_server_url),
-                headers={po_api_header: "{}".format(po_api_key)},
+                headers={
+                    po_api_header: str(po_api_key),
+                    "po-api-client-id": str(user.id),
+                },
                 data=data,
                 cookies=None,
                 verify=False,
