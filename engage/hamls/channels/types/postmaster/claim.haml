@@ -8,24 +8,48 @@
 -block fields
   -if po_qr and po_qr.qr_base64
 
-    %div{class:"pm-qr;"}
-      %img#setup-qr-code{src:"data:png;base64, {{po_qr.qr_base64}}" }{style:"padding-left: 186px; padding-bottom: 20px"}
-      %div{style:"padding-left: 176px; padding-bottom: 20px"}
-        %div
-          %code
-            Org:&nbsp;{{ user_org.name }}
-        %div
-          %code
-            Server:
-            %span#po_server
-              {{ po_qr.data.server }}
-        %div
-          %code
-            API Key:
-            %span#po_api_key
-              {{ po_qr.data.api_key }}
+    %div.pm-setup
+      %div.pm-qr
+        %img
 
-        %div{style: "margin-top: 30px;"}
+      %div.pm-info
+        %div.card
+          %h4.card-header
+            QR Code Data
+          %div.card-body
+            %code
+              Org:&nbsp;{{ user_org.name }}
+            %code
+              Server:
+              %span#po_server
+                {{ po_qr.data.server }}
+            %code
+              API Key:
+              %span#po_api_key
+                {{ po_qr.data.api_key }}
+            %code
+              Creator:
+              %span#pm_created_by
+                {{ user.username }}
+            %code
+              Name Format:
+              %span#pm_name_format
+                {{ name_format }}
+
+        %div.form-group.input-group
+          %label{for:"pm-name-format"}
+            Change the channel name format
+          <input type="text" id="pm-name-format" name="pm-name-format" placeholder="{{ name_format }}"
+            class="bs5 form-control"
+          ><button type="button" class="bs5 btn"
+            onclick="reloadNameFormat()"
+          ><i class="pm-icon icon-refresh"></i></button>
+        %div.help-text.mt-2
+          {% verbatim %}
+            Available variables:<br/>
+            <code style="font-size:small">{{device_id}} {{pm_scheme}} {{pm_mode}} {{phone_number}} {{org}} {{first_name}}</code>
+          {% endverbatim %}
+        %div.input-group.mt-12
           %label.switch
             %input#enable-multiple{type:"checkbox"}
             %span.slider.round#enable-multiple-span
@@ -53,8 +77,31 @@
   {{ block.super }}
 
   :css
+    .pm-setup {
+      display: flex;
+      flex-direction: row;
+    }
+    .pm-info {
+      display: flex;
+      flex-direction: column;
+      margin-left: 2em;
+      .card-body {
+        display: flex;
+        flex-direction: column;
+      }
+    }
+
+    #setup-modifiers {
+      margin-top: 2rem;
+    }
+    #pm-name-format {
+      width: 30em;
+    }
+
     .pm-qr {
-      width: 500px !important;
+      content: url('data:png;base64, {{po_qr.qr_base64}}');
+      width: 24rem;
+      height: 24rem;
     }
 
     /* The switch - the box around the slider */
@@ -144,6 +191,13 @@
 
 -block extra-script
   {{ block.super }}
+  :javascript
+    function reloadNameFormat() {
+      const elNameFormat = document.getElementById('pm-name-format');
+      const urlParams = new URLSearchParams(window.location.search);
+      urlParams.set('name_format', elNameFormat.value);
+      window.location.search = urlParams;
+    }
 
   -if pm_app_qrcode
     :javascript
