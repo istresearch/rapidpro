@@ -46,6 +46,7 @@ def create_pm_services(apps, schema_editor):  # pragma: no cover
             #make new channel and get its ID in parent_id
             parent_channel = deepcopy(channel)
             parent_channel.id = None
+            parent_channel.uuid = None
             parent_channel.schemes = parent_schemes
             parent_channel.name = parent_channel.name[:parent_channel.name.rfind('[')]
             parent_channel.name += '['+parent_scheme+']'
