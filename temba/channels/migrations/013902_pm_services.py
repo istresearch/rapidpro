@@ -15,8 +15,8 @@ UPDATE channels_channel ch
    SET parent_id=par.id FROM channels_channel par
          WHERE par.address=ch.address
            AND par.is_active=ch.is_active
-           AND par.channel_type = %(pm_code)s
-           AND par.schemes = %(pm_schemes)s
+           AND par.channel_type = '%(pm_code)s'
+           AND par.schemes = '%(pm_schemes)s'
            AND ch.channel_type = par.channel_type
            AND ch.schemes != par.schemes
            AND ch.is_active=True
