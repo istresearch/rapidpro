@@ -52,7 +52,7 @@ jobs:
           #VER_KIND = 'alpha' (not deployed) | 'dev' | 'beta' | 'gold'
           if [[ ${{ github.ref_name }} =~ ^(v)([[:digit:]]+\..*)$ ]]; then
             VER_KIND=gold
-          else if [[ "${REF_NAME%/**}" == "dev" || "${REF_NAME}" == "develop" ]]; then
+          elif [[ "${REF_NAME%/**}" == "dev" || "${REF_NAME}" == "develop" ]]; then
             VER_KIND=dev
           else
             VER_KIND=alpha
