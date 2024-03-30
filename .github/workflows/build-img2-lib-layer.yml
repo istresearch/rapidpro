@@ -38,7 +38,7 @@ jobs:
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
       FLOW_EDITOR: ${{ steps.config_step.outputs.FLOW_EDITOR }}
-      ARCHES: ${ steps.config_step.outputs.ARCHES }}
+      ARCHES: ${{ steps.config_step.outputs.ARCHES }}
     steps:
       - uses: actions/checkout@v4
         with:
