@@ -19,6 +19,7 @@ jobs:
       VERSION_INT: ${{ steps.config_step.outputs.VERSION_INT }}
       VERSION_KIND: ${{ steps.config_step.outputs.VERSION_KIND }}
       ALT_TAGS: ${{ steps.config_step.outputs.ALT_TAGS }}
+      ARCHES: ${ steps.config_step.outputs.ARCHES }}
     steps:
       - name: "Determine Tag To Use"
         id: config_step
@@ -40,7 +41,7 @@ jobs:
           if [[ ${{ github.ref_name }} =~ ^(v)([[:digit:]]+\..*)$ ]]; then
             VER_KIND=gold
             VERSION_STR=${BASH_REMATCH[2]}
-          else          
+          else
             # 'strict' semver segments cannot start with 0
             VERSION_NUM="$(date +%y).$(date +%-m).$(date +%-d).${VER_BUILD#0}"  
             VERSION_STR=ci-${VERSION_NUM}
@@ -54,6 +55,12 @@ jobs:
           echo "VERSION_STR=${VERSION_STR}" >> $GITHUB_OUTPUT
           echo "VERSION_KIND=${VER_KIND}" >> $GITHUB_OUTPUT
           echo "ALT_TAGS=${ALT_TAGS}" >> $GITHUB_OUTPUT
+          if [[ "${VER_KIND}" == "gold" ]]; then
+            ARCHES="amd64 arm64"
+          else
+            ARCHES="amd64"
+          endif          
+          echo "ARCHES=${ARCHES}" >> $GITHUB_OUTPUT
 
           echo "::notice::Version KIND=${VER_KIND}, STR=${VERSION_STR}${ALT_TAGS}, INT=${VERSION_INT}"
   #endjob build_cfg
@@ -69,4 +76,5 @@ jobs:
       version_int: ${{ needs.build_cfg.outputs.VERSION_INT }}
       version_kind: ${{ needs.build_cfg.outputs.VERSION_KIND }}
       alt_tags: ${{ needs.build_cfg.outputs.ALT_TAGS }}
+      arches: ${{ needs.build_cfg.outputs.ARCHES }}
   #endjob build_image

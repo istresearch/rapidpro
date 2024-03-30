@@ -32,10 +32,13 @@ jobs:
     needs: [build_result]
     runs-on: ubuntu-latest
     environment: default
+    env:
+      REF_NAME: ${{ github.ref_name }}
     outputs:
       IMAGE_NAME: ${{ steps.config_step.outputs.IMAGE_NAME }}
       IMAGE_TAG: ${{ steps.config_step.outputs.IMAGE_TAG }}
       FLOW_EDITOR: ${{ steps.config_step.outputs.FLOW_EDITOR }}
+      ARCHES: ${ steps.config_step.outputs.ARCHES }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,6 +47,21 @@ jobs:
       - name: "Determine Tag To Use"
         id: config_step
         run: |-
+          #VER_KIND = 'alpha' (not deployed) | 'dev' | 'beta' | 'gold'
+          if [[ ${{ github.ref_name }} =~ ^(v)([[:digit:]]+\..*)$ ]]; then
+            VER_KIND=gold
+          else if [[ "${REF_NAME%/**}" == "dev" || "${REF_NAME}" == "develop" ]]; then
+            VER_KIND=dev
+          else
+            VER_KIND=alpha
+          fi
+          if [[ "${VER_KIND}" == "gold" ]]; then
+            ARCHES="amd64 arm64"
+          else
+            ARCHES="amd64"
+          endif          
+          echo "ARCHES=${ARCHES}" >> $GITHUB_OUTPUT
+
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
           echo "${FROM_LAYER#**:}" > base_tag.txt
           source scm/utils.sh
@@ -52,7 +70,7 @@ jobs:
           echo "::notice::Lib Layer: ${IMAGE_NAME}:${IMAGE_TAG}"
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_OUTPUT
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          
+
           FLOW_EDITOR=$(cat VERSION_FlowEditor)
           echo "FLOW_EDITOR=${FLOW_EDITOR#v}" >> $GITHUB_OUTPUT
   #endjob build_cfg
@@ -112,7 +130,7 @@ jobs:
               },
               "image": {
                 "dockerfile": "${{ env.DOCKERFILE2USE }}",
-                "arch_allowed": "amd64 arm64",
+                "arch_allowed": "${{ needs.build_cfg.outputs.ARCHES }}",
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [
