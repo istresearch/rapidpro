@@ -60,7 +60,7 @@ def create_pm_services(apps, schema_editor):  # pragma: no cover
                 config=parent_config,
                 role=channel.role,
                 schemes=parent_schemes,
-                created_by=channel.craeted_by,
+                created_by=channel.created_by,
                 modified_by=channel.modified_by,
                 uuid=uuid4(),
             )
