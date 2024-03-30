@@ -52,7 +52,7 @@ def create_pm_services(apps, schema_editor):  # pragma: no cover
             parent_channel.name = parent_channel.name[:parent_channel.name.rfind('[')]
             parent_channel.name += '['+parent_scheme+']'
             channel.config["chat_mode"] = parent_chat_mode
-            parent_channel.save()
+            parent_channel.save(update_fields=("config", "modified_on", "created_on"))
             parent_id = parent_channel.id
         #endif
         channel.parent_id = parent_id
