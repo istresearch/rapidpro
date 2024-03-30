@@ -1,4 +1,5 @@
 from copy import deepcopy
+from typing import Union, Any
 from uuid import uuid4
 
 from django.db import migrations
@@ -9,19 +10,20 @@ from temba.channels.types.postmaster import PostmasterType
 
 
 parent_chat_mode = 'PM'
-parent_scheme = PM_CHANNEL_MODES[parent_chat_mode].scheme
-parent_schemes = '{'+parent_scheme+'}'
+parent_scheme: str = PM_CHANNEL_MODES[parent_chat_mode].scheme
+parent_schemes: str = '{'+parent_scheme+'}'
 
 UPDATE_EXISTING_PM_SERVICE_CHANNELS_AS_PARENT_SQL = """
 UPDATE channels_channel ch
    SET parent_id=par.id FROM channels_channel par
-         WHERE par.address=ch.address
-           AND par.is_active=ch.is_active
-           AND par.channel_type = '%(pm_code)s'
-           AND par.schemes = '%(pm_schemes)s'
-           AND ch.channel_type = par.channel_type
-           AND ch.schemes != par.schemes
-           AND ch.is_active=True
+ WHERE par.address=ch.address
+   AND par.is_active=ch.is_active
+   AND par.channel_type = '%(pm_code)s'
+   AND par.schemes = '%(pm_schemes)s'
+   AND ch.channel_type = par.channel_type
+   AND ch.schemes != par.schemes
+   AND ch.is_active=True
+   AND ch.parent_id is null
 """ % {
     'pm_code': PostmasterType.code,
     'pm_schemes': parent_schemes,
@@ -45,14 +47,24 @@ def create_pm_services(apps, schema_editor):  # pragma: no cover
         if current_device_id != channel.address:
             current_device_id = channel.address
             #make new channel and get its ID in parent_id
-            parent_channel = deepcopy(channel)
-            parent_channel.id = None
-            parent_channel.uuid = uuid4()
-            parent_channel.schemes = parent_schemes
-            parent_channel.name = parent_channel.name[:parent_channel.name.rfind('[')]
-            parent_channel.name += '['+parent_scheme+']'
-            channel.config["chat_mode"] = parent_chat_mode
-            parent_channel.save(update_fields=("config", "modified_on", "created_on"))
+            parent_name = channel.name[:channel.name.rfind('[')]
+            parent_name += '['+parent_scheme+']'
+            parent_config = channel.config
+            parent_config["chat_mode"] = parent_chat_mode
+            create_args = dict(
+                org=channel.org,
+                country=channel.country,
+                channel_type=channel.channel_type,
+                name=parent_name,
+                address=channel.address,
+                config=parent_config,
+                role=channel.role,
+                schemes=parent_schemes,
+                created_by=channel.craeted_by,
+                modified_by=channel.modified_by,
+                uuid=uuid4(),
+            )
+            parent_channel = Channel.objects.create(**create_args)
             parent_id = parent_channel.id
         #endif
         channel.parent_id = parent_id
