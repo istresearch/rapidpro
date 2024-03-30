@@ -27,6 +27,10 @@ on:
         description: 'Additional image tags to use.'
         required: false
         type: string
+      arches:
+        description: 'Intel and/or ARM'
+        required: false
+        type: string
 
 env:
   IMAGE_STAGE: base
@@ -109,7 +113,7 @@ jobs:
               },
               "image": {
                 "dockerfile": "${{ env.DOCKERFILE2USE }}",
-                "arch_allowed": "amd64 arm64",
+                "arch_allowed": "${{ inputs.arches }}",
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                 "build_args": [

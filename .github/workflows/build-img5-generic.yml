@@ -74,7 +74,7 @@ jobs:
               },
               "image": {
                 "dockerfile": "${{ needs.build_cfg.outputs.DOCKERFILE2USE }}",
-                "arch_allowed": "amd64 arm64",
+                "arch_allowed": "${{ github.event.client_payload.image.arch_allowed }}",
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}${{ needs.build_cfg.outputs.ALT_TAG }}",
                 "build_args": [
@@ -98,6 +98,7 @@ jobs:
                   },
                   "image": {
                     "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
+                    "arch_allowed": "${{ github.event.client_payload.image.arch_allowed }}",
                     "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}"
                   },
                   "version": {
