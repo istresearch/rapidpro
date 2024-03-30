@@ -59,7 +59,7 @@ jobs:
             ARCHES="amd64 arm64"
           else
             ARCHES="amd64"
-          endif          
+          fi
           echo "ARCHES=${ARCHES}" >> $GITHUB_OUTPUT
 
           echo "::notice::Version KIND=${VER_KIND}, STR=${VERSION_STR}${ALT_TAGS}, INT=${VERSION_INT}"

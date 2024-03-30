@@ -59,7 +59,7 @@ jobs:
             ARCHES="amd64 arm64"
           else
             ARCHES="amd64"
-          endif          
+          fi
           echo "ARCHES=${ARCHES}" >> $GITHUB_OUTPUT
 
           IMAGE_NAME=${{ github.repository_owner }}/p4-engage
