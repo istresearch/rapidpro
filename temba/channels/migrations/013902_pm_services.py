@@ -55,7 +55,8 @@ def create_pm_services(apps, schema_editor):  # pragma: no cover
             parent_channel.save()
             parent_id = parent_channel.id
         #endif
-        channel.update(parent_id=parent_id)
+        channel.parent_id = parent_id
+        channel.save()
     #endfor
 #enddef create_pm_services
 
