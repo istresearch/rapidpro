@@ -72,6 +72,23 @@ def create_pm_services(apps, schema_editor):  # pragma: no cover
     #endfor
 #enddef create_pm_services
 
+def ensure_pm_service_device_name(apps, schema_editor):  # pragma: no cover
+    Channel = apps.get_model("channels", "Channel")
+    queryset = Channel.objects.filter(
+        is_active=True,
+        channel_type=PostmasterType.code,
+        schemes=parent_schemes,
+        parent_id__isnull=True,
+    ).order_by('address')
+
+    for channel in queryset:
+        device_name = channel.name[:channel.name.rfind('[')-1]
+        config = channel.config
+        config["device_name"] = device_name
+        channel.save(update_fields=('config',))
+    #endfor
+#enddef ensure_pm_service_device_name
+
 
 class Migration(migrations.Migration):
 
@@ -81,7 +98,8 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL(UPDATE_EXISTING_PM_SERVICE_CHANNELS_AS_PARENT_SQL),
-        migrations.RunPython(create_pm_services, noop)
+        migrations.RunPython(create_pm_services, noop),
+        migrations.RunPython(ensure_pm_service_device_name, noop),
     ]
 
 #endclass Migration
