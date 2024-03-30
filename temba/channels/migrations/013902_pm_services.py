@@ -2,6 +2,7 @@ from copy import deepcopy
 from uuid import uuid4
 
 from django.db import migrations
+from django.db.models import Q
 
 from engage.channels.types.postmaster.schemes import PM_CHANNEL_MODES
 from temba.channels.types.postmaster import PostmasterType
@@ -35,8 +36,7 @@ def create_pm_services(apps, schema_editor):  # pragma: no cover
         is_active=True,
         channel_type=PostmasterType.code,
     ).exclude(
-        schemes=parent_schemes,
-        parent_id=None,
+        Q(schemes=parent_schemes) | Q(parent_id__isnull=False)
     ).order_by('address')
 
     parent_id = None
