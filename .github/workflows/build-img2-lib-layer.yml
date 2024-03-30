@@ -154,6 +154,7 @@ jobs:
                   },
                   "layer_tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
                   "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+                  "arch_allowed": "${{ needs.build_cfg.outputs.ARCHES }}",
                   "version": {
                     "str": "${{ github.event.client_payload.version.str }}",
                     "int": "${{ github.event.client_payload.version.int }}",
@@ -183,6 +184,7 @@ jobs:
               },
               "layer_tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
               "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+              "arch_allowed": "${{ needs.build_cfg.outputs.ARCHES }}",
               "version": {
                 "str": "${{ github.event.client_payload.version.str }}",
                 "int": "${{ github.event.client_payload.version.int }}",
