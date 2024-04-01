@@ -1,5 +1,8 @@
 window.app_spin_count = 0;
 $(document).ready(function() {
+    if ( $().toast ) {
+        $().toast(); //bootstrap 4+ changed alert to toast
+    }
     if (navigator.appVersion.indexOf("Win")!==-1) {
         $("html").addClass("windows");
     }

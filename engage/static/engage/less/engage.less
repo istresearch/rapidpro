@@ -419,7 +419,9 @@ span.glyph.icon-channel-postmaster{
 /* just display bkg-img for pm-only icons */
 [class^="icon-"]:not(.pm-icon),
 [class*=" icon-"]:not(.pm-icon) {
-  background-image: none;
+  &:not(.glyph) {
+    background-image: none;
+  }
 }
 
 #chat-btn-label {

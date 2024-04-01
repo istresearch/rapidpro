@@ -125,6 +125,9 @@
         .button-action.button-danger {
           display: inherit;
         }
+        .toast {
+          transition: opacity 3s;
+        }
 
     -for incl in brand.head_includes
       -include incl
@@ -208,6 +211,8 @@
               -block content
 
             -block post-content
+
+      #toaster.alert.ml-3.mb-2{aria-live:"polite", aria-atomic:"true"}
 
     -block footer
       .footer.text-center.py-12.bg-gray-200.text-gray-500

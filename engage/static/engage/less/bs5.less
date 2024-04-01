@@ -217,3 +217,76 @@
     padding: var(--bs-card-spacer-y) var(--bs-card-spacer-x);
     color: var(--bs-card-color);
 }
+
+.toast {
+  // scss-docs-start toast-css-vars
+  --bs-toast-zindex: 1000;
+  --bs-toast-padding-x: .75rem;
+  --bs-toast-padding-y: .5rem;
+  --bs-toast-spacing: 1.5rem;
+  --bs-toast-max-width: 350px;
+  --bs-toast-color: null;
+  --bs-toast-bg: rgba(var(--bs-body-bg-rgb), .85);
+  --bs-toast-border-width: var(--bs-border-width);
+  --bs-toast-border-color: var(--bs-border-color-translucent);
+  --bs-toast-border-radius:var(--bs-border-radius);
+  --bs-toast-box-shadow: var(--bs-box-shadow);
+  --bs-toast-header-color: var(--bs-secondary-color);
+  --bs-toast-header-bg: rgba(var(--bs-body-bg-rgb), .85);
+  --bs-toast-header-border-color: var(--bs-toast-border-color);
+  // scss-docs-end toast-css-vars
+
+  width: var(--bs-toast-max-width);
+  max-width: 100%;
+  @include font-size(var(--bs-toast-font-size));
+  color: var(--bs-toast-color);
+  pointer-events: auto;
+  background-color: var(--bs-toast-bg);
+  background-clip: padding-box;
+  border: var(--bs-toast-border-width) solid var(--bs-toast-border-color);
+  box-shadow: var(--bs-toast-box-shadow);
+  @include border-radius(var(--bs-toast-border-radius));
+
+  &.showing {
+    opacity: 0;
+  }
+
+  &:not(.show) {
+    display: none;
+  }
+}
+
+.toast-container {
+  --bs-toast-zindex: 1000;
+
+  position: absolute;
+  z-index: var(--bs-toast-zindex);
+  width: max-content;
+  max-width: 100%;
+  pointer-events: none;
+
+  > :not(:last-child) {
+    margin-bottom: var(--bs-toast-spacing);
+  }
+}
+
+.toast-header {
+  display: flex;
+  align-items: center;
+  padding: var(--bs-toast-padding-y) var(--bs-toast-padding-x);
+  color: var(--bs-toast-header-color);
+  background-color: var(--bs-toast-header-bg);
+  background-clip: padding-box;
+  border-bottom: var(--bs-toast-border-width) solid var(--bs-toast-header-border-color);
+  @include border-top-radius(calc(var(--bs-toast-border-radius) - var(--bs-toast-border-width)));
+
+  .btn-close {
+    margin-right: calc(-.5 * var(--bs-toast-padding-x)); // stylelint-disable-line function-disallowed-list
+    margin-left: var(--bs-toast-padding-x);
+  }
+}
+
+.toast-body {
+  padding: var(--bs-toast-padding-x);
+  word-wrap: break-word;
+}
