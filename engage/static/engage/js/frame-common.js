@@ -212,3 +212,17 @@ function putToastInToaster(type, content, delay=7000) {
         el.toast('show');
     }
 }
+
+function wireupClearTextWidgets() {
+    const theInputs = $('input[type="text"][class*=" has-clear-text"]');
+    theInputs.on('input propertychange', () => {
+        const $this = $(this);
+        const visible = Boolean($this.val());
+        $this.siblings('.form-control-clear').toggleClass('hide-me', !visible);
+    }).trigger('propertychange');
+
+    $('.form-control-clear').click(() => {
+        $(this).siblings('input[type="text"]').val('')
+            .trigger('propertychange').focus();
+    });
+}

@@ -3,23 +3,34 @@ from django.urls import reverse
 
 from smartmin.views import SmartListView
 
+from engage.channels.purge_outbox import PurgeOutboxMixin
 from engage.channels.types.postmaster.schemes import PM_CHANNEL_MODES
 from temba.channels.types.postmaster import PostmasterType
 from temba.orgs.views import OrgPermsMixin
 from temba.utils.views import BulkActionMixin
 
 
-class PmViewList(OrgPermsMixin, BulkActionMixin, SmartListView):
+class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView):
     template_name = 'pm/list.html'
     title = "PM Devices"
-    fields = ("device_name", "address", "uuid", "last_seen",)
+    fields = ("name", "address", "uuid", "last_seen",)
     field_config = {"address": {"label": "Device ID"}, "uuid": {"label": "UUID"}}
-    search_fields = ("name", "address", "config__icontains", "uuid", "last_seen__icontains",)
-    bulk_actions = ("clickme",)
+    search_fields = ("name__icontains", "address__icontains", "uuid__icontains", "last_seen__icontains",)
     secondary_order_by = ["name"]
     default_order = ("-last_seen",)
     non_sort_fields = ()
     link_url = 'uuid@pm.postmaster_read'
+
+    def get_bulk_actions(self):
+        bulk_actions = ()
+        if self.has_org_perm(PurgeOutboxMixin.PurgeOutbox.permission):
+            bulk_actions += PurgeOutboxMixin.get_actions()
+        #endif
+        if self.has_org_perm("channels.channel_update"):
+            bulk_actions += ('rename',)
+        #endif
+        return bulk_actions
+    #enddef get_bulk_actions
 
     def get_queryset(self, **kwargs):
         org = self.request.user.get_org()
@@ -35,7 +46,7 @@ class PmViewList(OrgPermsMixin, BulkActionMixin, SmartListView):
             schemes='{'+PM_CHANNEL_MODES['PM'].scheme+'}',
         )
         #search_query = self.request.GET.get("search", None)
-        sort_on = self.request.GET.get("sort_on", None)
+        sort_on = self.request.GET.get("_order", None)
         if sort_on:
             self.sort_direction = "desc" if sort_on.startswith("-") else "asc"
             self.sort_field = sort_on.lstrip("-")
@@ -68,13 +79,16 @@ class PmViewList(OrgPermsMixin, BulkActionMixin, SmartListView):
 
     def get_gear_links(self):
         links = []
-        links.append(
-            dict(
-                title="Add PM",
-                as_btn=True,
-                href=reverse("channels.types.postmaster.claim"),
+        if self.has_org_perm('channels.channel_create'):
+            links.append(
+                dict(
+                    title="Add PM",
+                    as_btn=True,
+                    href=reverse("channels.types.postmaster.claim"),
+                )
             )
-        )
+        #endif
+
         return links
     #enddef get_gear_links
 

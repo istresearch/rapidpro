@@ -111,4 +111,6 @@ $(document).ready(function() {
     if (window.scheduleRefresh) {
       scheduleRefresh();
     }
+
+    wireupClearTextWidgets();
 });
