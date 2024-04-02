@@ -66,6 +66,8 @@
               .-mt-1.mr-2.glyph.icon-exclamation-sign
               -trans "Purge Outbox"
           -if 'rename' in actions
+            -#-trans 'Rename Channels' as title
+            -#%temba-modax#action-rename.button-action(header="{{title|escapejs}}" endpoint="{% url 'pm.postmaster_rename_channels' %}")
             #action-rename.button-action
               .-mt-1.mr-2.glyph.icon-edit
               -trans "Rename"
@@ -120,7 +122,7 @@
 {% endblock content %}
 
 -block post-content
-  - if org_perms.msgs.broadcast_send
+  -if 'purge_outbox' in actions
     %temba-dialog#purge-confirmation.hide(
         header='{{ _("Purge Outbox")|escapejs }}'
         primaryButtonName='{{ _("Purge")|escapejs }}'
@@ -133,6 +135,26 @@
           &nbsp;
         %p
           -trans "Once the outbox is purged, it's messages will be gone forever. There is no way to undo this operation."
+
+  -if 'rename' in actions
+    %temba-dialog#dlg-rename-channels.hide(
+        header='{{ _("Rename Channels")|escapejs }}'
+        primaryButtonName='{{ _("Rename")|escapejs }}'
+    )
+      .p-6
+        %div.form-group.input-group
+          %label{for:"pm-name-format"}
+            Name format
+          {% verbatim %}
+          <input type="text" id="pm-name-format" name="pm-name-format" placeholder="{{device_id}} {{pm_scheme}}"
+            class="bs5 form-control" style="{width:40em}"
+          >{% endverbatim %}
+        %div.help-text.mt-2
+          {% verbatim %}
+            Available variables:<br/>
+            <code style="font-size:small">{{device_id}} {{pm_scheme}} {{pm_mode}}</code>
+            <code style="font-size:small">{{phone_number}} {{org}} {{first_name}}</code>
+          {% endverbatim %}
 
 -block extra-script
   {{ block.super }}

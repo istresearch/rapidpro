@@ -172,7 +172,7 @@ function putToastInToaster(type, content, delay=7000) {
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
     toast.setAttribute('aria-atomic', 'true');
-    toast.setAttribute('delay', delay);
+    toast.setAttribute('delay', ''+Math.max(delay, 7000));
 
     let btnClose = document.createElement('button');
     btnClose.classList.add('p-2', 'ml-auto');
@@ -193,6 +193,7 @@ function putToastInToaster(type, content, delay=7000) {
         toastBody.innerText = content;
     } else {
         let toastBodyText = document.createElement('div');
+        toastBodyText.classList.add('msg');
         toastBodyText.style.alignContent = 'center';
         toastBodyText.append(document.createTextNode(content));
         toastBody.append(toastBodyText);
@@ -203,10 +204,14 @@ function putToastInToaster(type, content, delay=7000) {
     $('#toaster').append(toast);
     if ( bUseAlert ) {
         toast.classList.add('show');
-        setTimeout(() => {
-            toast.addEventListener("transitionend", (event) => {toast.remove();});
-            toast.style.opacity = '0';
-        }, delay);
+        if ( delay ) {
+            setTimeout(() => {
+                toast.addEventListener("transitionend", (event) => {
+                    toast.remove();
+                });
+                toast.style.opacity = '0';
+            }, delay);
+        }
     } else {
         let el = $('#'+toast.getAttribute('id'));
         el.toast('show');

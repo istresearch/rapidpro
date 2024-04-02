@@ -2,6 +2,7 @@ from smartmin.views import SmartCRUDL
 
 from .view.list import PmViewList
 from .view.read import PmViewRead
+from .view.rename import PmRenameChannels
 
 from temba.channels.models import Channel
 
@@ -10,6 +11,7 @@ class Postmaster(SmartCRUDL):
     actions = (
         "list",
         "read",
+        "rename_channels",
     )
     model = Channel
     app_name = 'PM'
@@ -33,5 +35,9 @@ class Postmaster(SmartCRUDL):
     class Read(PmViewRead):
         pass
     #endclass Read
+
+    class RenameChannels(PmRenameChannels):
+        pass
+    #endclass RenameChannels
 
 #endclass Postmaster

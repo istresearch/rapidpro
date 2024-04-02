@@ -9,11 +9,9 @@ from temba.contacts.models import URN
 class ChannelOverrides(MonkeyPatcher):
     patch_class = Channel
 
-    CONFIG_DEVICE_ID = "device_id"
     CONFIG_DEVICE_NAME = "device_name"
+    CONFIG_NAME_FORMAT = "name_format"
     CONFIG_CHAT_MODE = "chat_mode"
-    CONFIG_CLAIM_CODE = "claim_code"
-    CONFIG_ORG_ID = "org_id"
 
     def create(
             cls: type[Channel],
@@ -67,12 +65,17 @@ class ChannelOverrides(MonkeyPatcher):
 
     @property
     def device_id(self: Channel):
-        return self.config['device_id'] if 'device_id' in self.config else ''
+        return self.address
     #enddef device_id
 
     @property
     def device_name(self: Channel):
-        return self.config['device_name'] if 'device_name' in self.config else ''
+        return self.config[self.CONFIG_DEVICE_NAME] if 'device_name' in self.config else ''
+    #enddef device_name
+
+    @property
+    def name_format(self: Channel):
+        return self.config[self.CONFIG_NAME_FORMAT] if 'name_format' in self.config else ''
     #enddef device_name
 
 #endclass ChannelOverrides
