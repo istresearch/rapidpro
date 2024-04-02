@@ -102,45 +102,37 @@ function wireupActionPurge() {
 
 function wireupActionRename() {
     const menuitem = document.querySelector("#action-rename");
-    const dlgForm = document.querySelector("#dlg-rename-channels");
-    if ( menuitem && dlgForm ) {
-        menuitem.addEventListener("click", function(e) {
-            dlgForm.classList.remove("hide");
-            dlgForm.open = true;
-        });
-
-        dlgForm.addEventListener("temba-button-clicked", function(e) {
-            if (!e.detail.button.secondary) {
-                showSpinner();
-                const inputNameFormat = document.querySelector('#pm-name-format');
-                let theNameFormat = inputNameFormat.value;
-                if ( !theNameFormat ) {
-                    theNameFormat = '{{device_id}} {{pm_scheme}}';
-                }
-                let objList = getCheckedData('object-id');
-                Promise.all(objList.map((id) => {
-                    return postReq({
-                        url: `/pm/rename_channels/${id}/`,
-                        data: {name_format: theNameFormat},
-                    }).then((resp) => {
-                        putToastInToaster('alert-success', resp.msg);
-                        const rowDeviceName = $('tbody').find(`tr[data-object-id='${resp.id}'] > td > a`);
-                        if ( rowDeviceName ) {
-                            rowDeviceName.text(resp.name);
-                        }
-                    }, (resp) => {
-                        putToastInToaster('alert-warning', resp.msg);
-                    });
-                })).then(
-                    () => {
-                        hideSpinner();
-                    },
-                    () => {
-                        hideSpinner();
-                    }
-                );
+    const btnSubmit = document.querySelector("#btn-submit-rename");
+    if ( menuitem && btnSubmit ) {
+        btnSubmit.addEventListener("click", function(e) {
+            showSpinner();
+            const inputNameFormat = document.querySelector('#pm-name-format');
+            let theNameFormat = inputNameFormat.value;
+            if ( !theNameFormat ) {
+                theNameFormat = '{{device_id}} {{pm_scheme}}';
             }
-            dlgForm.open = false;
+            let objList = getCheckedData('object-id');
+            Promise.all(objList.map((id) => {
+                return postReq({
+                    url: `/pm/rename_channels/${id}/`,
+                    data: {name_format: theNameFormat},
+                }).then((resp) => {
+                    putToastInToaster('alert-success', resp.msg);
+                    const rowDeviceName = $('tbody').find(`tr[data-object-id='${resp.id}'] > td > a`);
+                    if ( rowDeviceName ) {
+                        rowDeviceName.text(resp.name);
+                    }
+                }, (resp) => {
+                    putToastInToaster('alert-warning', resp.msg);
+                });
+            })).then(
+                () => {
+                    hideSpinner();
+                },
+                () => {
+                    hideSpinner();
+                }
+            );
         });
     }
 }
