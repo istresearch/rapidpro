@@ -12,6 +12,7 @@ class ChannelOverrides(MonkeyPatcher):
     CONFIG_DEVICE_NAME = "device_name"
     CONFIG_NAME_FORMAT = "name_format"
     CONFIG_CHAT_MODE = "chat_mode"
+    CONFIG_PHONE_NUMBER = "phone_number"
 
     def create(
             cls: type[Channel],
