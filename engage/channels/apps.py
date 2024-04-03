@@ -42,6 +42,9 @@ class AppConfig(BaseAppConfig):
         ChannelOverrides.applyPatches()
         AndroidTypeOverrides.applyPatches()
 
+        from .types.postmaster.view.claim import ClaimViewOverrides
+        ClaimViewOverrides.applyPatches()
+
         from .types.telegram.type import TelegramTypeOverrides
         TelegramTypeOverrides.applyPatches()
 

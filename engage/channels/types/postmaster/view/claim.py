@@ -8,11 +8,8 @@ import requests
 from django.conf import settings
 from django.urls import reverse
 
-from smartmin.views import SmartFormView
-
-from temba.channels.views import (
-    BaseClaimNumberMixin,
-)
+from engage.utils.class_overrides import MonkeyPatcher
+from temba.channels.types.postmaster.type import ClaimView
 
 from ..postoffice import (
     po_server_url,
@@ -23,22 +20,12 @@ from engage.utils.logs import LogExtrasMixin
 from engage.utils.strings import is_empty
 
 
-class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
-    uuid = None
-    extra_links = None
+class ClaimViewOverrides(MonkeyPatcher, LogExtrasMixin):
+    patch_class = ClaimView
+
     pm_app_url: str = getattr(settings, "POST_MASTER_DL_URL", '')
     pm_app_qrcode: str = getattr(settings, "POST_MASTER_DL_QRCODE", '')
     pm_app_version: str = "unknown"
-
-    def __init__(self, channel_type):
-        super().__init__(channel_type)
-        self.account = None
-        self.client = None
-    #enddef init
-
-    def get_claim_url(self):
-        return reverse("channels.types.postmaster.claim")
-    #enddef get_claim_url
 
     def init_pm_app_dl(self, request):
         if is_empty(self.pm_app_url) and not is_empty(settings.PM_CONFIG.fetch_url):
@@ -61,13 +48,6 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
 
     def get_gear_links(self):
         links = []
-
-        extra_links = self.extra_links
-        if extra_links:
-            for extra in extra_links:
-                links.append(dict(title=extra["name"], href=reverse(extra["link"], args=[self.object.uuid])))
-            #endfor
-        #endif
         if self.pm_app_qrcode:
             links.append(
                 dict(
@@ -100,14 +80,15 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         #endif
     #enddef fetch_qr_code
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+    def get_context_data(self: type[ClaimView], **kwargs):
+        context = super(type(self), self).get_context_data(**kwargs)
 
         name_format = self.request.GET.get('name_format', '{{device_id}} [{{pm_scheme}}]')
         user = self.get_user()
+        org = user.get_org()
         data = json.dumps({
-            'org_id': self.org.id,
-            'org_name': self.org.name,
+            'org_id': org.id,
+            'org_name': org.name,
             'created_by': user.id,
             'name_format': name_format,
         })
@@ -122,4 +103,4 @@ class ClaimView(LogExtrasMixin, BaseClaimNumberMixin, SmartFormView):
         return context
     #enddef get_context_data
 
-#endclass ClaimView
+#endclass ClaimViewOverrides

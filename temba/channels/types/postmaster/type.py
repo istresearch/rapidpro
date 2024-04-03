@@ -1,9 +1,25 @@
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from smartmin.views import SmartFormView
 
-from ...models import ChannelType
+from ...models import ChannelType, Channel
 
-from engage.channels.types.postmaster.view.claim import ClaimView
+from ...views import ClaimViewMixin
 
+
+class ClaimView(ClaimViewMixin, SmartFormView):
+    form_class = ClaimViewMixin.Form
+
+    def get_claim_url(self):
+        return reverse("channels.types.postmaster.claim")
+    #enddef get_claim_url
+
+    def get_queryset(self):
+        self.queryset = Channel.objects.none()
+        return self.queryset
+    #enddef get_queryset
+
+#endclass ClaimView
 
 class PostmasterType(ChannelType):
     """
