@@ -39,7 +39,7 @@
     .glyph.icon-inbox
 
 -block title
-  {{ device_name }}
+  {{ name }}
 
 -block content
   %hr
@@ -47,7 +47,7 @@
   %div.object
     .data-field
       .data-label
-        Address:
+        Address/Device ID:
       .data-value
         {{ object.address }}
     .data-field
@@ -55,11 +55,6 @@
         UUID:
       .data-value.data-value-uuid
         {{ object.uuid }}
-    .data-field
-      .data-label
-        Device ID:
-      .data-value
-        {{ device_id }}
     .data-field
       .data-label
         ID:
@@ -92,11 +87,6 @@
         Name:
       .data-value
         {{ object.name }}
-    .data-field
-      .data-label
-        Device Name:
-      .data-value
-        {{ device_name }}
     .data-field
       .data-label
         Country:

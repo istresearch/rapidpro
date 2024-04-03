@@ -9,10 +9,11 @@ from temba.contacts.models import URN
 class ChannelOverrides(MonkeyPatcher):
     patch_class = Channel
 
-    CONFIG_DEVICE_NAME = "device_name"
     CONFIG_NAME_FORMAT = "name_format"
     CONFIG_CHAT_MODE = "chat_mode"
     CONFIG_PHONE_NUMBER = "phone_number"
+    CONFIG_DEVICE_MODEL = "device_model"
+    CONFIG_IMEI = "imei"
 
     def create(
             cls: type[Channel],
@@ -70,14 +71,25 @@ class ChannelOverrides(MonkeyPatcher):
     #enddef device_id
 
     @property
-    def device_name(self: Channel):
-        return self.config[self.CONFIG_DEVICE_NAME] if 'device_name' in self.config else ''
-    #enddef device_name
-
-    @property
     def name_format(self: Channel):
         return self.config[self.CONFIG_NAME_FORMAT] if 'name_format' in self.config else ''
-    #enddef device_name
+    #enddef name_format
+
+    @staticmethod
+    def formatChannelName(name_format, channel: Channel, user):
+        user_name = user.first_name or user.last_name or user.username
+        channel_name = (
+            name_format
+            .replace('{{device_id}}', channel.address)
+            .replace('{{pm_scheme}}', channel.schemes[0].strip('{}'))
+            .replace('{{pm_mode}}', channel.config['chat_mode'] if 'chat_mode' in channel.config else '')
+            .replace('{{phone_number}}', channel.config['phone_number'] if 'phone_number' in channel.config else '')
+            .replace('{{org}}', user.get_org().name)
+            .replace('{{first_name}}', user_name)
+        )
+        return channel_name
+    #enddef formatChannelName
+
 
 #endclass ChannelOverrides
 

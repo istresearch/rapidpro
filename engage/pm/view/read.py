@@ -59,7 +59,7 @@ class PmViewRead(OrgPermsMixin, SmartReadView):
 
         context['apps'] = obj.config['apps'] if 'apps' in obj.config else ''
 
-        context['device_name'] = obj.config['device_name']
+        context['device_name'] = obj.name
         context['device_id'] = obj.address
 
         #self.logger.debug("context=", extra={'context': context})

@@ -132,9 +132,10 @@ class PurgeOutboxMixin:
                 theOverallRespMsg = ''
                 theOverallRespStatus = 200
                 theChannelList = Channel.objects.filter(is_active=True, parent_id=theChannelUUID).order_by('last_seen')
-                device_name = ''
+                device_name = None
                 for theChannel in theChannelList:
-                    device_name = theChannel.device_name
+                    if not device_name:
+                        device_name = theChannel.name.replace(theChannel.schemes[0].strip('{}'), PM_CHANNEL_MODES['PM'].scheme)
                     channel_name = theChannel.name
                     resp = self.postCourierPurgeRequest(
                         theBaseCourierURL, theChannel.channel_type, theChannel.uuid,

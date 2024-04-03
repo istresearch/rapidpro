@@ -1,6 +1,7 @@
 from smartmin.views import SmartCRUDL
 
 from .view.list import PmViewList
+from .view.po_status import PmPostOfficeStatus
 from .view.read import PmViewRead
 from .view.rename import PmRenameChannels
 
@@ -12,6 +13,7 @@ class Postmaster(SmartCRUDL):
         "list",
         "read",
         "rename_channels",
+        "post_office_status",
     )
     model = Channel
     app_name = 'PM'
@@ -39,5 +41,9 @@ class Postmaster(SmartCRUDL):
     class RenameChannels(PmRenameChannels):
         pass
     #endclass RenameChannels
+
+    class PostOfficeStatus(PmPostOfficeStatus):
+        pass
+    #endclass PostOfficeStatus
 
 #endclass Postmaster

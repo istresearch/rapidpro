@@ -61,11 +61,12 @@ class PmRenameChannels(OrgPermLogInfoMixin, OrgPermsMixin, View):  # pragma: no 
 
             theParentChannel.config['name_format'] = name_format
             old_name = theParentChannel.name
-            theParentChannel.name = self.formatChannelName(theParentChannel, theParentChannel, user)
+            theParentChannel.name = Channel.formatChannelName(name_format, theParentChannel, user)
             theParentChannel.save(update_fields=['config', 'name'])
             logger.info('channel renamed', extra=self.withLogInfo({
                 'channel_pk': theParentChannel.id,
                 'channel_uuid': theParentChannel.uuid,
+                'device_id': theParentChannel.address,
                 'old_name': old_name,
                 'new_name': theParentChannel.name,
             }))
@@ -73,17 +74,18 @@ class PmRenameChannels(OrgPermLogInfoMixin, OrgPermsMixin, View):  # pragma: no 
             theChannelList = Channel.objects.filter(is_active=True, parent_id=theParentChannel.id)
             for theChildChannel in theChannelList:
                 old_name = theChildChannel.name
-                theChildChannel.name = self.formatChannelName(theParentChannel, theChildChannel, user)
+                theChildChannel.name = Channel.formatChannelName(name_format, theChildChannel, user)
                 theChildChannel.save(update_fields=['name'])
                 logger.info('channel renamed', extra=self.withLogInfo({
                     'channel_pk': theChildChannel.id,
                     'channel_uuid': theChildChannel.uuid,
+                    'device_id': theChildChannel.address,
                     'old_name': old_name,
                     'new_name': theChildChannel.name,
                 }))
             #endfor
             return HttpResponse(json.dumps({
-                'msg': f'All channels for device "{theParentChannel.device_id}" renamed',
+                'msg': f'All channels for device "{theParentChannel.address}" renamed',
                 'id': theParentChannel.id,
                 'name': theParentChannel.name,
             }), content_type='application/json')
@@ -93,19 +95,5 @@ class PmRenameChannels(OrgPermLogInfoMixin, OrgPermsMixin, View):  # pragma: no 
             }), content_type='application/json', status=422)
         #endif
     #enddef post
-
-    def formatChannelName(self, pmParent: Channel, pmChild: Channel, user):
-        user_name = user.first_name or user.last_name or user.username
-        channel_name = (
-            pmParent.name_format
-            .replace('{{device_id}}', pmParent.address)
-            .replace('{{pm_scheme}}', pmChild.schemes[0].strip('{}'))
-            .replace('{{pm_mode}}', pmChild.config['chat_mode'] if 'chat_mode' in pmChild.config else '')
-            .replace('{{phone_number}}', pmChild.config['phone_number'] if 'phone_number' in pmChild.config else '')
-            .replace('{{org}}', user.get_org().name)
-            .replace('{{first_name}}', user_name)
-        )
-        return channel_name
-    #enddef formatChannelName
 
 #endclass PmRenameChannels

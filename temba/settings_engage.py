@@ -48,7 +48,6 @@ MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 INSTALLED_APPS = (
     tuple(filter(lambda tup: tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
         'django_flatpickr',
-        'temba.ext',
         'engage.api',
         'engage.assets',
         'engage.auth',
@@ -67,7 +66,6 @@ INSTALLED_APPS = (
 )
 
 APP_URLS += (
-    'temba.ext.urls',
     'engage.api.urls',
     'engage.auth.urls',
     'engage.pm.urls',
