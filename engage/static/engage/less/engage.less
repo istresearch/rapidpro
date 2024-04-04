@@ -1,5 +1,6 @@
 @import 'bs5';
 @import 'dialogs';
+@import 'chat_modes';
 
 /****************************************************************************
  styles layered over site as "2nd to last loaded" (final.less loads this)
@@ -427,9 +428,8 @@ span.glyph.icon-channel-postmaster{
 
 /* refresh uses ::before to add unicode char and font */
 /* just display bkg-img for pm-only icons */
-[class^="icon-"]:not(.pm-icon),
-[class*=" icon-"]:not(.pm-icon) {
-  &:not(.glyph) {
+[class*="icon-"]:not(.pm-icon) {
+  &:not(.glyph):not([class*="icon-pm"]) {
     background-image: none;
   }
 }
@@ -457,7 +457,7 @@ temba-modax > div.send-via-btn {
   height: 16px;
   width: 16px;
   margin-top: -3px;
-  font-size: @chatIconSize;
+  font-size: 1.9rem;
   position: relative;
   /* display cannot be 'contents' else tooltips stop working */
   display: inline-block;
@@ -481,71 +481,6 @@ temba-modax > div.send-via-btn {
   &:hover .tooltiptext {
     visibility: visible;
   }
-}
-.mode-icon-pm_element,
-temba-modax#send-via-pm_element > div.send-via-btn {
-  background: url("@{imgEngagePath}/element-chat.svg");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 3px;
-}
-.mode-icon-pm_signal,
-temba-modax#send-via-pm_signal > div.send-via-btn {
-  background: url("@{imgEngagePath}/signal-chat.svg");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 6px;
-}
-.mode-icon-pm_session,
-temba-modax#send-via-pm_session > div.send-via-btn {
-  background: url("@{imgEngagePath}/session-messenger.png");
-  background-size: @chatIconSize;
-  height: 25px;
-  width: 25px;
-  margin-top: 0px;
-}
-.mode-icon-pm_reddit,
-temba-modax#send-via-pm_reddit > div.send-via-btn {
-  background: url("@{imgEngagePath}/reddit.png");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 0px;
-}
-.mode-icon-pm_mastodon,
-temba-modax#send-via-pm_mastodon > div.send-via-btn {
-  background: url("@{imgEngagePath}/mastodon.png");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 0px;
-}
-.mode-icon-pm_youtube,
-temba-modax#send-via-pm_youtube > div.send-via-btn {
-  background: url("@{imgEngagePath}/youtube.png");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 0px;
-}
-.mode-icon-pm_tiktok,
-temba-modax#send-via-pm_tiktok > div.send-via-btn {
-  background: url("@{imgEngagePath}/tiktok.png");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 0px;
-}
-.mode-icon-pm_service,
-temba-modax#send-via-pm_service > div.send-via-btn {
-  background: url("@{imgEngagePath}/postmaster.svg");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 0px;
-  filter: invert(1);
 }
 /* ----------------------------------------------------*/
 

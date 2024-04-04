@@ -75,6 +75,11 @@ class ChannelOverrides(MonkeyPatcher):
         return self.config[self.CONFIG_NAME_FORMAT] if 'name_format' in self.config else ''
     #enddef name_format
 
+    @property
+    def children(self: Channel):
+        return Channel.objects.filter(parent=self, is_active=True)
+    #enddef children
+
     @staticmethod
     def formatChannelName(name_format, channel: Channel, user):
         user_name = user.first_name or user.last_name or user.username
@@ -89,7 +94,6 @@ class ChannelOverrides(MonkeyPatcher):
         )
         return channel_name
     #enddef formatChannelName
-
 
 #endclass ChannelOverrides
 

@@ -13,12 +13,16 @@ from temba.utils.views import BulkActionMixin
 class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView):
     template_name = 'pm/list.html'
     title = "PM Devices"
-    fields = ("name", "address", "uuid", "last_seen",)
-    field_config = {"address": {"label": "Device ID"}, "uuid": {"label": "UUID"}}
+    fields = ("name", "address", "children", "last_seen",)
+    field_config = {
+        "address": {"label": "Device ID"},
+        "uuid": {"label": "UUID"},
+        "children": {"label": "APPS"},
+    }
     search_fields = ("name__icontains", "address__icontains", "uuid__icontains", "last_seen__icontains",)
     secondary_order_by = ["name"]
     default_order = ("-last_seen",)
-    non_sort_fields = ()
+    non_sort_fields = ('children',)
     link_url = 'uuid@pm.postmaster_read'
 
     def get_bulk_actions(self):
@@ -45,7 +49,6 @@ class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView
             channel_type=PostmasterType.code,
             schemes='{'+PM_CHANNEL_MODES['PM'].scheme+'}',
         )
-        #search_query = self.request.GET.get("search", None)
         sort_on = self.request.GET.get("_order", None)
         if sort_on:
             self.sort_direction = "desc" if sort_on.startswith("-") else "asc"
@@ -57,7 +60,8 @@ class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView
             sort_order = []
         #endif
         sort_order += self.secondary_order_by
-        queryset.order_by(*sort_order).prefetch_related("org")
+        queryset.order_by(*sort_order)
+        queryset.prefetch_related("org")
         return queryset
     #enddef get_queryset
 
