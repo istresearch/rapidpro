@@ -114,7 +114,7 @@
                     .chat_modes
                       {% for child_obj in obj.children %}
                         <a href="/channels/channel/read/{{ child_obj.uuid }}" data-chat_mode="{{ child_obj.chat_mode }}">
-                          <div class="chat_mode {{ child_obj|chat_mode_class }}" tooltip="{{ child_obj|chat_mode_label }}"></div>
+                          <div class="chat_mode {{ child_obj|chat_mode_class }}" title="{{ child_obj.name }}"></div>
                         </a>
                       {% endfor %}
                   - else
