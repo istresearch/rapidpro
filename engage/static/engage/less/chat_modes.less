@@ -47,17 +47,22 @@
 /* ===== BEGIN Specific Scheme Definitions ===== */
 .chat-mode-scheme(pm_element) {
   content: url("@{imgEngagePath}/element-chat.svg");
-  margin-top: 3px;
+  .send-via-btn {
+    margin-top: 3px;
+  }
 }
 .chat-mode-scheme(pm_mastodon) {
   content: url("@{imgEngagePath}/mastodon.png");
 }
 .chat-mode-scheme(pm_signal) {
   content: url("@{imgEngagePath}/signal-chat.svg");
-  margin-top: 6px;
+  .send-via-btn {
+    margin-top: 6px;
+  }
 }
 .chat-mode-scheme(pm_session) {
   content: url("@{imgEngagePath}/session-messenger.png");
+  filter: invert(1);
 }
 .chat-mode-scheme(pm_reddit) {
   content: url("@{imgEngagePath}/reddit.png");

@@ -45,6 +45,9 @@
 
     #pm_devices .chat_modes {
       font-size: 1.4rem;
+      .chat_mode {
+        margin-right: 0.3em;
+      }
       /*glyph icons in bootstrap2 size themselves at font-size 16px*/
       .icon-phone:before {
         font-size: 1.4rem;
@@ -108,7 +111,7 @@
                     .chat_modes
                       {% for child_obj in obj.children %}
                         <a href="/channels/channel/read/{{ child_obj.uuid }}">
-                          <div class="{{ child_obj|chat_mode_class }}" tooltip="{{ child_obj|chat_mode_label }}"></div>
+                          <div class="chat_mode {{ child_obj|chat_mode_class }}" tooltip="{{ child_obj|chat_mode_label }}"></div>
                         </a>
                       {% endfor %}
                   - else

@@ -72,12 +72,20 @@ class ChannelOverrides(MonkeyPatcher):
 
     @property
     def name_format(self: Channel):
-        return self.config[self.CONFIG_NAME_FORMAT] if 'name_format' in self.config else ''
+        return self.config[self.CONFIG_NAME_FORMAT] if self.CONFIG_NAME_FORMAT in self.config else ''
     #enddef name_format
 
     @property
+    def chat_mode(self: Channel):
+        return self.config[self.CONFIG_CHAT_MODE] if self.CONFIG_CHAT_MODE in self.config else ''
+    #enddef chat_mode
+
+    @property
     def children(self: Channel):
-        return Channel.objects.filter(parent=self, is_active=True)
+        from django.db.models.expressions import RawSQL
+        return Channel.objects.annotate(
+            my_chat_mode=RawSQL("config::json->>'chat_mode'", [])
+        ).filter(parent=self, is_active=True).order_by('my_chat_mode')
     #enddef children
 
     @staticmethod
