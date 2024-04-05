@@ -1,6 +1,6 @@
 -extends "smartmin/read.html"
 
--load smartmin sms temba i18n humanize
+-load smartmin sms temba i18n humanize pm
 
 -block extra-style
   {{block.super}}
@@ -29,6 +29,20 @@
       font-variant: all-small-caps;
       font-size: large;
     }
+    .chat_modes {
+      font-size: 1.4rem;
+      .chat_mode {
+        margin-right: 0.3em;
+      }
+      a:link {
+        text-decoration: none;
+      }
+      /*glyph icons in bootstrap2 size themselves at font-size 16px*/
+      .icon-phone:before {
+        font-size: 1.4rem;
+      }
+    }
+
 
 
 -block page-title
@@ -39,7 +53,7 @@
     .glyph.icon-inbox
 
 -block title
-  {{ name }}
+  {{ object.name }}
 
 -block content
   %hr
@@ -62,10 +76,16 @@
         {{ object.id }}
     .data-field
       .data-label
-        Schemes:
+        Apps:
       .data-value
-        %div
-          {{ object.apps }}
+        .chat_modes
+          {% with obj=object %}
+            {% for child_obj in obj.children %}
+              <a href="/channels/channel/read/{{ child_obj.uuid }}" data-chat_mode="{{ child_obj.chat_mode }}">
+                <div class="chat_mode {{ child_obj|chat_mode_class }}" tooltip="{{ child_obj|chat_mode_label }}"></div>
+              </a>
+            {% endfor %}
+          {% endwith %}
     %hr
     .data-field
       .data-label
@@ -82,11 +102,6 @@
         Modified:
       .data-value
         {{ object.modified_on }}
-    .data-field
-      .data-label
-        Name:
-      .data-value
-        {{ object.name }}
     .data-field
       .data-label
         Country:
@@ -114,12 +129,12 @@
         {{ object.role }}
     .data-field
       .data-label
-        bod(?):
+        bod:
       .data-value
         {{ object.bod }}
     .data-field
       .data-label
-        TPS:
+        Tx Per Second:
       .data-value
         {{ object.tps }}
     .data-field

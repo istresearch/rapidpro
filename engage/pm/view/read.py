@@ -13,7 +13,7 @@ from temba.orgs.views import OrgPermsMixin
 
 class PmViewRead(OrgPermsMixin, SmartReadView):
     slug_url_kwarg = "uuid"
-    fields = Channel._meta.get_fields()
+    fields = Channel._meta.get_fields() + ('children',)
     select_related = ("org",)
     title = _("PM Details")
     template_name = "pm/read.html"
@@ -56,8 +56,6 @@ class PmViewRead(OrgPermsMixin, SmartReadView):
 
         org = self.request.user.get_org()
         context['org'] = org
-
-        context['apps'] = obj.config['apps'] if 'apps' in obj.config else ''
 
         context['device_name'] = obj.name
         context['device_id'] = obj.address
