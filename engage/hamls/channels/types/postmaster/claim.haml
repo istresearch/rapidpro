@@ -224,14 +224,18 @@
 
   -if po_qr and po_qr.qr_base64
     :javascript
-      setInterval(
+      const pollClaimID = setInterval(
         function pollUntilDone(url, interval, timeout) {
           if($('#enable-multiple')[0].checked == false){
             $.get({
                 url: "{% url 'pm.postmaster_post_office_status' po_qr.data.api_key %}",
             }, function(resp) {
               if ( resp && resp.device_id ) {
-                window.location = '{% url "pm.postmaster_list" %}?search=' + resp.device_id;
+                clearInterval(pollClaimID);
+                putToastInToaster('alert-success', 'Device registered, redirecting to device page…');
+                setTimeout(() => {
+                  window.location = '{% url "pm.postmaster_list" %}?search=' + resp.device_id;
+                }, 5000);
               }
             });
           }
