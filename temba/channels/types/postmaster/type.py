@@ -1,11 +1,25 @@
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
+from smartmin.views import SmartFormView
 
-from temba.channels.types.postmaster.views import ClaimView, UpdatePostmasterForm
+from ...models import ChannelType, Channel
 
-from .. import TYPES as SchemeTypes
+from ...views import ClaimViewMixin
 
-from ...models import ChannelType
 
+class ClaimView(ClaimViewMixin, SmartFormView):
+    form_class = ClaimViewMixin.Form
+
+    def get_claim_url(self):
+        return reverse("channels.types.postmaster.claim")
+    #enddef get_claim_url
+
+    def get_queryset(self):
+        self.queryset = Channel.objects.none()
+        return self.queryset
+    #enddef get_queryset
+
+#endclass ClaimView
 
 class PostmasterType(ChannelType):
     """
@@ -27,27 +41,17 @@ class PostmasterType(ChannelType):
     show_config_page = False
 
     schemes = None
-    _scheme = schemes
     max_length = 1600
-
-    update_form = UpdatePostmasterForm
 
     def deactivate(self, channel):
         number_update_args = dict()
 
         if not channel.is_delegate_sender():
             number_update_args["sms_application_sid"] = ""
-
+        #endif
         if channel.supports_ivr():
             number_update_args["voice_application_sid"] = ""
+        #endif
+    #enddef deactivate
 
-    @property
-    def schemes(self):
-        for stype in SchemeTypes:
-            if self._scheme is not None and stype.name.lower() == self._scheme.lower():
-                self.update_form = UpdatePostmasterForm
-        return self._scheme
-
-    @schemes.setter
-    def set_schemes(self, value):
-        self.schemes = _scheme = value
+#endclass PostmasterType

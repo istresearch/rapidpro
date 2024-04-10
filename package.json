@@ -14,7 +14,7 @@
     "colorette": "1.2.2",
     "fa-icons": "0.2.0",
     "is-core-module": "2.4.0",
-    "less": "2.7.1",
+    "less": "^4.2.0",
     "marked": "^4.0.10",
     "queue-microtask": "1.2.3",
     "react": "16.13.1",

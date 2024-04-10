@@ -3,6 +3,10 @@
 
 -block extra-style
   :css
+    .search-input-area {
+      width: 40em;
+    }
+
     tr:nth-child(even) {background: #FFF}
     .button-light{
       padding-bottom: 8px;
@@ -39,47 +43,60 @@
       font-size: large;
     }
 
+    #pm_devices .chat_modes {
+      font-size: 1.4rem;
+      .chat_mode {
+        margin-right: 0.3em;
+      }
+      a:link {
+        text-decoration: none;
+      }
+      /*glyph icons in bootstrap2 size themselves at font-size 16px*/
+      .icon-phone:before {
+        font-size: 1.4rem;
+      }
+    }
+
 -block page-top
-  #title-area.inline-flex.flex-column
-    -block title
-      -block title-icon
-        .pm-icon.icon-postmaster
-      -block title-text
-        .title-text
-          %h1{style:"font-size: xx-large; font-weight: 100;"}
-            {{title}}
-      .search-input-area
-        %form{style:'width:30em;'}
-          %temba-textinput.search-query{type:'text', placeholder:'Search', name:"search", value:"{{search}}"}
-      .action-menu-area
+  #title-area.flex
+    .pm-icon.icon-postmaster
+    .title-text
+      %h1{style:"font-size: xx-large; font-weight: 100;"}
+        {{title}}
+    .menu-area.ml-auto
+      .action-menu-area.ml-1.self-end
         -include "gear_links_include.haml"
-
--block top-form
-  - if view.search_fields
-    - block search-form
-      %form#search-form
-        %input.input-medium.search-query{type:'text', placeholder:'Search', name:"search", value:"{{search}}"}
-
 
 {% block content %}
   - block pre-table
+    .flex
+      - block search-form
+        %form#search-form.search-input-area.mb-3
+          %temba-textinput.search-query{type:'text', placeholder:'Search', name:"search", value:"{{search}}"}
+      .list-buttons-container.ml-2.flex-grow
+        .list-buttons.flex.items-center.-mx-2.h-full
+          -if 'purge_outbox' in actions
+            #action-purge.button-danger.button-action
+              .-mt-1.mr-2.glyph.icon-exclamation-sign
+              -trans "Purge Outbox"
+          -if 'rename' in actions
+            %button#action-rename.button-action{data-toggle:"modal", data-target:"#modal-rename-channels"}
+              .-mt-1.mr-2.glyph.icon-edit
+              -trans "Rename"
 
   - block table
     .table-scroll.shadow.rounded-lg.overflow-x-auto
-      %table#pm_devices.list.object-list.lined.selectable
+      %table#pm_devices.list.object-list.lined
         %thead
           %tr
             - if actions
               %th
                 %div.multiselect-header
                   %a.multiselect-select-all.checkbox.object-row-checkbox.glyph.icon-checkbox-unchecked.object-row-checkbox
-                  %div.multiselect-label
-                    %span
-                      Select all
             - for field in fields
               %th{ class:'{% if field|sort_by not in view.non_sort_fields %}header{% if field|sort_by == view.sort_field %} {% if not view.sort_direction or view.sort_direction == "asc" %}headerSortUp{% else %}headerSortDown{% endif %}{% endif %}{% endif %}', id:'header-{{field}}' }
                 - if field not in view.non_sort_fields
-                  <a href="?sort_on={% if field|sort_by == view.sort_field %}{% if view.sort_direction == 'asc' %}-{% endif %}{% endif %}{{field|sort_by}}{% if search is not null %}&search={{search}}{% endif %}">{% get_label field %}</a>
+                  <a href="?_order={% if field|sort_by == view.sort_field %}{% if view.sort_direction == 'asc' %}-{% endif %}{% endif %}{{field|sort_by}}{% if search is not null %}&search={{search}}{% endif %}">{% get_label field %}</a>
                 - else
                   {% get_label field %}
         %tbody
@@ -93,8 +110,15 @@
                 %td{ class:'value-{{field}} {% get_class field obj %}{% if field in link_fields %} clickable{% endif %}'}
                   - if field in link_fields
                     <a {% if pjax %}data-pjax='{{ pjax }}'{% endif %} href="{% get_field_link field obj %}">{% get_value obj field %}</a>
+                  - elif field == 'children'
+                    .chat_modes
+                      {% for child_obj in obj.children %}
+                        <a href="/channels/channel/read/{{ child_obj.uuid }}" data-chat_mode="{{ child_obj.chat_mode }}">
+                          <div class="chat_mode {{ child_obj|chat_mode_class }}" title="{{ child_obj.name }}"></div>
+                        </a>
+                      {% endfor %}
                   - else
-                    <span>{% get_value obj field %}</span>
+                    {% get_value obj field %}
 
           - empty
             %tr.empty_list
@@ -113,32 +137,25 @@
 
 {% endblock content %}
 
+-block post-content
+  -if 'purge_outbox' in actions
+    %temba-dialog#purge-confirmation.hide(
+        header='{{ _("Purge Outbox")|escapejs }}'
+        primaryButtonName='{{ _("Purge")|escapejs }}'
+        destructive='true'
+    )
+      .p-6.confirmation-body
+        %p
+          -trans "Purge all outgoing messages from all of the selected devices?"
+        %p
+          &nbsp;
+        %p
+          -trans "Once the outbox is purged, it's messages will be gone forever. There is no way to undo this operation."
+
+  {% if 'rename' in actions %}
+    {% include "pm/dialog-rename.haml" with groups=broadcast.groups.all %}
+  {% endif %}
+
 -block extra-script
   {{ block.super }}
-  :javascript
-    function handleRowClicked(event) {
-        if (event.target.tagName !== "TEMBA-CHECKBOX") {
-          const row = event.target.closest("tr");
-          const uuid = row.getAttribute("data-object-uuid");
-          gotoLink("/pm/read/" + uuid + "/");
-        }
-    }
-
-    $(document).ready(function(){
-      $("th.header").click(function(evt){
-        // build up our ordering
-        var field = evt.target.id.substr(evt.target.id.indexOf("-")+1)
-
-        {% if order_asc %}
-        if (field == "{{order}}"){
-          field = "-" + field;
-        }
-        {% endif %}
-
-        if ($(this).find('a:first').length > 0) {
-          if ($(this).find('a:first')[0].href !=null) {
-            document.location = $(this).find('a:first')[0].href
-          }
-        }
-      });
-    });
+  <script src="{% static 'engage/js/pm-list.js' %}"></script>

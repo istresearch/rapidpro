@@ -9,11 +9,11 @@ from temba.contacts.models import URN
 class ChannelOverrides(MonkeyPatcher):
     patch_class = Channel
 
-    CONFIG_DEVICE_ID = "device_id"
-    CONFIG_DEVICE_NAME = "device_name"
+    CONFIG_NAME_FORMAT = "name_format"
     CONFIG_CHAT_MODE = "chat_mode"
-    CONFIG_CLAIM_CODE = "claim_code"
-    CONFIG_ORG_ID = "org_id"
+    CONFIG_PHONE_NUMBER = "phone_number"
+    CONFIG_DEVICE_MODEL = "device_model"
+    CONFIG_IMEI = "imei"
 
     def create(
             cls: type[Channel],
@@ -67,13 +67,41 @@ class ChannelOverrides(MonkeyPatcher):
 
     @property
     def device_id(self: Channel):
-        return self.config['device_id'] if 'device_id' in self.config else ''
+        return self.address
     #enddef device_id
 
     @property
-    def device_name(self: Channel):
-        return self.config['device_name'] if 'device_name' in self.config else ''
-    #enddef device_name
+    def name_format(self: Channel):
+        return self.config[self.CONFIG_NAME_FORMAT] if self.CONFIG_NAME_FORMAT in self.config else ''
+    #enddef name_format
+
+    @property
+    def chat_mode(self: Channel):
+        return self.config[self.CONFIG_CHAT_MODE] if self.CONFIG_CHAT_MODE in self.config else ''
+    #enddef chat_mode
+
+    @property
+    def children(self: Channel):
+        from django.db.models.expressions import RawSQL
+        return Channel.objects.annotate(
+            my_chat_mode=RawSQL("config::json->>'chat_mode'", [])
+        ).filter(parent=self, is_active=True).order_by('my_chat_mode')
+    #enddef children
+
+    @staticmethod
+    def formatChannelName(name_format, channel: Channel, user):
+        user_name = user.first_name or user.last_name or user.username
+        channel_name = (
+            name_format
+            .replace('{{device_id}}', channel.address)
+            .replace('{{pm_scheme}}', channel.schemes[0].strip('{}'))
+            .replace('{{pm_mode}}', channel.config['chat_mode'] if 'chat_mode' in channel.config else '')
+            .replace('{{phone_number}}', channel.config['phone_number'] if 'phone_number' in channel.config else '')
+            .replace('{{org}}', user.get_org().name)
+            .replace('{{first_name}}', user_name)
+        )
+        return channel_name
+    #enddef formatChannelName
 
 #endclass ChannelOverrides
 

@@ -1,0 +1,102 @@
+@import 'engage-vars';
+
+/* -------------------------------------------------------------------
+ * Once you add a scheme to the list, ensure you also create the matching
+ * CSS rules specific to your icon. Search for 'END Specific Scheme Definitions'
+ * and add the LESS rule as follows:
+ .chat-mode-scheme(pm_scheme) {
+   content: url("@{imgEngagePath}/schemeicon.svg");
+   //other CSS rules would follow, if needed.  e.g.
+   filter: invert(1);
+ }
+ */
+//ignore these scheme types as the CSS they use is already defined elsewhere
+//  they are defined so we are well aware what we are NOT defining here AND
+//  because commenting out items in a list does not work in LESS.
+@chatModeSchemesUsingBuiltInCSS:
+  pm_email,
+  pm_facebook,
+  pm_fbm,
+  pm_imo,
+  pm_instagram,
+  pm_kakao,
+  pm_line,
+  pm_mobyx,
+  pm_telegram,
+  pm_twitter,
+  pm_viber,
+  pm_vk,
+  pm_whatsapp;
+
+@chatModeSchemes:
+  pm_element,
+  pm_signal,
+  pm_session,
+  pm_reddit,
+  pm_mastodon,
+  pm_youtube,
+  pm_tiktok,
+  pm_service;
+
+/* Generic LESS function to set defaults */
+.chat-mode-icon(@scheme: "pm_service") {
+  background: none; //prevents bootstrap2 icons from trying to display
+  margin-top: 0;
+  .chat-mode-scheme(@scheme);
+}
+/* ===== BEGIN Specific Scheme Definitions ===== */
+.chat-mode-scheme(pm_element) {
+  content: url("@{imgEngagePath}/element-chat.svg");
+  .send-via-btn {
+    margin-top: 3px;
+  }
+}
+.chat-mode-scheme(pm_mastodon) {
+  content: url("@{imgEngagePath}/mastodon.png");
+}
+.chat-mode-scheme(pm_signal) {
+  content: url("@{imgEngagePath}/signal-chat.svg");
+  .send-via-btn {
+    margin-top: 6px;
+  }
+}
+.chat-mode-scheme(pm_session) {
+  content: url("@{imgEngagePath}/session-messenger.png");
+  filter: invert(1);
+}
+.chat-mode-scheme(pm_reddit) {
+  content: url("@{imgEngagePath}/reddit.png");
+}
+.chat-mode-scheme(pm_mastodon) {
+  content: url("@{imgEngagePath}/mastodon.png");
+}
+.chat-mode-scheme(pm_youtube) {
+  content: url("@{imgEngagePath}/youtube.png");
+}
+.chat-mode-scheme(pm_tiktok) {
+  content: url("@{imgEngagePath}/tiktok.png");
+}
+.chat-mode-scheme(pm_service) {
+  content: url("@{imgEngagePath}/postmaster.svg");
+  filter: invert(1);
+}
+/* ===== END Specific Scheme Definitions ===== */
+
+/* Iterator over all the schemes to create the various CSS rules */
+each(@chatModeSchemes, {
+  //non-chat icons are smaller than the "call buttons" in contact page.
+  .icon-@{value} {
+    &:extend(.chat-icons);
+    height: 1.6rem;
+    width: 1.6rem;
+    .chat-mode-icon(@scheme: @value);
+  }
+
+  temba-modax#send-via-@{value} > div.send-via-btn {
+    &:extend(.chat-icons);
+    height: 1.9rem;
+    width: 1.9rem;
+    &:extend(.mixin-@{value});
+  }
+
+});

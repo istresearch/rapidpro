@@ -1,5 +1,5 @@
 -extends "smartmin/read.html"
--load static smartmin temba compress humanize channels i18n tz
+-load static smartmin temba compress humanize channels i18n tz pm
 
 -block title
   .flex.items-start.flex-col
@@ -31,16 +31,24 @@
   -with object.get_delegate_channels as delegates
     -if delegates
       .channel-roles.mt-3
-        -for channel in delegates
-          .lbl.linked(onclick="goto(event, this)" href="{% url 'channels.channel_read' channel.uuid %}")
-            .flex.items-center
-              .text-base{class:'{{ channel|channel_icon }}'}
-              .name.mx-1
-                -if channel.is_delegate_sender
-                  -trans "Bulk sending"
+        -if object.channel_type == 'PSM'
+          .chat_modes
+            {% for child_obj in object.children %}
+              <a href="/channels/channel/read/{{ child_obj.uuid }}" data-chat_mode="{{ child_obj.chat_mode }}">
+                <div class="chat_mode {{ child_obj|chat_mode_class }}" title="{{ child_obj.name }}"></div>
+              </a>
+            {% endfor %}
+        -else
+          -for channel in delegates
+            .lbl.linked(onclick="goto(event, this)" href="{% url 'channels.channel_read' channel.uuid %}")
+              .flex.items-center
+                .text-base{class:'{{ channel|channel_icon }}'}
+                .name.mx-1
+                  -if channel.is_delegate_sender
+                    -trans "Bulk sending"
 
-                -if channel.is_delegate_caller
-                  -trans "Voice calls"
+                  -if channel.is_delegate_caller
+                    -trans "Voice calls"
 
     .my-4.text-base
       -if delayed_sync_event or unsent_msgs_count
@@ -369,6 +377,20 @@
 
         .p-6.important {
           font-weight: bolder;
+        }
+
+        .chat_modes {
+          font-size: 1.4rem;
+          .chat_mode {
+            margin-right: 0.3em;
+          }
+          a:link {
+            text-decoration: none;
+          }
+          /*glyph icons in bootstrap2 size themselves at font-size 16px*/
+          .icon-phone:before {
+            font-size: 1.4rem;
+          }
         }
     {% endlessblock %}
 

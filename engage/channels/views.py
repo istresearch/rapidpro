@@ -42,10 +42,16 @@ class ChannelReadOverrides(MonkeyPatcher):
     def get_gear_links(self):
         links = self.Read_get_gear_links()
 
-        # as_btn introduced to determine if placed in hamburger menu or as its own button
-        el = [x for x in links if hasattr(x, 'id') and x.id == 'update-channel']
-        if el:
-            el.as_btn = True
+        oldParentBtnTitle = _("Android Channel")
+        for item in links:
+            # as_btn introduced to determine if placed in hamburger menu or as its own button
+            if 'id' in item and item['id'] == 'update-channel':
+                item['as_btn'] = True
+            #endif
+            if 'title' in item and item['title'] == oldParentBtnTitle:
+                item['title'] = _("Parent Channel")
+            #endif
+        #endfor
 
         # append the Purge Outbox link as a button
         links.append(
