@@ -1,18 +1,9 @@
-function initLeafletMap(geoObj, config=null) {
+$(document).ready(() => {
+    initLeafletMap();
+});
+
+function initLeafletMap(geoObj = null, config=null) {
     const defaultConfig = {
-        leaflet: {
-            id: 'road_map',
-            url: 'https://tiles.maps.elastic.co/v2/default/{z}/{x}/{y}.png',
-            urlparams: {
-                elastic_tile_service_tos: 'agree',
-                my_app_name: leaflet_app_name,
-                license: leaflet_token,
-            },
-            //tileLayer: LEAFLET.url + $rootScope.userInfo.maps_lickey,
-            minZoom: 0,
-            maxZoom: 18,
-            attribution: '&copy; [OpenStreetMap](http://www.openstreetmap.org/copyright) contributors | [Elastic Maps Service](https://www.elastic.co/elasticmapsservice)',
-        },
         mapCenter: { // for geo coordinates
             lat: 51,
             lng: 0,
@@ -31,10 +22,10 @@ function initLeafletMap(geoObj, config=null) {
     const leafletData = window.leafletData;
     const L = window.L;
 
-    let geoType = geoObj.type || 'point';
+    let geoType = ( geoObj && geoObj.type ) || 'point';
 
     config.areaSelectOptions.geoType = geoType;
-    let areaSelect = new L.AreaSelect(config.areaSelectOptions);
+    //let areaSelect = new L.AreaSelect(config.areaSelectOptions);
 
     leafletData.getMap().then((map) => {
         /*

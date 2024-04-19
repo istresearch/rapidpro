@@ -3,6 +3,7 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.core.handlers.wsgi import WSGIRequest
+from django.utils.http import urlencode
 from django.utils.translation import gettext_lazy as _
 
 from smartmin.views import SmartReadView
@@ -89,7 +90,23 @@ class PmViewRead(OrgPermsMixin, SmartReadView):
             #endif
         #nedif
 
-        context['leaflet_token'] = settings.LEAFLET_TOKEN
+        if settings.LEAFLET_ENABLED:
+            leafletConfig = {
+                'id': 'road_map',
+                'url': 'https://tiles.maps.elastic.co/v2/default/{z}/{x}/{y}.png',
+                'urlparams': {
+                    'elastic_tile_service_tos': 'agree',
+                    'my_app_name': settings.DEFAULT_BRAND_OBJ['slug'],
+                    'license': settings.LEAFLET_TOKEN,
+                },
+                'minZoom': 0,
+                'maxZoom': 18,
+                'attribution': '&copy; [OpenStreetMap](http://www.openstreetmap.org/copyright) contributors | [Elastic Maps Service](https://www.elastic.co/elasticmapsservice)',
+            }
+            leafletConfig['tileLayer'] = leafletConfig['url'] + '?' + urlencode(leafletConfig['urlparams'])
+
+            context['leaflet_config'] = leafletConfig
+        #endif
 
         #self.logger.debug("context=", extra={'context': context})
         return context

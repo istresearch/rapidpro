@@ -1,6 +1,6 @@
 -extends "smartmin/read.html"
 
--load smartmin sms temba i18n humanize pm
+-load smartmin sms temba i18n humanize pm static
 
 -block extra-style
   {{block.super}}
@@ -54,10 +54,6 @@
         font-size: 1.4rem;
       }
     }
-
-:javascript
-  const leaflet_app_name = "{{ brand.slug }}";
-  const leaflet_token = "{{ leaflet_token }}";
 
 -block page-title
   {{ page_title }}
@@ -196,13 +192,14 @@
         .data-value
           {{ object.config }}
 
-    {% if leaflet_token is not None %}
+    {% if leaflet_config %}
     #info-loc
       <label class="text-muted">Map</label>
       <div class="form-group indent-md"
            style="position:relative">
-          <leaflet [center]="mapCenterModal"
-              width="100%"
+          <leaflet center="mapCenter"
+              defaults="{{ leaflet_config }}"
+              width="300px"
               height="300px"
           ></leaflet>
       </div>
@@ -211,3 +208,5 @@
 
 -block extra-script
   {{ block.super }}
+
+  <script src="{% static 'engage/js/geo-loc.js' %}"></script>

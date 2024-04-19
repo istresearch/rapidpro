@@ -78,13 +78,23 @@ HANDLER_500 = 'engage.utils.views.server_error'
 TEMPLATES[0]['DIRS'].insert(0,
     os.path.join(ENGAGE_DIR, "hamls"),
 )
-STATICFILES_DIRS = tuple(x for x in STATICFILES_DIRS if x != os.path.join(PROJECT_DIR, "../node_modules"))
+STATICFILES_DIRS = tuple(
+    x for x in STATICFILES_DIRS if x != os.path.join(PROJECT_DIR, "../node_modules")
+    and x != os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/flow-editor/build")
+    and x != os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/temba-components/dist/static")
+    and x != os.path.join(PROJECT_DIR, "../node_modules/react/umd")
+    and x != os.path.join(PROJECT_DIR, "../node_modules/react-dom/umd")
+)
 STATICFILES_DIRS = STATICFILES_DIRS + (
+    ("@nyaruka/flow-editor/build", os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/flow-editor/build")),
+    ("@nyaruka/temba-components/dist/static", os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/temba-components/dist/static")),
+    ("react/umd", os.path.join(PROJECT_DIR, "../node_modules/react/umd")),
+    ("react-dom/umd", os.path.join(PROJECT_DIR, "../node_modules/react-dom/umd")),
     os.path.join(ENGAGE_DIR, "static"),
     os.path.join(PROJECT_DIR, "../node_config"),
-    os.path.join(PROJECT_DIR, "../node_modules/flatpickr/dist"),
-    os.path.join(PROJECT_DIR, "../node_modules/leaflet/dist"),
-    os.path.join(PROJECT_DIR, "../node_modules/leaflet-area-select/dist"),
+    ('flatpickr/dist', os.path.join(PROJECT_DIR, "../node_modules/flatpickr/dist")),
+    ('leaflet/dist', os.path.join(PROJECT_DIR, "../node_modules/leaflet/dist")),
+    ('leaflet-area-select/dist', os.path.join(PROJECT_DIR, "../node_modules/leaflet-area-select/dist")),
 )
 
 ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
@@ -564,4 +574,5 @@ MAUTH_DOMAIN = env('MAUTH_DOMAIN', required=False)
 
 SERVICE_CHANNEL_CONTACT_PREFIX = env('SERVICE_CHANNEL_CONTACT_PREFIX', '__PM-', required=False)
 
-LEAFLET_TOKEN = env('LEAFLET_TOKEN', 'CHANGEME')
+LEAFLET_ENABLED = bool(env('LEAFLET_ENABLED', False))
+LEAFLET_TOKEN = env('LEAFLET_TOKEN', '')
