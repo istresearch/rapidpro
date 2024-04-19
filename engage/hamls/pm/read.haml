@@ -55,7 +55,9 @@
       }
     }
 
-
+:javascript
+  const leaflet_app_name = "{{ brand.slug }}";
+  const leaflet_token = "{{ leaflet_token }}";
 
 -block page-title
   {{ page_title }}
@@ -194,6 +196,7 @@
         .data-value
           {{ object.config }}
 
+    {% if leaflet_token is not None %}
     #info-loc
       <label class="text-muted">Map</label>
       <div class="form-group indent-md"
@@ -203,6 +206,7 @@
               height="300px"
           ></leaflet>
       </div>
+    {% endif %}
 
 
 -block extra-script

@@ -1,4 +1,6 @@
 import logging
+
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.core.handlers.wsgi import WSGIRequest
 from django.utils.translation import gettext_lazy as _
@@ -86,6 +88,8 @@ class PmViewRead(OrgPermsMixin, SmartReadView):
                 context['inactive_apps'] = inactive_apps
             #endif
         #nedif
+
+        context['leaflet_token'] = settings.LEAFLET_TOKEN
 
         #self.logger.debug("context=", extra={'context': context})
         return context

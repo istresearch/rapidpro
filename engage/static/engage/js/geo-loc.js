@@ -1,4 +1,31 @@
-function initLeafletMap(geoObj) {
+function initLeafletMap(geoObj, config=null) {
+    const defaultConfig = {
+        leaflet: {
+            id: 'road_map',
+            url: 'https://tiles.maps.elastic.co/v2/default/{z}/{x}/{y}.png',
+            urlparams: {
+                elastic_tile_service_tos: 'agree',
+                my_app_name: leaflet_app_name,
+                license: leaflet_token,
+            },
+            //tileLayer: LEAFLET.url + $rootScope.userInfo.maps_lickey,
+            minZoom: 0,
+            maxZoom: 18,
+            attribution: '&copy; [OpenStreetMap](http://www.openstreetmap.org/copyright) contributors | [Elastic Maps Service](https://www.elastic.co/elasticmapsservice)',
+        },
+        mapCenter: { // for geo coordinates
+            lat: 51,
+            lng: 0,
+            zoom: 4
+        },
+        areaSelectOptions: {
+            width: 100,
+            height: 100,
+            geoType: 'polygon'
+        },
+    };
+    config = {...config, ...defaultConfig};
+
     let shape = null;
     let maxZoom = 15;
     const leafletData = window.leafletData;
@@ -6,7 +33,11 @@ function initLeafletMap(geoObj) {
 
     let geoType = geoObj.type || 'point';
 
+    config.areaSelectOptions.geoType = geoType;
+    let areaSelect = new L.AreaSelect(config.areaSelectOptions);
+
     leafletData.getMap().then((map) => {
+        /*
         if (geoType === 'circle') {
             shape = new L.Circle(
                 [geoObj.bounds._center.lat, geoObj.bounds._center.lng],
@@ -27,6 +58,21 @@ function initLeafletMap(geoObj) {
                 {radius: 10, fill: true, fillOpacity: 1, color: 'red'}
             ).addTo(map);
         }
+         */
+        areaSelect.addTo(map);
+        /*
+        areaSelect.on("change", () => {
+            let bounds = this.getBounds();
+            let center = this.getCenter();
+            geoObj.valueChanged = false;
+            geoObj.value = geoType === 'circle' ? GeoService.createStringForCircle(center, bounds) :
+                           geoType === 'polygon' ? GeoService.createStringForPolygon(bounds) :
+                           geoType === 'point' ? GeoService.createStringForPoint(center) : null;
+        });
+        if (geoObj.value) {
+            areaSelect.setBounds(GeoService.getCoordsFromString(scope.newRule.type, scope.newRule.value));
+        }
+        */
 
         map.fitBounds(shape.getBounds(), {maxZoom: maxZoom});
     });
