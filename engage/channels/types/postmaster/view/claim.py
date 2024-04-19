@@ -9,6 +9,7 @@ from django.conf import settings
 from django.urls import reverse
 
 from engage.utils.class_overrides import MonkeyPatcher
+from temba.channels.models import Channel
 from temba.channels.types.postmaster.type import ClaimView
 
 from ..postoffice import (
@@ -60,40 +61,13 @@ class ClaimViewOverrides(MonkeyPatcher, LogExtrasMixin):
         return links
     #enddef get_gear_links
 
-    def fetch_qr_code(self, data):
-        if po_server_url is not None and po_api_key is not None:
-            user = self.get_user()
-            r = requests.post(
-                f"{po_server_url}/engage/claim",
-                headers={
-                    po_api_header: str(po_api_key),
-                    "po-api-client-id": str(user.id),
-                },
-                data=data,
-                cookies=None,
-                verify=False,
-                timeout=10,
-            )
-            if r.status_code == 200:
-                return json.loads(r.content)["data"]
-            #endif
-        #endif
-    #enddef fetch_qr_code
-
     def get_context_data(self: type[ClaimView], **kwargs):
         context = super(type(self), self).get_context_data(**kwargs)
 
         name_format = self.request.GET.get('name_format', '{{device_id}} [{{pm_scheme}}]')
         user = self.get_user()
         org = user.get_org()
-        data = json.dumps({
-            'org_id': org.id,
-            'org_name': org.name,
-            'created_by': user.id,
-            'name_format': name_format,
-        })
-
-        context['po_qr'] = self.fetch_qr_code(data)
+        context['po_qr'] = Channel.fetch_claim_qr(org, user, name_format)
         self.init_pm_app_dl(self.request)
         context['pm_app_url'] = self.pm_app_url
         context['pm_app_qrcode'] = self.pm_app_qrcode

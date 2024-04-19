@@ -54,11 +54,38 @@ class PmViewRead(OrgPermsMixin, SmartReadView):
         obj = self.get_object()
         context['page_title'] = self.title
 
-        org = self.request.user.get_org()
+        user = self.request.user
+        org = user.get_org()
         context['org'] = org
 
         context['device_name'] = obj.name
         context['device_id'] = obj.address
+        device_info = Channel.fetch_device_info(user, obj.address)
+        context['device_info'] = device_info
+        context['device_meta'] = device_info.get('meta', {})
+
+        # app list versions sorted by chat mode
+        if device_info['meta'] is not None:
+            if device_info['meta']['extras'] is not None:
+                chat_mode_apps = {}
+                inactive_apps = {}
+                for item in device_info['meta']['extras']['apps']:
+                    chat_mode = item['modes'][0]
+                    app = {
+                        'chat_mode': chat_mode,
+                        'app_version': item.get('version', 'unknown'),
+                        'app_name': item.get('name', chat_mode),
+                        'status': item.get('status', ''),
+                    }
+                    chat_mode_apps[chat_mode] = app
+                    if not item.get('enabled', True):
+                        inactive_apps[chat_mode] = app
+                    #endif
+                #endfor
+                context['chat_mode_apps'] = chat_mode_apps
+                context['inactive_apps'] = inactive_apps
+            #endif
+        #nedif
 
         #self.logger.debug("context=", extra={'context': context})
         return context
