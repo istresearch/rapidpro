@@ -47,9 +47,6 @@
       %script{src:"{% static 'bower/xregexp/xregexp-all.js' %}"}
       %script{src:"{% static 'bower-engage/select2/select2.full.min.js' %}"}
       %script{src:"{% static 'flatpickr/dist/flatpickr.min.js' %}"}
-      %script{src:"{% static 'leaflet/dist/leaflet.js' %}"}
-      %script{src:"{% static 'leaflet-area-select/dist/Map.SelectArea.min.js' %}"}
-
 
       // expanded nav dropdown
       %script{src:"{% static 'bower/jquery-hoverintent/jquery.hoverIntent.js' %}"}
@@ -91,13 +88,17 @@
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'bower-engage/select2/select2.min.css' %}", media:'all'}
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'flatpickr/dist/flatpickr.min.css' %}", media:'all'}
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'flatpickr/dist/themes/light.css' %}", media:'all'}
-        %link{type:'text/css', rel:'stylesheet', href:"{% static 'leaflet/dist/leaflet.css' %}"}
 
       -compress css
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'fonts/icons/style.css' %}", media:'all'}
         %link{type:'text/less', rel:'stylesheet', href:"{% static 'less/print.less' %}", media:'print'}
         %link{type:"text/css", rel:"stylesheet", href:"{% static 'css/temba-components.css' %}"}
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'fonts/tembatoo/style.css' %}", media:'all'}
+
+      %link{type:'text/css', rel:'stylesheet', href:"{% static 'leaflet/dist/leaflet.css' %}"}
+      <!-- Make sure you put this AFTER Leaflet's CSS -->
+      %script{src:"{% static 'leaflet/dist/leaflet.js' %}"}
+      %script{src:"{% static 'leaflet-area-selector/dist/Map.SelectArea.min.js' %}"}
 
       -compress css
         {% lessblock %}

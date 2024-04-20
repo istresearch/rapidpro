@@ -13,6 +13,10 @@
       }
       #info-loc {
         max-width: 50%;
+        #leaflet_map {
+          width: 45vw;
+          height: 60vh;
+        }
       }
     }
     temba-button {
@@ -195,18 +199,12 @@
     {% if leaflet_config %}
     #info-loc
       <label class="text-muted">Map</label>
-      <div class="form-group indent-md"
-           style="position:relative">
-          <leaflet center="mapCenter"
-              defaults="{{ leaflet_config }}"
-              width="300px"
-              height="300px"
-          ></leaflet>
-      </div>
+      <div id="leaflet_map"></div>
     {% endif %}
 
 
 -block extra-script
   {{ block.super }}
-
+  :javascript
+    const leafletConfig = {{ leaflet_config|safe }};
   <script src="{% static 'engage/js/geo-loc.js' %}"></script>

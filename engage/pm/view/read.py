@@ -100,7 +100,7 @@ class PmViewRead(OrgPermsMixin, SmartReadView):
                     'license': settings.LEAFLET_TOKEN,
                 },
                 'minZoom': 0,
-                'maxZoom': 18,
+                'maxZoom': 19,
                 'attribution': '&copy; [OpenStreetMap](http://www.openstreetmap.org/copyright) contributors | [Elastic Maps Service](https://www.elastic.co/elasticmapsservice)',
             }
             leafletConfig['tileLayer'] = leafletConfig['url'] + '?' + urlencode(leafletConfig['urlparams'])

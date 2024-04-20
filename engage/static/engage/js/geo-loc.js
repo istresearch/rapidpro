@@ -4,11 +4,9 @@ $(document).ready(() => {
 
 function initLeafletMap(geoObj = null, config=null) {
     const defaultConfig = {
-        mapCenter: { // for geo coordinates
-            lat: 51,
-            lng: 0,
-            zoom: 4
-        },
+        divId: 'leaflet_map',
+        mapCenter: [51, 0],
+        mapZoom: 4,
         areaSelectOptions: {
             width: 100,
             height: 100,
@@ -20,14 +18,17 @@ function initLeafletMap(geoObj = null, config=null) {
     let shape = null;
     let maxZoom = 15;
     const leafletData = window.leafletData;
-    const L = window.L;
+    let map = L.map(config.divId).setView(config.mapCenter, config.mapZoom);
+    if ( leafletConfig ) {
+        L.tileLayer(leafletConfig.url, leafletConfig).addTo(map);
+    }
 
     let geoType = ( geoObj && geoObj.type ) || 'point';
 
     config.areaSelectOptions.geoType = geoType;
     //let areaSelect = new L.AreaSelect(config.areaSelectOptions);
 
-    leafletData.getMap().then((map) => {
+    //leafletData.getMap().then((map) => {
         /*
         if (geoType === 'circle') {
             shape = new L.Circle(
@@ -50,7 +51,7 @@ function initLeafletMap(geoObj = null, config=null) {
             ).addTo(map);
         }
          */
-        areaSelect.addTo(map);
+        //areaSelect.addTo(map);
         /*
         areaSelect.on("change", () => {
             let bounds = this.getBounds();
@@ -65,8 +66,8 @@ function initLeafletMap(geoObj = null, config=null) {
         }
         */
 
-        map.fitBounds(shape.getBounds(), {maxZoom: maxZoom});
-    });
+        //map.fitBounds(shape.getBounds(), {maxZoom: maxZoom});
+    //});
 }
 
 function refreshLeaflet(leafletMap) {
