@@ -23,7 +23,7 @@ $(document).ready(function() {
     }
 
     for (let ls = document.links, numLinks = ls.length, i=0; i<numLinks; i++) {
-        if ( ls[i].attributes.href.value ) {
+        if ( ls[i].attributes.href.value && ls[i].attributes.href.value !== '#' ) {
             ls[i].onclick= showSpinner;
         }
     }
