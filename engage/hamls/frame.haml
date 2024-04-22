@@ -95,11 +95,6 @@
         %link{type:"text/css", rel:"stylesheet", href:"{% static 'css/temba-components.css' %}"}
         %link{type:'text/css', rel:'stylesheet', href:"{% static 'fonts/tembatoo/style.css' %}", media:'all'}
 
-      %link{type:'text/css', rel:'stylesheet', href:"{% static 'leaflet/dist/leaflet.css' %}"}
-      <!-- Make sure you put this AFTER Leaflet's CSS -->
-      %script{src:"{% static 'leaflet/dist/leaflet.js' %}"}
-      %script{src:"{% static 'leaflet-area-selector/dist/Map.SelectArea.min.js' %}"}
-
       -compress css
         {% lessblock %}
           :plain

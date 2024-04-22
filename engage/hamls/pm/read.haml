@@ -4,6 +4,15 @@
 
 -block extra-style
   {{block.super}}
+
+  {% if leaflet_config is not None %}
+    -# map libs and css
+    %link{type:'text/css', rel:'stylesheet', href:"{% static 'leaflet/dist/leaflet.css' %}"}
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    %script{src:"{% static 'leaflet/dist/leaflet.js' %}"}
+    %script{src:"{% static 'leaflet-area-select/dist/Map.SelectArea.min.js' %}"}
+  {% endif %}
+
   :css
     #device-details {
       display: flex;
@@ -196,7 +205,7 @@
         .data-value
           {{ object.config }}
 
-    {% if leaflet_config %}
+    {% if leaflet_config is not None %}
     #info-loc
       <label class="text-muted">Map</label>
       <div id="leaflet_map"></div>
@@ -205,6 +214,8 @@
 
 -block extra-script
   {{ block.super }}
-  :javascript
-    const leafletConfig = {{ leaflet_config|safe }};
-  <script src="{% static 'engage/js/geo-loc.js' %}"></script>
+  {% if leaflet_config is not None %}
+    :javascript
+      const leafletConfig = {{ leaflet_config|safe }};
+    <script src="{% static 'engage/js/geo-loc.js' %}"></script>
+  {% endif %}

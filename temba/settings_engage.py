@@ -87,7 +87,7 @@ STATICFILES_DIRS = tuple(
 )
 STATICFILES_DIRS = STATICFILES_DIRS + (
     ("@nyaruka/flow-editor/build", os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/flow-editor/build")),
-    ("@nyaruka/temba-components/dist/static", os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/temba-components/dist/static")),
+    ("@nyaruka/temba-components/dist", os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/temba-components/dist")),
     ("react/umd", os.path.join(PROJECT_DIR, "../node_modules/react/umd")),
     ("react-dom/umd", os.path.join(PROJECT_DIR, "../node_modules/react-dom/umd")),
     os.path.join(ENGAGE_DIR, "static"),
