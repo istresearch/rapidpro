@@ -162,6 +162,7 @@ jobs:
               },
               "layer_tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}",
               "layer": "${{ needs.build_cfg.outputs.IMAGE_NAME }}:${{ needs.build_cfg.outputs.IMAGE_TAG }}",
+              "arch_allowed": "${{ inputs.arches }}",
               "version": {
                 "str": "${{ inputs.version_str }}",
                 "int": "${{ inputs.version_int }}",
