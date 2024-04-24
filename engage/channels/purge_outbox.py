@@ -5,6 +5,7 @@ from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 from rest_framework.views import View
 
+from engage.channels.types.postmaster.schemes import PM_CHANNEL_MODES
 from temba.channels.models import Channel
 from temba.orgs.models import Org
 from temba.orgs.views import OrgPermsMixin
@@ -31,7 +32,7 @@ class PurgeOutboxMixin:
             return r"^%s/(?P<channel_type>[^/]+)/(?P<channel_uuid>[^/]+)/$" % ('purge',)
         #enddef derive_url_pattern
 
-        def postCourierPurgeReqest(self, aBaseCourierURL, aChannelType, aChannelUUID):
+        def postCourierPurgeRequest(self, aBaseCourierURL, aChannelType, aChannelUUID):
             logger = logging.getLogger()
             theEndpoint = f"{aBaseCourierURL}/purge/{aChannelType}/{aChannelUUID}"
             logger.info("purge outbox started", extra=self.withLogInfo({
@@ -77,11 +78,16 @@ class PurgeOutboxMixin:
                     org = Org.objects.filter(id=theOrgPK).first()
                     if org is not None:
                         user.set_org(org)
+                    #endif org found
+                #endif has org_num
                 if not user.get_org():
                     return HttpResponse('Org ambiguous, please specify', status=400)
+                #endif no org
+            #endif determin org?
 
             if not user.is_allowed(self.permission):
                 return HttpResponse('Forbidden', status=403)
+            #endif allowed
 
             # ensure we have the necessary args
             try:
@@ -97,8 +103,10 @@ class PurgeOutboxMixin:
                         'channel_uuid': theChannelUUID,
                     }))
                     raise ValueError("Courier URL malformed")
+                #endif courier URL check
             except ValueError as vx:
                 return HttpResponse(vx, status=400)
+            #endtry
 
             if theChannelType == '4org':
                 org = user.get_org()
@@ -107,7 +115,9 @@ class PurgeOutboxMixin:
                     theOverallRespStatus = 200
                     theChannelList = Channel.objects.filter(org_id=org.id, is_active=True).order_by('last_seen')
                     for theChannel in theChannelList:
-                        resp = self.postCourierPurgeReqest(theBaseCourierURL, theChannel.channel_type, theChannel.uuid)
+                        resp = self.postCourierPurgeRequest(
+                            theBaseCourierURL, theChannel.channel_type, theChannel.uuid,
+                        )
                         if resp.status_code < 200 or resp.status_code > 299:
                             theOverallRespStatus = 500
                             theOverallRespMsg += "\nError Report: "+resp.content
@@ -117,8 +127,38 @@ class PurgeOutboxMixin:
                 else:
                     return HttpResponse('Org ambiguous, please rectify', status=400)
                 #endif
+            elif theChannelType == PM_CHANNEL_MODES['PM'].scheme:
+                #NOTE: theChannelUUID will be the pm_service PK int instead.
+                theOverallRespMsg = ''
+                theOverallRespStatus = 200
+                theChannelList = Channel.objects.filter(is_active=True, parent_id=theChannelUUID).order_by('last_seen')
+                device_name = None
+                for theChannel in theChannelList:
+                    if not device_name:
+                        device_name = theChannel.name.replace(theChannel.schemes[0].strip('{}'), PM_CHANNEL_MODES['PM'].scheme)
+                    channel_name = theChannel.name
+                    resp = self.postCourierPurgeRequest(
+                        theBaseCourierURL, theChannel.channel_type, theChannel.uuid,
+                    )
+                    if resp.status_code < 200 or resp.status_code > 299:
+                        theOverallRespStatus = 500
+                        theOverallRespMsg += f"\n{channel_name} Error: "+str(resp.content)
+                    else:
+                        theOverallRespMsg += f"\n{channel_name} has started purging."
+                    #endif
+                #endfor
+                if len(theChannelList) > 0 and theOverallRespStatus == 200:
+                    theOverallRespMsg = f"All channels for device \"{device_name}\" have started purging themselves."
+                elif len(theChannelList) == 0:
+                    theOverallRespMsg = "No channels to purge."
+                else:
+                    theOverallRespMsg = "Results:" + theOverallRespMsg
+                #endif
+                return HttpResponse(theOverallRespMsg, status=theOverallRespStatus)
             else:
-                return self.postCourierPurgeReqest(theBaseCourierURL, theChannelType, theChannelUUID)
+                return self.postCourierPurgeRequest(
+                    theBaseCourierURL, theChannelType, theChannelUUID,
+                )
             #endif
         #enddef get
 

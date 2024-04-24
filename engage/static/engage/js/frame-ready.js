@@ -1,5 +1,8 @@
 window.app_spin_count = 0;
 $(document).ready(function() {
+    if ( $().toast ) {
+        $().toast(); //bootstrap 4+ changed alert to toast
+    }
     if (navigator.appVersion.indexOf("Win")!==-1) {
         $("html").addClass("windows");
     }
@@ -20,7 +23,9 @@ $(document).ready(function() {
     }
 
     for (let ls = document.links, numLinks = ls.length, i=0; i<numLinks; i++) {
-        ls[i].onclick= showSpinner;
+        if ( ls[i].attributes.href.value && ls[i].attributes.href.value !== '#' ) {
+            ls[i].onclick= showSpinner;
+        }
     }
     let elems = $('[href][onclick^="goto(event"]');
     if ( elems ) {
@@ -106,4 +111,6 @@ $(document).ready(function() {
     if (window.scheduleRefresh) {
       scheduleRefresh();
     }
+
+    wireupClearTextWidgets();
 });

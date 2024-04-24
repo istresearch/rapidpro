@@ -47,7 +47,7 @@ jobs:
         run: |-
           if [[ -n "${{ github.event.client_payload.version.alt }}" ]]; then
             ALT_TAG=",nginx-${ALT_TAG#,}"
-            echo "ALT_TAG=${ALT_TAG}" >> GITHUB_OUTPUT
+            echo "ALT_TAG=${ALT_TAG}" >> $GITHUB_OUTPUT
           fi
   #endjob build_cfg
 
@@ -71,7 +71,7 @@ jobs:
               },
               "image": {
                 "dockerfile": "${{ needs.build_cfg.outputs.DOCKERFILE2USE }}",
-                "arch_allowed": "amd64 arm64",
+                "arch_allowed": "${{ github.event.client_payload.image.arch_allowed }}",
                 "name": "${{ needs.build_cfg.outputs.IMAGE_NAME }}",
                 "tag": "${{ needs.build_cfg.outputs.IMAGE_TAG }}${{ needs.build_cfg.outputs.ALT_TAG }}",
                 "build_args": [

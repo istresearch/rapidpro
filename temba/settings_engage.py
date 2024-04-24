@@ -48,7 +48,6 @@ MAILROOM_URL=env('MAILROOM_URL', 'http://localhost:8000')
 INSTALLED_APPS = (
     tuple(filter(lambda tup: tup not in env('REMOVE_INSTALLED_APPS', '').split(','), INSTALLED_APPS)) + (
         'django_flatpickr',
-        'temba.ext',
         'engage.api',
         'engage.assets',
         'engage.auth',
@@ -59,6 +58,7 @@ INSTALLED_APPS = (
         'engage.mailroom',
         'engage.msgs',
         'engage.orgs',
+        'engage.pm',
         'engage.schedules',
         'engage.triggers',
         'engage.utils',
@@ -66,9 +66,9 @@ INSTALLED_APPS = (
 )
 
 APP_URLS += (
-    'temba.ext.urls',
     'engage.api.urls',
     'engage.auth.urls',
+    'engage.pm.urls',
     'engage.utils.user_guide',
 )
 HANDLER_403 = 'engage.utils.views.permission_denied'
@@ -78,9 +78,23 @@ HANDLER_500 = 'engage.utils.views.server_error'
 TEMPLATES[0]['DIRS'].insert(0,
     os.path.join(ENGAGE_DIR, "hamls"),
 )
+STATICFILES_DIRS = tuple(
+    x for x in STATICFILES_DIRS if x != os.path.join(PROJECT_DIR, "../node_modules")
+    and x != os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/flow-editor/build")
+    and x != os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/temba-components/dist/static")
+    and x != os.path.join(PROJECT_DIR, "../node_modules/react/umd")
+    and x != os.path.join(PROJECT_DIR, "../node_modules/react-dom/umd")
+)
 STATICFILES_DIRS = STATICFILES_DIRS + (
+    ("@nyaruka/flow-editor/build", os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/flow-editor/build")),
+    ("@nyaruka/temba-components/dist", os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/temba-components/dist")),
+    ("react/umd", os.path.join(PROJECT_DIR, "../node_modules/react/umd")),
+    ("react-dom/umd", os.path.join(PROJECT_DIR, "../node_modules/react-dom/umd")),
     os.path.join(ENGAGE_DIR, "static"),
     os.path.join(PROJECT_DIR, "../node_config"),
+    ('flatpickr/dist', os.path.join(PROJECT_DIR, "../node_modules/flatpickr/dist")),
+    ('leaflet/dist', os.path.join(PROJECT_DIR, "../node_modules/leaflet/dist")),
+    ('leaflet-area-select/dist', os.path.join(PROJECT_DIR, "../node_modules/leaflet-area-select/dist")),
 )
 
 ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
@@ -559,3 +573,6 @@ MAUTH_DOMAIN = env('MAUTH_DOMAIN', required=False)
 #endif
 
 SERVICE_CHANNEL_CONTACT_PREFIX = env('SERVICE_CHANNEL_CONTACT_PREFIX', '__PM-', required=False)
+
+LEAFLET_ENABLED = bool(env('LEAFLET_ENABLED', False))
+LEAFLET_TOKEN = env('LEAFLET_TOKEN', '')

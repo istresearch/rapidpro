@@ -12,6 +12,7 @@ from engage.utils.class_overrides import MonkeyPatcher
 
 from smartmin.views import SmartUpdateView
 
+from temba.channels.types.postmaster import PostmasterType
 from temba.mailroom import FlowValidationException
 from temba.orgs.views import OrgObjPermsMixin
 from temba.utils import analytics, json
@@ -50,8 +51,10 @@ class FlowCRUDLOverrides(MonkeyPatcher):
 
             # all the channels available for our org
             channels = [
-                dict(uuid=chan.uuid, name=f"{chan.get_channel_type_display()}: {chan.name + (' (Last seen: ' + str(chan.last_seen.strftime('%Y-%m-%d %H:%M %Z)')) if chan.channel_type == 'PSM' else '')}")
-                for chan in flow.org.channels.filter(is_active=True)
+                dict(
+                    uuid=chan.uuid,
+                    name=f"{chan.get_channel_type_display()}: {chan.name + (' (Last seen: ' + str(chan.last_seen.strftime('%Y-%m-%d %H:%M %Z)')) if chan.channel_type == PostmasterType.code else '')}",
+                ) for chan in flow.org.channels.filter(is_active=True)
             ]
             return JsonResponse(
                 dict(

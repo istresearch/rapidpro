@@ -13,6 +13,7 @@ var dlgDelConfirm = null;
  *       subtree else they will get duplicated after every pjax refresh!
  */
 function handlePjaxAreaListeners() {
+    $('.multiselect-select-all').off("click").on("click", onClickSelectAll);
     btnExportMsgs = document.querySelector('#export-messages');
     if ( btnExportMsgs ) {
         let theOrigRemoveAttribute = btnExportMsgs.removeAttribute;

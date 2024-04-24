@@ -70,9 +70,9 @@
           - if view.add_button
             %a.btn.btn-primary.pull-right{ href:"./create/" } Add
 
-  - block pre-table
+  -block pre-table
 
-    - block table
+    -block table
       .scroll-x
       .table-scroll.shadow.rounded-lg.overflow-x-auto
         %table.list.object-list.lined.selectable
@@ -98,20 +98,18 @@
                     - else
                       {% get_value obj field %}
 
-            - empty
+            -empty
               %tr.empty_list
                 - for field in fields
                   %td
 
-      - block extra-rows
+      -block extra-rows
 
-    - block post-table
+    -block post-table
 
-  {% block paginator %}
-  .row
-    - include "smartmin/sidebar_pagination.haml"
-
-{% endblock content %}
+  -block paginator
+    .row
+      -include "includes/pages.html"
 
 {% block extra-script %}
 {{ block.super }}

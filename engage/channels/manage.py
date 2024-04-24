@@ -149,7 +149,8 @@ class ManageChannelMixin:
             elif arg_search != '':
                 self.request.session[search_sesskey] = arg_search
             else:
-                del self.request.session[search_sesskey]
+                if self.request.session.get(search_sesskey, None):
+                    del self.request.session[search_sesskey]
                 # remove the "?search=" for empty string as it messes up pagination
                 return redirect(f"{reverse('channels.channel_manage')}")
             #endif search is part of request

@@ -34,4 +34,21 @@ class ContactOverrides(MonkeyPatcher):
         return self.name.startswith(settings.SERVICE_CHANNEL_CONTACT_PREFIX) if self.name else False
     #enddef is_pm
 
+    @property
+    def channels(self):
+        if not self.is_active:
+            return []
+        channels = {}
+        for urn in self.urns.order_by("-priority", "pk").select_related("channel"):
+            channels[urn.api_urn()] = {
+                'uuid': urn.channel.uuid,
+                'name': urn.channel.name,
+                'address': urn.channel.address,
+                'type': urn.channel.channel_type,
+                'schemes': urn.channel.schemes,
+                'urn': urn.api_urn(),
+            }
+        return channels
+    #enddef channels
+
 #endclass ContactOverrides

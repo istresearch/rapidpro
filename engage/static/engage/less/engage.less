@@ -1,3 +1,7 @@
+@import 'bs5';
+@import 'dialogs';
+@import 'chat_modes';
+
 /****************************************************************************
  styles layered over site as "2nd to last loaded" (final.less loads this)
  ****************************************************************************/
@@ -13,6 +17,15 @@ body {
   max-width: 90%;
   margin-left: auto;
   margin-right: auto;
+}
+
+.hide-me {
+  visibility: hidden;
+  cursor: default;
+}
+
+.remove-me {
+  display: none;
 }
 
 #lead-form {
@@ -94,6 +107,25 @@ h5.contact-signup {
   background-color: rgb(var(--error-rgb));
   --tw-text-opacity: 1;
   color: rgba(255, 255, 255, var(--tw-text-opacity));
+}
+
+.chevron-bar-left {
+  background-image: url('@{imgEngagePath}/chevron-bar-left.svg');
+}
+.chevron-bar-right {
+  background-image: url('@{imgEngagePath}/chevron-bar-right.svg');
+}
+.chevron-left {
+  background-image: url('@{imgEngagePath}/chevron-left.svg');
+}
+.chevron-right {
+  background-image: url('@{imgEngagePath}/chevron-right.svg');
+}
+.chevron-double-left {
+  background-image: url('@{imgEngagePath}/chevron-double-left.svg');
+}
+.chevron-double-right {
+  background-image: url('@{imgEngagePath}/chevron-double-right.svg');
 }
 
 // +++++ BEGIN SPINNER
@@ -196,7 +228,7 @@ h5.contact-signup {
   padding: unset;
   height: unset;
   background-color: var(--header-bg);
-  z-index: 2000;
+  z-index: 99;
   #logo-area {
     margin-top: 1em;
     margin-left: 2em;
@@ -333,6 +365,32 @@ span.glyph.icon-channel-bandwidth{
   height: 64px;
   width: 64px;
 }
+.pm-icon.icon-postmaster {
+  background: url("@{imgEngagePath}/postmaster.svg");
+  background-size: 1.6rem;
+  height: 1.6rem;
+  width: 1.6rem;
+  &:hover {
+    filter: invert(100%);
+  }
+}
+.active .pm-icon.icon-postmaster {
+  filter: invert(100%);
+}
+#title-area {
+  width: 100%;
+  .pm-icon.icon-postmaster {
+    filter: invert(100%);
+    height: 2.4rem;
+    width: 2.4rem;
+    background-size: 2.4rem;
+    margin-right: 1rem;
+  }
+  .search-input-area {
+    align-self: center;
+    margin-left: auto;
+  }
+}
 .icon-channel-postmaster:before {
   display: inline-block;
   content: ' ';
@@ -370,9 +428,10 @@ span.glyph.icon-channel-postmaster{
 
 /* refresh uses ::before to add unicode char and font */
 /* just display bkg-img for pm-only icons */
-[class^="icon-"]:not(.pm-icon),
-[class*=" icon-"]:not(.pm-icon) {
-  background-image: none;
+[class*="icon-"]:not(.pm-icon) {
+  &:not(.glyph):not([class*="icon-pm"]) {
+    background-image: none;
+  }
 }
 
 #chat-btn-label {
@@ -398,7 +457,7 @@ temba-modax > div.send-via-btn {
   height: 16px;
   width: 16px;
   margin-top: -3px;
-  font-size: @chatIconSize;
+  font-size: 1.9rem;
   position: relative;
   /* display cannot be 'contents' else tooltips stop working */
   display: inline-block;
@@ -422,71 +481,6 @@ temba-modax > div.send-via-btn {
   &:hover .tooltiptext {
     visibility: visible;
   }
-}
-.mode-icon-pm_element,
-temba-modax#send-via-pm_element > div.send-via-btn {
-  background: url("@{imgEngagePath}/element-chat.svg");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 3px;
-}
-.mode-icon-pm_signal,
-temba-modax#send-via-pm_signal > div.send-via-btn {
-  background: url("@{imgEngagePath}/signal-chat.svg");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 6px;
-}
-.mode-icon-pm_session,
-temba-modax#send-via-pm_session > div.send-via-btn {
-  background: url("@{imgEngagePath}/session-messenger.png");
-  background-size: @chatIconSize;
-  height: 25px;
-  width: 25px;
-  margin-top: 0px;
-}
-.mode-icon-pm_reddit,
-temba-modax#send-via-pm_reddit > div.send-via-btn {
-  background: url("@{imgEngagePath}/reddit.png");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 0px;
-}
-.mode-icon-pm_mastodon,
-temba-modax#send-via-pm_mastodon > div.send-via-btn {
-  background: url("@{imgEngagePath}/mastodon.png");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 0px;
-}
-.mode-icon-pm_youtube,
-temba-modax#send-via-pm_youtube > div.send-via-btn {
-  background: url("@{imgEngagePath}/youtube.png");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 0px;
-}
-.mode-icon-pm_tiktok,
-temba-modax#send-via-pm_tiktok > div.send-via-btn {
-  background: url("@{imgEngagePath}/tiktok.png");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 0px;
-}
-.mode-icon-pm_service,
-temba-modax#send-via-pm_service > div.send-via-btn {
-  background: url("@{imgEngagePath}/postmaster.svg");
-  background-size: @chatIconSize;
-  height: @chatIconSize;
-  width: @chatIconSize;
-  margin-top: 0px;
-  filter: invert(1);
 }
 /* ----------------------------------------------------*/
 

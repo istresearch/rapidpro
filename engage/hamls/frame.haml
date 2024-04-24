@@ -48,7 +48,6 @@
       %script{src:"{% static 'bower-engage/select2/select2.full.min.js' %}"}
       %script{src:"{% static 'flatpickr/dist/flatpickr.min.js' %}"}
 
-
       // expanded nav dropdown
       %script{src:"{% static 'bower/jquery-hoverintent/jquery.hoverIntent.js' %}"}
 
@@ -124,6 +123,9 @@
       :css
         .button-action.button-danger {
           display: inherit;
+        }
+        .toast {
+          transition: opacity 3s;
         }
 
     -for incl in brand.head_includes
@@ -208,6 +210,8 @@
               -block content
 
             -block post-content
+
+      #toaster.alert.ml-3.mb-2{aria-live:"polite", aria-atomic:"true"}
 
     -block footer
       .footer.text-center.py-12.bg-gray-200.text-gray-500

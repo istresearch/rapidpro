@@ -6,15 +6,18 @@ from django.conf import settings
 from rest_framework import serializers
 from rest_framework.exceptions import ParseError
 
+from temba.contacts.models import ContactURN
 from temba.api.v2.serializers import (
     MsgBulkActionSerializer,
     FlowStartWriteSerializer,
     INVALID_EXTRA_KEY_CHARS,
+    ContactReadSerializer,
 )
 
 from engage.utils.class_overrides import MonkeyPatcher
 
 from .exceptions import FinancialException
+
 
 class WriteSerializer(serializers.Serializer):
     """
@@ -119,3 +122,16 @@ class FlowStartWriteSerializerOverride(MonkeyPatcher):
     #enddef validate_extra
 
 #endclass FlowStartWriteSerializerOverride
+
+
+class ContactReadSerializerOverrides(MonkeyPatcher):
+    patch_class = ContactReadSerializer
+
+    @staticmethod
+    def on_apply_patches(under_cls) -> None:
+        ContactReadSerializer.Meta.fields += ('channels',)
+    #enddef on_apply_patches
+
+    channels = serializers.SerializerMethodField()
+
+#endclass ContactReadSerializerOverrides

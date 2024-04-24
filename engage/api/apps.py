@@ -15,14 +15,20 @@ class AppConfig(BaseAppConfig):
         from .serializers import FlowStartWriteSerializerOverride
         FlowStartWriteSerializerOverride.applyPatches()
 
+        from .serializers import ContactReadSerializerOverrides
+        ContactReadSerializerOverrides.applyPatches()
+
         from .exceptions import APIExceptionOverride
         APIExceptionOverride.applyPatches()
 
         from .support import APITokenAuthenticationOverride
         APITokenAuthenticationOverride.applyPatches()
 
-        from .views import BroadcastsEndpointOverrides
+        from .endpoint.broadcasts import BroadcastsEndpointOverrides
         BroadcastsEndpointOverrides.applyPatches()
+
+        from .endpoint.contacts import ContactsEndpointOverrides
+        ContactsEndpointOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig

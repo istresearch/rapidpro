@@ -1,6 +1,12 @@
 -extends "smartmin/list.html"
 -load smartmin sms temba compress humanize i18n
 
+-block extra-style
+  :css
+    tr.trigger b {
+      font-weight: bold;
+    }
+
 -block page-title
   {{ title }}
 

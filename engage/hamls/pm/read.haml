@@ -1,0 +1,221 @@
+-extends "smartmin/read.html"
+
+-load smartmin sms temba i18n humanize pm static
+
+-block extra-style
+  {{block.super}}
+
+  {% if leaflet_config is not None %}
+    -# map libs and css
+    %link{type:'text/css', rel:'stylesheet', href:"{% static 'leaflet/dist/leaflet.css' %}"}
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    %script{src:"{% static 'leaflet/dist/leaflet.js' %}"}
+    %script{src:"{% static 'leaflet-area-select/dist/Map.SelectArea.min.js' %}"}
+  {% endif %}
+
+  :css
+    #device-details {
+      display: flex;
+      flex-direction: row;
+      #info-table {
+        max-width: 50%;
+      }
+      #info-loc {
+        max-width: 50%;
+        #leaflet_map {
+          width: 45vw;
+          height: 60vh;
+        }
+      }
+    }
+    temba-button {
+      display: block;
+    }
+    li {
+      list-style-type: disc;
+    }
+    .data-field {
+      display: flex;
+      margin-bottom: 1rem;
+    }
+    .data-label {
+      font-weight: bolder;
+      width: 10em;
+      text-align: end;
+      margin-right: 3em;
+    }
+    .data-value {
+      font-weight: none;
+    }
+    .button-success {
+      background: lightgreen;
+    }
+    .data-value-uuid {
+      font-variant: all-small-caps;
+      font-size: large;
+    }
+    .chat_modes {
+      font-size: 1.4rem;
+      .chat_mode {
+        margin-right: 0.3em;
+      }
+      a:link {
+        text-decoration: none;
+      }
+      /*glyph icons in bootstrap2 size themselves at font-size 16px*/
+      .icon-phone:before {
+        font-size: 1.4rem;
+      }
+    }
+
+-block page-title
+  {{ page_title }}
+
+-block title-icon
+  %span.title-icon
+    .glyph.icon-inbox
+
+-block title
+  {{ object.name }}
+
+-block content
+  %hr
+  %br
+  #device-details
+    #info-table
+      .data-field
+        .data-label
+          Address/Device ID:
+        .data-value
+          {{ object.address }}
+      .data-field
+        .data-label
+          UUID:
+        .data-value.data-value-uuid
+          {{ object.uuid }}
+      .data-field
+        .data-label
+          ID:
+        .data-value
+          {{ object.id }}
+      .data-field
+        .data-label
+          Phone Number:
+        .data-value
+          {{ device_meta.phone_num }}
+      .data-field
+        .data-label
+          Device Model:
+        .data-value
+          {{ device_meta.device_model }}
+      .data-field
+        .data-label
+          Active Apps:
+        .data-value
+          .chat_modes
+            {% with obj=object %}
+              {% for child_obj in obj.children %}
+                <a href="/channels/channel/read/{{ child_obj.uuid }}" data-chat_mode="{{ child_obj.chat_mode }}">
+                  <div class="chat_mode {{ child_obj|chat_mode_class }}" title="{{ child_obj.name }}"></div>
+                  {% with app=chat_mode_apps|chat_mode_app:child_obj.chat_mode %}
+                    {{ app.app_name }} [{{ app.app_version }}]<br />
+                  {% endwith %}
+                </a>
+              {% empty %}
+                <div>None Found</div>
+              {% endfor %}
+            {% endwith %}
+      .data-field
+        .data-label
+          Inactive Apps:
+        .data-value
+          .chat_modes
+            {% for app in inactive_apps %}
+              <div data-chat_mode="{{ app.chat_mode }}">
+                <div class="chat_mode {{ app.chat_mode|chat_mode_class }}" title="{{ app.app_name }}"></div>
+                {{ app.app_name }} [{{ app.app_version }}]<br />
+              </div>
+            {% empty %}
+              <div>None Found</div>
+            {% endfor %}
+      .data-field
+        .data-label
+          Queued Length:
+        .data-value
+          {{ device_info.queue_length }}
+      .data-field
+        .data-label
+          Notes:
+        .data-value
+          {{ device_meta.notes }}
+      %hr
+      .data-field
+        .data-label
+          Last Seen:
+        .data-value
+          {{ object.last_seen }}
+      .data-field
+        .data-label
+          Created:
+        .data-value
+          {{ object.created_on }}
+      .data-field
+        .data-label
+          Modified:
+        .data-value
+          {{ object.modified_on }}
+      .data-field
+        .data-label
+          Country:
+        .data-value
+          {{ object.country }}
+      .data-field
+        .data-label
+          Device:
+        .data-value
+          {{ object.device }}
+      .data-field
+        .data-label
+          OS:
+        .data-value
+          {{ object.os }}
+      .data-field
+        .data-label
+          Alert Email:
+        .data-value
+          {{ object.alert_email }}
+      .data-field
+        .data-label
+          Roles:
+        .data-value
+          {{ object.role }}
+      .data-field
+        .data-label
+          bod:
+        .data-value
+          {{ object.bod }}
+      .data-field
+        .data-label
+          Tx Per Second:
+        .data-value
+          {{ object.tps }}
+      .data-field
+        .data-label
+          config:
+        .data-value
+          {{ object.config }}
+
+    {% if leaflet_config is not None %}
+    #info-loc
+      <label class="text-muted">Map</label>
+      <div id="leaflet_map"></div>
+    {% endif %}
+
+
+-block extra-script
+  {{ block.super }}
+  {% if leaflet_config is not None %}
+    :javascript
+      const leafletConfig = {{ leaflet_config|safe }};
+    <script src="{% static 'engage/js/geo-loc.js' %}"></script>
+  {% endif %}
