@@ -12,6 +12,7 @@ jobs:
     outputs:
       VERSION_STR: ${{ steps.config_step.outputs.VERSION_STR }}
       VERSION_INT: ${{ steps.config_step.outputs.VERSION_INT }}
+      ARCHES: ${{ steps.config_step.outputs.ARCHES }}
     permissions:
       contents: write
     steps:
@@ -30,6 +31,8 @@ jobs:
           echo "VERSION_STR=${VERSION_STR}" >> $GITHUB_OUTPUT
           echo "::notice::Version STR=${VERSION_STR}, INT=${VERSION_INT}"
 
+          ARCHES="amd64 arm64"
+          echo "ARCHES=${ARCHES}" >> $GITHUB_OUTPUT
       - name: "Create Release"
         uses: softprops/action-gh-release@v2
         env:
@@ -52,4 +55,5 @@ jobs:
       version_int: ${{ needs.build_cfg.outputs.VERSION_INT }}
       version_kind: gold
       alt_tags: ",ci-main"
+      arches: ${{ needs.build_cfg.outputs.ARCHES }}
   #endjob build_image
