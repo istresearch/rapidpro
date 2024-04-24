@@ -1,7 +1,7 @@
 -extends "smartmin/read.html"
 
 -load smartmin sms contacts compress temba channels
--load i18n humanize
+-load i18n humanize pm
 
 -block buttons
 
@@ -151,17 +151,32 @@
                     {{urn.scheme}}
             %td.w-full
               .contact-field-value
-                -if urn.scheme == 'mailto'
-                  .linked{onclick:"goto(event)", href:"{{urn}}"}
+                .urn-name
+                  -if urn.scheme == 'mailto'
+                    .linked{onclick:"goto(event)", href:"{{urn}}"}
+                      {{urn|format_urn:user_org}}
+                  -elif urn.scheme == 'twitter'
+                    .linked{onclick:"goto(event)", href:'http://twitter.com/{{urn.path}}'}
+                      {{urn|format_urn:user_org}}
+                  -elif urn.scheme == 'twitterid'
+                    .linked{onclick:"goto(event)", href:'http://twitter.com/{{urn.display}}'}
+                      {{urn|format_urn:user_org}}
+                  -else
                     {{urn|format_urn:user_org}}
-                -elif urn.scheme == 'twitter'
-                  .linked{onclick:"goto(event)", href:'http://twitter.com/{{urn.path}}'}
-                    {{urn|format_urn:user_org}}
-                -elif urn.scheme == 'twitterid'
-                  .linked{onclick:"goto(event)", href:'http://twitter.com/{{urn.display}}'}
-                    {{urn|format_urn:user_org}}
-                -else
-                  {{urn|format_urn:user_org}}
+
+                  -if urn.channel
+                    ( Default Channel:
+                    -if urn.channel.channel_type == 'PSM'
+                      <a href="/channels/channel/read/{{ urn.channel.uuid }}" data-chat_mode="{{ urn.channel.chat_mode }}">
+                        -# <div class="chat_mode {{ urn.channel|chat_mode_class }}" title="{{ urn.channel.name }}"></div>
+                        {{ urn.channel.name }}
+                      </a>
+                    -else
+                      <a href="/channels/channel/read/{{ urn.channel.uuid }}" data-chat_mode="{{ urn.channel.chat_mode }}">
+                        {{ urn.channel.name }}
+                      </a>
+                    )
+
 
   -if open_tickets
     %table.list.tickets.mt-6
