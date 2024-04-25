@@ -84,7 +84,7 @@ STATICFILES_DIRS = tuple(
     and x != os.path.join(PROJECT_DIR, "../node_modules/react-dom/umd")
 )
 STATICFILES_DIRS = STATICFILES_DIRS + (
-    os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/temba-components/dist"),
+    ("@nyaruka/temba-components/dist", os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/temba-components/dist")),
     ("react/umd", os.path.join(PROJECT_DIR, "../node_modules/react/umd")),
     ("react-dom/umd", os.path.join(PROJECT_DIR, "../node_modules/react-dom/umd")),
     os.path.join(ENGAGE_DIR, "static"),
