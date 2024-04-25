@@ -144,13 +144,22 @@ class ChannelOverrides(MonkeyPatcher):
     @staticmethod
     def formatChannelName(name_format, channel: Channel, user):
         user_name = user.first_name or user.last_name or user.username
-        phone_num = ''
-        if name_format and name_format.find('{{phone_number}}') >= 0:
+        phone_num = channel.address
+        if name_format and (name_format.find('{{phone_number}}') >= 0 or name_format.find('{{device_model}}')):
             # call po api for device metadata
-            device_info = Channel.fetch_device_info(user, Channel.address)
-            if device_info and device_info.meta:
-                phone_num = device_info.meta.phone_num
+            device_info = Channel.fetch_device_info(user, channel.address)
+            if device_info and device_info['meta']:
+                if device_info['meta']['phone_num']:
+                    phone_num: str = device_info['meta']['phone_num']
+                    if not phone_num.startswith('+'):
+                        phone_num = '+' + phone_num
+                    #endif
+                #endif
+                device_model = device_info['meta']['device_model']
             #endif
+        #endif
+        if name_format.find('{{pm_scheme}}') < 0 and name_format.find('{{pm_mode}}') < 0:
+            name_format += ' [{{pm_scheme}}]'
         #endif
         channel_name = (
             name_format
@@ -158,6 +167,7 @@ class ChannelOverrides(MonkeyPatcher):
             .replace('{{pm_scheme}}', channel.schemes[0].strip('{}'))
             .replace('{{pm_mode}}', channel.config['chat_mode'] if 'chat_mode' in channel.config else '')
             .replace('{{phone_number}}', phone_num)
+            .replace('{{device_model}}', device_model)
             .replace('{{org}}', user.get_org().name)
             .replace('{{first_name}}', user_name)
         )

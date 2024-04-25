@@ -165,6 +165,7 @@ function stopSound(){
 }
 
 function putToastInToaster(type, content, delay=7000) {
+    if (!content) { return; } //if nothing to display, exit right away.
     const bUseAlert = ( !$().toast );
     const toast = document.createElement('div');
     toast.setAttribute('id', 'toast-' + Date.now());
