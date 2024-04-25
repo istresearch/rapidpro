@@ -64,7 +64,7 @@ class ClaimViewOverrides(MonkeyPatcher, LogExtrasMixin):
     def get_context_data(self: type[ClaimView], **kwargs):
         context = super(type(self), self).get_context_data(**kwargs)
 
-        name_format = self.request.GET.get('name_format', '{{device_id}} [{{pm_scheme}}]')
+        name_format = self.request.GET.get('name_format', '{{phone_number}} [{{pm_scheme}}]')
         user = self.get_user()
         org = user.get_org()
         context['po_qr'] = Channel.fetch_claim_qr(org, user, name_format)

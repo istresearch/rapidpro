@@ -158,9 +158,6 @@ class ChannelOverrides(MonkeyPatcher):
                 device_model = device_info['meta']['device_model']
             #endif
         #endif
-        if name_format.find('{{pm_scheme}}') < 0 and name_format.find('{{pm_mode}}') < 0:
-            name_format += ' [{{pm_scheme}}]'
-        #endif
         channel_name = (
             name_format
             .replace('{{device_id}}', channel.address)
