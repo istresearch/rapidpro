@@ -80,13 +80,10 @@ TEMPLATES[0]['DIRS'].insert(0,
 )
 STATICFILES_DIRS = tuple(
     x for x in STATICFILES_DIRS if x != os.path.join(PROJECT_DIR, "../node_modules")
-    and x != os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/flow-editor/build")
-    and x != os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/temba-components/dist/static")
     and x != os.path.join(PROJECT_DIR, "../node_modules/react/umd")
     and x != os.path.join(PROJECT_DIR, "../node_modules/react-dom/umd")
 )
 STATICFILES_DIRS = STATICFILES_DIRS + (
-    ("@nyaruka/flow-editor/build", os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/flow-editor/build")),
     ("@nyaruka/temba-components/dist", os.path.join(PROJECT_DIR, "../node_modules/@nyaruka/temba-components/dist")),
     ("react/umd", os.path.join(PROJECT_DIR, "../node_modules/react/umd")),
     ("react-dom/umd", os.path.join(PROJECT_DIR, "../node_modules/react-dom/umd")),
@@ -103,7 +100,7 @@ DEBUG = env('DJANGO_DEBUG', 'off') == 'on'
 
 # no OSGeo stage building libs, just using pre-built libs now.
 # @see https://stackoverflow.com/questions/58403178/geodjango-cant-find-gdal-on-docker-python-alpine-based-image
-# slightly updated on move to debian-base-image, should work on either as it s now.
+# slightly updated on move to debian-base-image, should work on either alpine/debian now.
 try:
     GDAL_LIBRARY_PATH = glob('/usr/lib/libgdal.so*')[0]
     GEOS_LIBRARY_PATH = glob('/usr/lib/libgeos_c.so*')[0]
