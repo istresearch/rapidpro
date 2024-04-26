@@ -59,6 +59,14 @@ class PmRenameChannels(OrgPermLogInfoMixin, OrgPermsMixin, View):  # pragma: no 
                 return HttpResponse('Forbidden', status=403)
             #endif allowed
 
+            #ensure we have a default in case blank is passed in
+            if not name_format:
+                name_format = '{{phone_number}} [{{pm_scheme}}]'
+            #endif
+            #ensure we have something channel-specific so they don't end up all with same name
+            if name_format.find('{{pm_scheme}}') < 0 and name_format.find('{{pm_mode}}') < 0:
+                name_format += ' [{{pm_scheme}}]'
+            #endif
             theParentChannel.config['name_format'] = name_format
             old_name = theParentChannel.name
             theParentChannel.name = Channel.formatChannelName(name_format, theParentChannel, user)

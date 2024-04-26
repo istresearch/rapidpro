@@ -12,14 +12,14 @@
             Name format
           </label>
           {% verbatim %}
-          <input type="text" id="pm-name-format" name="pm-name-format" placeholder="{{device_id}} {{pm_scheme}}"
+          <input type="text" id="pm-name-format" name="pm-name-format" placeholder="{{phone_number}} [{{pm_scheme}}]"
             class="bs5 form-control"
           >{% endverbatim %}
         </div>
         <div class="help-text mt-2">
           {% verbatim %}
             Available variables:<br/>
-            <code style="font-size:small">{{device_id}} {{pm_scheme}} {{pm_mode}}</code>
+            <code style="font-size:small">{{device_id}} {{pm_scheme}} {{pm_mode}} {{device_model}}</code>
             <code style="font-size:small">{{phone_number}} {{org}} {{first_name}}</code>
           {% endverbatim %}
         </div>

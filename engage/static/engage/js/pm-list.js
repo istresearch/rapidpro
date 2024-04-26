@@ -109,7 +109,7 @@ function wireupActionRename() {
             const inputNameFormat = document.querySelector('#pm-name-format');
             let theNameFormat = inputNameFormat.value;
             if ( !theNameFormat ) {
-                theNameFormat = '{{device_id}} {{pm_scheme}}';
+                theNameFormat = '';
             }
             let objList = getCheckedData('object-id');
             Promise.all(objList.map((id) => {
