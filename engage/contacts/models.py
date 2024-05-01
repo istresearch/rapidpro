@@ -60,7 +60,7 @@ class ContactOverrides(MonkeyPatcher):
     #enddef get_display
 
     def get_urn_display(self, org=None, scheme=None, formatted=True, international=False):
-        r = self.Contact_get_urn_display(org, formatted)
+        r = self.Contact_get_urn_display(org, scheme, formatted, international)
         if r == r.strip():
             return r
         else:
