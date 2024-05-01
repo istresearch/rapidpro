@@ -51,4 +51,20 @@ class ContactOverrides(MonkeyPatcher):
         return channels
     #enddef channels
 
+    def get_display(self, org=None, formatted=True):
+        r = self.Contact_get_display(org, formatted)
+        if r == r.strip():
+            return r
+        else:
+            return r+"*"
+    #enddef get_display
+
+    def get_urn_display(self, org=None, scheme=None, formatted=True, international=False):
+        r = self.Contact_get_urn_display(org, formatted)
+        if r == r.strip():
+            return r
+        else:
+            return r+"*"
+    #enddef get_urn_display
+
 #endclass ContactOverrides
