@@ -23,7 +23,6 @@ class FlowOverrides(MonkeyPatcher):
         # (Flow.TYPE_SURVEY, _("Surveyor")), # P4-1483
     )
 
-    @classmethod
     def create(
         cls: type(Flow),
         org,
@@ -90,6 +89,9 @@ class FlowOverrides(MonkeyPatcher):
             revision = current_revision.revision + 1
         else:
             revision = 1
+
+        if self.metadata is None:
+            self.metadata = {}
 
         # update metadata from database object
         definition[Flow.DEFINITION_UUID] = self.uuid
