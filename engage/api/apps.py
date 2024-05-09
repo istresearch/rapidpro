@@ -29,6 +29,9 @@ class AppConfig(BaseAppConfig):
 
         from .endpoint.contacts import ContactsEndpointOverrides
         ContactsEndpointOverrides.applyPatches()
+
+        from .endpoint.messages import MessagesEndpointOverrides
+        MessagesEndpointOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig
