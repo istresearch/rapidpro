@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AnonymousUser
 from django.core.handlers.wsgi import WSGIRequest
+from django.db.models import F
 
 from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.middleware import RedirectTo
@@ -39,7 +40,11 @@ class ContactListOverrides(MonkeyPatcher):
             if sort_on:
                 self.sort_direction = "desc" if sort_on.startswith("-") else "asc"
                 self.sort_field = sort_on.lstrip("-")
-                sort_order = [sort_on]
+                if self.sort_direction == 'desc':
+                    sort_order = [F(self.sort_field).desc(nulls_last=True)]
+                else:
+                    sort_order = [F(self.sort_field).asc(nulls_last=True)]
+                #endif
             else:
                 self.sort_direction = None
                 self.sort_field = None
