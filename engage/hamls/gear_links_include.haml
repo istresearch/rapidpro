@@ -35,10 +35,10 @@
                 {{link.title}}
           -else
             -if link.id
-              .button-light{id:'{{link.id}}', onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}' }
+              .button-light{id:'{{link.id}}', onclick:'{%if link.on_click%}{{link.on_click}}{% else %}goto(event){%endif%}', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}' }
                 {{link.title}}
             -else
-              .button-light{onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}' }
+              .button-light{onclick:'{%if link.on_click%}{{link.on_click}}{% else %}goto(event){%endif%}', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}' }
                 {{link.title}}
         {% endfor %}
       {% endwith %}
@@ -55,7 +55,7 @@
                 -else
                   %li.py-1
                     -if link.ngClick
-                      .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', ng-click:'{{link.ngClick}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                      .hover-linked.font-normal{onclick:'{%if link.on_click%}{{link.on_click}}{% else %}goto(event){%endif%}', href:'{{link.href}}', ng-click:'{{link.ngClick}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
                         {{link.title}}
                         .gear-flag
                           {{link.flag}}
@@ -72,7 +72,7 @@
                           %span{class:'gear-flag'}
                             {{link.flag}}
                       -else
-                        .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                        .hover-linked.font-normal{onclick:'{%if link.on_click%}{{link.on_click}}{% else %}goto(event){%endif%}', href:'{{link.href}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
                           {{link.title}}
                           %span{class:'gear-flag'}
                             {{link.flag}}

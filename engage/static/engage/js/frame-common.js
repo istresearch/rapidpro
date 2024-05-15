@@ -1,3 +1,10 @@
+// @see https://stackoverflow.com/a/62177358/429728
+jQuery.event.special.mousewheel = {
+    setup: function( _, ns, handle ){
+        this.addEventListener("mousewheel", handle, { passive: true });
+    }
+};
+
 function posterize(href) {
     var url = $.url(href);
     $("#posterizer").attr("action", url.attr("path"));
