@@ -1,5 +1,5 @@
 -extends "smartmin/base.html"
--load compress temba i18n
+-load compress temba i18n static
 
 -block page-title
   {{ object.name }}
@@ -183,6 +183,8 @@
 
 -block extra-script
   {{ block.super }}
+
+  %script{src:"{% static '@panzoom/panzoom/dist/panzoom.js' %}"}
 
   -for script in scripts
     %script(type="text/javascript" src="{{script}}")

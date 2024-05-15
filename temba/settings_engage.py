@@ -92,6 +92,7 @@ STATICFILES_DIRS = STATICFILES_DIRS + (
     ('flatpickr/dist', os.path.join(PROJECT_DIR, "../node_modules/flatpickr/dist")),
     ('leaflet/dist', os.path.join(PROJECT_DIR, "../node_modules/leaflet/dist")),
     ('leaflet-area-select/dist', os.path.join(PROJECT_DIR, "../node_modules/leaflet-area-select/dist")),
+    ('@panzoom/panzoom/dist', os.path.join(PROJECT_DIR, "../node_modules/@panzoom/panzoom/dist")),
 )
 
 ROOT_URLCONF = env('ROOT_URLCONF', 'temba.urls')
