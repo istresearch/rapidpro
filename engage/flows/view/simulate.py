@@ -47,7 +47,11 @@ class FlowViewSimulate(MonkeyPatcher):
         }
 
         if "flow" in json_dict:
-            payload["flows"] = [{"uuid": flow.uuid, "definition": json_dict["flow"], 'metadata': [simChan['uuid']]}]
+            payload["flows"] = [{
+                "uuid": flow.uuid,
+                "definition": json_dict["flow"],
+                'metadata': "{'channels':[" + simChan['uuid'] + "]}",
+            }]
         #endif
 
         # check if we are triggering a new session
