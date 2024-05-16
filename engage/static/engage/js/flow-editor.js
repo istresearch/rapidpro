@@ -11,7 +11,7 @@ function initPanZoom( elDesktop ) {
         cursor: "",
         canvas: true,
         exclude: [document.getElementById('rp-flow-editor')],
-        excludeClass: ['jtk-draggable'],
+        excludeClass: ['jtk-draggable', 'pop_wrapper'],
     });
 
     $(theEl).parent().on('mousewheel.focal', (e) => {
