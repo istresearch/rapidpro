@@ -3,10 +3,10 @@ from django.http import JsonResponse
 
 from engage.utils.class_overrides import MonkeyPatcher
 
+from temba import mailroom
 from temba.channels.models import Channel
 from temba.flows.models import Flow
 from temba.flows.views import FlowCRUDL
-from temba.tests import mailroom
 from temba.utils import json, analytics
 
 
