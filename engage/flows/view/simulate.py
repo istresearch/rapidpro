@@ -38,6 +38,11 @@ class FlowViewSimulate(MonkeyPatcher):
         if len(chanFilter) > 0:
             # if flow limits what channels it can use, ensure simulator uuid is one of them
             channel_uuid = chanFilter[0]
+            filterChan: Channel = Channel.objects.get(uuid=channel_uuid)
+            simChan['schemes'] = filterChan.schemes
+            if json_dict["trigger"]['contact']:
+                json_dict["trigger"]['contact']['urns'] = [filterChan.schemes[0] + ':+12065551212']
+            #endif
         #endif
         channel_uuid = simChan['uuid']
         channel_name = simChan['name']
