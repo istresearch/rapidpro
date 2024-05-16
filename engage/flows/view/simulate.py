@@ -34,7 +34,11 @@ class FlowViewSimulate(MonkeyPatcher):
         simChan = Channel.SIMULATOR_CHANNEL
         simChan['roles'] = ["send", "receive", "call"]
         simChan['country'] = "US"
-
+        chanFilter = flow.metadata.get('channels', [])
+        if len(chanFilter) > 0:
+            # if flow limits what channels it can use, ensure simulator uuid is one of them
+            channel_uuid = chanFilter[0]
+        #endif
         channel_uuid = simChan['uuid']
         channel_name = simChan['name']
 
@@ -50,7 +54,6 @@ class FlowViewSimulate(MonkeyPatcher):
             payload["flows"] = [{
                 "uuid": flow.uuid,
                 "definition": json_dict["flow"],
-                'metadata': "{'channels':[" + simChan['uuid'] + "]}",
             }]
         #endif
 
