@@ -1,7 +1,5 @@
-import logging
 from django.contrib.auth.models import AnonymousUser
 from django.core.handlers.wsgi import WSGIRequest
-from django.urls import reverse
 
 from engage.channels.types.postmaster.schemes import PM_CHANNEL_MODES
 from engage.utils.class_overrides import MonkeyPatcher
