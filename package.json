@@ -11,6 +11,7 @@
   "dependencies": {
     "@nyaruka/flow-editor": "github:istresearch/floweditor#2269a8e013a9de07cc12509be546699744d8ba19",
     "@nyaruka/temba-components": "0.28.2",
+    "@panzoom/panzoom": "^4.5.1",
     "colorette": "1.2.2",
     "fa-icons": "0.2.0",
     "is-core-module": "2.4.0",

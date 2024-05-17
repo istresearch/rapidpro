@@ -14,7 +14,7 @@
 
     {% with modax_links=gear_links|gear_modax_items %}
       {% for link in modax_links %}
-        %temba-modax{ header:'{{link.modax}}', endpoint:"{{link.href}}", id:"{{link.id}}"}
+        %temba-modax{ header:'{{link.modax}}', endpoint:"{{link.href}}", id:"{{link.id}}", title:'{{ link.tooltip }}'}
       {% endfor %}
     {% endwith %}
 
@@ -22,23 +22,23 @@
       {% with btn_links=gear_links|gear_btn_items %}
         {% for link in btn_links %}
           -if link.modax
-            .button-light{onclick:'showModax("{{link.id}}")', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+            .button-light{onclick:'showModax("{{link.id}}")', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}', title:'{{ link.tooltip }}'}
               {{link.title}}
               %span{class:'gear-flag'}
                 {{link.flag}}
           -elif link.js_class
             -if link.id
-              .button-light{id:'{{link.id}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+              .button-light{id:'{{link.id}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}', title:'{{ link.tooltip }}'}
                 {{link.title}}
             -else
-              .button-light{class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}'}
+              .button-light{class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}', title:'{{ link.tooltip }}'}
                 {{link.title}}
           -else
             -if link.id
-              .button-light{id:'{{link.id}}', onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}' }
+              .button-light{id:'{{link.id}}', onclick:'{%if link.on_click%}{{link.on_click}}{% else %}goto(event){%endif%}', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}', title:'{{ link.tooltip }}'}
                 {{link.title}}
             -else
-              .button-light{onclick:'goto(event)', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}' }
+              .button-light{onclick:'{%if link.on_click%}{{link.on_click}}{% else %}goto(event){%endif%}', href:'{{link.href}}', class:'{{ link|gear_link_classes:True }}', data-success-url:'{{ link.success_url }}', title:'{{ link.tooltip }}'}
                 {{link.title}}
         {% endfor %}
       {% endwith %}
@@ -55,24 +55,24 @@
                 -else
                   %li.py-1
                     -if link.ngClick
-                      .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', ng-click:'{{link.ngClick}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                      .hover-linked.font-normal{onclick:'{%if link.on_click%}{{link.on_click}}{% else %}goto(event){%endif%}', href:'{{link.href}}', ng-click:'{{link.ngClick}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}', title:'{{ link.tooltip }}'}
                         {{link.title}}
                         .gear-flag
                           {{link.flag}}
                     -elif link.modax
-                      .hover-linked.font-normal{onclick:'javascript:showModax("{{link.id}}")', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                      .hover-linked.font-normal{onclick:'javascript:showModax("{{link.id}}")', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}', title:'{{ link.tooltip }}'}
                         {{link.title}}
                         %span{class:'gear-flag'}
                           {{link.flag}}
 
                     -else
                       -if link.js_class
-                        .hover-linked.font-normal{class:'{{ link|gear_link_classes }}', href:'{{link.href}}', data-success-url:'{{ link.success_url }}'}
+                        .hover-linked.font-normal{class:'{{ link|gear_link_classes }}', href:'{{link.href}}', data-success-url:'{{ link.success_url }}', title:'{{ link.tooltip }}'}
                           {{link.title}}
                           %span{class:'gear-flag'}
                             {{link.flag}}
                       -else
-                        .hover-linked.font-normal{onclick:"goto(event);", href:'{{link.href}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}'}
+                        .hover-linked.font-normal{onclick:'{%if link.on_click%}{{link.on_click}}{% else %}goto(event){%endif%}', href:'{{link.href}}', class:'{{ link|gear_link_classes }}', data-success-url:'{{ link.success_url }}', title:'{{ link.tooltip }}'}
                           {{link.title}}
                           %span{class:'gear-flag'}
                             {{link.flag}}
