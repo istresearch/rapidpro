@@ -4,6 +4,7 @@ from django.db.models import F
 
 from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.middleware import RedirectTo
+from temba.contacts.models import Contact, ContactField
 
 from temba.contacts.views import ContactCRUDL
 from temba.utils.models import patch_queryset_count
@@ -36,6 +37,8 @@ class ContactListOverrides(MonkeyPatcher):
         if search_query:
             return self.List_get_queryset(**kwargs)
         else:
+            org = self.request.org
+            contact_field = None
             sort_on = self.request.GET.get("sort_on", None)
             if sort_on:
                 self.sort_direction = "desc" if sort_on.startswith("-") else "asc"
@@ -45,13 +48,27 @@ class ContactListOverrides(MonkeyPatcher):
                 else:
                     sort_order = [F(self.sort_field).asc(nulls_last=True)]
                 #endif
+                if not self.sort_field in Contact._meta.get_fields():
+                    # sort field is a ContactField whose `show_in_table` is True
+                    contact_field = ContactField.objects.filter(
+                        is_active=True, org_id=org.id, key=self.sort_field
+                    ).first()
+                #endif
             else:
                 self.sort_direction = None
                 self.sort_field = None
                 sort_order = []
             #endif
             sort_order += self.secondary_order_by
-            qs = self.group.contacts.filter(org=self.request.org).order_by(*sort_order).prefetch_related("org", "groups")
+            qs = self.group.contacts
+            if contact_field:
+                from django.db.models.expressions import RawSQL
+                theContactFieldSortMagic = {
+                    self.sort_field: RawSQL(f"fields::json->>'{contact_field.uuid}'", [])
+                }
+                qs = qs.annotate(**theContactFieldSortMagic)
+            #endif
+            qs = qs.filter(org=org).order_by(*sort_order).prefetch_related("org", "groups")
             patch_queryset_count(qs, self.group.get_member_count)
             return qs
         #endif search_query
