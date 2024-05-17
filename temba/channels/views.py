@@ -923,9 +923,9 @@ class ChannelCRUDL(SmartCRUDL):
 
             if "HTTP_X_FORMAX" in self.request.META:  # no additional data needed if request is only for formax
                 return context
-
-            if not channel.is_active:  # pragma: needs cover
-                raise Http404("No active channel with that id")
+            # <*((==< display even if inactive
+            #if not channel.is_active:  # pragma: needs cover
+            #    raise Http404("No active channel with that id")
 
             context["msg_count"] = channel.get_msg_count()
             context["ivr_count"] = channel.get_ivr_count()
