@@ -49,17 +49,16 @@ class FlowViewEditor(MonkeyPatcher):
     def get_gear_links(self):
         links = self.Editor_get_gear_links()
         links[0]['as_btn'] = True  # ensure first menu item stays a button as we pre-pend more.
-        '''
         links.insert(0,
             dict(
                 id="action-recenter",
                 title="Re-center",
-                style="button-default no-goto",
+                style="button-default",
                 as_btn=True,
                 on_click='()=>{}',
+                tooltip='Mousewheel to pan, Ctrl+Wheel to zoom',
             )
         )
-        '''
         return links
     #enddef get_gear_links
 

@@ -184,8 +184,6 @@
 -block extra-script
   {{ block.super }}
 
-  %script{src:"{% static '@panzoom/panzoom/dist/panzoom.js' %}"}
-
   -for script in scripts
     %script(type="text/javascript" src="{{script}}")
 
@@ -209,6 +207,7 @@
     function handleEditorLoaded() {
       $('temba-loading').hide();
       $('#rp-flow-editor > div').css('opacity', '1');
+      initPanzoom();
     }
 
     function handleActivityClicked(nodeUUID, count) {
@@ -229,7 +228,7 @@
       confirmation.open = true;
     }
 
-    const config = {
+    const configFlowEditor = {
       flow: '{{object.uuid}}',
       flowType: flowType,
       localStorage: true,
@@ -248,7 +247,6 @@
       },
 
       endpoints: {
-
         groups: api + 'groups.json',
         fields: api + 'fields.json',
         labels: api + 'labels.json',
@@ -277,7 +275,7 @@
       }
     };
 
-    showFlowEditor(document.getElementById('rp-flow-editor'), config);
+    const flowEditor = showFlowEditor(document.getElementById('rp-flow-editor'), configFlowEditor);
 
 -block page-container
 
@@ -314,3 +312,8 @@
     <temba-loading units="10" size="8"></temba-loading>
     #rp-flow-editor
 
+
+-block script
+  {{block.super}}
+  <script src="{% static '@panzoom/panzoom/dist/panzoom.js' %}"></script>
+  <script src="{% static 'engage/js/flow-editor.js' %}"></script>
