@@ -7,7 +7,7 @@
       -if object.parent
         {{ object.parent.name }}
       -else
-        {{ object.name|default:object.get_address_display }}
+        {{ object.name|default:object.get_address_display }} {% if object.is_active == False %}INACTIVE{% endif %}
 
 -block subtitle
   -if object.get_channel_type_display != object.name
