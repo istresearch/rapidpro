@@ -39,6 +39,10 @@ class ChannelCRUDLOverrides(MonkeyPatcher, ManageChannelMixin,
 class ChannelReadOverrides(MonkeyPatcher):
     patch_class = ChannelCRUDL.Read
 
+    def get_queryset(self: ChannelCRUDL.Read):
+        org = self.derive_org()
+        return Channel.objects.filter(org=org)
+
     def get_gear_links(self):
         links = self.Read_get_gear_links()
 

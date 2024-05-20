@@ -3,8 +3,8 @@ function initPanzoom() {
     let elDesktop;
     let flowEditorPanzoom;
     const configPanZoom = {
-        minScale: 0.5,
-        maxScale: 2,
+        minScale: 0.05,
+        maxScale: 1.6,
         step: 0.05,
         disableZoom: false,
         disablePan: false,
