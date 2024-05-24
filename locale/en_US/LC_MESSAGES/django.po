@@ -6822,7 +6822,7 @@ msgstr ""
 msgid "Flows and Campaigns"
 msgstr "Flows and Scenarios"
 
-msgid "Select Everthing Else"
+msgid "Select Everything Else"
 msgstr ""
 
 msgid "Select All"

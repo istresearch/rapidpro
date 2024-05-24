@@ -6833,7 +6833,7 @@ msgstr "Бусад бүх зүйл"
 msgid "Flows and Campaigns"
 msgstr "Урсгал ба ко.ажил"
 
-msgid "Select Everthing Else"
+msgid "Select Everything Else"
 msgstr "Бусад бүх зүйлийг сонгох"
 
 msgid "Select All"

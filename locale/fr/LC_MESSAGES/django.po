@@ -6907,7 +6907,7 @@ msgstr "Tout le reste"
 msgid "Flows and Campaigns"
 msgstr "Flux et campagnes"
 
-msgid "Select Everthing Else"
+msgid "Select Everything Else"
 msgstr "Sélectionner tout le reste"
 
 msgid "Select All"

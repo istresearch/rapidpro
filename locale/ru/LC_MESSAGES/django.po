@@ -6796,7 +6796,7 @@ msgstr "Все остальное"
 msgid "Flows and Campaigns"
 msgstr "Потоки и Кампании"
 
-msgid "Select Everthing Else"
+msgid "Select Everything Else"
 msgstr "Выбрать Все остальное"
 
 msgid "Select All"
