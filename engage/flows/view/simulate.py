@@ -35,7 +35,10 @@ class FlowViewSimulate(MonkeyPatcher):
         simChan['roles'] = ["send", "receive", "call"]
         simChan['country'] = "US"
         # if contact is a simulated one, tailor the simulated channel to react to it
-        if json_dict["trigger"]['contact'] and json_dict["trigger"]['contact']['uuid'] == 'fb3787ab-2eda-48a0-a2bc-e2ddadec1286':
+        if ('trigger' in json_dict and \
+            'contact' in json_dict["trigger"] and \
+            json_dict["trigger"]['contact']['uuid'] == 'fb3787ab-2eda-48a0-a2bc-e2ddadec1286'
+        ):
             chanFilter = flow.metadata.get('channels', [])
             if len(chanFilter) > 0:
                 # if flow limits what channels it can use, ensure simulator uuid is one of them
