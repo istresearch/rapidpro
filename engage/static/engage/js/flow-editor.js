@@ -47,7 +47,7 @@ function initPanzoom() {
     }
 
     elDesktop = document.getElementById('canvas-container');
-    flowEditorPanzoom = configurePanZoom(elDesktop);
+    //TODO flowEditorPanzoom = configurePanZoom(elDesktop);
 
     const menuitemReCenter = document.querySelector("#action-recenter");
     if ( menuitemReCenter && flowEditorPanzoom ) {

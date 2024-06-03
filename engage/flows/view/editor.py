@@ -45,7 +45,7 @@ class FlowViewEditor(MonkeyPatcher):
         context['pm_schemes'] = json.dumps(self.get_pm_schemes())
         return context
     #enddef get_context_data
-
+    '''
     def get_gear_links(self):
         links = self.Editor_get_gear_links()
         links[0]['as_btn'] = True  # ensure first menu item stays a button as we pre-pend more.
@@ -61,5 +61,5 @@ class FlowViewEditor(MonkeyPatcher):
         )
         return links
     #enddef get_gear_links
-
+    '''
 #endclass FlowViewEditor
