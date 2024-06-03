@@ -23,6 +23,7 @@ class FlowViewUpdate(MonkeyPatcher):
     #endclass UpdateFlowMsgForm
 
     class UpdateFlowIvrForm(FlowChannelsFormMixin, FlowCRUDL.Update.VoiceForm):
+        flow_schemes = FlowChannelsFormMixin.flow_schemes
         flow_channels = FlowChannelsFormMixin.flow_channels
 
         class Meta:
