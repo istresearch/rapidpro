@@ -4,6 +4,7 @@ from django.urls import reverse
 from smartmin.views import SmartListView
 
 from engage.channels.purge_outbox import PurgeOutboxMixin
+from engage.channels.types.postmaster.postoffice import po_api_key
 from engage.channels.types.postmaster.schemes import PM_CHANNEL_MODES
 from temba.channels.types.postmaster import PostmasterType
 from temba.orgs.views import OrgPermsMixin
@@ -95,5 +96,15 @@ class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView
 
         return links
     #enddef get_gear_links
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        context['po_api_key'] =  po_api_key
+        context['OrgID'] = self.derive_org().id
+        context['UserID'] = self.get_user().id
+
+        return context
+    #enddef get_context_data
 
 #endclass PmViewList
