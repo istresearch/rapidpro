@@ -57,6 +57,12 @@ class ManageChannelMixin:
             if field == 'channel_log':
                 return reverse('channels.channellog_list', args=[obj.uuid])
             elif field == 'settings':
+                if obj.channel_type == "PSM":
+                    if "pm_service" in obj.schemes:
+                        return reverse("pm.postmaster_read", args=[obj.uuid])
+                    elif obj.parent is not None:
+                        return reverse("pm.postmaster_read", args=[obj.parent.uuid])
+
                 return reverse("channels.channel_configuration", args=[obj.uuid])
             else:
                 return reverse('channels.channel_read', args=[obj.uuid])
