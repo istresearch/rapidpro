@@ -44,5 +44,8 @@ def chat_mode_label(obj):
 
 @register.filter
 def chat_mode_app(chat_mode_apps, chat_mode):
+    if chat_mode_apps == "":
+        return {}
+
     return chat_mode_apps.get(chat_mode, {})
 #enddef chat_mode_app
