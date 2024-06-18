@@ -64,11 +64,15 @@ class PmViewRead(OrgPermsMixin, SmartReadView):
         context['device_name'] = obj.name
         context['device_id'] = obj.address
         device_info = Channel.fetch_device_info(user, obj.address)
+
+        if device_info is None:
+            device_info = {}
+
         context['device_info'] = device_info
         context['device_meta'] = device_info.get('meta', {})
 
         # app list versions sorted by chat mode
-        if device_info['meta'] is not None:
+        if device_info.get('meta') is not None:
             if device_info['meta']['extras'] is not None:
                 chat_mode_apps = {}
                 inactive_apps = {}

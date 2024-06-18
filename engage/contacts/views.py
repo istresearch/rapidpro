@@ -51,7 +51,7 @@ class ContactListOverrides(MonkeyPatcher):
                 if not self.sort_field in Contact._meta.get_fields():
                     # sort field is a ContactField whose `show_in_table` is True
                     contact_field = ContactField.objects.filter(
-                        is_active=True, org_id=org.id, key=self.sort_field
+                        is_active=True, org_id=org.id, key=self.sort_field, is_system=False
                     ).first()
                 #endif
             else:
