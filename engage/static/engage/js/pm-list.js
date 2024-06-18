@@ -170,6 +170,9 @@ function wireupActionCommand() {
                 }
             });
 
+            console.log(window.contextData.UserID)
+            console.log(window.contextData.OrgID)
+
             let requestData = {
                 UserID: window.contextData.UserID,
                 OrgID: window.contextData.OrgID,
