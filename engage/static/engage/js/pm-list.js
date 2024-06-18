@@ -143,22 +143,25 @@ function wireupActionCommand() {
     const menuitem = document.querySelector("#action-command");
     const btnSubmit = document.querySelector("#btn-send-command");
     const dropdownMenu = document.querySelector('#command-select');
-    const optionsSelect = document.getElementById("options-select");
-    const textInput = document.getElementById("text-input");
 
     if (menuitem && btnSubmit) {
         btnSubmit.addEventListener("click", function (e) {
             showSpinner();
 
+            if (!window.contextData.OrgID) {
+                putToastInToaster('alert-warning', 'No Organization ID was found, please set to continue.');
+                hideSpinner();
+                return;
+            }
+
+            let argsValue = [];
             const selectedCommand = dropdownMenu.value;
             const commandType = dropdownMenu.options[dropdownMenu.selectedIndex].dataset.type;
-            let argsValue = null;
 
-            // Determine the Args value based on the type of command
             if (commandType === 'bool' || commandType === 'apps' || commandType === 'select') {
-                argsValue = optionsSelect.value;
+                argsValue.push(document.getElementById("options-select").value);
             } else if (commandType === 'text') {
-                argsValue = textInput.value;
+                argsValue.push(document.getElementById("text-input").value);
             }
 
             let selectedUUIDs = getCheckedData('object-uuid');
@@ -170,28 +173,35 @@ function wireupActionCommand() {
                 }
             });
 
-            console.log(window.contextData.UserID)
-            console.log(window.contextData.OrgID)
-
             let requestData = {
-                UserID: window.contextData.UserID,
-                OrgID: window.contextData.OrgID,
-                Commands: [selectedCommand],
-                DeviceIDs: deviceIDs
+                org_id: parseInt(window.contextData.OrgID, 10),
+                user_id: parseInt(window.contextData.UserID, 10),
+                device_ids: deviceIDs,
+                commands: [{
+                    command: selectedCommand,
+                    args: argsValue
+                }]
             };
-
-            if (argsValue !== null) {
-                requestData.Args = argsValue;
-            }
 
             makeHttpRequest({
                 url: `/postoffice/engage/commands/send`,
                 headers: {
                     'po-api-key': window.contextData.po_api_key
                 },
-                data: requestData,
-            }).then((resp) => {
-                putToastInToaster('alert-warning', resp.msg);
+                data: JSON.stringify(requestData),
+                success: (resp) => {
+                    putToastInToaster('alert-success', resp.msg);
+                },
+                error: (resp) => {
+                    let errorMessage = 'Error sending command';
+                    try {
+                        const errorData = JSON.parse(resp.responseText);
+                        errorMessage = `${errorData.error.cause}: ${errorData.error.message}`;
+                    } catch (e) {
+                        console.error('Error parsing JSON response:', resp.responseText);
+                    }
+                    putToastInToaster('alert-warning', errorMessage);
+                }
             }).always(() => {
                 hideSpinner();
             });

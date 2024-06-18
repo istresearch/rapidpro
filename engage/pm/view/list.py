@@ -99,10 +99,11 @@ class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
+        user = self.request.user
+        org = user.get_org()
         context['po_api_key'] =  po_api_key
-        context['OrgID'] = self.derive_org().id
-        context['UserID'] = self.get_user().id
+        context['OrgID'] = org.id
+        context['UserID'] = user.id
 
         return context
     #enddef get_context_data

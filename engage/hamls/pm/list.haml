@@ -164,4 +164,8 @@
   {{ block.super }}
   <script src="{% static 'engage/js/pm-list.js' %}"></script>
   :javascript
-    window.contextData = {po_api_key: "{{ po_api_key }}"};
+    window.contextData = {
+      po_api_key: "{{ po_api_key }}",
+      OrgID: "{{ OrgID }}",
+      UserID: "{{ UserID }}"
+      };
