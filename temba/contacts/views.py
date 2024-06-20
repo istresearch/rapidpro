@@ -190,12 +190,6 @@ class ContactListView(SpaMixin, OrgPermsMixin, BulkActionMixin, SmartListView):
     search_error = None
 
     def pre_process(self, request, *args, **kwargs):
-        """
-        Don't allow pagination past 200th page
-        """
-        if int(self.request.GET.get("page", "1")) > 200:
-            return HttpResponseNotFound()
-
         return super().pre_process(request, *args, **kwargs)
 
     @cached_property
