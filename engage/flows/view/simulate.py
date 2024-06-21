@@ -46,7 +46,7 @@ class FlowViewSimulate(MonkeyPatcher):
                 if filterChan:
                     simChan['uuid'] = filterChan.uuid
                     simChan['schemes'] = filterChan.schemes
-                    json_dict["trigger"]['contact']['urns'] += [filterChan.schemes[0] + ':simulated_handle']
+                    json_dict["trigger"]['contact']['urns'] += [filterChan.schemes[0] + ':' + simChan["address"]]
                 #endif
             #endif
         #endif

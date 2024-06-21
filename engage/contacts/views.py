@@ -6,7 +6,7 @@ from engage.utils.class_overrides import MonkeyPatcher
 from engage.utils.middleware import RedirectTo
 from temba.contacts.models import Contact, ContactField
 
-from temba.contacts.views import ContactCRUDL
+from temba.contacts.views import ContactCRUDL, ContactListView
 from temba.utils.models import patch_queryset_count
 
 class ContactListOverrides(MonkeyPatcher):
@@ -134,3 +134,9 @@ class ContactHistoryOverrides(MonkeyPatcher):
     #enddef
 
 #endclass ContactHistoryOverrides
+
+class ContactListViewOverrides(MonkeyPatcher):
+    patch_class = ContactListView
+
+    def pre_process(self, request, *args, **kwargs):
+        return super(ContactListView, self).pre_process(request, *args, **kwargs)
