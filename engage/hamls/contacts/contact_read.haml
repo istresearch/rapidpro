@@ -167,12 +167,12 @@
                   -if urn.channel
                     ( Default Channel:
                     -if urn.channel.channel_type == 'PSM'
-                      <a href="/channels/channel/read/{{ urn.channel.uuid }}" data-chat_mode="{{ urn.channel.chat_mode }}">
-                        -# <div class="chat_mode {{ urn.channel|chat_mode_class }}" title="{{ urn.channel.name }}"></div>
+                      <a href="/channels/channel/read/{{ urn.channel.uuid }}" data-pm_scheme="{{ urn.channel.pm_scheme }}">
+                        -# <div class="pm_scheme {{ urn.channel|pm_scheme_class }}" title="{{ urn.channel.name }}"></div>
                         {{ urn.channel.name }}
                       </a>
                     -else
-                      <a href="/channels/channel/read/{{ urn.channel.uuid }}" data-chat_mode="{{ urn.channel.chat_mode }}">
+                      <a href="/channels/channel/read/{{ urn.channel.uuid }}" data-pm_scheme="{{ urn.channel.pm_scheme }}">
                         {{ urn.channel.name }}
                       </a>
                     )

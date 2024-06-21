@@ -5,7 +5,10 @@
   .flex.items-start.flex-col
     .name
       -if object.parent
-        {{ object.parent.name }}
+        -if object.parent.pm_scheme != 'pm_service'
+          {{ object.parent.name }}
+        -else
+          {{ object.name|default:object.get_address_display }} {% if object.is_active == False %}INACTIVE{% endif %}
       -else
         {{ object.name|default:object.get_address_display }} {% if object.is_active == False %}INACTIVE{% endif %}
 
@@ -15,7 +18,10 @@
       .flex.flex-col
         .channel_type
           -if object.parent
-            {{ object.name }}
+            -if object.parent.pm_scheme == 'pm_service'
+              <a href="/pm/read/{{ object.parent.uuid }}">{{ object.parent.name }}</a>
+            -else
+              {{ object.name }}
           -else
             {{ object.get_channel_type_display }}
             -trans "Channel"
@@ -32,10 +38,10 @@
     -if delegates
       .channel-roles.mt-3
         -if object.channel_type == 'PSM'
-          .chat_modes
+          .pm_schemes
             {% for child_obj in object.children %}
-              <a href="/channels/channel/read/{{ child_obj.uuid }}" data-chat_mode="{{ child_obj.chat_mode }}">
-                <div class="chat_mode {{ child_obj|chat_mode_class }}" title="{{ child_obj.name }}"></div>
+              <a href="/channels/channel/read/{{ child_obj.uuid }}" data-pm_scheme="{{ child_obj.pm_scheme }}">
+                <div class="pm_scheme {{ child_obj|pm_scheme_class }}" title="{{ child_obj.name }}"></div>
               </a>
             {% endfor %}
         -else
@@ -379,9 +385,9 @@
           font-weight: bolder;
         }
 
-        .chat_modes {
+        .pm_schemes {
           font-size: 1.4rem;
-          .chat_mode {
+          .pm_scheme {
             margin-right: 0.3em;
           }
           a:link {

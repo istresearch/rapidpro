@@ -50,7 +50,6 @@ def create_pm_services(apps, schema_editor):  # pragma: no cover
             parent_name = channel.name[:channel.name.rfind('[')]
             parent_name += '['+parent_scheme+']'
             parent_config = channel.config
-            parent_config["chat_mode"] = parent_chat_mode
             create_args = dict(
                 org=channel.org,
                 country=channel.country,

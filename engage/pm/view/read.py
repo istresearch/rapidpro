@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 
 from smartmin.views import SmartReadView
 
+from engage.channels.types.postmaster.schemes import PM_CHANNEL_MODES
 from engage.utils.middleware import RedirectTo
 
 from temba.channels.models import Channel
@@ -74,22 +75,23 @@ class PmViewRead(OrgPermsMixin, SmartReadView):
         # app list versions sorted by chat mode
         if device_info.get('meta') is not None:
             if device_info['meta']['extras'] is not None:
-                chat_mode_apps = {}
+                pm_scheme_apps = {}
                 inactive_apps = {}
                 for item in device_info['meta']['extras']['apps']:
                     chat_mode = item['modes'][0]
                     app = {
                         'chat_mode': chat_mode,
+                        'pm_scheme': PM_CHANNEL_MODES[chat_mode].scheme,
                         'app_version': item.get('version', 'unknown'),
                         'app_name': item.get('name', chat_mode),
                         'status': item.get('status', ''),
                     }
-                    chat_mode_apps[chat_mode] = app
+                    pm_scheme_apps[pm_scheme] = app
                     if not item.get('enabled', True):
-                        inactive_apps[chat_mode] = app
+                        inactive_apps[pm_scheme] = app
                     #endif
                 #endfor
-                context['chat_mode_apps'] = chat_mode_apps
+                context['pm_scheme_apps'] = pm_scheme_apps
                 context['inactive_apps'] = inactive_apps
             #endif
         #nedif
