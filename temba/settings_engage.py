@@ -544,10 +544,6 @@ else:
     NON_ISO6391_LANGUAGES = None
 # setting the above ^ to None means all are allowed.
 
-#Use CHAT_MODE_CHOICES to configure the chat modes that are available to the Postmaster channel
-from engage.channels.types.postmaster.schemes import PM_Scheme_Default_Chats
-CHAT_MODE_CHOICES = PM_Scheme_Default_Chats
-
 # noinspection PyUnboundLocalVariable
 mwl = list(MIDDLEWARE)
 # replace BrandingMiddleware

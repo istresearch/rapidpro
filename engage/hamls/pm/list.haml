@@ -43,9 +43,9 @@
       font-size: large;
     }
 
-    #pm_devices .chat_modes {
+    #pm_devices .pm_schemes {
       font-size: 1.4rem;
-      .chat_mode {
+      .pm_scheme {
         margin-right: 0.3em;
       }
       a:link {
@@ -111,10 +111,10 @@
                   - if field in link_fields
                     <a {% if pjax %}data-pjax='{{ pjax }}'{% endif %} href="{% get_field_link field obj %}">{% get_value obj field %}</a>
                   - elif field == 'children'
-                    .chat_modes
+                    .pm_schemes
                       {% for child_obj in obj.children %}
-                        <a href="/channels/channel/read/{{ child_obj.uuid }}" data-chat_mode="{{ child_obj.chat_mode }}">
-                          <div class="chat_mode {{ child_obj|chat_mode_class }}" title="{{ child_obj.name }}"></div>
+                        <a href="/channels/channel/read/{{ child_obj.uuid }}" data-pm_scheme="{{ child_obj.pm_scheme }}">
+                          <div class="pm_scheme {{ child_obj|pm_scheme_class }}" title="{{ child_obj.name }}"></div>
                         </a>
                       {% endfor %}
                   - else

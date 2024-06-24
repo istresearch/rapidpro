@@ -14,38 +14,34 @@ def sort_by(sort_field):
 #enddef sort_by
 
 @register.filter
-def chat_mode_class(chat_mode_or_obj):
-    if isinstance(chat_mode_or_obj, str):
-        chat_mode = chat_mode_or_obj
+def pm_scheme_class(pm_scheme_or_obj):
+    scheme: str
+    if isinstance(pm_scheme_or_obj, str):
+        scheme = pm_scheme_or_obj
     else:
-        scheme: str = chat_mode_or_obj.schemes[0]
-        if scheme.startswith('pm_'):
-            chat_mode = PM_Scheme2Mode[scheme]
-        else:
-            chat_mode = 'SMS'
-        #endif
+        scheme = pm_scheme_or_obj.pm_scheme
     #endif
-    if chat_mode in PM_CHANNEL_MODES:
-        return PM_CHANNEL_MODES[chat_mode].iconclass
+    if scheme in PM_Scheme2Mode:
+        return PM_CHANNEL_MODES[PM_Scheme2Mode[scheme]].iconclass
     else:
         return 'glyph icon-phone'
     #endif
-#enddef chat_mode_class
+#enddef pm_scheme_class
 
 @register.filter
-def chat_mode_label(obj):
-    scheme: str = obj.schemes[0]
-    if scheme.startswith('pm_'):
+def pm_scheme_label(obj):
+    scheme: str = obj.pm_scheme
+    if scheme in PM_Scheme2Mode:
         return PM_CHANNEL_MODES[PM_Scheme2Mode[scheme]].label
     else:
         return 'SMS'
     #endif
-#enddef chat_mode_label
+#enddef pm_scheme_label
 
 @register.filter
-def chat_mode_app(chat_mode_apps, chat_mode):
-    if chat_mode_apps == "":
+def pm_scheme_app(pm_scheme_apps, pm_scheme):
+    if pm_scheme_apps == "":
         return {}
-
-    return chat_mode_apps.get(chat_mode, {})
-#enddef chat_mode_app
+    #endif
+    return pm_scheme_apps.get(pm_scheme, {})
+#enddef pm_scheme_app

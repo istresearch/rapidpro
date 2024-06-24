@@ -54,9 +54,9 @@
       font-variant: all-small-caps;
       font-size: large;
     }
-    .chat_modes {
+    .pm_schemes {
       font-size: 1.4rem;
-      .chat_mode {
+      .pm_scheme {
         margin-right: 0.3em;
       }
       a:link {
@@ -112,12 +112,12 @@
         .data-label
           Active Apps:
         .data-value
-          .chat_modes
+          .pm_schemes
             {% with obj=object %}
               {% for child_obj in obj.children %}
-                <a href="/channels/channel/read/{{ child_obj.uuid }}" data-chat_mode="{{ child_obj.chat_mode }}">
-                  <div class="chat_mode {{ child_obj|chat_mode_class }}" title="{{ child_obj.name }}"></div>
-                  {% with app=chat_mode_apps|chat_mode_app:child_obj.chat_mode %}
+                <a href="/channels/channel/read/{{ child_obj.uuid }}" data-pm_scheme="{{ child_obj.pm_scheme }}">
+                  <div class="pm_scheme {{ child_obj|pm_scheme_class }}" title="{{ child_obj.name }}"></div>
+                  {% with app=pm_scheme_apps|pm_scheme_app:child_obj.pm_scheme %}
                     {{ app.app_name }} [{{ app.app_version }}]<br />
                   {% endwith %}
                 </a>
@@ -129,10 +129,10 @@
         .data-label
           Inactive Apps:
         .data-value
-          .chat_modes
+          .pm_schemes
             {% for app in inactive_apps %}
-              <div data-chat_mode="{{ app.chat_mode }}">
-                <div class="chat_mode {{ app.chat_mode|chat_mode_class }}" title="{{ app.app_name }}"></div>
+              <div data-pm_scheme="{{ app.pm_scheme }}">
+                <div class="pm_scheme {{ app.pm_scheme|pm_scheme_class }}" title="{{ app.app_name }}"></div>
                 {{ app.app_name }} [{{ app.app_version }}]<br />
               </div>
             {% empty %}
