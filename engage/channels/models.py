@@ -15,7 +15,6 @@ class ChannelOverrides(MonkeyPatcher):
     patch_class = Channel
 
     CONFIG_NAME_FORMAT = "name_format"
-    CONFIG_CHAT_MODE = "chat_mode"
     CONFIG_PHONE_NUMBER = "phone_number"
     CONFIG_DEVICE_MODEL = "device_model"
     CONFIG_IMEI = "imei"
@@ -81,16 +80,19 @@ class ChannelOverrides(MonkeyPatcher):
     #enddef name_format
 
     @property
-    def chat_mode(self: Channel):
-        return self.config[self.CONFIG_CHAT_MODE] if self.CONFIG_CHAT_MODE in self.config else ''
-    #enddef chat_mode
+    def pm_scheme(self: Channel):
+        return self.schemes[0].strip('{}')
+    #enddef pm_scheme
 
     @property
     def children(self: Channel):
+        ''' keeping around as example RawSQL, chat_mode is not used anymore
         from django.db.models.expressions import RawSQL
         return Channel.objects.annotate(
             my_chat_mode=RawSQL("config::json->>'chat_mode'", [])
         ).filter(parent=self, is_active=True).order_by('my_chat_mode')
+        '''
+        return Channel.objects.filter(parent=self, is_active=True).order_by('schemes')
     #enddef children
 
     @staticmethod
@@ -161,8 +163,8 @@ class ChannelOverrides(MonkeyPatcher):
         channel_name = (
             name_format
             .replace('{{device_id}}', channel.address)
-            .replace('{{pm_scheme}}', channel.schemes[0].strip('{}'))
-            .replace('{{pm_mode}}', channel.config['chat_mode'] if 'chat_mode' in channel.config else '')
+            .replace('{{pm_scheme}}', channel.pm_scheme)
+            .replace('{{pm_mode}}', channel.pm_scheme)
             .replace('{{phone_number}}', phone_num)
             .replace('{{device_model}}', device_model)
             .replace('{{org}}', user.get_org().name)

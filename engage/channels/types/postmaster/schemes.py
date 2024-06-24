@@ -32,7 +32,7 @@ PM_CHANNEL_MODES = {
     "PM":     Schemes_Meta("pm_service",    _("Postmaster Device"),     _("Postmaster Service Channel"),       "icon-pm_service"),
 }
 
-PM_Scheme2Mode = { val.scheme: key  for key, val in PM_CHANNEL_MODES.items() }
+PM_Scheme2Mode = { val.scheme: key for key, val in PM_CHANNEL_MODES.items() }
 PM_Scheme_Icons = { ico.scheme: ico.iconclass for ico in PM_CHANNEL_MODES.values() }
 PM_Scheme_Labels = tuple( (x.scheme, x.label) for x in PM_CHANNEL_MODES.values() )
 PM_Scheme_Default_Chats = (
