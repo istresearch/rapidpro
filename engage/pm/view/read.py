@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 
 from smartmin.views import SmartReadView
 
-from engage.channels.types.postmaster.schemes import PM_CHANNEL_MODES
+from engage.channels.types.postmaster.schemes import PM_CHANNEL_MODES, PM_Scheme2Mode
 from engage.utils.middleware import RedirectTo
 
 from temba.channels.models import Channel
