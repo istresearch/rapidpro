@@ -79,7 +79,7 @@ class PmViewRead(OrgPermsMixin, SmartReadView):
                 inactive_apps = {}
                 for item in device_info['meta']['extras']['apps']:
                     pm_scheme = item['scheme']
-                    default_app_name = PM_CHANNEL_MODES[pm_scheme].urn_name if pm_scheme != 'tel' else 'SMS'
+                    default_app_name = PM_CHANNEL_MODES[PM_Scheme2Mode[pm_scheme]].urn_name if pm_scheme != 'tel' else 'SMS'
                     app = {
                         'pm_scheme': pm_scheme,
                         'app_version': item.get('version', 'unknown'),
