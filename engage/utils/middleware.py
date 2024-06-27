@@ -1,6 +1,6 @@
 from django import shortcuts
 from django.conf import settings
-from django.http import HttpResponseForbidden, HttpResponse
+from django.http import HttpResponseForbidden, HttpResponseServerError
 
 import logging
 
@@ -15,7 +15,7 @@ class ExceptionMiddleware:
 
     def process_exception(self, request, exception):
         self.logger.exception(str(exception))
-        return HttpResponse("A server error has occurred and IT has been notified. Please retry your request.")
+        return HttpResponseServerError("A server error has occurred and IT has been notified. Please retry your request.")
 
 
 class RedirectTo(Exception):
