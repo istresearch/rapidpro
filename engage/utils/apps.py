@@ -30,9 +30,6 @@ class AppConfig(BaseAppConfig):
 
         from .export import BaseExportTaskOverrides
         BaseExportTaskOverrides.applyPatches()
-
-        from .base_handler import BaseHandlerOverrides
-        BaseHandlerOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig
