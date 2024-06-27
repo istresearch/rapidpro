@@ -551,6 +551,7 @@ idx = mwl.index("temba.middleware.BrandingMiddleware")
 mwl[idx] = "engage.utils.middleware.BrandingMiddleware"
 # add custom middleware
 mwl.append("engage.utils.middleware.RedirectMiddleware")
+mwl.append("engage.utils.middleware.ExceptionMiddleware")
 MIDDLEWARE = tuple(mwl)
 
 ALT_CALLBACK_DOMAIN = env('ALT_CALLBACK_DOMAIN', None)
