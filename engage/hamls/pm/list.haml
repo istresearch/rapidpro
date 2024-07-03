@@ -160,12 +160,12 @@
     {% include "pm/dialog-command.haml" with groups=broadcast.groups.all %}
   {% endif %}
 
--block extra-script
+{% block extra-script %}
   {{ block.super }}
   <script src="{% static 'engage/js/pm-list.js' %}"></script>
-  :javascript
+  <script>
     window.contextData = {
-      po_api_key: "{{ po_api_key }}",
-      OrgID: "{{ OrgID }}",
-      UserID: "{{ UserID }}"
-      };
+      commands_list: {{ commands_list|safe }},
+    };
+  </script>
+{% endblock %}

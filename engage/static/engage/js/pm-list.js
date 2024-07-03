@@ -143,16 +143,9 @@ function wireupActionCommand() {
     const menuitem = document.querySelector("#action-command");
     const btnSubmit = document.querySelector("#btn-send-command");
     const dropdownMenu = document.querySelector('#command-select');
-
     if (menuitem && btnSubmit) {
         btnSubmit.addEventListener("click", function (e) {
             showSpinner();
-
-            if (!window.contextData.OrgID) {
-                putToastInToaster('alert-warning', 'No Organization ID was found, please set to continue.');
-                hideSpinner();
-                return;
-            }
 
             let argsValue = [];
             const selectedCommand = dropdownMenu.value;
@@ -174,8 +167,6 @@ function wireupActionCommand() {
             });
 
             let requestData = {
-                org_id: parseInt(window.contextData.OrgID, 10),
-                user_id: parseInt(window.contextData.UserID, 10),
                 device_ids: deviceIDs,
                 commands: [{
                     command: selectedCommand,
@@ -184,10 +175,7 @@ function wireupActionCommand() {
             };
 
             makeHttpRequest({
-                url: `/postoffice/engage/commands/send`,
-                headers: {
-                    'po-api-key': window.contextData.po_api_key
-                },
+                url: `/pm/`,
                 data: JSON.stringify(requestData),
                 success: (resp) => {
                     putToastInToaster('alert-success', resp.msg);
@@ -210,81 +198,67 @@ function wireupActionCommand() {
 }
 
 function populateDropdown() {
-    makeHttpRequest({
-        url: '/postoffice/engage/commands/list',
-        headers: {
-            'po-api-key': window.contextData.po_api_key
-        },
-        success: (response) => {
-            const commands = response.data.commands;
-            const dropdown = document.getElementById("command-select");
-            dropdown.innerHTML = ''; // Clear existing options if any
-            // const optionsContainer = document.getElementById("options-container");
-            // const textContainer = document.getElementById("text-container");
-            // const optionsSelect = document.getElementById("options-select");
-            // const textInput = document.getElementById("text-input");
+    if (window.contextData.commands_list && window.contextData.commands_list.commands) {
+        const commands = window.contextData.commands_list.commands;
+        const dropdown = document.getElementById("command-select");
+        dropdown.innerHTML = ''; // Clear existing options if any
 
-            Object.entries(commands).forEach(([key, command]) => {
-                const option = document.createElement("option");
-                option.value = key;
-                option.textContent = command.label;
-                option.dataset.type = command.type;
-                if (command.options) {
-                    option.dataset.options = JSON.stringify(command.options);
-                }
-                dropdown.appendChild(option);
-            });
+        Object.entries(commands).forEach(([key, command]) => {
+            const option = document.createElement("option");
+            option.value = key;
+            option.textContent = command.label;
+            option.dataset.type = command.type;
+            if (command.options) {
+                option.dataset.options = JSON.stringify(command.options);
+            }
+            dropdown.appendChild(option);
+        });
 
-            dropdown.addEventListener('change', (e) => {
-                const selectedOption = commands[e.target.value];
-                const optionsContainer = document.getElementById("options-container");
-                const textContainer = document.getElementById("text-container");
-                const optionsSelect = document.getElementById("options-select");
-                const textInput = document.getElementById("text-input");
-            
-                // Clear previous options
-                optionsSelect.innerHTML = '';
-                textInput.value = '';
-            
-                if (['bool', 'apps', 'select'].includes(selectedOption.type)) {
-                    optionsContainer.style.display = 'block';
-                    textContainer.style.display = 'none';
-            
-                    if (selectedOption.type === 'bool') {
-                        // Special handling for boolean type
-                        const trueOption = document.createElement("option");
-                        trueOption.value = 'true';
-                        trueOption.textContent = 'True';
-                        optionsSelect.appendChild(trueOption);
-            
-                        const falseOption = document.createElement("option");
-                        falseOption.value = 'false';
-                        falseOption.textContent = 'False';
-                        optionsSelect.appendChild(falseOption);
-                    } else if (selectedOption.options) {
-                        // Normal handling for 'apps' and 'select' with predefined options
-                        Object.entries(selectedOption.options).forEach(([key, value]) => {
-                            const opt = document.createElement("option");
-                            opt.value = key;
-                            opt.textContent = value;
-                            optionsSelect.appendChild(opt);
-                        });
-                    }
-                } else if (selectedOption.type === 'text') {
-                    textContainer.style.display = 'block';
-                    optionsContainer.style.display = 'none';
-                } else {
-                    optionsContainer.style.display = 'none';
-                    textContainer.style.display = 'none';
+        dropdown.addEventListener('change', (e) => {
+            const selectedOption = commands[e.target.value];
+            const optionsContainer = document.getElementById("options-container");
+            const textContainer = document.getElementById("text-container");
+            const optionsSelect = document.getElementById("options-select");
+            const textInput = document.getElementById("text-input");
+        
+            // Clear previous options
+            optionsSelect.innerHTML = '';
+            textInput.value = '';
+        
+            if (['bool', 'apps', 'select'].includes(selectedOption.type)) {
+                optionsContainer.style.display = 'block';
+                textContainer.style.display = 'none';
+        
+                if (selectedOption.type === 'bool') {
+                    // Special handling for boolean type
+                    const trueOption = document.createElement("option");
+                    trueOption.value = 'true';
+                    trueOption.textContent = 'True';
+                    optionsSelect.appendChild(trueOption);
+        
+                    const falseOption = document.createElement("option");
+                    falseOption.value = 'false';
+                    falseOption.textContent = 'False';
+                    optionsSelect.appendChild(falseOption);
+                } else if (selectedOption.options) {
+                    Object.entries(selectedOption.options).forEach(([key, value]) => {
+                        const opt = document.createElement("option");
+                        opt.value = key;
+                        opt.textContent = value;
+                        optionsSelect.appendChild(opt);
+                    });
                 }
-            });
-            
-        },
-        error: (error) => {
-            console.log('Error fetching commands:', error);
-        }
-    });
+            } else if (selectedOption.type === 'text') {
+                textContainer.style.display = 'block';
+                optionsContainer.style.display = 'none';
+            } else {
+                optionsContainer.style.display = 'none';
+                textContainer.style.display = 'none';
+            }
+        });
+    }
 }
+
 
 
 window.addEventListener('DOMContentLoaded', function (e) {
