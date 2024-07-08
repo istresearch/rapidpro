@@ -113,7 +113,7 @@ class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView
     def get_commands_list():
         if po_server_url is not None and po_api_key is not None:
             r = requests.get(
-                f"{po_server_url}/postoffice/engage/commands/list",
+                f"{po_server_url}/engage/commands/list",
                 headers={po_api_header: po_api_key},
                 cookies=None,
                 verify=False,
@@ -129,7 +129,7 @@ class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView
     def post_commands(data):
         if po_server_url is not None and po_api_key is not None:
             response = requests.post(
-                f"{po_server_url}/postoffice/engage/commands/send",
+                f"{po_server_url}/engage/commands/send",
                 headers={po_api_header: po_api_key},
                 json=data,
                 cookies=None,
