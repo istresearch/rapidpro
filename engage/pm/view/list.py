@@ -154,7 +154,8 @@ class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView
         context = super().get_context_data(**kwargs)
 
         commands = self.get_commands_list()
-        context['commands_list'] = commands
+        context['commands_list'] = json.dumps(commands)
+        print(json.dumps(commands))
 
         return context
     #enddef get_context_data
