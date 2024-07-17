@@ -135,7 +135,7 @@ class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView
                 cookies=None,
                 verify=False,
             )
-            return JsonResponse(response.json(), status=200)
+            return JsonResponse(response.json(), status=response.status_code)
             #endif
         return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
     #enddef post_commands
