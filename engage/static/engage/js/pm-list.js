@@ -238,22 +238,22 @@ function populateDropdown() {
             const textContainer = document.getElementById("text-container");
             const optionsSelect = document.getElementById("options-select");
             const textInput = document.getElementById("text-input");
-        
+
             // Clear previous options
             optionsSelect.innerHTML = '';
             textInput.value = '';
-        
+
             if (['bool', 'apps', 'select'].includes(selectedOption.type)) {
                 optionsContainer.style.display = 'block';
                 textContainer.style.display = 'none';
-        
+
                 if (selectedOption.type === 'bool') {
                     // Special handling for boolean type
                     const trueOption = document.createElement("option");
                     trueOption.value = 'true';
                     trueOption.textContent = 'True';
                     optionsSelect.appendChild(trueOption);
-        
+
                     const falseOption = document.createElement("option");
                     falseOption.value = 'false';
                     falseOption.textContent = 'False';
@@ -274,6 +274,8 @@ function populateDropdown() {
                 textContainer.style.display = 'none';
             }
         });
+
+        dropdown.dispatchEvent(new Event('change'));
     }
 }
 
