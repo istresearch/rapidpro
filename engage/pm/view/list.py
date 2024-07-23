@@ -118,7 +118,6 @@ class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView
                 cookies=None,
                 verify=False,
             )
-            print(f"{r.status_code} status code")
             if r.status_code == status.HTTP_200_OK:
                 return json.loads(r.content)["data"]
             #endif
@@ -155,7 +154,6 @@ class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView
 
         commands = self.get_commands_list()
         context['commands_list'] = json.dumps(commands)
-        print(json.dumps(commands))
 
         return context
     #enddef get_context_data
