@@ -7,32 +7,29 @@
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body"<div class="modal-content" style="background-color: white;">
+      <div class="modal-body" style="background-color: white;">
         <div class="form-group">
           <label for="command-select">Select Command</label>
-          <select id="command-select">
-              <option value="" disabled selected>Select a command</option>
+          <select id="command-select" style="width: 50%;">
+            <option value="" disabled selected>Select a command</option>
           </select>
+        </div>
         <div class="form-group" style="display: none;" id="options-container">
-            <label for="options-select">Options</label>
-            <select id="options-select">
-                <option value="" disabled selected>Select an option</option>
-            </select>
+          <label for="options-select">Options</label>
+          <select id="options-select" style="width: 50%;">
+            <option value="" disabled selected>Select an option</option>
+          </select>
         </div>
         <div class="form-group" style="display: none;" id="text-container">
-            <label for="text-input">Input</label>
-            <input type="text" id="text-input" class="form-control">
-        </div>
+          <label for="text-input">Input</label>
+          {% verbatim %}
+          <input type="text" id="text-input" name="text-input" class="bs5 form-control" style="width: 47%;">
+          {% endverbatim %}
         </div>
       </div>
       <div class="modal-footer">
-          <button class="btn btn-primary ml-3"
-            data-toggle="modal" data-target="#modal-send-command"
-            id="btn-send-command"
-          >Send Command</button>
-          <button type="button" class="btn btn-default"
-            data-dismiss="modal" aria-label="Close"
-          >Cancel</button>
+        <button class="btn btn-primary ml-3" data-toggle="modal" data-target="#modal-send-command" id="btn-send-command">Send Command</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal" aria-label="Close">Cancel</button>
       </div>
     </div>
   </div>
