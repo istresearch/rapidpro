@@ -1,6 +1,7 @@
 import itertools
 
 from django.http import JsonResponse
+from django.utils.text import slugify
 
 from temba.campaigns.models import Campaign
 from temba.flows.models import Flow
@@ -30,7 +31,7 @@ class ExportOverrides(MonkeyPatcher):
 
             export = org.export_definitions(request.branding["link"], components)
 
-            for f in export.get('flows',[]):
+            for f in export.get('flows', []):
                 f.pop('channels', None)
             #endfor
 
