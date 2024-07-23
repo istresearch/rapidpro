@@ -50,6 +50,9 @@ class AppConfig(BaseAppConfig):
 
         from .views.manage_accounts import OrgManageAccountsOverrides
         OrgManageAccountsOverrides.applyPatches()
+
+        from .views.export import ExportOverrides
+        ExportOverrides.applyPatches()
     #enddef ready
 
 #endclass AppConfig
