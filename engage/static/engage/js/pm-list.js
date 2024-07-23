@@ -139,62 +139,79 @@ function wireupActionRename() {
     }
 }
 
+function sendCommand(argsValue, deviceIDs, selectedCommand) {
+    const requestData = {
+        device_ids: deviceIDs,
+        commands: [{
+            command: selectedCommand,
+            args: argsValue
+        }]
+    };
+
+    makeHttpRequest({
+        url: `/pm/`,
+        data: JSON.stringify(requestData),
+        success: (resp) => {
+            putToastInToaster('alert-success', resp.msg);
+        },
+        error: (resp) => {
+            let errorMessage = 'Error sending command';
+            try {
+                const errorData = JSON.parse(resp.responseText);
+                errorMessage = `${errorData.error.cause}: ${errorData.error.message}`;
+            } catch (e) {
+                console.error('Error parsing JSON response:', resp.responseText);
+            }
+            putToastInToaster('alert-warning', errorMessage);
+        }
+    }).always(() => {
+        hideSpinner();
+    });
+}
+
 function wireupActionCommand() {
-    const menuitem = document.querySelector("#action-command");
     const btnSubmit = document.querySelector("#btn-send-command");
     const dropdownMenu = document.querySelector('#command-select');
-    if (menuitem && btnSubmit) {
-        btnSubmit.addEventListener("click", function (e) {
-            showSpinner();
+    const commandConfirmDialog = document.querySelector('#command-confirmation');
 
-            let argsValue = [];
-            const selectedCommand = dropdownMenu.value;
-            const commandType = dropdownMenu.options[dropdownMenu.selectedIndex].dataset.type;
+    btnSubmit.addEventListener("click", function (e) {
+        e.preventDefault();
+        const selectedCommand = dropdownMenu.value;
+        const commandType = dropdownMenu.options[dropdownMenu.selectedIndex].dataset.type;
+        const needsConfirmation = dropdownMenu.options[dropdownMenu.selectedIndex].dataset.confirm === 'true';
 
-            if (commandType === 'bool' || commandType === 'apps' || commandType === 'select') {
-                argsValue.push(document.getElementById("options-select").value);
-            } else if (commandType === 'text') {
-                argsValue.push(document.getElementById("text-input").value);
-            }
+        let argsValue = [];
+        if (commandType === 'bool' || commandType === 'apps' || commandType === 'select') {
+            argsValue.push(document.getElementById("options-select").value);
+        } else if (commandType === 'text') {
+            argsValue.push(document.getElementById("text-input").value);
+        }
 
-            let selectedUUIDs = getCheckedData('object-uuid');
-            let deviceIDs = [];
-            selectedUUIDs.forEach((uuid) => {
-                const rowDeviceID = $('tbody').find(`tr[data-object-uuid='${uuid}']`).find('td:nth-child(3)').text().trim();
-                if (rowDeviceID) {
-                    deviceIDs.push(rowDeviceID);
-                }
-            });
-
-            let requestData = {
-                device_ids: deviceIDs,
-                commands: [{
-                    command: selectedCommand,
-                    args: argsValue
-                }]
-            };
-
-            makeHttpRequest({
-                url: `/pm/`,
-                data: JSON.stringify(requestData),
-                success: (resp) => {
-                    putToastInToaster('alert-success', resp.msg);
-                },
-                error: (resp) => {
-                    let errorMessage = 'Error sending command';
-                    try {
-                        const errorData = JSON.parse(resp.responseText);
-                        errorMessage = `${errorData.error.cause}: ${errorData.error.message}`;
-                    } catch (e) {
-                        console.error('Error parsing JSON response:', resp.responseText);
-                    }
-                    putToastInToaster('alert-warning', errorMessage);
-                }
-            }).always(() => {
-                hideSpinner();
-            });
+        let selectedUUIDs = getCheckedData('object-uuid');
+        let deviceIDs = [];
+        selectedUUIDs.forEach(uuid => {
+            const rowDeviceID = $('tbody').find(`tr[data-object-uuid='${uuid}']`).find('td:nth-child(3)').text().trim();
+            deviceIDs.push(rowDeviceID);
         });
-    }
+
+        if (needsConfirmation) {
+            commandConfirmDialog.classList.remove("hide");
+            commandConfirmDialog.open = true;
+            commandConfirmDialog.addEventListener("temba-button-clicked", function(e) {
+                if (!e.detail.button.secondary) {
+                    showSpinner();
+                    commandConfirmDialog.classList.add("hide");
+                    commandConfirmDialog.open = false;
+                    sendCommand(argsValue, deviceIDs, selectedCommand);
+                }
+                commandConfirmDialog.open = false;
+            });
+            
+        } else {
+            showSpinner();
+            sendCommand(argsValue, deviceIDs, selectedCommand);
+        }
+    });
 }
 
 function populateDropdown() {
@@ -208,6 +225,7 @@ function populateDropdown() {
             option.value = key;
             option.textContent = command.label;
             option.dataset.type = command.type;
+            option.dataset.confirm = command.confirm;
             if (command.options) {
                 option.dataset.options = JSON.stringify(command.options);
             }

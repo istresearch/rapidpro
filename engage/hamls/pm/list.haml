@@ -155,6 +155,19 @@
         %p
           -trans "Once the outbox is purged, it's messages will be gone forever. There is no way to undo this operation."
 
+  %temba-dialog#command-confirmation.hide(
+      header='{{ _("Confirm Action")|escapejs }}'
+      primaryButtonName='{{ _("Confirm")|escapejs }}'
+      destructive='true'
+  )
+    .p-6.confirmation-body
+      %p
+        -trans "Are you sure you want to proceed with this action?"
+      %p
+        &nbsp;
+      %p
+        -trans "This action cannot be undone"
+
   {% if 'rename' in actions %}
     {% include "pm/dialog-rename.haml" with groups=broadcast.groups.all %}
     {% include "pm/dialog-command.haml" with groups=broadcast.groups.all %}
