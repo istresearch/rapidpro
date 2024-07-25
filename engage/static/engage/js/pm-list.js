@@ -169,67 +169,49 @@ function sendCommand(argsValue, deviceIDs, selectedCommand) {
     });
 }
 
-function wireupActionCommand() {
-    const btnSubmit = document.querySelector("#btn-send-command");
-    const dropdownMenu = document.querySelector('#command-select');
-    const commandConfirmDialog = document.querySelector('#command-confirmation');
-
-    btnSubmit.addEventListener("click", function (e) {
-        e.preventDefault();
-        const selectedCommand = dropdownMenu.value;
-        const commandType = dropdownMenu.options[dropdownMenu.selectedIndex].dataset.type;
-        const needsConfirmation = dropdownMenu.options[dropdownMenu.selectedIndex].dataset.confirm === 'true';
-
-        let argsValue = [];
-        if (commandType === 'bool' || commandType === 'apps' || commandType === 'select') {
-            argsValue.push(document.getElementById("options-select").value);
-        } else if (commandType === 'text') {
-            argsValue.push(document.getElementById("text-input").value);
-        }
-
-        let selectedUUIDs = getCheckedData('object-uuid');
-        let deviceIDs = [];
-        selectedUUIDs.forEach(uuid => {
-            const rowDeviceID = $('tbody').find(`tr[data-object-uuid='${uuid}']`).find('td:nth-child(3)').text().trim();
-            deviceIDs.push(rowDeviceID);
-        });
-
-        if (needsConfirmation) {
-            commandConfirmDialog.classList.remove("hide");
-            commandConfirmDialog.open = true;
-            commandConfirmDialog.addEventListener("temba-button-clicked", function(e) {
-                if (!e.detail.button.secondary) {
-                    showSpinner();
-                    commandConfirmDialog.classList.add("hide");
-                    commandConfirmDialog.open = false;
-                    sendCommand(argsValue, deviceIDs, selectedCommand);
-                }
-                commandConfirmDialog.open = false;
-            });
-            
-        } else {
-            showSpinner();
-            sendCommand(argsValue, deviceIDs, selectedCommand);
-        }
-    });
-}
-
 function populateDropdown() {
     if (window.contextData.commands_list && window.contextData.commands_list.commands) {
         const commands = window.contextData.commands_list.commands;
         const dropdown = document.getElementById("command-select");
         dropdown.innerHTML = ''; // Clear existing options if any
 
+        const groups = {};
+
+        // Group commands based on their group
         Object.entries(commands).forEach(([key, command]) => {
-            const option = document.createElement("option");
-            option.value = key;
-            option.textContent = command.label;
-            option.dataset.type = command.type;
-            option.dataset.confirm = command.confirm;
-            if (command.options) {
-                option.dataset.options = JSON.stringify(command.options);
+            // Do not populate in dropdown if index is = -1
+            if (command.index !== -1) {
+                if (!groups[command.group]) {
+                    groups[command.group] = [];
+                }
+                groups[command.group].push({ key, ...command });
             }
-            dropdown.appendChild(option);
+        });
+
+        // Sort commands within each group by index
+        Object.keys(groups).forEach(group => {
+            groups[group].sort((a, b) => a.index - b.index);
+        });
+
+        // Add grouped commands to the dropdown
+        Object.entries(groups).forEach(([group, commands]) => {
+            const optgroup = document.createElement("optgroup");
+            optgroup.label = group.charAt(0).toUpperCase() + group.slice(1);
+
+            commands.forEach(command => {
+                const option = document.createElement("option");
+                option.value = command.key;
+                option.textContent = command.label;
+                option.dataset.type = command.type;
+                option.dataset.confirm = command.confirm;
+                option.dataset.description = command.description;
+                if (command.options) {
+                    option.dataset.options = JSON.stringify(command.options);
+                }
+                optgroup.appendChild(option);
+            });
+
+            dropdown.appendChild(optgroup);
         });
 
         dropdown.addEventListener('change', (e) => {
@@ -238,10 +220,14 @@ function populateDropdown() {
             const textContainer = document.getElementById("text-container");
             const optionsSelect = document.getElementById("options-select");
             const textInput = document.getElementById("text-input");
+            const descriptionContainer = document.getElementById("command-description");
 
             // Clear previous options
             optionsSelect.innerHTML = '';
             textInput.value = '';
+
+            // Show description
+            descriptionContainer.innerText = selectedOption.description || '';
 
             if (['bool', 'apps', 'select'].includes(selectedOption.type)) {
                 optionsContainer.style.display = 'block';
