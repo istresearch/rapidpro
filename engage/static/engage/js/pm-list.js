@@ -139,6 +139,51 @@ function wireupActionRename() {
     }
 }
 
+function wireupActionCommand() {
+    const btnSubmit = document.querySelector("#btn-send-command");
+    const dropdownMenu = document.querySelector('#command-select');
+    const commandConfirmDialog = document.querySelector('#command-confirmation');
+
+    btnSubmit.addEventListener("click", function (e) {
+        e.preventDefault();
+        const selectedCommand = dropdownMenu.value;
+        const commandType = dropdownMenu.options[dropdownMenu.selectedIndex].dataset.type;
+        const needsConfirmation = dropdownMenu.options[dropdownMenu.selectedIndex].dataset.confirm === 'true';
+
+        let argsValue = [];
+        if (commandType === 'bool' || commandType === 'apps' || commandType === 'select') {
+            argsValue.push(document.getElementById("options-select").value);
+        } else if (commandType === 'text') {
+            argsValue.push(document.getElementById("text-input").value);
+        }
+
+        let selectedUUIDs = getCheckedData('object-uuid');
+        let deviceIDs = [];
+        selectedUUIDs.forEach(uuid => {
+            const rowDeviceID = $('tbody').find(`tr[data-object-uuid='${uuid}']`).find('td:nth-child(3)').text().trim();
+            deviceIDs.push(rowDeviceID);
+        });
+
+        if (needsConfirmation) {
+            commandConfirmDialog.classList.remove("hide");
+            commandConfirmDialog.open = true;
+            commandConfirmDialog.addEventListener("temba-button-clicked", function(e) {
+                if (!e.detail.button.secondary) {
+                    showSpinner();
+                    commandConfirmDialog.classList.add("hide");
+                    commandConfirmDialog.open = false;
+                    sendCommand(argsValue, deviceIDs, selectedCommand);
+                }
+                commandConfirmDialog.open = false;
+            });
+            
+        } else {
+            showSpinner();
+            sendCommand(argsValue, deviceIDs, selectedCommand);
+        }
+    });
+}
+
 function sendCommand(argsValue, deviceIDs, selectedCommand) {
     const requestData = {
         device_ids: deviceIDs,
