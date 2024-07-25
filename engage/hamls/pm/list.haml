@@ -83,9 +83,9 @@
             %button#action-rename.button-action{data-toggle:"modal", data-target:"#modal-rename-channels"}
               .-mt-1.mr-2.glyph.icon-edit
               -trans "Rename"
-            %button#action-command.button-action{data-toggle:"modal", data-target:"#modal-send-command"}
-              .-mt-1.mr-2.glyph.icon-edit
-              -trans "Send Command"
+          %button#action-command.button-action{data-toggle:"modal", data-target:"#modal-send-command"}
+            .-mt-1.mr-2.glyph.icon-edit
+            -trans "Send Command"
 
   - block table
     .table-scroll.shadow.rounded-lg.overflow-x-auto
@@ -170,8 +170,8 @@
 
   {% if 'rename' in actions %}
     {% include "pm/dialog-rename.haml" with groups=broadcast.groups.all %}
-    {% include "pm/dialog-command.haml" with groups=broadcast.groups.all %}
   {% endif %}
+  {% include "pm/dialog-command.haml" with groups=broadcast.groups.all %}
 
 {% block extra-script %}
   {{ block.super }}
