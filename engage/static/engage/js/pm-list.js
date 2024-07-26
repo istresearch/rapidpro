@@ -215,102 +215,79 @@ function sendCommand(argsValue, deviceIDs, selectedCommand) {
 }
 
 function populateDropdown() {
-    if (window.contextData.commands_list && window.contextData.commands_list.commands) {
-        const commands = window.contextData.commands_list.commands;
+    if (window.contextData.commands_list.command_groups) {
+        const commandGroups = window.contextData.commands_list.command_groups;
         const dropdown = document.getElementById("command-select");
         dropdown.innerHTML = ''; // Clear existing options if any
 
-        const groups = {};
-
-        // Group commands based on their group
-        Object.entries(commands).forEach(([key, command]) => {
-            // Do not populate in dropdown if index is = -1
-            if (command.index !== -1) {
-                if (!groups[command.group]) {
-                    groups[command.group] = [];
-                }
-                groups[command.group].push({ key, ...command });
-            }
-        });
-
-        // Sort commands within each group by index
-        Object.keys(groups).forEach(group => {
-            groups[group].sort((a, b) => a.index - b.index);
-        });
-
-        // Add grouped commands to the dropdown
-        Object.entries(groups).forEach(([group, commands]) => {
+        commandGroups.forEach(group => {
             const optgroup = document.createElement("optgroup");
-            optgroup.label = group.charAt(0).toUpperCase() + group.slice(1);
+            optgroup.label = group.name;
 
-            commands.forEach(command => {
-                const option = document.createElement("option");
-                option.value = command.key;
-                option.textContent = command.label;
-                option.dataset.type = command.type;
-                option.dataset.confirm = command.confirm;
-                option.dataset.description = command.description;
-                if (command.options) {
-                    option.dataset.options = JSON.stringify(command.options);
+            group.commands.forEach(command => {
+                if (!command.hidden) {
+                    const option = document.createElement("option");
+                    option.value = command.command;
+                    option.textContent = command.label;
+                    option.dataset.type = command.type;
+                    option.dataset.confirm = command.confirm;
+                    option.dataset.description = command.description;
+                    if (command.options) {
+                        option.dataset.options = JSON.stringify(command.options);
+                    }
+                    optgroup.appendChild(option);
                 }
-                optgroup.appendChild(option);
             });
 
             dropdown.appendChild(optgroup);
         });
 
         dropdown.addEventListener('change', (e) => {
-            const selectedOption = commands[e.target.value];
+            const selectedCommand = commandGroups.flatMap(group => group.commands).find(command => command.command === e.target.value);
+
             const optionsContainer = document.getElementById("options-container");
             const textContainer = document.getElementById("text-container");
             const optionsSelect = document.getElementById("options-select");
             const textInput = document.getElementById("text-input");
             const descriptionContainer = document.getElementById("command-description");
 
-            // Clear previous options
-            optionsSelect.innerHTML = '';
-            textInput.value = '';
+            if (selectedCommand) {
+                descriptionContainer.innerText = selectedCommand.description || '';
 
-            // Show description
-            descriptionContainer.innerText = selectedOption.description || '';
+                if (['bool', 'apps', 'select'].includes(selectedCommand.type)) {
+                    optionsContainer.style.display = 'block';
+                    textContainer.style.display = 'none';
+                    optionsSelect.innerHTML = ''; // Clear previous options
 
-            if (['bool', 'apps', 'select'].includes(selectedOption.type)) {
-                optionsContainer.style.display = 'block';
-                textContainer.style.display = 'none';
-
-                if (selectedOption.type === 'bool') {
-                    // Special handling for boolean type
-                    const trueOption = document.createElement("option");
-                    trueOption.value = 'true';
-                    trueOption.textContent = 'True';
-                    optionsSelect.appendChild(trueOption);
-
-                    const falseOption = document.createElement("option");
-                    falseOption.value = 'false';
-                    falseOption.textContent = 'False';
-                    optionsSelect.appendChild(falseOption);
-                } else if (selectedOption.options) {
-                    Object.entries(selectedOption.options).forEach(([key, value]) => {
-                        const opt = document.createElement("option");
-                        opt.value = key;
-                        opt.textContent = value;
-                        optionsSelect.appendChild(opt);
-                    });
+                    if (selectedCommand.type === 'bool') {
+                        ['true', 'false'].forEach(value => {
+                            const option = document.createElement("option");
+                            option.value = value;
+                            option.textContent = value.charAt(0).toUpperCase() + value.slice(1);
+                            optionsSelect.appendChild(option);
+                        });
+                    } else if (selectedCommand.options) {
+                        Object.entries(selectedCommand.options).forEach(([key, value]) => {
+                            const opt = document.createElement("option");
+                            opt.value = key;
+                            opt.textContent = value;
+                            optionsSelect.appendChild(opt);
+                        });
+                    }
+                } else if (selectedCommand.type === 'text') {
+                    textContainer.style.display = 'block';
+                    optionsContainer.style.display = 'none';
+                    textInput.value = ''; // Clear previous input
+                } else {
+                    optionsContainer.style.display = 'none';
+                    textContainer.style.display = 'none';
                 }
-            } else if (selectedOption.type === 'text') {
-                textContainer.style.display = 'block';
-                optionsContainer.style.display = 'none';
-            } else {
-                optionsContainer.style.display = 'none';
-                textContainer.style.display = 'none';
             }
         });
 
         dropdown.dispatchEvent(new Event('change'));
     }
 }
-
-
 
 window.addEventListener('DOMContentLoaded', function (e) {
     wireupActionPurge();
