@@ -1,13 +1,26 @@
+import json
+
+import requests
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils.encoding import force_str
 
 from smartmin.views import SmartListView
+from rest_framework import status
 
 from engage.channels.purge_outbox import PurgeOutboxMixin
+from engage.channels.types.postmaster.postoffice import po_api_key
 from engage.channels.types.postmaster.schemes import PM_CHANNEL_MODES
 from temba.channels.types.postmaster import PostmasterType
 from temba.orgs.views import OrgPermsMixin
 from temba.utils.views import BulkActionMixin
+
+from engage.channels.types.postmaster.postoffice import (
+    po_server_url,
+    po_api_key,
+    po_api_header,
+)
 
 
 class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView):
@@ -95,5 +108,54 @@ class PmViewList(PurgeOutboxMixin, OrgPermsMixin, BulkActionMixin, SmartListView
 
         return links
     #enddef get_gear_links
+
+    @staticmethod
+    def get_commands_list():
+        if po_server_url is not None and po_api_key is not None:
+            r = requests.get(
+                f"{po_server_url}/engage/commands/list",
+                headers={po_api_header: po_api_key},
+                cookies=None,
+                verify=False,
+            )
+            if r.status_code == status.HTTP_200_OK:
+                return json.loads(r.content)["data"]
+            #endif
+        return None
+    #enddef get_commands_list
+
+    @staticmethod
+    def post_commands(data):
+        if po_server_url is not None and po_api_key is not None:
+            response = requests.post(
+                f"{po_server_url}/engage/commands/send",
+                headers={po_api_header: po_api_key},
+                json=data,
+                cookies=None,
+                verify=False,
+            )
+            return JsonResponse(response.json(), status=response.status_code)
+            #endif
+        return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+    #enddef post_commands
+
+    def post(self, request, *args, **kw1args):
+        data = json.loads(force_str(request.body))
+        user = self.request.user
+        org = user.get_org()
+        data["user_id"] = user.id
+        data["org_id"] = org.id
+
+        return self.post_commands(data)
+    #enddef post
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        commands = self.get_commands_list()
+        context['commands_list'] = json.dumps(commands)
+
+        return context
+    #enddef get_context_data
 
 #endclass PmViewList
