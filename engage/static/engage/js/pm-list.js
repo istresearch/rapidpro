@@ -197,7 +197,7 @@ function sendCommand(argsValue, deviceIDs, selectedCommand) {
         url: `/pm/`,
         data: JSON.stringify(requestData),
         success: (resp) => {
-            putToastInToaster('alert-success', resp.msg);
+            putToastInToaster('alert-success', 'Command succesfully sent');
         },
         error: (resp) => {
             let errorMessage = 'Error sending command';
