@@ -39,7 +39,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.config_step.outputs.VERSION_STR }}
-          release_name: ${{ steps.config_step.outputs.VERSION_STR }}
           generate_release_notes: true
           target_commitish: ${{ github.ref_name }}
   #endjob build_cfg
