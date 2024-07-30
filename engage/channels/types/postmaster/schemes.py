@@ -30,6 +30,7 @@ PM_CHANNEL_MODES = {
     "YT":     Schemes_Meta("pm_youtube",    _("Postmaster Youtube"),    _("Postmaster Youtube Identifier"),    "icon-pm_youtube"),
     "TIK":    Schemes_Meta("pm_tiktok",     _("Postmaster TikTok"),     _("Postmaster TikTok Identifier"),     "icon-pm_tiktok"),
     "PM":     Schemes_Meta("pm_service",    _("Postmaster Device"),     _("Postmaster Service Channel"),       "icon-pm_service"),
+    "TOX":    Schemes_Meta("pm_tox",        _("Postmaster Tox"),        _("Postmaster Tox Identifier"),        "icon-tox"),
 }
 
 PM_Scheme2Mode = { val.scheme: key for key, val in PM_CHANNEL_MODES.items() }

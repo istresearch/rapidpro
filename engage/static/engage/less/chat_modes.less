@@ -36,7 +36,8 @@
   pm_mastodon,
   pm_youtube,
   pm_tiktok,
-  pm_service;
+  pm_service,
+  pm_tox;
 
 /* Generic LESS function to set defaults */
 .chat-mode-icon(@scheme: "pm_service") {
@@ -79,6 +80,9 @@
 .chat-mode-scheme(pm_service) {
   content: url("@{imgEngagePath}/postmaster.svg");
   filter: invert(1);
+}
+.chat-mode-scheme(pm_tox) {
+  content: url("@{imgEngagePath}/tox.png");
 }
 /* ===== END Specific Scheme Definitions ===== */
 
