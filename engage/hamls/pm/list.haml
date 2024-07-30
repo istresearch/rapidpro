@@ -83,6 +83,9 @@
             %button#action-rename.button-action{data-toggle:"modal", data-target:"#modal-rename-channels"}
               .-mt-1.mr-2.glyph.icon-edit
               -trans "Rename"
+          %button#action-command.button-action{data-toggle:"modal", data-target:"#modal-send-command"}
+            .-mt-1.mr-2.glyph.icon-edit
+            -trans "Send Command"
 
   - block table
     .table-scroll.shadow.rounded-lg.overflow-x-auto
@@ -152,10 +155,30 @@
         %p
           -trans "Once the outbox is purged, it's messages will be gone forever. There is no way to undo this operation."
 
+  %temba-dialog#command-confirmation.hide(
+      header='{{ _("Confirm Action")|escapejs }}'
+      primaryButtonName='{{ _("Confirm")|escapejs }}'
+      destructive='true'
+  )
+    .p-6.confirmation-body
+      %p
+        -trans "Are you sure you want to proceed with this action?"
+      %p
+        &nbsp;
+      %p
+        -trans "This action cannot be undone"
+
   {% if 'rename' in actions %}
     {% include "pm/dialog-rename.haml" with groups=broadcast.groups.all %}
   {% endif %}
+  {% include "pm/dialog-command.haml" with groups=broadcast.groups.all %}
 
--block extra-script
+{% block extra-script %}
   {{ block.super }}
   <script src="{% static 'engage/js/pm-list.js' %}"></script>
+  <script>
+    window.contextData = {
+      commands_list: {{ commands_list|safe }},
+    };
+  </script>
+{% endblock %}

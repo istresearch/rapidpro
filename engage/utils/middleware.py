@@ -1,6 +1,21 @@
 from django import shortcuts
 from django.conf import settings
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, HttpResponseServerError
+
+import logging
+
+class ExceptionMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self.logger = logging.getLogger('django')
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        return response
+
+    def process_exception(self, request, exception):
+        self.logger.exception(str(exception))
+        return HttpResponseServerError("A server error has occurred and IT has been notified. Please retry your request.")
 
 
 class RedirectTo(Exception):
