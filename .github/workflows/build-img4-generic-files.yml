@@ -64,6 +64,7 @@ jobs:
           else
             IS_BUILDABLE=0
           fi
+          echo "IS_BUILDABLE=${IS_BUILDABLE}" >> $GITHUB_OUTPUT
   #endjob build_cfg
 
   check_image_exist:
