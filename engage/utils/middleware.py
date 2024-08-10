@@ -12,8 +12,11 @@ class ExceptionMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         return response
-
+   
     def process_exception(self, request, exception):
+        if isinstance(exception, RedirectTo):
+            return None
+
         self.logger.exception(str(exception))
         return HttpResponseServerError("A server error has occurred and IT has been notified. Please retry your request.")
 
